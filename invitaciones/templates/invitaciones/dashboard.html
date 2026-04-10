@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Invitaciones</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f3ee;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #5f6f52;
+            margin-bottom: 30px;
+        }
+
+        .resumen {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 20px;
+            margin-bottom: 35px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.08);
+            text-align: center;
+        }
+
+        .card h2 {
+            margin: 0;
+            font-size: 30px;
+            color: #5f6f52;
+        }
+
+        .card p {
+            margin-top: 8px;
+            color: #555;
+            font-size: 16px;
+        }
+
+        .tabla-contenedor {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.08);
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 1500px;
+        }
+
+        th, td {
+            padding: 14px 12px;
+            text-align: center;
+            border-bottom: 1px solid #d8dfcf;
+            vertical-align: middle;
+        }
+
+        th {
+            background: #eef2e8;
+            color: #5f6f52;
+        }
+
+        tr:hover {
+            background: #f8faf5;
+        }
+
+        .acciones a,
+        .acciones button {
+            text-decoration: none;
+            background: #8b9a6b;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            border: none;
+            cursor: pointer;
+            display: inline-block;
+            margin: 3px 0;
+        }
+
+        .acciones a:hover,
+        .acciones button:hover {
+            background: #5f6f52;
+        }
+
+        .topbar {
+            max-width: 1500px;
+            margin: 0 auto 20px auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .topbar a {
+            text-decoration: none;
+            color: white;
+            background: #8b9a6b;
+            padding: 10px 14px;
+            border-radius: 8px;
+        }
+
+        .topbar a:hover {
+            background: #5f6f52;
+        }
+
+        .wrapper {
+            max-width: 1500px;
+            margin: 0 auto;
+        }
+
+        .link-box {
+            font-size: 13px;
+            background: #f8faf5;
+            border: 1px solid #d8dfcf;
+            padding: 8px;
+            border-radius: 6px;
+            word-break: break-all;
+            text-align: left;
+        }
+
+        .mensaje-copia {
+            font-size: 12px;
+            color: green;
+            margin-top: 6px;
+            display: none;
+        }
+
+        .sin-telefono {
+            color: #a33;
+            font-size: 13px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        <div class="topbar">
+            <a href="/">Inicio</a>
+            <a href="/admin/">Admin</a>
+            <a href="{% url 'exportar_excel' %}">Exportar Excel</a>
+        </div>
+
+        <h1>Dashboard de Invitaciones</h1>
+
+        <div class="resumen">
+            <div class="card">
+                <h2>{{ total_grupos }}</h2>
+                <p>Total de grupos</p>
+            </div>
+            <div class="card">
+                <h2>{{ total_invitados }}</h2>
+                <p>Total de invitados</p>
+            </div>
+            <div class="card">
+                <h2>{{ total_asistiran }}</h2>
+                <p>Sí asistirán</p>
+            </div>
+            <div class="card">
+                <h2>{{ total_no_asistiran }}</h2>
+                <p>No asistirán</p>
+            </div>
+            <div class="card">
+                <h2>{{ total_pendientes }}</h2>
+                <p>Pendientes</p>
+            </div>
+            <div class="card">
+                <h2>{{ porcentaje_asistencia }}%</h2>
+                <p>Asistencia esperada</p>
+            </div>
+        </div>
+
+        <div class="tabla-contenedor">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Grupo</th>
+                        <th>Tipo</th>
+                        <th>Teléfono</th>
+                        <th>Lugares</th>
+                        <th>Invitados</th>
+                        <th>Asistirán</th>
+                        <th>No asistirán</th>
+                        <th>Pendientes</th>
+                        <th>Confirmado</th>
+                        <th>Estado envío</th>
+                        <th>Último envío</th>
+                        <th>Último recordatorio</th>
+                        <th>Ver invitación</th>
+                        <th>Link único</th>
+                        <th>Copiar</th>
+                        <th>WhatsApp</th>
+                        <th>Registrar</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for grupo in grupos %}
+                    <tr>
+                        <td>{{ grupo.nombre_grupo }}</td>
+                        <td>{{ grupo.tipo }}</td>
+                        <td>{{ grupo.telefono_contacto|default:"Sin teléfono" }}</td>
+                        <td>{{ grupo.cantidad_maxima }}</td>
+                        <td>{{ grupo.invitados_totales }}</td>
+                        <td>{{ grupo.asistentes_confirmados }}</td>
+                        <td>{{ grupo.no_asistentes }}</td>
+                        <td>{{ grupo.pendientes }}</td>
+                        <td>
+                            {% if grupo.confirmado %}
+                                Sí
+                            {% else %}
+                                No
+                            {% endif %}
+                        </td>
+                        <td class="acciones">
+                            <a href="{% url 'ver_invitacion' grupo.codigo %}" target="_blank">Abrir</a>
+                        </td>
+                        <td>
+                            <div class="link-box" id="link-{{ grupo.id }}">
+                                {{ grupo.link_invitacion }}
+                            </div>
+                        </td>
+                        <td class="acciones">
+                            <button onclick="copiarLink('link-{{ grupo.id }}', 'mensaje-{{ grupo.id }}')">
+                                Copiar
+                            </button>
+                            <div class="mensaje-copia" id="mensaje-{{ grupo.id }}">
+                                Link copiado
+                            </div>
+                        </td>
+                        <td class="acciones">
+                            {% if grupo.whatsapp_invitacion_url %}
+                                <a href="{{ grupo.whatsapp_invitacion_url }}" target="_blank">Enviar invitación</a>
+                                <a href="{{ grupo.whatsapp_recordatorio_url }}" target="_blank">Recordatorio</a>
+                            {% else %}
+                                <div class="sin-telefono">Agrega teléfono</div>
+                            {% endif %}
+                        </td>
+                        <td>{{ grupo.estado_envio }}</td>
+                        <td>
+                            {% if grupo.fecha_ultimo_envio %}
+                                {{ grupo.fecha_ultimo_envio|date:"d/m/Y h:i A" }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if grupo.fecha_ultimo_recordatorio %}
+                                {{ grupo.fecha_ultimo_recordatorio|date:"d/m/Y h:i A" }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td class="acciones">
+                            <a href="{% url 'marcar_envio_invitacion' grupo.id %}">Marcar envío</a>
+                            <a href="{% url 'marcar_recordatorio' grupo.id %}">Marcar recordatorio</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="17">No hay grupos registrados todavía.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        function copiarLink(linkId, mensajeId) {
+            const texto = document.getElementById(linkId).innerText;
+            navigator.clipboard.writeText(texto).then(function() {
+                const mensaje = document.getElementById(mensajeId);
+                mensaje.style.display = 'block';
+
+                setTimeout(function() {
+                    mensaje.style.display = 'none';
+                }, 1500);
+            });
+        }
+    </script>
+</body>
+</html>

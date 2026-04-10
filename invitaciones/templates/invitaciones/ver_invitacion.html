@@ -1,0 +1,1285 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ evento.novio }} & {{ evento.novia }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg: #f4f6f0;
+            --bg-soft: #fbfcf8;
+            --card: rgba(255,255,255,0.94);
+            --white: #ffffff;
+            --text: #253126;
+            --muted: #667565;
+            --olive: #63b96d;
+            --olive-dark: #2f7a4d;
+            --olive-soft: #dff2e2;
+            --line: #d5e4d7;
+            --shadow: 0 22px 55px rgba(47, 122, 77, 0.12);
+            --shadow-soft: 0 14px 34px rgba(47, 122, 77, 0.10);
+            --gold: #d2b074;
+            --ink: #1d251d;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Montserrat', sans-serif;
+            color: var(--text);
+            background:
+                radial-gradient(circle at top left, rgba(99,185,109,0.10), transparent 28%),
+                radial-gradient(circle at bottom right, rgba(47,122,77,0.09), transparent 26%),
+                linear-gradient(180deg, #fcfdf9 0%, #f2f6ef 100%);
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            background:
+                radial-gradient(circle at 12% 14%, rgba(210,176,116,0.06), transparent 18%),
+                radial-gradient(circle at 88% 78%, rgba(99,185,109,0.05), transparent 18%);
+            z-index: 0;
+        }
+
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .petals {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 2;
+            overflow: hidden;
+        }
+
+        .petal {
+            position: absolute;
+            top: -60px;
+            width: 10px;
+            height: 6px;
+            background: #cfe9d5;
+            border-radius: 50%;
+            opacity: 0.55;
+            animation: fall linear infinite;
+        }
+
+        @keyframes fall {
+            0% {
+                transform: translateY(-50px) translateX(0) rotate(0deg);
+            }
+            100% {
+                transform: translateY(110vh) translateX(40px) rotate(360deg);
+            }
+        }
+
+        .intro-screen {
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(circle at top left, rgba(99,185,109,0.10), transparent 28%),
+                linear-gradient(180deg, #f9fcf7 0%, #eef5eb 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            padding: 20px;
+            transition: opacity 0.6s ease, visibility 0.6s ease;
+        }
+
+        .intro-screen.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .intro-wrap {
+            text-align: center;
+            max-width: 420px;
+            width: 100%;
+        }
+
+        .intro-kicker {
+            text-transform: uppercase;
+            letter-spacing: 0.26em;
+            font-size: 0.78rem;
+            color: var(--muted);
+            margin-bottom: 16px;
+        }
+
+        .intro-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: clamp(2.7rem, 8vw, 4.6rem);
+            line-height: 0.95;
+            margin: 0 0 10px 0;
+            color: var(--olive-dark);
+        }
+
+        .intro-subtitle {
+            color: var(--muted);
+            line-height: 1.8;
+            margin: 0 0 26px 0;
+            font-size: 0.98rem;
+        }
+
+        .envelope-scene {
+            perspective: 1300px;
+            display: flex;
+            justify-content: center;
+            margin-bottom: 18px;
+        }
+
+        .envelope {
+            position: relative;
+            width: min(320px, 82vw);
+            height: 200px;
+            cursor: pointer;
+            transform-style: preserve-3d;
+            transition: transform 0.4s ease;
+            box-shadow: 0 0 40px rgba(111,202,126,.3);
+        }
+
+        .envelope:hover {
+            transform: translateY(-4px) scale(1.01);
+        }
+
+        .envelope-back {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg,#7ed68a,#2f7a4d);
+            border-radius: 10px;
+        }
+
+        .envelope-front {
+            position: absolute;
+            inset: 0;
+            clip-path: polygon(0 100%,0 40%,50% 70%,100% 40%,100% 100%);
+            background: linear-gradient(135deg,#95e09d,#2f7a4d);
+            border-radius: 0 0 10px 10px;
+        }
+
+        .envelope-flap {
+            position: absolute;
+            inset: 0;
+            clip-path: polygon(0 0,50% 56%,100% 0);
+            background: linear-gradient(180deg,#6fca7e,#2b6e46);
+            transform-origin: top;
+            transition: 1s;
+            border-radius: 10px 10px 0 0;
+        }
+
+        .envelope-letter {
+            position: absolute;
+            left: 50%;
+            top: 20px;
+            width: 75%;
+            height: 150px;
+            transform: translateX(-50%);
+            background: white;
+            border-radius: 10px;
+            transition: 1s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.5rem;
+            color: var(--olive-dark);
+            text-align: center;
+            padding: 16px;
+            box-shadow: 0 10px 26px rgba(0,0,0,0.10);
+        }
+
+        .envelope.opening .envelope-flap {
+            transform: rotateX(180deg);
+        }
+
+        .envelope.opening .envelope-letter {
+            top: -100px;
+        }
+
+        .open-text {
+            margin-top: 18px;
+            font-size: 0.92rem;
+            color: var(--muted);
+            letter-spacing: 0.04em;
+        }
+
+        .tap-note {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.1rem;
+            color: var(--olive-dark);
+            margin-top: 8px;
+        }
+
+        .hero {
+            min-height: 100vh;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 32px 20px;
+            text-align: center;
+            color: #fff;
+            background:
+                linear-gradient(rgba(34, 42, 29, 0.42), rgba(34, 42, 29, 0.42)),
+                url('{{ evento.imagen_portada|default:"https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1600&q=80" }}');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+
+        .hero::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                linear-gradient(to bottom, rgba(0,0,0,0.06), rgba(0,0,0,0.20)),
+                radial-gradient(circle at center, rgba(255,255,255,0.05), transparent 55%);
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 3;
+            width: 100%;
+            max-width: 900px;
+            animation: heroFade 1.2s ease;
+            padding: 18px 10px;
+        }
+
+        .hero-kicker {
+            letter-spacing: 0.28em;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            margin-bottom: 18px;
+            opacity: 0.95;
+        }
+
+        .hero h1 {
+            margin: 0;
+            font-family: 'Cormorant Garamond', serif;
+            font-weight: 600;
+            font-size: clamp(3rem, 8vw, 6rem);
+            line-height: 0.95;
+            text-shadow: 0 10px 30px rgba(0,0,0,0.16);
+        }
+
+        .hero-divider {
+            width: 120px;
+            height: 1px;
+            background: linear-gradient(to right, transparent, rgba(255,255,255,0.88), transparent);
+            margin: 24px auto;
+            position: relative;
+        }
+
+        .hero-divider::after {
+            content: "✦";
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -52%);
+            font-size: 0.8rem;
+            color: rgba(255,255,255,0.9);
+            padding: 0 8px;
+        }
+
+        .hero-subtitle {
+            font-size: clamp(1rem, 2vw, 1.2rem);
+            margin: 0 auto 26px auto;
+            max-width: 680px;
+            line-height: 1.8;
+            opacity: 0.96;
+            text-shadow: 0 6px 20px rgba(0,0,0,0.18);
+        }
+
+        .hero-names {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: clamp(2.4rem, 5vw, 3.8rem);
+            font-weight: 600;
+            margin-bottom: 12px;
+            text-shadow: 0 10px 24px rgba(0,0,0,0.14);
+        }
+
+        .hero-date {
+            font-size: 1rem;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+        }
+
+        .scroll-indicator {
+            margin-top: 42px;
+            font-size: 0.9rem;
+            opacity: 0.9;
+            animation: bounce 2s infinite;
+        }
+
+        .wrapper {
+            width: 100%;
+            max-width: 1160px;
+            margin: 0 auto;
+            padding: 40px 18px 80px;
+            position: relative;
+            z-index: 3;
+        }
+
+        .section {
+            margin-top: 28px;
+            opacity: 0;
+            transform: translateY(30px);
+            animation: fadeUp 0.9s ease forwards;
+        }
+
+        .section:nth-child(1) { animation-delay: 0.05s; }
+        .section:nth-child(2) { animation-delay: 0.12s; }
+        .section:nth-child(3) { animation-delay: 0.19s; }
+        .section:nth-child(4) { animation-delay: 0.26s; }
+        .section:nth-child(5) { animation-delay: 0.33s; }
+        .section:nth-child(6) { animation-delay: 0.40s; }
+        .section:nth-child(7) { animation-delay: 0.47s; }
+
+        .card {
+            background: var(--card);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.72);
+            border-radius: 28px;
+            box-shadow: var(--shadow);
+            padding: 32px 24px;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease;
+            margin: 20px 0;
+        }
+
+        .card::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                linear-gradient(135deg, rgba(255,255,255,0.16), transparent 35%),
+                linear-gradient(315deg, rgba(127,141,105,0.05), transparent 40%);
+            pointer-events: none;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 26px 50px rgba(69, 79, 55, 0.13);
+            border-color: rgba(200,166,110,0.24);
+        }
+
+        .section-title {
+            margin: 0 0 12px 0;
+            text-align: center;
+            font-family: 'Cormorant Garamond', serif;
+            font-size: clamp(2rem, 4vw, 3rem);
+            color: var(--olive-dark);
+            position: relative;
+            z-index: 1;
+        }
+
+        .section-subtitle {
+            margin: 0 auto 28px auto;
+            text-align: center;
+            color: var(--muted);
+            max-width: 760px;
+            line-height: 1.8;
+            position: relative;
+            z-index: 1;
+        }
+
+        .invitation-summary {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 18px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .summary-item {
+            background: rgba(255,255,255,0.78);
+            border: 1px solid var(--line);
+            border-radius: 20px;
+            padding: 20px;
+            text-align: center;
+            transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+        }
+
+        .summary-item:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-soft);
+            border-color: rgba(127,141,105,0.35);
+        }
+
+        .summary-label {
+            font-size: 0.82rem;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 8px;
+        }
+
+        .summary-value {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.8rem;
+            color: var(--text);
+            word-break: break-word;
+        }
+
+        .countdown-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-top: 8px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .countdown-item {
+            background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(244,243,238,0.98));
+            border: 1px solid var(--line);
+            border-radius: 22px;
+            padding: 24px 16px;
+            text-align: center;
+            transition: transform 0.22s ease, box-shadow 0.22s ease;
+        }
+
+        .countdown-item:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-soft);
+        }
+
+        .countdown-number {
+            display: block;
+            font-family: 'Cormorant Garamond', serif;
+            font-size: clamp(2.2rem, 5vw, 3.2rem);
+            color: var(--olive-dark);
+            line-height: 1;
+        }
+
+        .countdown-label {
+            margin-top: 8px;
+            font-size: 0.84rem;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        .details-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 18px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .detail-box {
+            background: rgba(255,255,255,0.78);
+            border: 1px solid var(--line);
+            border-radius: 22px;
+            padding: 22px;
+            text-align: center;
+            transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+        }
+
+        .detail-box:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-soft);
+            border-color: rgba(127,141,105,0.34);
+        }
+
+        .detail-box h3 {
+            margin: 0 0 10px 0;
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 2rem;
+            color: var(--olive-dark);
+        }
+
+        .detail-box p {
+            margin: 7px 0;
+            color: var(--text);
+            line-height: 1.7;
+        }
+
+        .actions-row {
+            display: flex;
+            gap: 14px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 22px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .btn {
+            appearance: none;
+            border: none;
+            border-radius: 999px;
+            padding: 14px 22px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: transform 0.2s ease, opacity 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 190px;
+            background: linear-gradient(135deg,#6fca7e,#2f7a4d);
+            color: white;
+            box-shadow: 0 12px 24px rgba(46, 122, 77, 0.35);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            opacity: 0.98;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #6fca7e, #2f7a4d);
+            color: white;
+            box-shadow: 0 12px 24px rgba(46, 122, 77, 0.35);
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 16px 28px rgba(95,111,82,0.28);
+        }
+
+        .btn-secondary {
+            background: rgba(255,255,255,0.95);
+            color: var(--text);
+            border: 1px solid var(--line);
+            box-shadow: none;
+        }
+
+        .btn-secondary:hover {
+            border-color: rgba(127,141,105,0.35);
+        }
+
+        .dress-code-box {
+            text-align: center;
+            padding: 8px 0 4px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .dress-code-main {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 2.3rem;
+            color: var(--olive-dark);
+            margin-bottom: 8px;
+        }
+
+        .dress-code-note {
+            color: var(--muted);
+            line-height: 1.8;
+            max-width: 760px;
+            margin: 0 auto;
+        }
+
+        .map-wrap {
+            overflow: hidden;
+            border-radius: 24px;
+            border: 1px solid var(--line);
+            box-shadow: 0 14px 30px rgba(69, 79, 55, 0.08);
+            position: relative;
+            z-index: 1;
+        }
+
+        .map-wrap iframe {
+            width: 100%;
+            height: 380px;
+            border: 0;
+            display: block;
+        }
+
+        .confirmed-banner {
+            background: rgba(95,111,82,0.10);
+            border: 1px solid rgba(95,111,82,0.24);
+            color: var(--olive-dark);
+            border-radius: 18px;
+            padding: 16px 18px;
+            text-align: center;
+            font-weight: 600;
+            margin-bottom: 22px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .form-grid {
+            display: grid;
+            gap: 18px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .guest-card {
+            background: rgba(255,255,255,0.82);
+            border: 1px solid var(--line);
+            border-radius: 22px;
+            padding: 20px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+        }
+
+        .guest-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 22px rgba(69, 79, 55, 0.06);
+            border-color: rgba(127,141,105,0.32);
+        }
+
+        .guest-name {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 2rem;
+            margin: 0 0 10px 0;
+            color: var(--text);
+        }
+
+        .radio-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin: 14px 0 10px;
+        }
+
+        .option-pill {
+            position: relative;
+        }
+
+        .option-pill input {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .option-pill label {
+            display: inline-block;
+            padding: 12px 18px;
+            border-radius: 999px;
+            border: 1px solid var(--line);
+            background: rgba(255,255,255,0.92);
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .option-pill label:hover {
+            border-color: rgba(127,141,105,0.35);
+        }
+
+        .option-pill input:checked + label {
+            background: linear-gradient(135deg, var(--olive), var(--olive-dark));
+            color: white;
+            border-color: transparent;
+            box-shadow: 0 8px 20px rgba(95,111,82,0.22);
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 92px;
+            border-radius: 16px;
+            border: 1px solid var(--line);
+            padding: 14px 16px;
+            font-family: inherit;
+            font-size: 0.95rem;
+            resize: vertical;
+            outline: none;
+            background: rgba(255,255,255,0.95);
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        textarea:focus {
+            border-color: var(--olive);
+            box-shadow: 0 0 0 4px rgba(127,141,105,0.12);
+        }
+
+        .guest-status {
+            margin-top: 10px;
+            color: var(--muted);
+            font-size: 0.92rem;
+        }
+
+        .footer-note {
+            text-align: center;
+            color: var(--muted);
+            font-size: 0.92rem;
+            margin-top: 18px;
+            line-height: 1.7;
+            position: relative;
+            z-index: 1;
+        }
+
+        .save-btn-wrap {
+            margin-top: 10px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .floating-nav {
+            position: fixed;
+            right: 16px;
+            bottom: 16px;
+            z-index: 20;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .floating-nav a,
+        .music-toggle {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.94);
+            border: 1px solid var(--line);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            box-shadow: 0 8px 18px rgba(69, 79, 55, 0.12);
+            font-size: 1.1rem;
+            color: var(--text);
+            transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+        }
+
+        .floating-nav a:hover,
+        .music-toggle:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 22px rgba(69, 79, 55, 0.16);
+            background: rgba(255,255,255,0.98);
+        }
+
+        .music-toggle {
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        .music-hint {
+            position: fixed;
+            left: 50%;
+            bottom: 20px;
+            transform: translateX(-50%);
+            background: rgba(47,52,39,0.92);
+            color: #fff;
+            padding: 10px 16px;
+            border-radius: 999px;
+            font-size: 0.88rem;
+            z-index: 30;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.28s ease, transform 0.28s ease;
+        }
+
+        .music-hint.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(-4px);
+        }
+
+        @keyframes heroFade {
+            from {
+                opacity: 0;
+                transform: translateY(18px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(26px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateY(0);
+            }
+            40% {
+                transform: translateY(8px);
+            }
+            60% {
+                transform: translateY(4px);
+            }
+        }
+
+        @media (max-width: 980px) {
+            .invitation-summary,
+            .countdown-grid,
+            .details-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .hero {
+                min-height: 88vh;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .hero {
+                min-height: 82vh;
+                padding: 20px 16px;
+            }
+
+            .wrapper {
+                padding: 28px 14px 90px;
+            }
+
+            .card {
+                padding: 24px 16px;
+                border-radius: 22px;
+            }
+
+            .invitation-summary,
+            .countdown-grid,
+            .details-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .summary-value {
+                font-size: 1.55rem;
+            }
+
+            .detail-box h3 {
+                font-size: 1.7rem;
+            }
+
+            .guest-name {
+                font-size: 1.7rem;
+            }
+
+            .actions-row {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+                min-width: auto;
+            }
+
+            .map-wrap iframe {
+                height: 300px;
+            }
+
+            .floating-nav {
+                right: 12px;
+                bottom: 12px;
+            }
+
+            .music-hint {
+                width: calc(100% - 28px);
+                text-align: center;
+                border-radius: 16px;
+            }
+
+            .envelope {
+                height: 205px;
+                box-shadow: 0 0 40px rgba(111, 202, 126, 0.25);
+            }
+
+            .envelope-letter {
+                height: 168px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="petals" aria-hidden="true">
+        <span class="petal" style="left:10%; animation-duration:12s;"></span>
+        <span class="petal" style="left:30%; animation-duration:15s;"></span>
+        <span class="petal" style="left:60%; animation-duration:13s;"></span>
+        <span class="petal" style="left:80%; animation-duration:16s;"></span>
+    </div>
+
+    <div id="intro" class="intro-screen">
+        <div class="intro-wrap">
+            <div class="intro-kicker">Invitación digital</div>
+            <h1 class="intro-title">{{ evento.novio }} & {{ evento.novia }}</h1>
+            <p class="intro-subtitle">
+                Toca el sobre para abrir nuestra invitación
+            </p>
+
+            <div class="envelope-scene">
+                <div class="envelope" id="envelope" onclick="openInvitation()">
+                    <div class="envelope-back"></div>
+                    <div class="envelope-letter">
+                        {{ evento.novio }} & {{ evento.novia }}
+                    </div>
+                    <div class="envelope-front"></div>
+                    <div class="envelope-flap"></div>
+                </div>
+            </div>
+
+            <div class="open-text">Toca el sobre para abrir</div>
+            <div class="tap-note">y descubrir nuestra invitación</div>
+        </div>
+    </div>
+
+    <audio id="bgMusic" loop preload="auto">
+        <source src="{% static 'music/boda.mp3' %}" type="audio/mpeg">
+    </audio>
+
+    <section class="hero" id="inicio">
+        <div class="hero-content">
+            <div class="hero-kicker">Nuestra boda</div>
+            <h1>{{ evento.frase_portada|default:"Nos Casamos" }}</h1>
+            <div class="hero-divider"></div>
+            <div class="hero-names">{{ evento.novio }} & {{ evento.novia }}</div>
+            <p class="hero-subtitle">
+                {{ evento.mensaje_general }}
+            </p>
+            <div class="hero-date">{{ evento.fecha_fiesta|date:"d \d\e F \d\e Y · h:i A" }}</div>
+            <div class="scroll-indicator">Desliza para ver más ↓</div>
+        </div>
+    </section>
+
+    <main class="wrapper">
+
+        <section class="section">
+            <div class="card">
+                <h2 class="section-title">Tu invitación</h2>
+                <p class="section-subtitle">
+                    Hemos reservado este espacio con mucho cariño para celebrar juntos este día tan especial.
+                </p>
+
+                <div class="invitation-summary">
+                    <div class="summary-item">
+                        <div class="summary-label">Invitación para</div>
+                        <div class="summary-value">
+                            {% if grupo.tipo == "FAMILIAR" %}
+                                Familia {{ grupo.nombre_grupo }}
+                            {% else %}
+                                {% for invitado in invitados %}
+                                    {{ invitado.nombre }}{% if not forloop.last %}, {% endif %}
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="summary-item">
+                        <div class="summary-label">Tipo</div>
+                        <div class="summary-value">
+                            {% if grupo.tipo == "FAMILIAR" %}
+                                Familiar
+                            {% else %}
+                                Personal
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="summary-item">
+                        <div class="summary-label">Lugares</div>
+                        <div class="summary-value">{{ grupo.cantidad_maxima }}</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section" id="countdown-section">
+            <div class="card">
+                <h2 class="section-title">Faltan</h2>
+                <p class="section-subtitle">
+                    Cada día nos acerca más a celebrar este momento contigo.
+                </p>
+
+                <div class="countdown-grid">
+                    <div class="countdown-item">
+                        <span class="countdown-number" id="dias">0</span>
+                        <div class="countdown-label">Días</div>
+                    </div>
+                    <div class="countdown-item">
+                        <span class="countdown-number" id="horas">0</span>
+                        <div class="countdown-label">Horas</div>
+                    </div>
+                    <div class="countdown-item">
+                        <span class="countdown-number" id="minutos">0</span>
+                        <div class="countdown-label">Minutos</div>
+                    </div>
+                    <div class="countdown-item">
+                        <span class="countdown-number" id="segundos">0</span>
+                        <div class="countdown-label">Segundos</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="card">
+                <h2 class="section-title">Detalles del evento</h2>
+                <p class="section-subtitle">
+                    Aquí encontrarás la información principal para acompañarnos ese día.
+                </p>
+
+                <div class="details-grid">
+                    <div class="detail-box">
+                        <h3>Ceremonia</h3>
+                        <p><strong>Fecha:</strong> {{ evento.fecha_misa|date:"d \d\e F \d\e Y" }}</p>
+                        <p><strong>Hora:</strong> {{ evento.fecha_misa|date:"h:i A" }}</p>
+                        <p><strong>Lugar:</strong> {{ evento.lugar_misa }}</p>
+                    </div>
+
+                    <div class="detail-box">
+                        <h3>Fiesta</h3>
+                        <p><strong>Fecha:</strong> {{ evento.fecha_fiesta|date:"d \d\e F \d\e Y" }}</p>
+                        <p><strong>Hora:</strong> {{ evento.fecha_fiesta|date:"h:i A" }}</p>
+                        <p><strong>Lugar:</strong> {{ evento.lugar_fiesta }}</p>
+                    </div>
+                </div>
+
+                <div class="actions-row">
+                    {% if evento.link_whatsapp %}
+                    <a
+                        class="btn btn-primary"
+                        href="{{ evento.link_whatsapp }}"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                    >
+                        Confirmar por WhatsApp
+                    </a>
+                    {% endif %}
+
+                    <a
+                        class="btn btn-secondary"
+                        href="#rsvp"
+                    >
+                        Ir a confirmar aquí
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="card">
+                <h2 class="section-title">Dress Code</h2>
+                <div class="dress-code-box">
+                    <div class="dress-code-main">{{ evento.dress_code|default:"Formal elegante" }}</div>
+                    <p class="dress-code-note">
+                        {{ evento.mensaje_general }}
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        {% if evento.link_mapa %}
+        <section class="section">
+            <div class="card">
+                <h2 class="section-title">Ubicación</h2>
+                <p class="section-subtitle">
+                    Puedes usar el mapa para ubicar fácilmente el lugar del evento.
+                </p>
+
+                <div class="map-wrap">
+                    <iframe
+                        src="{{ evento.link_mapa }}"
+                        loading="lazy"
+                        referrerpolicy="no-referrer-when-downgrade"
+                        allowfullscreen>
+                    </iframe>
+                </div>
+
+                <div class="actions-row">
+                    <a
+                        class="btn btn-primary"
+                        href="{{ evento.link_mapa }}"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                    >
+                        Abrir en Google Maps
+                    </a>
+                </div>
+            </div>
+        </section>
+        {% endif %}
+
+        <section class="section" id="rsvp">
+            <div class="card">
+                <h2 class="section-title">Confirma tu asistencia</h2>
+                <p class="section-subtitle">
+                    Ayúdanos confirmando la asistencia de cada invitado incluido en esta invitación.
+                </p>
+
+                {% if grupo.confirmado %}
+                    <div class="confirmed-banner">
+                        Esta invitación ya fue respondida. Aún puedes revisar o actualizar la información si lo necesitas.
+                    </div>
+                {% endif %}
+
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="form-grid">
+                        {% for invitado in invitados %}
+                            <div class="guest-card">
+                                <h3 class="guest-name">{{ invitado.nombre }}</h3>
+
+                                <div class="radio-group">
+                                    <div class="option-pill">
+                                        <input
+                                            type="radio"
+                                            id="si_{{ invitado.id }}"
+                                            name="asistira_{{ invitado.id }}"
+                                            value="si"
+                                            {% if invitado.asistira == True %}checked{% endif %}
+                                        >
+                                        <label for="si_{{ invitado.id }}">Sí asistiré</label>
+                                    </div>
+
+                                    <div class="option-pill">
+                                        <input
+                                            type="radio"
+                                            id="no_{{ invitado.id }}"
+                                            name="asistira_{{ invitado.id }}"
+                                            value="no"
+                                            {% if invitado.asistira == False %}checked{% endif %}
+                                        >
+                                        <label for="no_{{ invitado.id }}">No asistiré</label>
+                                    </div>
+                                </div>
+
+                                <textarea
+                                    name="comentario_{{ invitado.id }}"
+                                    placeholder="Escribe aquí algún comentario opcional..."
+                                >{{ invitado.comentario|default_if_none:'' }}</textarea>
+
+                                {% if invitado.asistira != None %}
+                                    <div class="guest-status">
+                                        Estado actual:
+                                        {% if invitado.asistira %}
+                                            Asistirá
+                                        {% else %}
+                                            No asistirá
+                                        {% endif %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="save-btn-wrap">
+                        <button type="submit" class="btn btn-primary">Guardar confirmación</button>
+                    </div>
+
+                    <div class="footer-note">
+                        Gracias por acompañarnos en este momento tan especial.
+                    </div>
+                </form>
+            </div>
+        </section>
+
+    </main>
+
+    <div class="floating-nav">
+        <button class="music-toggle" id="musicToggle" type="button" title="Música">♪</button>
+        <a href="#inicio" title="Ir arriba">↑</a>
+        <a href="#rsvp" title="Ir a confirmar">✓</a>
+    </div>
+
+    <div class="music-hint" id="musicHint">Toca la nota para activar la música</div>
+
+    <script>
+        const fechaEvento = new Date("{{ evento.fecha_fiesta|date:'Y-m-d\\TH:i:s' }}").getTime();
+
+        function actualizarCountdown() {
+            const ahora = new Date().getTime();
+            const diferencia = fechaEvento - ahora;
+
+            const diasEl = document.getElementById("dias");
+            const horasEl = document.getElementById("horas");
+            const minutosEl = document.getElementById("minutos");
+            const segundosEl = document.getElementById("segundos");
+
+            if (diferencia <= 0) {
+                diasEl.textContent = "0";
+                horasEl.textContent = "0";
+                minutosEl.textContent = "0";
+                segundosEl.textContent = "0";
+                return;
+            }
+
+            const dias = Math.floor(diferencia / (1000 * 60 * 60 * 24));
+            const horas = Math.floor((diferencia % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutos = Math.floor((diferencia % (1000 * 60 * 60)) / (1000 * 60));
+            const segundos = Math.floor((diferencia % (1000 * 60)) / 1000);
+
+            diasEl.textContent = dias;
+            horasEl.textContent = horas;
+            minutosEl.textContent = minutos;
+            segundosEl.textContent = segundos;
+        }
+
+        actualizarCountdown();
+        setInterval(actualizarCountdown, 1000);
+
+        const bgMusic = document.getElementById("bgMusic");
+        const musicToggle = document.getElementById("musicToggle");
+        const musicHint = document.getElementById("musicHint");
+        const intro = document.getElementById("intro");
+        const envelope = document.getElementById("envelope");
+
+        function showMusicHint() {
+            musicHint.textContent = texto;
+            musicHint.classList.add("show");
+            setTimeout(() => {
+                musicHint.classList.remove("show");
+            }, 3000);
+        }
+
+        async function playMusic() {
+            try {
+                bgMusic.volume = 0.55;
+                await bgMusic.play();
+                if (musicToggle) musicToggle.textContent = "♫";
+            } catch (e) {
+                if (musicToggle) musicToggle.textContent = "♪";
+                showMusicHint("No se pudo reproducir la música");
+                console.error("Error al reproducir audio:", e);
+                }
+        }
+
+        function openInvitation() {
+            if (envelope.classList.contains("opening")) return;
+
+            envelope.classList.add("opening");
+
+            setTimeout(async () => {
+                intro.classList.add("hidden");
+                playMusic();
+            }, 1000);
+        }
+
+        if (musicToggle) {
+            musicToggle.addEventListener("click", async function () {
+                if (bgMusic.paused) {
+                    await playMusic();
+                } else {
+                    bgMusic.pause();
+                    musicToggle.textContent = "♪";
+                }
+            });
+        }
+
+        bgMusic.addEventListener("error", function () {
+            console.error("No se pudo cargar el archivo de audio.");
+            showMusicHint("No se encontró el archivo de música");
+        });
+    </script>
+</body>
+</html>
