@@ -1,0 +1,51 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estado de suscripcion</title>
+    <link rel="stylesheet" href="{% static 'invitaciones/css/role_dashboards.css' %}">
+</head>
+<body>
+<main class="role-main subscription-status">
+    <section class="role-topbar">
+        <div>
+            <span class="eyebrow">DIRTEC</span>
+            <h1>Estado de suscripcion</h1>
+            <p class="muted">{{ estado.mensaje }}</p>
+        </div>
+    </section>
+
+    <section class="role-section">
+        <div class="metrics-grid">
+            <article class="metric">
+                <span>Empresa</span>
+                <strong>{{ empresa.nombre_comercial|default:"Sin empresa" }}</strong>
+                <p class="muted">Cuenta asociada al usuario actual.</p>
+            </article>
+            <article class="metric">
+                <span>Estado</span>
+                <strong>{{ estado.estado }}</strong>
+                <p class="muted">{% if estado.puede_escribir %}Operacion disponible{% else %}Operacion limitada{% endif %}</p>
+            </article>
+            {% if suscripcion %}
+                <article class="metric">
+                    <span>Vencimiento</span>
+                    <strong>{{ suscripcion.fecha_vencimiento|date:"d/m/Y" }}</strong>
+                    <p class="muted">Plan {{ suscripcion.plan.nombre }}</p>
+                </article>
+            {% endif %}
+        </div>
+        <article class="section-card">
+            <span>Contacto</span>
+            <p class="muted">Para reactivar o revisar la cuenta, contacta a DIRTEC. Tus datos permanecen guardados y no se eliminan por bloqueo o vencimiento.</p>
+            <div class="form-actions">
+                <a class="btn" href="{% url 'dashboard_profesional' %}">Intentar de nuevo</a>
+                <a class="btn ghost" href="/admin/logout/">Cerrar sesion</a>
+            </div>
+        </article>
+    </section>
+</main>
+</body>
+</html>

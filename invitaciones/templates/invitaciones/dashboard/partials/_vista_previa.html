@@ -1,0 +1,38 @@
+<aside class="live-preview-panel">
+    <div class="preview-toolbar">
+        <div>
+            <h2>Vista previa</h2>
+            <p class="muted">Guarda y refresca para revisar la invitacion sin salir del dashboard.</p>
+        </div>
+        {% if preview_grupo %}
+            <div class="actions">
+                <button class="btn secondary" type="button" data-preview-refresh>Refrescar</button>
+                <a class="btn secondary" href="{% url 'ver_invitacion' preview_grupo.codigo %}" target="_blank">Abrir</a>
+            </div>
+        {% endif %}
+    </div>
+
+    {% if preview_grupo %}
+        <div class="preview-phone">
+            <div class="preview-phone-speaker"></div>
+            <iframe src="{% url 'ver_invitacion' preview_grupo.codigo %}?preview=1" title="Vista previa de invitacion" data-preview-frame></iframe>
+        </div>
+        <small class="preview-note">Usando invitacion de {{ preview_grupo.nombre_grupo }}.</small>
+    {% else %}
+        <div class="preview-empty">
+            <h3>Activa una vista de prueba</h3>
+            <p class="muted">Crea un invitado de prueba para ver portada, secciones, RSVP, regalos, mapas y album como lo vera un invitado real.</p>
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="accion" value="agregar_grupo">
+                <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                <input type="hidden" name="destino" value="personalizacion">
+                <input type="hidden" name="tipo_grupo" value="PERSONAL">
+                <input type="hidden" name="cantidad_extra_permitida" value="1">
+                <input type="hidden" name="cantidad_maxima" value="1">
+                <label>Nombre preview<input type="text" name="nombre_grupo" value="Invitado de prueba"></label>
+                <button class="btn" type="submit">Crear preview</button>
+            </form>
+        </div>
+    {% endif %}
+</aside>

@@ -10,20 +10,24 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Construye rutas en el proyecto. BASE_DIR apunta al directorio raíz del proyecto.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Ajustes de seguridad y desarrollo
-SECRET_KEY = 'django-insecure-8_3j=5n014qd2j3k+s0dwi5f+5pl_gxuxwcl)x(*+uk$un0ch+'
+SECRET_KEY = os.getenv(
+    'DJANGO_SECRET_KEY',
+    'django-insecure-8_3j=5n014qd2j3k+s0dwi5f+5pl_gxuxwcl)x(*+uk$un0ch+',
+)
 # Clave secreta para cifrado, sesiones y otros componentes de Django.
 
-DEBUG = True
+DEBUG = os.getenv('DJANGO_DEBUG', 'True').lower() == 'true'
 # Modo de depuración activado: muestra errores detallados y recarga automática.
 
-ALLOWED_HOSTS = []
-# Lista de dominios permitidos. En desarrollo se usa vacío; en producción debe configurarse.
+ALLOWED_HOSTS = [host.strip() for host in os.getenv('DJANGO_ALLOWED_HOSTS', '*').split(',') if host.strip()]
+# En desarrollo se permite entrar desde otros dispositivos de la red local, como iPhone.
 
 # Definición de aplicaciones instaladas
 INSTALLED_APPS = [
@@ -33,7 +37,23 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'invitaciones',
+    'core.apps.CoreConfig',
+    'invitaciones.apps.InvitacionesConfig',
+    'organizaciones.apps.OrganizacionesConfig',
+    'suscripciones.apps.SuscripcionesConfig',
+    'auditoria.apps.AuditoriaConfig',
+    'proveedores.apps.ProveedoresConfig',
+    'catering.apps.CateringConfig',
+    'paquetes.apps.PaquetesConfig',
+    'decoracion.apps.DecoracionConfig',
+    'entretenimiento.apps.EntretenimientoConfig',
+    'itinerario.apps.ItinerarioConfig',
+    'mesas.apps.MesasConfig',
+    'presupuesto.apps.PresupuestoConfig',
+    'tareas.apps.TareasConfig',
+    'documentos.apps.DocumentosConfig',
+    'aprobaciones.apps.AprobacionesConfig',
+    'notificaciones.apps.NotificacionesConfig',
 ]
 # Incluye la aplicación personalizada 'invitaciones' junto con apps de Django.
 
@@ -44,11 +64,16 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'core.middleware.SaasSubscriptionMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
+LOGIN_URL = '/login/'
+LOGIN_REDIRECT_URL = '/redirigir/'
+LOGOUT_REDIRECT_URL = '/login/'
+EMAIL_BACKEND = os.getenv('DJANGO_EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
 # Módulo que define las rutas raíz del proyecto.
 
 TEMPLATES = [
@@ -95,10 +120,33 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 # Internacionalización y configuración de zona horaria.
-LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'UTC'
+LANGUAGE_CODE = 'es-mx'
+TIME_ZONE = 'America/Mexico_City'
 USE_I18N = True
 USE_TZ = True
 
 # Configuración de archivos estáticos.
 STATIC_URL = 'static/'
+
+# Archivos cargados desde el admin: portada, álbum y canción de la invitación.
+MEDIA_URL = 'media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
+# Llave primaria por defecto para modelos nuevos.
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Durante la migracion SaaS permite operar empresas existentes aunque todavia no
+# tengan una suscripcion creada. En produccion, despues de migrar datos, activar
+# esta bandera para exigir suscripcion a toda empresa.
+SAAS_REQUIRE_SUBSCRIPTION = os.getenv('SAAS_REQUIRE_SUBSCRIPTION', 'False').lower() == 'true'
+
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in os.getenv('DJANGO_CSRF_TRUSTED_ORIGINS', '').split(',')
+    if origin.strip()
+]
+
+if not DEBUG:
+    SECURE_SSL_REDIRECT = os.getenv('DJANGO_SECURE_SSL_REDIRECT', 'True').lower() == 'true'
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True

@@ -1,0 +1,44 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DIRTEC | Acceso</title>
+    <link rel="stylesheet" href="{% static 'core/css/public_auth.css' %}">
+</head>
+<body>
+<main class="auth-page">
+    <section class="auth-panel">
+        <div class="auth-brand">
+            <span>DIRTEC</span>
+            <h1>Plataforma de eventos</h1>
+            <p>Acceso profesional para empresas, wedding planners, clientes y proveedores.</p>
+        </div>
+
+        <form class="auth-card" method="post">
+            {% csrf_token %}
+            <span class="eyebrow">Inicio de sesion</span>
+            <h2>Entrar al dashboard</h2>
+            {% if form.errors %}
+                <p class="form-error">Usuario o contrasena incorrectos. Verifica tus datos o contacta a DIRTEC.</p>
+            {% endif %}
+            <label>
+                Usuario
+                <input type="text" name="{{ form.username.name }}" autocomplete="username" required autofocus>
+            </label>
+            <label>
+                Contrasena
+                <input type="password" name="{{ form.password.name }}" autocomplete="current-password" required>
+            </label>
+            <button type="submit">Ingresar</button>
+            <a class="plain-link" href="{% url 'password_reset' %}">Recuperar contrasena</a>
+        </form>
+    </section>
+    <aside class="auth-support">
+        <span>Soporte</span>
+        <p>Si tu empresa aparece vencida, suspendida o bloqueada, tus datos permanecen guardados. DIRTEC puede reactivar el acceso al registrar la renovacion.</p>
+    </aside>
+</main>
+</body>
+</html>

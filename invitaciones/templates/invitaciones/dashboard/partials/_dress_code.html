@@ -1,0 +1,37 @@
+<details class="background-uploader">
+    <summary>Dress code</summary>
+    <div class="design-grid">
+        <label>
+            Titulo dress code
+            <input type="text" name="dress_code" value="{{ evento.dress_code|default_if_none:'' }}" placeholder="Formal elegante">
+        </label>
+        <label class="wide">
+            Descripcion
+            <textarea name="dress_code_descripcion">{{ evento.dress_code_descripcion|default_if_none:'' }}</textarea>
+        </label>
+    </div>
+    <div class="upload-grid">
+        <label class="upload-card">
+            <span>Permitido</span>
+            {% if evento.dress_code_permitido_imagen %}<img src="{{ evento.dress_code_permitido_imagen.url }}" alt="">{% endif %}
+            <input type="file" name="dress_code_permitido_imagen" accept="image/*">
+            {% if evento.dress_code_permitido_imagen %}
+                <div class="checkline">
+                    <input type="checkbox" name="eliminar_dress_code_permitido_imagen">
+                    <span>Quitar permitido</span>
+                </div>
+            {% endif %}
+        </label>
+        <label class="upload-card">
+            <span>No permitido</span>
+            {% if evento.dress_code_prohibido_imagen %}<img src="{{ evento.dress_code_prohibido_imagen.url }}" alt="">{% endif %}
+            <input type="file" name="dress_code_prohibido_imagen" accept="image/*">
+            {% if evento.dress_code_prohibido_imagen %}
+                <div class="checkline">
+                    <input type="checkbox" name="eliminar_dress_code_prohibido_imagen">
+                    <span>Quitar no permitido</span>
+                </div>
+            {% endif %}
+        </label>
+    </div>
+</details>

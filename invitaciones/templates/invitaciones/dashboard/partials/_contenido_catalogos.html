@@ -1,0 +1,230 @@
+﻿            {% if puede_gestionar_catalogos and empresa_dashboard %}
+                <section class="catalog-panel">
+                    <div class="workspace-header">
+                        <div>
+                            <h2>Catálogos de {{ empresa_dashboard.nombre_comercial }}</h2>
+                            <p class="muted">Sedes, proveedores y paquetes base que pertenecen a esta empresa.</p>
+                        </div>
+                    </div>
+                    <div class="dashboard-forms">
+                        <form class="mini-admin-form" method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="accion" value="agregar_sede_empresa">
+                            <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                            <h3>Agregar sede</h3>
+                            <div class="design-grid">
+                                <label>Nombre<input type="text" name="nombre_sede" placeholder="Salón Principal, Jardín..."></label>
+                                <label>
+                                    Tipo
+                                    <select name="tipo_sede">
+                                        {% for valor, texto in tipos_sede %}
+                                            <option value="{{ valor }}">{{ texto }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </label>
+                                <label>Capacidad mínima<input type="number" name="capacidad_minima" min="0" value="0"></label>
+                                <label>Capacidad máxima<input type="number" name="capacidad_maxima" min="0" value="0"></label>
+                                <label>Precio base<input type="number" name="precio_base_sede" min="0" step="0.01" value="0"></label>
+                                <label class="wide">Dirección<input type="text" name="direccion_sede" placeholder="Dirección"></label>
+                                <label class="wide">Descripción<input type="text" name="descripcion_sede" placeholder="Notas de la sede"></label>
+                            </div>
+                            <div class="actions form-actions">
+                                <button class="btn" type="submit">Agregar sede</button>
+                            </div>
+                        </form>
+
+                        <form class="mini-admin-form" method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="accion" value="agregar_proveedor_empresa">
+                            <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                            <h3>Agregar proveedor</h3>
+                            <div class="design-grid">
+                                <label>Nombre<input type="text" name="nombre_proveedor" placeholder="Banquetes, DJ, florista..."></label>
+                                <label>
+                                    Tipo
+                                    <select name="tipo_proveedor">
+                                        {% for valor, texto in tipos_proveedor %}
+                                            <option value="{{ valor }}">{{ texto }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </label>
+                                <label>Contacto<input type="text" name="contacto_proveedor" placeholder="Nombre"></label>
+                                <label>Teléfono<input type="text" name="telefono_proveedor" placeholder="WhatsApp"></label>
+                                <label class="wide">Correo<input type="text" name="correo_proveedor" placeholder="correo@proveedor.com"></label>
+                                <label>Contacto planner<input type="text" name="contacto_operativo_proveedor" placeholder="Contacto operativo"></label>
+                                <label>Teléfono planner<input type="text" name="telefono_operativo_proveedor" placeholder="Visible para planner"></label>
+                                <label class="wide">Correo planner<input type="email" name="correo_operativo_proveedor" placeholder="operacion@proveedor.com"></label>
+                                <label class="wide">Notas privadas<input type="text" name="notas_privadas_proveedor" placeholder="Solo administracion"></label>
+                                <label class="wide">Descripción<input type="text" name="descripcion_proveedor" placeholder="Servicios o notas"></label>
+                                <label class="checkline wide"><input type="checkbox" name="visible_wedding_planners_proveedor" checked> Visible para wedding planners</label>
+                            </div>
+                            <div class="actions form-actions">
+                                <button class="btn" type="submit">Agregar proveedor</button>
+                            </div>
+                        </form>
+
+                        <form class="mini-admin-form" method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="accion" value="agregar_paquete_empresa">
+                            <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                            <h3>Agregar paquete</h3>
+                            <div class="design-grid">
+                                <label>Nombre<input type="text" name="nombre_paquete" placeholder="Paquete Diamante, Jardín 150 pax..."></label>
+                                <label>Personas incluidas<input type="number" name="personas_paquete" min="0" value="0"></label>
+                                <label>Precio base<input type="number" name="precio_base_paquete" min="0" step="0.01" value="0"></label>
+                                <label class="wide">Descripción<input type="text" name="descripcion_paquete" placeholder="Incluye banquete, salón, coordinación..."></label>
+                            </div>
+                            <div class="actions form-actions">
+                                <button class="btn" type="submit">Agregar paquete</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="catalog-summary-grid">
+                        <article class="saved-items">
+                            <h3>Sedes</h3>
+                            <div class="saved-list">
+                                {% for sede in catalogo_sedes_empresa %}
+                                    <article class="saved-item">
+                                        <div>
+                                            <strong>{{ sede.nombre }}</strong>
+                                            <span>{{ sede.get_tipo_display }} - {{ sede.capacidad_maxima }} pax - ${{ sede.precio_base|floatformat:0 }}{% if not sede.activa %} - Inactiva{% endif %}</span>
+                                        </div>
+                                        {% if sede.direccion %}<p>{{ sede.direccion }}</p>{% endif %}
+                                        <details>
+                                            <summary>Editar sede</summary>
+                                            <form class="inline-edit-form" method="post">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="accion" value="editar_sede_empresa">
+                                                <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                                                <input type="hidden" name="sede_id" value="{{ sede.id }}">
+                                                <div class="design-grid">
+                                                    <label>Nombre<input type="text" name="nombre_sede" value="{{ sede.nombre }}"></label>
+                                                    <label>Tipo
+                                                        <select name="tipo_sede">
+                                                            {% for valor, texto in tipos_sede %}
+                                                                <option value="{{ valor }}" {% if sede.tipo == valor %}selected{% endif %}>{{ texto }}</option>
+                                                            {% endfor %}
+                                                        </select>
+                                                    </label>
+                                                    <label>Capacidad minima<input type="number" name="capacidad_minima" min="0" value="{{ sede.capacidad_minima }}"></label>
+                                                    <label>Capacidad maxima<input type="number" name="capacidad_maxima" min="0" value="{{ sede.capacidad_maxima }}"></label>
+                                                    <label>Precio base<input type="number" name="precio_base_sede" min="0" step="0.01" value="{{ sede.precio_base }}"></label>
+                                                    <label class="wide">Direccion<input type="text" name="direccion_sede" value="{{ sede.direccion|default_if_none:'' }}"></label>
+                                                    <label class="wide">Descripcion<input type="text" name="descripcion_sede" value="{{ sede.descripcion|default_if_none:'' }}"></label>
+                                                    <label class="toggle-field"><input type="checkbox" name="activa_sede" {% if sede.activa %}checked{% endif %}> Activa</label>
+                                                </div>
+                                                <button class="btn" type="submit">Guardar sede</button>
+                                            </form>
+                                            <form method="post" data-confirm="Esta accion eliminara la sede. Deseas continuar?">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="accion" value="eliminar_sede_empresa">
+                                                <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                                                <input type="hidden" name="sede_id" value="{{ sede.id }}">
+                                                <button class="btn danger" type="submit">Eliminar sede</button>
+                                            </form>
+                                        </details>
+                                    </article>
+                                {% empty %}
+                                    <p class="muted">Sin sedes capturadas.</p>
+                                {% endfor %}
+                            </div>
+                        </article>
+                        <article class="saved-items">
+                            <h3>Proveedores</h3>
+                            <div class="saved-list">
+                                {% for proveedor in catalogo_proveedores_empresa %}
+                                    <article class="saved-item">
+                                        <div>
+                                            <strong>{{ proveedor.nombre_comercial }}</strong>
+                                            <span>{{ proveedor.get_tipo_proveedor_display }}{% if proveedor.telefono %} - {{ proveedor.telefono }}{% endif %}{% if not proveedor.activo %} - Inactivo{% endif %}</span>
+                                        </div>
+                                        {% if proveedor.contacto_visible %}<p>Contacto: {{ proveedor.contacto_visible }}</p>{% endif %}
+                                        <details>
+                                            <summary>Editar proveedor</summary>
+                                            <form class="inline-edit-form" method="post">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="accion" value="editar_proveedor_empresa">
+                                                <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                                                <input type="hidden" name="proveedor_id" value="{{ proveedor.id }}">
+                                                <div class="design-grid">
+                                                    <label>Nombre<input type="text" name="nombre_proveedor" value="{{ proveedor.nombre_comercial }}"></label>
+                                                    <label>Tipo
+                                                        <select name="tipo_proveedor">
+                                                            {% for valor, texto in tipos_proveedor %}
+                                                                <option value="{{ valor }}" {% if proveedor.tipo_proveedor == valor %}selected{% endif %}>{{ texto }}</option>
+                                                            {% endfor %}
+                                                        </select>
+                                                    </label>
+                                                    <label>Contacto<input type="text" name="contacto_proveedor" value="{{ proveedor.nombre_contacto|default_if_none:'' }}"></label>
+                                                    <label>Telefono<input type="text" name="telefono_proveedor" value="{{ proveedor.telefono|default_if_none:'' }}"></label>
+                                                    <label class="wide">Correo<input type="email" name="correo_proveedor" value="{{ proveedor.correo|default_if_none:'' }}"></label>
+                                                    <label>Contacto planner<input type="text" name="contacto_operativo_proveedor" value="{{ proveedor.contacto_operativo|default_if_none:'' }}"></label>
+                                                    <label>Telefono planner<input type="text" name="telefono_operativo_proveedor" value="{{ proveedor.telefono_operativo|default_if_none:'' }}"></label>
+                                                    <label class="wide">Correo planner<input type="email" name="correo_operativo_proveedor" value="{{ proveedor.correo_operativo|default_if_none:'' }}"></label>
+                                                    <label>RFC<input type="text" name="rfc_proveedor" value="{{ proveedor.rfc|default_if_none:'' }}"></label>
+                                                    <label class="wide">Datos bancarios<input type="text" name="datos_bancarios_proveedor" value="{{ proveedor.datos_bancarios|default_if_none:'' }}"></label>
+                                                    <label class="wide">Notas privadas<input type="text" name="notas_privadas_proveedor" value="{{ proveedor.notas_privadas|default_if_none:'' }}"></label>
+                                                    <label class="wide">Descripcion<input type="text" name="descripcion_proveedor" value="{{ proveedor.descripcion|default_if_none:'' }}"></label>
+                                                    <label class="toggle-field"><input type="checkbox" name="visible_wedding_planners_proveedor" {% if proveedor.visible_para_wedding_planners %}checked{% endif %}> Visible para planners</label>
+                                                    <label class="toggle-field"><input type="checkbox" name="activo_proveedor" {% if proveedor.activo %}checked{% endif %}> Activo</label>
+                                                </div>
+                                                <button class="btn" type="submit">Guardar proveedor</button>
+                                            </form>
+                                            <form method="post" data-confirm="Esta accion eliminara el proveedor. Deseas continuar?">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="accion" value="eliminar_proveedor_empresa">
+                                                <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                                                <input type="hidden" name="proveedor_id" value="{{ proveedor.id }}">
+                                                <button class="btn danger" type="submit">Eliminar proveedor</button>
+                                            </form>
+                                        </details>
+                                    </article>
+                                {% empty %}
+                                    <p class="muted">Sin proveedores capturados.</p>
+                                {% endfor %}
+                            </div>
+                        </article>
+                        <article class="saved-items">
+                            <h3>Paquetes</h3>
+                            <div class="saved-list">
+                                {% for paquete in catalogo_paquetes_empresa %}
+                                    <article class="saved-item">
+                                        <div>
+                                            <strong>{{ paquete.nombre }}</strong>
+                                            <span>{{ paquete.numero_personas_incluidas }} pax - ${{ paquete.precio_base|floatformat:0 }}{% if not paquete.activo %} - Inactivo{% endif %}</span>
+                                        </div>
+                                        {% if paquete.descripcion %}<p>{{ paquete.descripcion }}</p>{% endif %}
+                                        <details>
+                                            <summary>Editar paquete</summary>
+                                            <form class="inline-edit-form" method="post">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="accion" value="editar_paquete_empresa">
+                                                <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                                                <input type="hidden" name="paquete_id" value="{{ paquete.id }}">
+                                                <div class="design-grid">
+                                                    <label>Nombre<input type="text" name="nombre_paquete" value="{{ paquete.nombre }}"></label>
+                                                    <label>Personas incluidas<input type="number" name="personas_paquete" min="0" value="{{ paquete.numero_personas_incluidas }}"></label>
+                                                    <label>Precio base<input type="number" name="precio_base_paquete" min="0" step="0.01" value="{{ paquete.precio_base }}"></label>
+                                                    <label class="wide">Descripcion<input type="text" name="descripcion_paquete" value="{{ paquete.descripcion|default_if_none:'' }}"></label>
+                                                    <label class="toggle-field"><input type="checkbox" name="activo_paquete" {% if paquete.activo %}checked{% endif %}> Activo</label>
+                                                </div>
+                                                <button class="btn" type="submit">Guardar paquete</button>
+                                            </form>
+                                            <form method="post" data-confirm="Esta accion eliminara el paquete. Deseas continuar?">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="accion" value="eliminar_paquete_empresa">
+                                                <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                                                <input type="hidden" name="paquete_id" value="{{ paquete.id }}">
+                                                <button class="btn danger" type="submit">Eliminar paquete</button>
+                                            </form>
+                                        </details>
+                                    </article>
+                                {% empty %}
+                                    <p class="muted">Sin paquetes capturados.</p>
+                                {% endfor %}
+                            </div>
+                        </article>
+                    </div>
+                </section>
+            {% endif %}

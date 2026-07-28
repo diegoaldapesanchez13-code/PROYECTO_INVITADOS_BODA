@@ -1,0 +1,520 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editor visual - {{ evento }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Allura&family=Cormorant+Garamond:wght@500;600;700&family=Great+Vibes&family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@300;400;500;600&family=Parisienne&family=Playfair+Display:wght@500;600;700&family=Poppins:wght@300;400;500;600;700&family=Tangerine:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'invitaciones/css/editor_invitacion.css' %}">
+</head>
+<body>
+    {{ editor_config|json_script:"editor-config" }}
+    {{ editor_content|json_script:"editor-content" }}
+    {{ editor_guests|json_script:"editor-guests" }}
+    {{ editor_versions|json_script:"editor-versions" }}
+    <div class="editor-shell"
+        data-save-url="{{ guardar_editor_url }}"
+        data-publish-url="{{ publicar_editor_url }}"
+        data-apply-template-url="{{ aplicar_plantilla_url }}"
+        data-restore-version-url="{{ restaurar_version_url }}"
+        data-save-content-url="{{ guardar_contenido_url }}"
+        data-save-content-item-url="{{ guardar_item_contenido_url }}"
+        data-save-guest-group-url="{{ guardar_grupo_invitado_url }}"
+        data-save-guest-url="{{ guardar_invitado_url }}"
+        data-upload-url="{{ subir_asset_url }}"
+        data-assign-asset-url="{{ asignar_asset_url }}"
+        data-delete-asset-url="{{ eliminar_asset_url }}"
+    >
+        <header class="editor-topbar">
+            <div>
+                <a class="back-link" href="{{ dashboard_url }}">Volver al dashboard</a>
+                <h1>Editor visual de invitacion</h1>
+                <p>{{ evento }} · {% if diseno.tiene_publicacion %}Publicado{% else %}Borrador sin publicar{% endif %}</p>
+            </div>
+            <div class="editor-actions">
+                {% if preview_grupo %}
+                    <a class="btn ghost" href="{% url 'ver_invitacion' preview_grupo.codigo %}" target="_blank">Ver invitacion</a>
+                {% endif %}
+                <button class="btn ghost" type="button" data-action="save">Guardar borrador</button>
+                <button class="btn primary" type="button" data-action="publish">Publicar</button>
+            </div>
+        </header>
+
+        <main class="editor-layout">
+            <aside class="editor-panel section-panel">
+                <div class="panel-heading">
+                    <h2>Secciones</h2>
+                    <span data-save-state>Listo</span>
+                </div>
+                <section class="template-picker">
+                    <label>
+                        Plantilla completa
+                        <select data-template-picker>
+                            <option value="">Seleccionar plantilla</option>
+                            {% for valor, texto in plantillas_evento %}
+                                <option value="{{ valor }}">{{ texto }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <button type="button" data-apply-template>Aplicar plantilla</button>
+                </section>
+                <div class="section-list" data-section-list></div>
+                <section class="version-history">
+                    <div class="panel-heading compact">
+                        <h2>Historial</h2>
+                    </div>
+                    <div class="version-list" data-version-list></div>
+                </section>
+            </aside>
+
+            <section class="canvas-stage">
+                <div class="canvas-toolbar">
+                    <button class="is-active" type="button" data-preview-mode="draft">Diseño rápido</button>
+                    {% if preview_borrador_url %}
+                        <button type="button" data-preview-mode="real">Vista real</button>
+                    {% endif %}
+                    <button class="is-active" type="button" data-device-mode="iphone">iPhone</button>
+                    <button type="button" data-device-mode="android">Android</button>
+                    <button type="button" data-device-mode="tablet">Tablet</button>
+                    <button type="button" data-device-mode="desktop">Desktop</button>
+                </div>
+                <div class="phone-preview" data-phone-preview data-preview-panel="draft">
+                    <div class="phone-notch"></div>
+                    <div class="invitation-preview" data-preview-root></div>
+                </div>
+                {% if preview_borrador_url %}
+                    <div class="phone-preview real-phone-preview" data-preview-panel="real" hidden>
+                        <div class="phone-notch"></div>
+                        <iframe src="{{ preview_borrador_url }}" title="Vista real del borrador" data-real-preview-frame></iframe>
+                    </div>
+                {% endif %}
+            </section>
+
+            <aside class="editor-panel properties-panel">
+                <div class="panel-heading">
+                    <h2>Propiedades</h2>
+                </div>
+
+                <section class="property-group">
+                    <h3>Tema</h3>
+                    <label>
+                        Paleta
+                        <select data-theme-field="palette">
+                            {% for valor, texto in paletas %}
+                                <option value="{{ valor }}">{{ texto }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <label>
+                        Sobre
+                        <select data-theme-field="envelopePalette">
+                            {% for valor, texto in paletas %}
+                                <option value="{{ valor }}">{{ texto }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <label>
+                        Letra
+                        <select data-theme-field="fontStyle">
+                            {% for valor, texto in estilos_letra %}
+                                <option value="{{ valor }}">{{ texto }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <div class="color-grid">
+                        <label>Principal<input type="color" data-theme-field="primary" value="#273128"></label>
+                        <label>Secundario<input type="color" data-theme-field="secondary" value="#f8f2e9"></label>
+                        <label>Acento<input type="color" data-theme-field="accent" value="#c8a96a"></label>
+                        <label>Fondo<input type="color" data-theme-field="background" value="#fffaf5"></label>
+                    </div>
+                </section>
+
+                <section class="property-group" data-section-properties>
+                    <h3>Seccion seleccionada</h3>
+                    <label>
+                        Titulo
+                        <input type="text" data-section-field="title">
+                    </label>
+                    <label>
+                        Descripcion
+                        <textarea rows="4" data-section-field="description"></textarea>
+                    </label>
+                    <div class="inline-fields">
+                        <label>Orden<input type="number" min="0" data-section-field="order"></label>
+                        <label class="toggle"><input type="checkbox" data-section-field="visible"> Visible</label>
+                    </div>
+                    <label>
+                        Alineacion
+                        <select data-config-field="textAlign">
+                            <option value="center">Centrada</option>
+                            <option value="left">Izquierda</option>
+                            <option value="right">Derecha</option>
+                        </select>
+                    </label>
+                    <label>
+                        Tamano de titulo
+                        <select data-config-field="titleSize">
+                            <option value="small">Sutil</option>
+                            <option value="medium">Elegante</option>
+                            <option value="large">Protagonista</option>
+                        </select>
+                    </label>
+                    <label>
+                        Posicion de fondo
+                        <select data-config-field="backgroundPosition">
+                            {% for valor, texto in posiciones_fondo_seccion %}
+                                <option value="{{ valor }}">{{ texto }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <label>
+                        Opacidad de fondo
+                        <input type="range" min="0" max="1" step="0.05" data-config-field="backgroundOpacity">
+                    </label>
+                    <div class="layer-toolbar">
+                        <button type="button" class="is-active" data-layer-select="background">Fondo</button>
+                        <button type="button" data-layer-select="title">Titulo</button>
+                        <button type="button" data-layer-select="text">Texto</button>
+                        <button type="button" data-layer-select="decor">Decoracion</button>
+                    </div>
+                    <div class="layer-controls">
+                        <label class="toggle"><input type="checkbox" data-layer-field="visible"> Mostrar capa</label>
+                        <div class="inline-fields">
+                            <label>X capa<input type="range" min="-40" max="140" step="1" data-layer-field="x"></label>
+                            <label>Y capa<input type="range" min="-40" max="140" step="1" data-layer-field="y"></label>
+                        </div>
+                        <div class="inline-fields">
+                            <label>Escala<input type="range" min="0.5" max="2.2" step="0.05" data-layer-field="scale"></label>
+                            <label>Opacidad<input type="range" min="0" max="1" step="0.05" data-layer-field="opacity"></label>
+                        </div>
+                        <div class="inline-fields">
+                            <label>Rotacion<input type="range" min="-45" max="45" step="1" data-layer-field="rotation"></label>
+                            <label class="toggle"><input type="checkbox" data-layer-field="locked"> Bloquear</label>
+                        </div>
+                        <div class="inline-fields">
+                            <label>Ancho<input type="range" min="12" max="100" step="1" data-layer-field="width"></label>
+                            <label>
+                                Alinear
+                                <select data-layer-field="align">
+                                    <option value="left">Izquierda</option>
+                                    <option value="center">Centro</option>
+                                    <option value="right">Derecha</option>
+                                </select>
+                            </label>
+                        </div>
+                        <label>
+                            Preset
+                            <select data-layer-preset>
+                                <option value="">Seleccionar preset</option>
+                                <option value="centered">Centrado fino</option>
+                                <option value="upper">Arriba sutil</option>
+                                <option value="lower">Abajo elegante</option>
+                                <option value="diagonal">Diagonal suave</option>
+                            </select>
+                        </label>
+                        <div class="layer-actions">
+                            <button type="button" data-layer-action="back">Atras</button>
+                            <button type="button" data-layer-action="front">Frente</button>
+                            <button type="button" data-layer-action="reset">Reset capa</button>
+                        </div>
+                        <label>
+                            Decoracion
+                            <select data-config-field="decorStyle">
+                                <option value="line">Linea fina</option>
+                                <option value="flourish">Trazo sutil</option>
+                                <option value="rings">Aros</option>
+                                <option value="dots">Puntos</option>
+                            </select>
+                        </label>
+                    </div>
+                    <label>
+                        Ajuste imagen
+                        <select data-config-field="backgroundFit">
+                            <option value="contain">Contener</option>
+                            <option value="cover">Cubrir</option>
+                            <option value="repeat">Repetir</option>
+                            <option value="free">Libre</option>
+                        </select>
+                    </label>
+                    <label>
+                        Zoom
+                        <input type="range" min="0.4" max="3" step="0.05" data-config-field="backgroundScale">
+                    </label>
+                    <div class="inline-fields">
+                        <label>X<input type="range" min="0" max="100" step="1" data-config-field="backgroundX"></label>
+                        <label>Y<input type="range" min="0" max="100" step="1" data-config-field="backgroundY"></label>
+                    </div>
+                    <div class="inline-fields">
+                        <label>Brillo<input type="range" min="0.35" max="1.75" step="0.05" data-config-field="backgroundBrightness"></label>
+                        <label>Blur<input type="range" min="0" max="12" step="0.5" data-config-field="backgroundBlur"></label>
+                    </div>
+                    <label>
+                        Alto de seccion
+                        <input type="range" min="120" max="900" step="10" data-config-field="sectionHeight">
+                    </label>
+                    <label class="toggle"><input type="checkbox" data-config-field="showBackgroundLayer"> Mostrar fondo</label>
+                    <label class="toggle"><input type="checkbox" data-config-field="showTitleAsset"> Mostrar imagen de titulo</label>
+                    <label>
+                        Color de texto
+                        <input type="color" data-config-field="textColor" value="#263126">
+                    </label>
+                    <label class="toggle"><input type="checkbox" data-config-field="showTextTitle"> Mostrar titulo como texto</label>
+                    <button class="btn ghost full" type="button" data-reset-image-controls>Reset imagen</button>
+                </section>
+
+                <section class="property-group quick-content-panel">
+                    <h3>Contenido rapido</h3>
+                    <form data-content-form>
+                        <div class="content-subnav">
+                            <button class="is-active" type="button" data-content-tab="basico">Datos</button>
+                            <button type="button" data-content-tab="lugares">Lugares</button>
+                            <button type="button" data-content-tab="personas">Padres</button>
+                            <button type="button" data-content-tab="regalos">Regalos</button>
+                            <button type="button" data-content-tab="itinerario">Itinerario</button>
+                            <button type="button" data-content-tab="invitados">Invitados</button>
+                        </div>
+
+                        <div data-content-panel="basico">
+                            <label>Nombre del evento<input type="text" name="eventName"></label>
+                            <label>Nombre principal<input type="text" name="mainName"></label>
+                            <label>Nombre secundario<input type="text" name="secondaryName"></label>
+                            <div class="inline-fields">
+                                <label>Etiqueta principal<input type="text" name="mainLabel"></label>
+                                <label>Etiqueta secundaria<input type="text" name="secondaryLabel"></label>
+                            </div>
+                            <label class="toggle"><input type="checkbox" name="showSecondaryName"> Mostrar segundo nombre</label>
+                            <label>Frase portada<input type="text" name="coverPhrase"></label>
+                            <label>Titulo invitacion<input type="text" name="invitationTitle"></label>
+                            <label>Texto invitacion<textarea rows="3" name="invitationText"></textarea></label>
+                            <label>Titulo RSVP<input type="text" name="rsvpTitle"></label>
+                            <label>Texto RSVP<textarea rows="3" name="rsvpText"></textarea></label>
+                        </div>
+
+                        <div data-content-panel="lugares" hidden>
+                            <label>Fecha ceremonia<input type="datetime-local" name="ceremonyDate"></label>
+                            <label>Lugar ceremonia<input type="text" name="ceremonyPlace"></label>
+                            <label>Direccion ceremonia<input type="text" name="ceremonyAddress"></label>
+                            <label>Link mapa ceremonia<input type="text" name="ceremonyMapUrl"></label>
+                            <label>HTML Google Maps ceremonia<textarea rows="3" name="ceremonyMapEmbed"></textarea></label>
+                            <label>Fecha fiesta<input type="datetime-local" name="receptionDate"></label>
+                            <label>Lugar fiesta<input type="text" name="receptionPlace"></label>
+                            <label>Direccion fiesta<input type="text" name="receptionAddress"></label>
+                            <label>Link mapa fiesta<input type="text" name="receptionMapUrl"></label>
+                            <label>HTML Google Maps fiesta<textarea rows="3" name="receptionMapEmbed"></textarea></label>
+                            <label>Dress code<input type="text" name="dressCode"></label>
+                            <label>Descripcion dress code<textarea rows="3" name="dressCodeText"></textarea></label>
+                            <div class="toggle-grid">
+                                <label class="toggle"><input type="checkbox" name="showMaps"> Mapas</label>
+                                <label class="toggle"><input type="checkbox" name="showAlbum"> Album</label>
+                                <label class="toggle"><input type="checkbox" name="showMenu"> Menu</label>
+                                <label class="toggle"><input type="checkbox" name="showGifts"> Regalos</label>
+                                <label class="toggle"><input type="checkbox" name="showSharedAlbum"> Album compartido</label>
+                            </div>
+                            <label>Titulo album compartido<input type="text" name="sharedAlbumTitle"></label>
+                            <label>Texto album compartido<textarea rows="3" name="sharedAlbumText"></textarea></label>
+                            <label>Link album compartido<input type="text" name="sharedAlbumUrl"></label>
+                        </div>
+
+                        <button class="btn ghost full" type="submit">Guardar contenido</button>
+                    </form>
+
+                    <div data-content-panel="personas" hidden>
+                        <form class="collection-form" data-collection-form="people">
+                            <input type="hidden" name="id">
+                            <label>
+                                Seccion
+                                <select name="section">
+                                    {% for valor, texto in secciones_persona %}
+                                        <option value="{{ valor }}">{{ texto }}</option>
+                                    {% endfor %}
+                                </select>
+                            </label>
+                            <label>Etiqueta<input type="text" name="label" placeholder="Papa, mama, padrinos..."></label>
+                            <label>Nombre<input type="text" name="name"></label>
+                            <div class="inline-fields">
+                                <label>Orden<input type="number" name="order" min="0" value="0"></label>
+                                <label class="toggle"><input type="checkbox" name="visible" checked> Visible</label>
+                            </div>
+                            <button class="btn ghost full" type="submit">Guardar nombre</button>
+                        </form>
+                        <div class="quick-list" data-collection-list="people"></div>
+                    </div>
+
+                    <div data-content-panel="regalos" hidden>
+                        <form class="collection-form" data-collection-form="gifts">
+                            <input type="hidden" name="id">
+                            <label>
+                                Tipo
+                                <select name="type">
+                                    {% for valor, texto in tipos_regalo %}
+                                        <option value="{{ valor }}">{{ texto }}</option>
+                                    {% endfor %}
+                                </select>
+                            </label>
+                            <label>Nombre<input type="text" name="name" placeholder="Liverpool, deposito..."></label>
+                            <label>Link<input type="text" name="url"></label>
+                            <div class="inline-fields">
+                                <label>Banco<input type="text" name="bank"></label>
+                                <label>Titular<input type="text" name="holder"></label>
+                            </div>
+                            <div class="inline-fields">
+                                <label>Cuenta<input type="text" name="account"></label>
+                                <label>CLABE<input type="text" name="clabe"></label>
+                            </div>
+                            <label>Instrucciones<input type="text" name="instructions"></label>
+                            <label class="toggle"><input type="checkbox" name="visible" checked> Visible</label>
+                            <button class="btn ghost full" type="submit">Guardar regalo</button>
+                        </form>
+                        <div class="quick-list" data-collection-list="gifts"></div>
+                    </div>
+
+                    <div data-content-panel="itinerario" hidden>
+                        <form class="collection-form" data-collection-form="itinerary">
+                            <input type="hidden" name="id">
+                            <div class="inline-fields">
+                                <label>Hora<input type="time" name="time"></label>
+                                <label>Orden<input type="number" name="order" min="0" value="0"></label>
+                            </div>
+                            <label>Titulo<input type="text" name="title"></label>
+                            <label>Descripcion<input type="text" name="description"></label>
+                            <label>
+                                Icono
+                                <select name="icon">
+                                    {% for valor, texto in iconos_itinerario %}
+                                        <option value="{{ valor }}">{{ texto }}</option>
+                                    {% endfor %}
+                                </select>
+                            </label>
+                            <label class="toggle"><input type="checkbox" name="visible" checked> Visible</label>
+                            <button class="btn ghost full" type="submit">Guardar itinerario</button>
+                        </form>
+                        <div class="quick-list" data-collection-list="itinerary"></div>
+                    </div>
+
+                    <div data-content-panel="invitados" hidden>
+                        <form class="collection-form" data-guest-group-form>
+                            <input type="hidden" name="id">
+                            <label>Nombre / familia<input type="text" name="name" placeholder="Familia Perez o Ana Lopez"></label>
+                            <div class="inline-fields">
+                                <label>
+                                    Tipo
+                                    <select name="type">
+                                        <option value="PERSONAL">Personal</option>
+                                        <option value="FAMILIAR">Familiar</option>
+                                    </select>
+                                </label>
+                                <label>Lugares<input type="number" name="maxGuests" min="1" value="1"></label>
+                            </div>
+                            <div class="inline-fields">
+                                <label>Extras permitidos<input type="number" name="extraAllowed" min="0" value="0"></label>
+                                <label>
+                                    Mesa
+                                    <select name="tableId" data-table-select>
+                                        <option value="">Sin mesa</option>
+                                    </select>
+                                </label>
+                            </div>
+                            <div class="inline-fields">
+                                <label>Telefono<input type="text" name="phone"></label>
+                                <label>Correo<input type="email" name="email"></label>
+                            </div>
+                            <label>Invitados familiares nuevos<textarea rows="3" name="familyGuests" placeholder="Un nombre por linea. Puedes usar: Nombre | NINO"></textarea></label>
+                            <button class="btn ghost full" type="submit">Guardar grupo</button>
+                        </form>
+
+                        <form class="collection-form guest-person-form" data-guest-person-form>
+                            <input type="hidden" name="id">
+                            <input type="hidden" name="groupId">
+                            <label>Nombre<input type="text" name="name"></label>
+                            <label>Apellidos<input type="text" name="lastName"></label>
+                            <div class="inline-fields">
+                                <label>
+                                    Tipo
+                                    <select name="type">
+                                        <option value="ADULTO">Adulto</option>
+                                        <option value="NINO">Niño</option>
+                                    </select>
+                                </label>
+                                <label>
+                                    Mesa
+                                    <select name="tableId" data-table-select>
+                                        <option value="">Sin mesa</option>
+                                    </select>
+                                </label>
+                            </div>
+                            <div class="inline-fields">
+                                <label>Telefono<input type="text" name="phone"></label>
+                                <label>Correo<input type="email" name="email"></label>
+                            </div>
+                            <label>Restricciones<input type="text" name="restrictions"></label>
+                            <label>Alergias<input type="text" name="allergies"></label>
+                            <label class="toggle"><input type="checkbox" name="menuInfantil"> Menu infantil</label>
+                            <button class="btn ghost full" type="submit">Guardar invitado familiar</button>
+                        </form>
+
+                        <div class="guest-editor-list" data-guest-list></div>
+                    </div>
+                </section>
+
+                <section class="property-group">
+                    <h3>Archivos del editor</h3>
+                    <form class="asset-form" data-asset-form enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <label>
+                            Tipo
+                            <select name="tipo">
+                                <option value="FONDO">Fondo</option>
+                                <option value="PORTADA">Portada</option>
+                                <option value="TITULO">Titulo visual</option>
+                                <option value="DECORACION">Decoracion</option>
+                                <option value="ALBUM">Album</option>
+                                <option value="VIDEO">Video</option>
+                                <option value="GIF">GIF</option>
+                            </select>
+                        </label>
+                        <label>
+                            Nombre
+                            <input type="text" name="titulo" placeholder="Portada ceremonia, fondo regalos...">
+                        </label>
+                        <label>
+                            Archivo
+                            <input type="file" name="archivo" accept="image/*,video/*">
+                        </label>
+                        <button class="btn ghost" type="submit">Subir archivo</button>
+                    </form>
+                    <div class="asset-list" data-asset-list>
+                        {% for asset in assets_editor %}
+                            <article data-asset-id="{{ asset.id }}" data-asset-url="{{ asset.archivo.url }}" data-asset-title="{{ asset.titulo|default:'Archivo' }}" data-asset-video="{% if asset.es_video %}1{% else %}0{% endif %}">
+                                {% if asset.es_video %}
+                                    <video src="{{ asset.archivo.url }}" muted playsinline></video>
+                                {% else %}
+                                    <img src="{{ asset.archivo.url }}" alt="">
+                                {% endif %}
+                                <span>{{ asset.titulo|default:"Archivo" }}</span>
+                                <select data-asset-target>
+                                    <option value="FONDO_SECCION">Fondo seccion</option>
+                                    <option value="TITULO_SECCION">Imagen titulo</option>
+                                    <option value="PORTADA">Portada principal</option>
+                                    <option value="CEREMONIA">Portada templo</option>
+                                    <option value="RECEPCION">Portada fiesta</option>
+                                    <option value="DRESS_PERMITIDO">Dress permitido</option>
+                                    <option value="DRESS_PROHIBIDO">Dress prohibido</option>
+                                    <option value="ALBUM">Agregar al album</option>
+                                </select>
+                                <div class="asset-actions">
+                                    <button type="button" data-asset-assign>Usar</button>
+                                    <button type="button" data-asset-delete>Eliminar</button>
+                                </div>
+                            </article>
+                        {% empty %}
+                            <p class="muted">Todavia no hay archivos cargados desde este editor.</p>
+                        {% endfor %}
+                    </div>
+                </section>
+            </aside>
+        </main>
+    </div>
+    <script src="{% static 'invitaciones/js/editor_invitacion.js' %}"></script>
+</body>
+</html>

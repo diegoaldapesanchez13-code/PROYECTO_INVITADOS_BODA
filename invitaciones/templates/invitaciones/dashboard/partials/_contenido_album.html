@@ -1,0 +1,85 @@
+                <section class="catalog-panel" data-subnav-scope="album-evento">
+                    <div class="workspace-header">
+                        <div>
+                            <h2>Album de fotos y videos</h2>
+                            <p class="muted">Carga fotos, GIFs o videos y decide el orden en que apareceran en la invitacion.</p>
+                        </div>
+                    </div>
+                    <div class="module-tabs" role="tablist" aria-label="Album del evento">
+                        <button type="button" data-subpanel-button="alta">Agregar archivo</button>
+                        <button type="button" data-subpanel-button="directorio">Editar album</button>
+                    </div>
+                    <div class="dashboard-forms">
+                        <form class="mini-admin-form" method="post" enctype="multipart/form-data" data-subpanel="alta">
+                            {% csrf_token %}
+                            <input type="hidden" name="accion" value="agregar_album">
+                            <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                            <h3>Agregar al album</h3>
+                            <div class="design-grid">
+                                <label>Titulo<input type="text" name="titulo_album_media" placeholder="Foto, video o GIF"></label>
+                                <label>Orden<input type="number" name="orden_album_media" min="0" value="0"></label>
+                                <label class="wide">Archivo<input type="file" name="archivo_album" accept="image/*,video/*" required></label>
+                            </div>
+                            <div class="actions form-actions">
+                                <button class="btn" type="submit">Agregar archivo</button>
+                            </div>
+                        </form>
+
+                        <article class="section-card" data-filter-scope data-subpanel="directorio">
+                            <span>Archivos del album</span>
+                            <div class="module-toolbar">
+                                <label>Buscar<input type="search" data-filter-search placeholder="Titulo o archivo"></label>
+                                <label>Estado
+                                    <select data-filter-field="status">
+                                        <option value="">Todos</option>
+                                        <option value="visible">Visibles</option>
+                                        <option value="oculto">Ocultos</option>
+                                    </select>
+                                </label>
+                                <span class="filter-count" data-filter-count></span>
+                            </div>
+                            <div class="saved-list">
+                                {% for foto in evento.fotos.all %}
+                                    <details class="saved-item" data-filter-item data-status="{% if foto.visible %}visible{% else %}oculto{% endif %}" data-search="{{ foto.titulo }} {{ foto.imagen.name }}">
+                                        <summary>
+                                            <div>
+                                                <strong>{{ foto.titulo|default:"Archivo sin titulo" }}</strong>
+                                                <span>{% if foto.visible %}Visible{% else %}Oculto{% endif %} - Orden {{ foto.orden }}</span>
+                                            </div>
+                                        </summary>
+                                        {% if foto.es_video %}
+                                            <video src="{{ foto.imagen.url }}" controls playsinline preload="metadata"></video>
+                                        {% else %}
+                                            <img src="{{ foto.imagen.url }}" alt="">
+                                        {% endif %}
+                                        <form class="inline-edit-form" method="post" enctype="multipart/form-data">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="accion" value="editar_album">
+                                            <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                                            <input type="hidden" name="foto_id" value="{{ foto.id }}">
+                                            <div class="design-grid compact-grid">
+                                                <label>Titulo<input type="text" name="titulo_album_media" value="{{ foto.titulo|default:'' }}"></label>
+                                                <label>Orden<input type="number" name="orden_album_media" min="0" value="{{ foto.orden }}"></label>
+                                                <label class="wide">Reemplazar archivo<input type="file" name="archivo_album" accept="image/*,video/*"></label>
+                                                <label class="toggle-field"><input type="checkbox" name="visible_album_media" {% if foto.visible %}checked{% endif %}> Visible</label>
+                                            </div>
+                                            <div class="actions form-actions">
+                                                <button class="btn" type="submit">Guardar archivo</button>
+                                            </div>
+                                        </form>
+                                        <form class="inline-danger-form" method="post" data-confirm="Esta accion eliminara el archivo del album. Deseas continuar?">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="accion" value="eliminar_album">
+                                            <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                                            <input type="hidden" name="foto_id" value="{{ foto.id }}">
+                                            <button class="btn danger" type="submit">Eliminar archivo</button>
+                                        </form>
+                                    </details>
+                                {% empty %}
+                                    <p class="muted">Aun no hay archivos en el album.</p>
+                                {% endfor %}
+                                <p class="empty-filter-state">No hay archivos con esos filtros.</p>
+                            </div>
+                        </article>
+                    </div>
+                </section>

@@ -1,0 +1,252 @@
+﻿        <section class="admin-workspace tab-panel" id="personalizacion" data-tab-panel="diseno">
+            <div class="workspace-header">
+                <div>
+                    <h2>Personalización del evento</h2>
+                    <p class="muted">Accesos rápidos para editar la invitación sin buscar entre menús.</p>
+                </div>
+                {% if es_dirtec %}
+                <a class="btn secondary" href="/admin/invitaciones/eventoboda/{{ evento.id }}/change/" target="_blank">Editar todo el evento</a>
+                {% endif %}
+            </div>
+
+            <div class="workflow-strip" aria-label="Flujo principal del evento">
+                <button type="button" data-dashboard-tab="diseno"><span>1</span> Diseño</button>
+                <button type="button" data-dashboard-tab="contenido"><span>2</span> Contenido</button>
+                <button type="button" data-dashboard-tab="invitados"><span>3</span> Invitados</button>
+                {% if puede_gestionar_usuarios %}
+                    <button type="button" data-dashboard-tab="usuarios"><span>U</span> Usuarios</button>
+                {% endif %}
+                <a href="{% url 'mesas_visual' %}?evento={{ evento.id }}"><span>4</span> Mesas</a>
+                <a href="{% url 'calendario_operativo' %}?evento={{ evento.id }}"><span>5</span> Calendario</a>
+                {% if preview_grupo %}
+                    <a href="{% url 'ver_invitacion' preview_grupo.codigo %}" target="_blank"><span>6</span> Vista previa</a>
+                {% endif %}
+                {% if editor_invitacion_url %}
+                    <a href="{{ editor_invitacion_url }}"><span>✎</span> Editor visual</a>
+                {% endif %}
+            </div>
+
+            <div class="design-preview-layout">
+                <div class="design-editor-column">
+                <form class="design-form" method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="hidden" name="accion" value="personalizar_evento">
+                    <input type="hidden" name="evento_id" value="{{ evento.id }}">
+
+                    <div class="design-grid">
+                    {% if empresas_dashboard %}
+                        <label>
+                            Empresa
+                            <select name="empresa_id">
+                                {% for empresa in empresas_dashboard %}
+                                    <option value="{{ empresa.id }}" {% if evento.empresa_id == empresa.id or not evento.empresa_id and empresa_dashboard.id == empresa.id %}selected{% endif %}>{{ empresa.nombre_comercial }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                    {% elif evento.empresa %}
+                        <input type="hidden" name="empresa_id" value="{{ evento.empresa_id }}">
+                    {% endif %}
+                    <label>
+                        Sede / salón
+                        <select name="sede_id">
+                            <option value="">Sin sede asignada</option>
+                            {% for sede in sedes_empresa %}
+                                <option value="{{ sede.id }}" {% if evento.sede_id == sede.id %}selected{% endif %}>{{ sede.nombre }} · {{ sede.get_tipo_display }} · {{ sede.capacidad_maxima }} pax</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <label>
+                        Tipo de evento
+                        <select name="tipo_evento">
+                            {% for valor, texto in tipos_evento %}
+                                <option value="{{ valor }}" {% if evento.tipo_evento == valor %}selected{% endif %}>{{ texto }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <label>
+                        Plantilla rápida
+                        <select name="plantilla_evento">
+                            <option value="">No aplicar plantilla</option>
+                            {% for valor, texto in plantillas_evento %}
+                                <option value="{{ valor }}">{{ texto }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <label>
+                        Estado
+                        <select name="estado">
+                            {% for valor, texto in estados_evento %}
+                                <option value="{{ valor }}" {% if evento.estado == valor %}selected{% endif %}>{{ texto }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <label>
+                        Capacidad contratada
+                        <input type="number" name="capacidad_contratada" min="0" value="{{ evento.capacidad_contratada }}">
+                    </label>
+                    <label>
+                        Precio por persona
+                        <input type="number" name="precio_por_persona" min="0" step="0.01" value="{{ evento.precio_por_persona }}">
+                    </label>
+                    <label class="wide">
+                        Nombre del evento
+                        <input type="text" name="nombre_evento" value="{{ evento.nombre_evento|default_if_none:'' }}" placeholder="Boda Ana & Luis, XV de Camila, Baby shower de Mateo...">
+                    </label>
+                    <label>
+                        Etiqueta principal
+                        <input type="text" name="etiqueta_principal" value="{{ evento.etiqueta_principal }}">
+                    </label>
+                    <label>
+                        Nombre principal
+                        <input type="text" name="nombre_principal" value="{{ evento.nombre_principal|default_if_none:'' }}" placeholder="{{ evento.participante_principal }}">
+                    </label>
+                    <label class="toggle-field">
+                        <input type="checkbox" name="mostrar_nombre_secundario" {% if evento.mostrar_nombre_secundario %}checked{% endif %}>
+                        Mostrar segundo nombre
+                    </label>
+                    <label>
+                        Etiqueta secundaria
+                        <input type="text" name="etiqueta_secundario" value="{{ evento.etiqueta_secundario }}">
+                    </label>
+                    <label>
+                        Nombre secundario
+                        <input type="text" name="nombre_secundario" value="{{ evento.nombre_secundario|default_if_none:'' }}" placeholder="{{ evento.participante_secundario }}">
+                    </label>
+                    <label>
+                        Paleta de la invitación
+                        <select name="paleta_colores">
+                            {% for valor, texto in paletas %}
+                                <option value="{{ valor }}" {% if evento.paleta_colores == valor %}selected{% endif %}>{{ texto }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <label>
+                        Paleta del sobre
+                        <select name="paleta_sobre">
+                            {% for valor, texto in paletas %}
+                                <option value="{{ valor }}" {% if evento.paleta_sobre == valor %}selected{% endif %}>{{ texto }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <label>
+                        Estilo de letra
+                        <select name="estilo_letra">
+                            {% for valor, texto in estilos_letra %}
+                                <option value="{{ valor }}" {% if evento.estilo_letra == valor %}selected{% endif %}>{{ texto }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <label>
+                        Monograma del sello
+                        <input type="text" name="monograma_sobre" value="{{ evento.monograma_sobre|default_if_none:'' }}" placeholder="{{ evento.monograma_final }}">
+                    </label>
+                    <label class="wide">
+                        Texto para abrir el sobre
+                        <input type="text" name="texto_boton_sobre" value="{{ evento.texto_boton_sobre }}">
+                    </label>
+                    <label class="toggle-field">
+                        <input type="checkbox" name="mostrar_album" {% if evento.mostrar_album %}checked{% endif %}>
+                        Mostrar álbum
+                    </label>
+                    <label class="toggle-field">
+                        <input type="checkbox" name="mostrar_menu" {% if evento.mostrar_menu %}checked{% endif %}>
+                        Mostrar menú
+                    </label>
+                    <label class="toggle-field">
+                        <input type="checkbox" name="mostrar_regalos" {% if evento.mostrar_regalos %}checked{% endif %}>
+                        Mostrar regalos
+                    </label>
+                    <label class="toggle-field">
+                        <input type="checkbox" name="mostrar_mapa" {% if evento.mostrar_mapa %}checked{% endif %}>
+                        Mostrar mapas
+                    </label>
+                    <label class="toggle-field">
+                        <input type="checkbox" name="mostrar_album_compartido" {% if evento.mostrar_album_compartido %}checked{% endif %}>
+                        Activar álbum compartido
+                    </label>
+                    <label>
+                        Título del álbum compartido
+                        <input type="text" name="titulo_album_compartido" value="{{ evento.titulo_album_compartido }}">
+                    </label>
+                    <label class="wide">
+                        Texto del álbum compartido
+                        <input type="text" name="texto_album_compartido" value="{{ evento.texto_album_compartido }}">
+                    </label>
+                    <label class="wide">
+                        Link de Google para subir fotos/videos
+                        <input type="text" name="link_album_compartido" value="{{ evento.link_album_compartido|default_if_none:'' }}" placeholder="https://photos.app.goo.gl/... o https://drive.google.com/...">
+                    </label>
+                    </div>
+
+                    <details class="background-uploader">
+                        <summary>Textos de la invitación</summary>
+                        <div class="design-grid">
+                        <label>
+                            Frase de portada
+                            <input type="text" name="frase_portada" value="{{ evento.frase_portada }}">
+                        </label>
+                        <label>
+                            Titulo cuenta regresiva
+                            <input type="text" name="titulo_cuenta_regresiva" value="{{ evento.titulo_cuenta_regresiva }}">
+                        </label>
+                        <label>
+                            Titulo detalles
+                            <input type="text" name="titulo_detalles" value="{{ evento.titulo_detalles }}">
+                        </label>
+                        <label class="wide">
+                            Texto detalles
+                            <textarea name="texto_detalles">{{ evento.texto_detalles }}</textarea>
+                        </label>
+                        <label>
+                            Título álbum
+                            <input type="text" name="titulo_album" value="{{ evento.titulo_album }}">
+                        </label>
+                        <label>
+                            Título menú
+                            <input type="text" name="titulo_menu" value="{{ evento.titulo_menu }}">
+                        </label>
+                        <label>
+                            Titulo regalos
+                            <input type="text" name="titulo_regalos" value="{{ evento.titulo_regalos }}">
+                        </label>
+                        <label>
+                            Título invitación
+                            <input type="text" name="titulo_invitacion" value="{{ evento.titulo_invitacion }}">
+                        </label>
+                        <label>
+                            Titulo RSVP
+                            <input type="text" name="titulo_rsvp" value="{{ evento.titulo_rsvp }}">
+                        </label>
+                        <label class="wide">
+                            Texto RSVP
+                            <textarea name="texto_rsvp">{{ evento.texto_rsvp }}</textarea>
+                        </label>
+                        <label class="wide">
+                            Texto de invitación
+                            <textarea name="texto_invitacion">{{ evento.texto_invitacion }}</textarea>
+                        </label>
+                        </div>
+                    </details>
+
+                    {% include "invitaciones/dashboard/partials/_ubicaciones_mapas.html" %}
+
+                    {% include "invitaciones/dashboard/partials/_dress_code.html" %}
+
+                    {% include "invitaciones/dashboard/partials/_medios_principales.html" %}
+
+                    {% include "invitaciones/dashboard/partials/_fondos_secciones.html" %}
+
+                    <div class="actions form-actions">
+                        <button class="btn" type="submit">Guardar diseño</button>
+                        {% if preview_grupo %}
+                            <a class="btn secondary" href="{% url 'ver_invitacion' preview_grupo.codigo %}" target="_blank">Ver resultado</a>
+                        {% endif %}
+                    </div>
+                </form>
+
+                {% include "invitaciones/dashboard/partials/_secciones_invitacion.html" %}
+                </div>
+
+                {% include "invitaciones/dashboard/partials/_vista_previa.html" %}
+            </div>
+        </section>

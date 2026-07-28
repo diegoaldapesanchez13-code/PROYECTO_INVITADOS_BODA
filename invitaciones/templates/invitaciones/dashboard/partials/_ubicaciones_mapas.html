@@ -1,0 +1,77 @@
+<details class="background-uploader">
+    <summary>Ubicaciones y mapas</summary>
+    <div class="design-grid">
+        <label>
+            Lugar ceremonia
+            <input type="text" name="lugar_misa" value="{{ evento.lugar_misa }}">
+        </label>
+        <label class="wide">
+            Dirección ceremonia
+            <input type="text" name="direccion_ceremonia" value="{{ evento.direccion_ceremonia|default_if_none:'' }}">
+        </label>
+        <label class="wide">
+            Link Google Maps ceremonia
+            <input type="text" name="link_mapa_misa" value="{{ evento.link_mapa_misa|default_if_none:'' }}">
+        </label>
+        <label class="wide">
+            HTML mapa ceremonia
+            <textarea name="mapa_misa_embed" placeholder="<iframe ...></iframe>">{{ evento.mapa_misa_embed|default_if_none:'' }}</textarea>
+        </label>
+        <label>
+            Lugar fiesta
+            <input type="text" name="lugar_fiesta" value="{{ evento.lugar_fiesta }}">
+        </label>
+        <label class="wide">
+            Dirección fiesta
+            <input type="text" name="direccion_recepcion" value="{{ evento.direccion_recepcion|default_if_none:'' }}">
+        </label>
+        <label class="wide">
+            Link Google Maps fiesta
+            <input type="text" name="link_mapa_fiesta" value="{{ evento.link_mapa_fiesta|default_if_none:'' }}">
+        </label>
+        <label class="wide">
+            HTML mapa fiesta
+            <textarea name="mapa_fiesta_embed" placeholder="<iframe ...></iframe>">{{ evento.mapa_fiesta_embed|default_if_none:'' }}</textarea>
+        </label>
+        <label class="wide">
+            Link WhatsApp
+            <input type="text" name="link_whatsapp" value="{{ evento.link_whatsapp|default_if_none:'' }}">
+        </label>
+    </div>
+    <div class="upload-grid">
+        <label class="upload-card">
+            <span>Portada ceremonia</span>
+            {% if evento.foto_ceremonia %}
+                {% if evento.ceremonia_es_video %}
+                    <video src="{{ evento.foto_ceremonia.url }}" muted controls></video>
+                {% else %}
+                    <img src="{{ evento.foto_ceremonia.url }}" alt="">
+                {% endif %}
+            {% endif %}
+            <input type="file" name="foto_ceremonia" accept="image/*,video/*">
+            {% if evento.foto_ceremonia %}
+                <div class="checkline">
+                    <input type="checkbox" name="eliminar_foto_ceremonia">
+                    <span>Quitar portada ceremonia</span>
+                </div>
+            {% endif %}
+        </label>
+        <label class="upload-card">
+            <span>Portada fiesta</span>
+            {% if evento.foto_recepcion %}
+                {% if evento.recepcion_es_video %}
+                    <video src="{{ evento.foto_recepcion.url }}" muted controls></video>
+                {% else %}
+                    <img src="{{ evento.foto_recepcion.url }}" alt="">
+                {% endif %}
+            {% endif %}
+            <input type="file" name="foto_recepcion" accept="image/*,video/*">
+            {% if evento.foto_recepcion %}
+                <div class="checkline">
+                    <input type="checkbox" name="eliminar_foto_recepcion">
+                    <span>Quitar portada fiesta</span>
+                </div>
+            {% endif %}
+        </label>
+    </div>
+</details>

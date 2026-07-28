@@ -1,0 +1,158 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal del proveedor</title>
+    <link rel="stylesheet" href="{% static 'invitaciones/css/dashboard.css' %}">
+</head>
+<body>
+    <div class="wrapper">
+        <div class="topbar">
+            <h1>Portal del proveedor</h1>
+            <div class="actions">
+                <a href="/">Inicio</a>
+                <form method="post" action="{% url 'logout' %}">
+                    {% csrf_token %}
+                    <button class="btn secondary" type="submit">Salir</button>
+                </form>
+            </div>
+        </div>
+
+        <section class="event-panel">
+            <div>
+                {% if proveedor %}
+                    <h2 class="event-title">{{ proveedor.nombre_comercial }}</h2>
+                    <p class="muted">{{ proveedor.get_tipo_proveedor_display }} · {{ proveedor.nombre_contacto|default:"Sin contacto" }}</p>
+                    {% if evento %}
+                        <p class="muted">{{ evento }} · {{ evento.fecha_fiesta|date:"d/m/Y h:i A" }}</p>
+                    {% endif %}
+                {% else %}
+                    <h2 class="event-title">Sin perfil de proveedor</h2>
+                    <p class="muted">Tu usuario no esta vinculado a un proveedor activo.</p>
+                {% endif %}
+            </div>
+
+            <form method="get">
+                <label for="evento">Evento</label>
+                <select id="evento" name="evento" onchange="this.form.submit()">
+                    {% for item in eventos %}
+                        <option value="{{ item.id }}" {% if evento and item.id == evento.id %}selected{% endif %}>{{ item }}</option>
+                    {% empty %}
+                        <option>Sin eventos</option>
+                    {% endfor %}
+                </select>
+            </form>
+        </section>
+
+        {% if proveedor and evento %}
+        <section class="stats">
+            <div class="stat"><strong>{{ total_servicios }}</strong><span>Servicios</span></div>
+            <div class="stat"><strong>{{ servicios_pendientes }}</strong><span>Activos</span></div>
+            <div class="stat"><strong>${{ saldo_pendiente|floatformat:0 }}</strong><span>Saldo pendiente</span></div>
+        </section>
+
+        <section class="portal-grid">
+            <article class="portal-panel wide">
+                <h2>Servicios contratados</h2>
+                <div class="portal-list">
+                    {% for servicio in servicios %}
+                        <div class="provider-service">
+                            <strong>{{ servicio.nombre_servicio }}</strong>
+                            <span>{{ servicio.get_estado_display }}{% if servicio.fecha_servicio %} · {{ servicio.fecha_servicio|date:"d/m/Y" }}{% endif %}{% if servicio.hora_inicio %} · {{ servicio.hora_inicio|time:"H:i" }}{% endif %}</span>
+                            <small>{{ servicio.lugar|default:"Lugar por confirmar" }} · Saldo ${{ servicio.saldo_pendiente|floatformat:0 }}</small>
+                            <form method="post" action="{% url 'actualizar_servicio_proveedor' servicio.id %}" class="provider-action-form">
+                                {% csrf_token %}
+                                <label>
+                                    Estado
+                                    <select name="estado">
+                                        {% for valor, texto in estados_servicio %}
+                                            <option value="{{ valor }}" {% if servicio.estado == valor %}selected{% endif %}>{{ texto }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </label>
+                                <label>
+                                    Nota para el planner
+                                    <textarea name="nota" rows="2" placeholder="Ej. Cotizacion enviada, servicio confirmado, requerimos acceso..."></textarea>
+                                </label>
+                                <div class="actions">
+                                    <button class="btn" type="submit">Actualizar servicio</button>
+                                </div>
+                            </form>
+                        </div>
+                    {% empty %}
+                        <p class="muted">No hay servicios registrados para este evento.</p>
+                    {% endfor %}
+                </div>
+            </article>
+
+            <article class="portal-panel wide">
+                <h2>Subir documento</h2>
+                <form method="post" action="{% url 'subir_documento_proveedor' %}" enctype="multipart/form-data" class="provider-upload-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                    <div class="design-grid">
+                        <label>
+                            Tipo
+                            <select name="tipo_documento">
+                                {% for valor, texto in tipos_documento %}
+                                    <option value="{{ valor }}">{{ texto }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <label>
+                            Titulo
+                            <input type="text" name="titulo" placeholder="Cotizacion, comprobante, contrato...">
+                        </label>
+                        <label class="wide">
+                            Archivo
+                            <input type="file" name="archivo" required>
+                        </label>
+                        <label class="wide">
+                            Descripcion
+                            <textarea name="descripcion" rows="2" placeholder="Detalle opcional para el planner"></textarea>
+                        </label>
+                        <label class="toggle-field">
+                            <input type="checkbox" name="visible_cliente">
+                            Visible para cliente
+                        </label>
+                    </div>
+                    <div class="actions form-actions">
+                        <button class="btn" type="submit">Subir documento</button>
+                    </div>
+                </form>
+            </article>
+
+            <article class="portal-panel">
+                <h2>Actividades</h2>
+                <div class="portal-list">
+                    {% for actividad in actividades %}
+                        <span>
+                            <strong>{{ actividad.titulo }}</strong>
+                            <small>{{ actividad.fecha|date:"d/m/Y" }} · {{ actividad.hora_inicio|time:"H:i" }} · {{ actividad.get_estado_display }}</small>
+                        </span>
+                    {% empty %}
+                        <p class="muted">No hay actividades asignadas.</p>
+                    {% endfor %}
+                </div>
+            </article>
+
+            <article class="portal-panel">
+                <h2>Documentos</h2>
+                <div class="portal-list">
+                    {% for documento in documentos %}
+                        <a href="{{ documento.archivo.url }}" target="_blank" rel="noopener">
+                            <strong>{{ documento.titulo }}</strong>
+                            <span>{{ documento.get_tipo_documento_display }} · {{ documento.fecha_carga|date:"d/m/Y" }}</span>
+                        </a>
+                    {% empty %}
+                        <p class="muted">No hay documentos cargados.</p>
+                    {% endfor %}
+                </div>
+            </article>
+        </section>
+        {% endif %}
+    </div>
+</body>
+</html>

@@ -1,0 +1,52 @@
+<div class="upload-grid">
+    <label class="upload-card">
+        <span>Portada foto, GIF o video</span>
+        {% if evento.foto_portada %}
+            {% if evento.portada_es_video %}
+                <video src="{{ evento.foto_portada.url }}" muted controls></video>
+            {% else %}
+                <img src="{{ evento.foto_portada.url }}" alt="">
+            {% endif %}
+        {% endif %}
+        <input type="file" name="foto_portada" accept="image/*,video/*">
+        {% if evento.foto_portada %}
+            <div class="checkline">
+                <input type="checkbox" name="eliminar_foto_portada">
+                <span>Quitar portada principal</span>
+            </div>
+        {% endif %}
+    </label>
+    <label class="upload-card">
+        <span>Logo portada</span>
+        {% if evento.logo_portada %}<img src="{{ evento.logo_portada.url }}" alt="">{% endif %}
+        <input type="file" name="logo_portada" accept="image/*">
+        {% if evento.logo_portada %}
+            <div class="checkline">
+                <input type="checkbox" name="eliminar_logo_portada">
+                <span>Quitar logo</span>
+            </div>
+        {% endif %}
+    </label>
+    <label class="upload-card">
+        <span>Sello del sobre</span>
+        {% if evento.sello_sobre %}<img src="{{ evento.sello_sobre.url }}" alt="">{% endif %}
+        <input type="file" name="sello_sobre" accept="image/*">
+        {% if evento.sello_sobre %}
+            <div class="checkline">
+                <input type="checkbox" name="eliminar_sello_sobre">
+                <span>Quitar sello</span>
+            </div>
+        {% endif %}
+    </label>
+    <label class="upload-card">
+        <span>Cancion</span>
+        {% if evento.cancion %}<small>{{ evento.cancion.name }}</small>{% endif %}
+        <input type="file" name="cancion" accept="audio/*">
+        {% if evento.cancion %}
+            <div class="checkline">
+                <input type="checkbox" name="eliminar_cancion">
+                <span>Quitar cancion</span>
+            </div>
+        {% endif %}
+    </label>
+</div>

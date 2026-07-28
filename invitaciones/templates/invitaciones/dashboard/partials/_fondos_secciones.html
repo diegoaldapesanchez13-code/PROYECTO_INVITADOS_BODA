@@ -1,0 +1,62 @@
+<details class="background-uploader">
+    <summary>Fondos por seccion</summary>
+    <p class="muted">Puedes usar imagen, GIF o video. Para una apariencia fina en celular, sube archivos verticales cuando la seccion sea muy alta.</p>
+    <div class="upload-grid">
+        <label class="upload-card">
+            <span>Invitacion principal</span>
+            {% if evento.fondo_invitacion %}
+                {% if evento.fondo_invitacion_es_video %}<video src="{{ evento.fondo_invitacion.url }}" muted controls playsinline></video>{% else %}<img src="{{ evento.fondo_invitacion.url }}" alt="">{% endif %}
+            {% endif %}
+            <input type="file" name="fondo_invitacion" accept="image/*,video/*">
+            {% if evento.fondo_invitacion %}<div class="checkline"><input type="checkbox" name="eliminar_fondo_invitacion"><span>Quitar fondo</span></div>{% endif %}
+        </label>
+        <label class="upload-card">
+            <span>Cuenta regresiva</span>
+            {% if evento.fondo_cuenta_regresiva %}
+                {% if evento.fondo_cuenta_regresiva_es_video %}<video src="{{ evento.fondo_cuenta_regresiva.url }}" muted controls playsinline></video>{% else %}<img src="{{ evento.fondo_cuenta_regresiva.url }}" alt="">{% endif %}
+            {% endif %}
+            <input type="file" name="fondo_cuenta_regresiva" accept="image/*,video/*">
+            {% if evento.fondo_cuenta_regresiva %}<div class="checkline"><input type="checkbox" name="eliminar_fondo_cuenta_regresiva"><span>Quitar fondo</span></div>{% endif %}
+        </label>
+        <label class="upload-card">
+            <span>Detalles, ceremonia y fiesta</span>
+            {% if evento.fondo_detalles %}
+                {% if evento.fondo_detalles_es_video %}<video src="{{ evento.fondo_detalles.url }}" muted controls playsinline></video>{% else %}<img src="{{ evento.fondo_detalles.url }}" alt="">{% endif %}
+            {% endif %}
+            <input type="file" name="fondo_detalles" accept="image/*,video/*">
+            {% if evento.fondo_detalles %}<div class="checkline"><input type="checkbox" name="eliminar_fondo_detalles"><span>Quitar fondo</span></div>{% endif %}
+        </label>
+        <label class="upload-card">
+            <span>Album</span>
+            {% if evento.fondo_album %}
+                {% if evento.fondo_album_es_video %}<video src="{{ evento.fondo_album.url }}" muted controls playsinline></video>{% else %}<img src="{{ evento.fondo_album.url }}" alt="">{% endif %}
+            {% endif %}
+            <input type="file" name="fondo_album" accept="image/*,video/*">
+            {% if evento.fondo_album %}<div class="checkline"><input type="checkbox" name="eliminar_fondo_album"><span>Quitar fondo</span></div>{% endif %}
+        </label>
+        <label class="upload-card">
+            <span>Menu</span>
+            {% if evento.fondo_menu %}
+                {% if evento.fondo_menu_es_video %}<video src="{{ evento.fondo_menu.url }}" muted controls playsinline></video>{% else %}<img src="{{ evento.fondo_menu.url }}" alt="">{% endif %}
+            {% endif %}
+            <input type="file" name="fondo_menu" accept="image/*,video/*">
+            {% if evento.fondo_menu %}<div class="checkline"><input type="checkbox" name="eliminar_fondo_menu"><span>Quitar fondo</span></div>{% endif %}
+        </label>
+        <label class="upload-card">
+            <span>Regalos</span>
+            {% if evento.fondo_regalos %}
+                {% if evento.fondo_regalos_es_video %}<video src="{{ evento.fondo_regalos.url }}" muted controls playsinline></video>{% else %}<img src="{{ evento.fondo_regalos.url }}" alt="">{% endif %}
+            {% endif %}
+            <input type="file" name="fondo_regalos" accept="image/*,video/*">
+            {% if evento.fondo_regalos %}<div class="checkline"><input type="checkbox" name="eliminar_fondo_regalos"><span>Quitar fondo</span></div>{% endif %}
+        </label>
+        <label class="upload-card">
+            <span>Confirmacion</span>
+            {% if evento.fondo_rsvp %}
+                {% if evento.fondo_rsvp_es_video %}<video src="{{ evento.fondo_rsvp.url }}" muted controls playsinline></video>{% else %}<img src="{{ evento.fondo_rsvp.url }}" alt="">{% endif %}
+            {% endif %}
+            <input type="file" name="fondo_rsvp" accept="image/*,video/*">
+            {% if evento.fondo_rsvp %}<div class="checkline"><input type="checkbox" name="eliminar_fondo_rsvp"><span>Quitar fondo</span></div>{% endif %}
+        </label>
+    </div>
+</details>

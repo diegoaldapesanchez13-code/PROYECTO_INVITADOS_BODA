@@ -1,0 +1,18 @@
+﻿        <section class="admin-workspace tab-panel" id="operacion" data-tab-panel="contenido" hidden>
+            <div class="workspace-header">
+                <div>
+                    <h2>Contenido y accesos rápidos</h2>
+                    <p class="muted">Agrega fotos, regalos, itinerario, padres, padrinos y proveedores desde tarjetas directas.</p>
+                </div>
+            </div>
+            {% include "invitaciones/dashboard/partials/_contenido_accesos_rapidos.html" %}
+
+            {% include "invitaciones/dashboard/partials/_contenido_catalogos.html" %}
+
+            <div class="dashboard-forms">
+                {% include "invitaciones/dashboard/partials/_contenido_padres_padrinos.html" %}
+                {% include "invitaciones/dashboard/partials/_contenido_album.html" %}
+                {% include "invitaciones/dashboard/partials/_contenido_regalos.html" %}
+                {% include "invitaciones/dashboard/partials/_contenido_itinerario.html" %}
+            </div>
+        </section>

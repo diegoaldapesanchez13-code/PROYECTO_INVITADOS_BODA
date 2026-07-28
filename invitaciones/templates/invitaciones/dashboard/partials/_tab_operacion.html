@@ -1,0 +1,123 @@
+﻿        <section class="production-panel tab-panel" id="produccion" data-tab-panel="operacion" hidden>
+            <div class="workspace-header">
+                <div>
+                    <h2>Panel de producción</h2>
+                    <p class="muted">Checklist rápido para detectar pendientes antes del evento.</p>
+                </div>
+            </div>
+            <div class="production-grid">
+                <article class="production-item {% if invitados_confirmados_sin_mesa %}needs-attention{% endif %}">
+                    <strong>{{ invitados_confirmados_sin_mesa }}</strong>
+                    <span>Confirmados sin mesa</span>
+                    <a href="{% url 'mesas_visual' %}?evento={{ evento.id }}">Acomodar mesas</a>
+                </article>
+                <article class="production-item {% if gastos_vencidos %}needs-attention{% endif %}">
+                    <strong>{{ gastos_vencidos }}</strong>
+                    <span>Pagos vencidos</span>
+                    {% if es_dirtec %}
+                    <a href="/admin/presupuesto/gastoevento/?evento__id__exact={{ evento.id }}" target="_blank">Revisar pagos</a>
+                    {% else %}
+                    <a href="{% url 'calendario_operativo' %}?evento={{ evento.id }}">Revisar calendario</a>
+                    {% endif %}
+                </article>
+                <article class="production-item {% if proveedores_pendientes %}needs-attention{% endif %}">
+                    <strong>{{ proveedores_pendientes }}</strong>
+                    <span>Proveedores pendientes</span>
+                    {% if es_dirtec %}
+                    <a href="/admin/proveedores/servicioevento/?evento__id__exact={{ evento.id }}" target="_blank">Revisar servicios</a>
+                    {% else %}
+                    <a href="#produccion">Revisar operación</a>
+                    {% endif %}
+                </article>
+                <article class="production-item {% if tareas_vencidas %}needs-attention{% endif %}">
+                    <strong>{{ tareas_vencidas }}</strong>
+                    <span>Tareas vencidas</span>
+                    {% if es_dirtec %}
+                    <a href="/admin/tareas/tareaevento/?evento__id__exact={{ evento.id }}" target="_blank">Revisar tareas</a>
+                    {% else %}
+                    <a href="{% url 'calendario_operativo' %}?evento={{ evento.id }}">Revisar calendario</a>
+                    {% endif %}
+                </article>
+                <article class="production-item {% if aprobaciones_pendientes %}needs-attention{% endif %}">
+                    <strong>{{ aprobaciones_pendientes }}</strong>
+                    <span>Aprobaciones pendientes</span>
+                    {% if es_dirtec %}
+                    <a href="/admin/aprobaciones/aprobacionevento/?evento__id__exact={{ evento.id }}" target="_blank">Revisar aprobaciones</a>
+                    {% else %}
+                    <a href="{% url 'portal_cliente' %}?evento={{ evento.id }}">Portal cliente</a>
+                    {% endif %}
+                </article>
+                <article class="production-item">
+                    <strong>{{ total_documentos_evento }}</strong>
+                    <span>Documentos cargados</span>
+                    {% if es_dirtec %}
+                    <a href="/admin/documentos/documentoevento/?evento__id__exact={{ evento.id }}" target="_blank">Abrir documentos</a>
+                    {% else %}
+                    <a href="{% url 'portal_cliente' %}?evento={{ evento.id }}">Ver portal</a>
+                    {% endif %}
+                </article>
+            </div>
+        </section>
+
+        {% include "invitaciones/dashboard/partials/_operacion_gestion.html" %}
+
+        <section class="stats tab-panel" id="indicadores" data-tab-panel="operacion" hidden>
+            <div class="stat"><strong>{{ total_grupos }}</strong><span>Grupos</span></div>
+            <div class="stat"><strong>{{ total_lugares }}</strong><span>Lugares permitidos</span></div>
+            <div class="stat"><strong>{{ total_asistiran }}</strong><span>Confirmados</span></div>
+            <div class="stat"><strong>{{ total_adultos }}</strong><span>Adultos buffet</span></div>
+            <div class="stat"><strong>{{ total_ninos }}</strong><span>Niños buffet</span></div>
+            <div class="stat"><strong>{{ total_pendientes }}</strong><span>Pendientes</span></div>
+            <div class="stat"><strong>{{ porcentaje_asistencia }}%</strong><span>Asistencia</span></div>
+            <div class="stat"><strong>{{ total_proveedores_evento }}</strong><span>Proveedores</span></div>
+            <div class="stat"><strong>{{ total_personal_evento }}</strong><span>Personal</span></div>
+            <div class="stat"><strong>${{ presupuesto_total|floatformat:0 }}</strong><span>Presupuesto</span></div>
+            <div class="stat"><strong>${{ monto_pagado|floatformat:0 }}</strong><span>Pagado</span></div>
+            <div class="stat"><strong>${{ monto_pendiente|floatformat:0 }}</strong><span>Pendiente por pagar</span></div>
+            <div class="stat"><strong>{{ total_mesas_evento }}</strong><span>Mesas</span></div>
+            <div class="stat"><strong>{{ invitados_confirmados_sin_mesa }}</strong><span>Confirmados sin mesa</span></div>
+            <div class="stat"><strong>{{ mesas_excedidas }}</strong><span>Mesas excedidas</span></div>
+            <div class="stat"><strong>{{ total_actividades_evento }}</strong><span>Actividades</span></div>
+            <div class="stat"><strong>{{ total_decoracion_evento }}</strong><span>Decoración</span></div>
+            <div class="stat"><strong>${{ total_gasto_estimado|floatformat:0 }}</strong><span>Gasto estimado</span></div>
+            <div class="stat"><strong>${{ total_gasto_real|floatformat:0 }}</strong><span>Gasto real</span></div>
+            <div class="stat"><strong>${{ total_pagos_evento|floatformat:0 }}</strong><span>Pagos registrados</span></div>
+            <div class="stat"><strong>{{ gastos_vencidos }}</strong><span>Pagos vencidos</span></div>
+            <div class="stat"><strong>{{ tareas_pendientes }}</strong><span>Tareas pendientes</span></div>
+            <div class="stat"><strong>{{ tareas_vencidas }}</strong><span>Tareas vencidas</span></div>
+            <div class="stat"><strong>{{ total_documentos_evento }}</strong><span>Documentos</span></div>
+            <div class="stat"><strong>{{ aprobaciones_pendientes }}</strong><span>Aprobaciones pendientes</span></div>
+        </section>
+
+        {% if evento %}
+        <section class="charts-panel tab-panel" id="graficas" data-metrics-url="{{ api_dashboard_url }}" data-tab-panel="operacion" hidden>
+            <div class="workspace-header">
+                <div>
+                    <h2>Gráficas del evento</h2>
+                    <p class="muted">Vista rápida de asistencia, buffet, presupuesto, tareas y proveedores.</p>
+                </div>
+            </div>
+            <div class="chart-grid">
+                <article class="chart-card">
+                    <h3>Invitados</h3>
+                    <canvas id="chartInvitados" height="180"></canvas>
+                </article>
+                <article class="chart-card">
+                    <h3>Buffet</h3>
+                    <canvas id="chartBuffet" height="180"></canvas>
+                </article>
+                <article class="chart-card">
+                    <h3>Presupuesto</h3>
+                    <canvas id="chartPresupuesto" height="180"></canvas>
+                </article>
+                <article class="chart-card">
+                    <h3>Tareas</h3>
+                    <canvas id="chartTareas" height="180"></canvas>
+                </article>
+                <article class="chart-card">
+                    <h3>Proveedores</h3>
+                    <canvas id="chartProveedores" height="180"></canvas>
+                </article>
+            </div>
+        </section>
+        {% endif %}

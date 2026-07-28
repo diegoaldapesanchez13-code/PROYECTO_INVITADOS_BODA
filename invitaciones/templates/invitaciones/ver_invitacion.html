@@ -4,1282 +4,509 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ evento.novio }} & {{ evento.novia }}</title>
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
-
+    <title>{{ evento.titulo_evento }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Allura&family=Cormorant+Garamond:wght@500;600;700&family=Great+Vibes&family=Inter:wght@300;400;500;600;700&family=Lato:wght@300;400;700&family=Montserrat:wght@300;400;500;600&family=Parisienne&family=Playfair+Display:wght@500;600;700&family=Poppins:wght@300;400;500;600;700&family=Quicksand:wght@400;500;600;700&family=Tangerine:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'invitaciones/css/invitacion.css' %}">
     <style>
         :root {
-            --bg: #f4f6f0;
-            --bg-soft: #fbfcf8;
-            --card: rgba(255,255,255,0.94);
-            --white: #ffffff;
-            --text: #253126;
-            --muted: #667565;
-            --olive: #63b96d;
-            --olive-dark: #2f7a4d;
-            --olive-soft: #dff2e2;
-            --line: #d5e4d7;
-            --shadow: 0 22px 55px rgba(47, 122, 77, 0.12);
-            --shadow-soft: 0 14px 34px rgba(47, 122, 77, 0.10);
-            --gold: #d2b074;
-            --ink: #1d251d;
+            --primary: {{ evento.color_principal_final }};
+            --secondary: {{ evento.color_secundario_final }};
+            --accent: {{ evento.color_acento_final }};
+            --bg: {{ evento.color_fondo_final }};
+            --panel: rgba(255, 255, 255, 0.94);
+            --text: {{ evento.color_texto_final }};
+            --muted: {{ evento.color_muted_final }};
+            --line: {{ evento.color_linea_final }};
+            --envelope: {{ evento.color_sobre_final }};
+            --envelope-inner: {{ evento.color_forro_sobre_final }};
+            --seal: {{ evento.color_sello_final }};
+            --font-title: {{ evento.fuente_titulos }};
+            --font-body: {{ evento.fuente_texto }};
+            --font-script: 'Tangerine', 'Great Vibes', cursive;
+            --shadow: 0 18px 42px rgba(47, 122, 77, 0.12);
         }
-
-        * {
-            box-sizing: border-box;
+        {% if tema_editor_preview %}
+        :root {
+            {% if tema_editor_preview.primary %}--primary: {{ tema_editor_preview.primary }}; --text: {{ tema_editor_preview.primary }};{% endif %}
+            {% if tema_editor_preview.secondary %}--secondary: {{ tema_editor_preview.secondary }}; --panel: color-mix(in srgb, {{ tema_editor_preview.secondary }} 82%, white);{% endif %}
+            {% if tema_editor_preview.accent %}--accent: {{ tema_editor_preview.accent }}; --line: color-mix(in srgb, {{ tema_editor_preview.accent }} 30%, white);{% endif %}
+            {% if tema_editor_preview.background %}--bg: {{ tema_editor_preview.background }};{% endif %}
+            --font-title: {{ tema_editor_preview.font_title }};
+            --font-body: {{ tema_editor_preview.font_body }};
         }
-
-        html {
-            scroll-behavior: smooth;
-        }
-
-        body {
-            margin: 0;
-            font-family: 'Montserrat', sans-serif;
-            color: var(--text);
-            background:
-                radial-gradient(circle at top left, rgba(99,185,109,0.10), transparent 28%),
-                radial-gradient(circle at bottom right, rgba(47,122,77,0.09), transparent 26%),
-                linear-gradient(180deg, #fcfdf9 0%, #f2f6ef 100%);
-            overflow-x: hidden;
-        }
-
-        body::before {
-            content: "";
-            position: fixed;
-            inset: 0;
-            pointer-events: none;
-            background:
-                radial-gradient(circle at 12% 14%, rgba(210,176,116,0.06), transparent 18%),
-                radial-gradient(circle at 88% 78%, rgba(99,185,109,0.05), transparent 18%);
-            z-index: 0;
-        }
-
-        a {
-            color: inherit;
-            text-decoration: none;
-        }
-
-        .petals {
-            position: fixed;
-            inset: 0;
-            pointer-events: none;
-            z-index: 2;
-            overflow: hidden;
-        }
-
-        .petal {
-            position: absolute;
-            top: -60px;
-            width: 10px;
-            height: 6px;
-            background: #cfe9d5;
-            border-radius: 50%;
-            opacity: 0.55;
-            animation: fall linear infinite;
-        }
-
-        @keyframes fall {
-            0% {
-                transform: translateY(-50px) translateX(0) rotate(0deg);
+        {% endif %}
+        {% if not evento.portada_es_video %}
+            .cover-photo {
+                background-image:
+                    linear-gradient(rgba(25, 34, 25, .45), rgba(25, 34, 25, .48)),
+                    url('{% if evento.foto_portada %}{{ evento.foto_portada.url }}{% elif evento.imagen_portada %}{{ evento.imagen_portada }}{% else %}https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1600&q=80{% endif %}');
             }
-            100% {
-                transform: translateY(110vh) translateX(40px) rotate(360deg);
-            }
-        }
-
-        .intro-screen {
-            position: fixed;
-            inset: 0;
-            background:
-                radial-gradient(circle at top left, rgba(99,185,109,0.10), transparent 28%),
-                linear-gradient(180deg, #f9fcf7 0%, #eef5eb 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-            padding: 20px;
-            transition: opacity 0.6s ease, visibility 0.6s ease;
-        }
-
-        .intro-screen.hidden {
-            opacity: 0;
-            visibility: hidden;
-            pointer-events: none;
-        }
-
-        .intro-wrap {
-            text-align: center;
-            max-width: 420px;
-            width: 100%;
-        }
-
-        .intro-kicker {
-            text-transform: uppercase;
-            letter-spacing: 0.26em;
-            font-size: 0.78rem;
-            color: var(--muted);
-            margin-bottom: 16px;
-        }
-
-        .intro-title {
-            font-family: 'Cormorant Garamond', serif;
-            font-size: clamp(2.7rem, 8vw, 4.6rem);
-            line-height: 0.95;
-            margin: 0 0 10px 0;
-            color: var(--olive-dark);
-        }
-
-        .intro-subtitle {
-            color: var(--muted);
-            line-height: 1.8;
-            margin: 0 0 26px 0;
-            font-size: 0.98rem;
-        }
-
-        .envelope-scene {
-            perspective: 1300px;
-            display: flex;
-            justify-content: center;
-            margin-bottom: 18px;
-        }
-
-        .envelope {
-            position: relative;
-            width: min(320px, 82vw);
-            height: 200px;
-            cursor: pointer;
-            transform-style: preserve-3d;
-            transition: transform 0.4s ease;
-            box-shadow: 0 0 40px rgba(111,202,126,.3);
-        }
-
-        .envelope:hover {
-            transform: translateY(-4px) scale(1.01);
-        }
-
-        .envelope-back {
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(135deg,#7ed68a,#2f7a4d);
-            border-radius: 10px;
-        }
-
-        .envelope-front {
-            position: absolute;
-            inset: 0;
-            clip-path: polygon(0 100%,0 40%,50% 70%,100% 40%,100% 100%);
-            background: linear-gradient(135deg,#95e09d,#2f7a4d);
-            border-radius: 0 0 10px 10px;
-        }
-
-        .envelope-flap {
-            position: absolute;
-            inset: 0;
-            clip-path: polygon(0 0,50% 56%,100% 0);
-            background: linear-gradient(180deg,#6fca7e,#2b6e46);
-            transform-origin: top;
-            transition: 1s;
-            border-radius: 10px 10px 0 0;
-        }
-
-        .envelope-letter {
-            position: absolute;
-            left: 50%;
-            top: 20px;
-            width: 75%;
-            height: 150px;
-            transform: translateX(-50%);
-            background: white;
-            border-radius: 10px;
-            transition: 1s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: 'Cormorant Garamond', serif;
-            font-size: 1.5rem;
-            color: var(--olive-dark);
-            text-align: center;
-            padding: 16px;
-            box-shadow: 0 10px 26px rgba(0,0,0,0.10);
-        }
-
-        .envelope.opening .envelope-flap {
-            transform: rotateX(180deg);
-        }
-
-        .envelope.opening .envelope-letter {
-            top: -100px;
-        }
-
-        .open-text {
-            margin-top: 18px;
-            font-size: 0.92rem;
-            color: var(--muted);
-            letter-spacing: 0.04em;
-        }
-
-        .tap-note {
-            font-family: 'Cormorant Garamond', serif;
-            font-size: 1.1rem;
-            color: var(--olive-dark);
-            margin-top: 8px;
-        }
-
-        .hero {
-            min-height: 100vh;
-            position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 32px 20px;
-            text-align: center;
-            color: #fff;
-            background:
-                linear-gradient(rgba(34, 42, 29, 0.42), rgba(34, 42, 29, 0.42)),
-                url('{{ evento.imagen_portada|default:"https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1600&q=80" }}');
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-        }
-
-        .hero::after {
-            content: "";
-            position: absolute;
-            inset: 0;
-            background:
-                linear-gradient(to bottom, rgba(0,0,0,0.06), rgba(0,0,0,0.20)),
-                radial-gradient(circle at center, rgba(255,255,255,0.05), transparent 55%);
-        }
-
-        .hero-content {
-            position: relative;
-            z-index: 3;
-            width: 100%;
-            max-width: 900px;
-            animation: heroFade 1.2s ease;
-            padding: 18px 10px;
-        }
-
-        .hero-kicker {
-            letter-spacing: 0.28em;
-            text-transform: uppercase;
-            font-size: 0.8rem;
-            margin-bottom: 18px;
-            opacity: 0.95;
-        }
-
-        .hero h1 {
-            margin: 0;
-            font-family: 'Cormorant Garamond', serif;
-            font-weight: 600;
-            font-size: clamp(3rem, 8vw, 6rem);
-            line-height: 0.95;
-            text-shadow: 0 10px 30px rgba(0,0,0,0.16);
-        }
-
-        .hero-divider {
-            width: 120px;
-            height: 1px;
-            background: linear-gradient(to right, transparent, rgba(255,255,255,0.88), transparent);
-            margin: 24px auto;
-            position: relative;
-        }
-
-        .hero-divider::after {
-            content: "✦";
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -52%);
-            font-size: 0.8rem;
-            color: rgba(255,255,255,0.9);
-            padding: 0 8px;
-        }
-
-        .hero-subtitle {
-            font-size: clamp(1rem, 2vw, 1.2rem);
-            margin: 0 auto 26px auto;
-            max-width: 680px;
-            line-height: 1.8;
-            opacity: 0.96;
-            text-shadow: 0 6px 20px rgba(0,0,0,0.18);
-        }
-
-        .hero-names {
-            font-family: 'Cormorant Garamond', serif;
-            font-size: clamp(2.4rem, 5vw, 3.8rem);
-            font-weight: 600;
-            margin-bottom: 12px;
-            text-shadow: 0 10px 24px rgba(0,0,0,0.14);
-        }
-
-        .hero-date {
-            font-size: 1rem;
-            letter-spacing: 0.18em;
-            text-transform: uppercase;
-        }
-
-        .scroll-indicator {
-            margin-top: 42px;
-            font-size: 0.9rem;
-            opacity: 0.9;
-            animation: bounce 2s infinite;
-        }
-
-        .wrapper {
-            width: 100%;
-            max-width: 1160px;
-            margin: 0 auto;
-            padding: 40px 18px 80px;
-            position: relative;
-            z-index: 3;
-        }
-
-        .section {
-            margin-top: 28px;
-            opacity: 0;
-            transform: translateY(30px);
-            animation: fadeUp 0.9s ease forwards;
-        }
-
-        .section:nth-child(1) { animation-delay: 0.05s; }
-        .section:nth-child(2) { animation-delay: 0.12s; }
-        .section:nth-child(3) { animation-delay: 0.19s; }
-        .section:nth-child(4) { animation-delay: 0.26s; }
-        .section:nth-child(5) { animation-delay: 0.33s; }
-        .section:nth-child(6) { animation-delay: 0.40s; }
-        .section:nth-child(7) { animation-delay: 0.47s; }
-
-        .card {
-            background: var(--card);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255,255,255,0.72);
-            border-radius: 28px;
-            box-shadow: var(--shadow);
-            padding: 32px 24px;
-            position: relative;
-            overflow: hidden;
-            transition: transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease;
-            margin: 20px 0;
-        }
-
-        .card::before {
-            content: "";
-            position: absolute;
-            inset: 0;
-            background:
-                linear-gradient(135deg, rgba(255,255,255,0.16), transparent 35%),
-                linear-gradient(315deg, rgba(127,141,105,0.05), transparent 40%);
-            pointer-events: none;
-        }
-
-        .card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 26px 50px rgba(69, 79, 55, 0.13);
-            border-color: rgba(200,166,110,0.24);
-        }
-
-        .section-title {
-            margin: 0 0 12px 0;
-            text-align: center;
-            font-family: 'Cormorant Garamond', serif;
-            font-size: clamp(2rem, 4vw, 3rem);
-            color: var(--olive-dark);
-            position: relative;
-            z-index: 1;
-        }
-
-        .section-subtitle {
-            margin: 0 auto 28px auto;
-            text-align: center;
-            color: var(--muted);
-            max-width: 760px;
-            line-height: 1.8;
-            position: relative;
-            z-index: 1;
-        }
-
-        .invitation-summary {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 18px;
-            position: relative;
-            z-index: 1;
-        }
-
-        .summary-item {
-            background: rgba(255,255,255,0.78);
-            border: 1px solid var(--line);
-            border-radius: 20px;
-            padding: 20px;
-            text-align: center;
-            transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
-        }
-
-        .summary-item:hover {
-            transform: translateY(-3px);
-            box-shadow: var(--shadow-soft);
-            border-color: rgba(127,141,105,0.35);
-        }
-
-        .summary-label {
-            font-size: 0.82rem;
-            letter-spacing: 0.14em;
-            text-transform: uppercase;
-            color: var(--muted);
-            margin-bottom: 8px;
-        }
-
-        .summary-value {
-            font-family: 'Cormorant Garamond', serif;
-            font-size: 1.8rem;
-            color: var(--text);
-            word-break: break-word;
-        }
-
-        .countdown-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 16px;
-            margin-top: 8px;
-            position: relative;
-            z-index: 1;
-        }
-
-        .countdown-item {
-            background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(244,243,238,0.98));
-            border: 1px solid var(--line);
-            border-radius: 22px;
-            padding: 24px 16px;
-            text-align: center;
-            transition: transform 0.22s ease, box-shadow 0.22s ease;
-        }
-
-        .countdown-item:hover {
-            transform: translateY(-3px);
-            box-shadow: var(--shadow-soft);
-        }
-
-        .countdown-number {
-            display: block;
-            font-family: 'Cormorant Garamond', serif;
-            font-size: clamp(2.2rem, 5vw, 3.2rem);
-            color: var(--olive-dark);
-            line-height: 1;
-        }
-
-        .countdown-label {
-            margin-top: 8px;
-            font-size: 0.84rem;
-            letter-spacing: 0.16em;
-            text-transform: uppercase;
-            color: var(--muted);
-        }
-
-        .details-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 18px;
-            position: relative;
-            z-index: 1;
-        }
-
-        .detail-box {
-            background: rgba(255,255,255,0.78);
-            border: 1px solid var(--line);
-            border-radius: 22px;
-            padding: 22px;
-            text-align: center;
-            transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
-        }
-
-        .detail-box:hover {
-            transform: translateY(-3px);
-            box-shadow: var(--shadow-soft);
-            border-color: rgba(127,141,105,0.34);
-        }
-
-        .detail-box h3 {
-            margin: 0 0 10px 0;
-            font-family: 'Cormorant Garamond', serif;
-            font-size: 2rem;
-            color: var(--olive-dark);
-        }
-
-        .detail-box p {
-            margin: 7px 0;
-            color: var(--text);
-            line-height: 1.7;
-        }
-
-        .actions-row {
-            display: flex;
-            gap: 14px;
-            justify-content: center;
-            flex-wrap: wrap;
-            margin-top: 22px;
-            position: relative;
-            z-index: 1;
-        }
-
-        .btn {
-            appearance: none;
-            border: none;
-            border-radius: 999px;
-            padding: 14px 22px;
-            font-size: 0.95rem;
-            font-weight: 600;
-            cursor: pointer;
-            text-decoration: none;
-            transition: transform 0.2s ease, opacity 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            min-width: 190px;
-            background: linear-gradient(135deg,#6fca7e,#2f7a4d);
-            color: white;
-            box-shadow: 0 12px 24px rgba(46, 122, 77, 0.35);
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-            opacity: 0.98;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #6fca7e, #2f7a4d);
-            color: white;
-            box-shadow: 0 12px 24px rgba(46, 122, 77, 0.35);
-        }
-
-        .btn-primary:hover {
-            box-shadow: 0 16px 28px rgba(95,111,82,0.28);
-        }
-
-        .btn-secondary {
-            background: rgba(255,255,255,0.95);
-            color: var(--text);
-            border: 1px solid var(--line);
-            box-shadow: none;
-        }
-
-        .btn-secondary:hover {
-            border-color: rgba(127,141,105,0.35);
-        }
-
-        .dress-code-box {
-            text-align: center;
-            padding: 8px 0 4px;
-            position: relative;
-            z-index: 1;
-        }
-
-        .dress-code-main {
-            font-family: 'Cormorant Garamond', serif;
-            font-size: 2.3rem;
-            color: var(--olive-dark);
-            margin-bottom: 8px;
-        }
-
-        .dress-code-note {
-            color: var(--muted);
-            line-height: 1.8;
-            max-width: 760px;
-            margin: 0 auto;
-        }
-
-        .map-wrap {
-            overflow: hidden;
-            border-radius: 24px;
-            border: 1px solid var(--line);
-            box-shadow: 0 14px 30px rgba(69, 79, 55, 0.08);
-            position: relative;
-            z-index: 1;
-        }
-
-        .map-wrap iframe {
-            width: 100%;
-            height: 380px;
-            border: 0;
-            display: block;
-        }
-
-        .confirmed-banner {
-            background: rgba(95,111,82,0.10);
-            border: 1px solid rgba(95,111,82,0.24);
-            color: var(--olive-dark);
-            border-radius: 18px;
-            padding: 16px 18px;
-            text-align: center;
-            font-weight: 600;
-            margin-bottom: 22px;
-            position: relative;
-            z-index: 1;
-        }
-
-        .form-grid {
-            display: grid;
-            gap: 18px;
-            position: relative;
-            z-index: 1;
-        }
-
-        .guest-card {
-            background: rgba(255,255,255,0.82);
-            border: 1px solid var(--line);
-            border-radius: 22px;
-            padding: 20px;
-            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-        }
-
-        .guest-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 22px rgba(69, 79, 55, 0.06);
-            border-color: rgba(127,141,105,0.32);
-        }
-
-        .guest-name {
-            font-family: 'Cormorant Garamond', serif;
-            font-size: 2rem;
-            margin: 0 0 10px 0;
-            color: var(--text);
-        }
-
-        .radio-group {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-            margin: 14px 0 10px;
-        }
-
-        .option-pill {
-            position: relative;
-        }
-
-        .option-pill input {
-            position: absolute;
-            opacity: 0;
-            pointer-events: none;
-        }
-
-        .option-pill label {
-            display: inline-block;
-            padding: 12px 18px;
-            border-radius: 999px;
-            border: 1px solid var(--line);
-            background: rgba(255,255,255,0.92);
-            cursor: pointer;
-            font-weight: 500;
-            transition: all 0.2s ease;
-        }
-
-        .option-pill label:hover {
-            border-color: rgba(127,141,105,0.35);
-        }
-
-        .option-pill input:checked + label {
-            background: linear-gradient(135deg, var(--olive), var(--olive-dark));
-            color: white;
-            border-color: transparent;
-            box-shadow: 0 8px 20px rgba(95,111,82,0.22);
-        }
-
-        textarea {
-            width: 100%;
-            min-height: 92px;
-            border-radius: 16px;
-            border: 1px solid var(--line);
-            padding: 14px 16px;
-            font-family: inherit;
-            font-size: 0.95rem;
-            resize: vertical;
-            outline: none;
-            background: rgba(255,255,255,0.95);
-            transition: border-color 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        textarea:focus {
-            border-color: var(--olive);
-            box-shadow: 0 0 0 4px rgba(127,141,105,0.12);
-        }
-
-        .guest-status {
-            margin-top: 10px;
-            color: var(--muted);
-            font-size: 0.92rem;
-        }
-
-        .footer-note {
-            text-align: center;
-            color: var(--muted);
-            font-size: 0.92rem;
-            margin-top: 18px;
-            line-height: 1.7;
-            position: relative;
-            z-index: 1;
-        }
-
-        .save-btn-wrap {
-            margin-top: 10px;
-            position: relative;
-            z-index: 1;
-        }
-
-        .floating-nav {
-            position: fixed;
-            right: 16px;
-            bottom: 16px;
-            z-index: 20;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .floating-nav a,
-        .music-toggle {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.94);
-            border: 1px solid var(--line);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-decoration: none;
-            box-shadow: 0 8px 18px rgba(69, 79, 55, 0.12);
-            font-size: 1.1rem;
-            color: var(--text);
-            transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
-        }
-
-        .floating-nav a:hover,
-        .music-toggle:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 22px rgba(69, 79, 55, 0.16);
-            background: rgba(255,255,255,0.98);
-        }
-
-        .music-toggle {
-            cursor: pointer;
-            font-size: 1rem;
-        }
-
-        .music-hint {
-            position: fixed;
-            left: 50%;
-            bottom: 20px;
-            transform: translateX(-50%);
-            background: rgba(47,52,39,0.92);
-            color: #fff;
-            padding: 10px 16px;
-            border-radius: 999px;
-            font-size: 0.88rem;
-            z-index: 30;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.28s ease, transform 0.28s ease;
-        }
-
-        .music-hint.show {
-            opacity: 1;
-            transform: translateX(-50%) translateY(-4px);
-        }
-
-        @keyframes heroFade {
-            from {
-                opacity: 0;
-                transform: translateY(18px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        @keyframes fadeUp {
-            from {
-                opacity: 0;
-                transform: translateY(26px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        @keyframes bounce {
-            0%, 20%, 50%, 80%, 100% {
-                transform: translateY(0);
-            }
-            40% {
-                transform: translateY(8px);
-            }
-            60% {
-                transform: translateY(4px);
-            }
-        }
-
-        @media (max-width: 980px) {
-            .invitation-summary,
-            .countdown-grid,
-            .details-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-
-            .hero {
-                min-height: 88vh;
-            }
-        }
-
-        @media (max-width: 640px) {
-            .hero {
-                min-height: 82vh;
-                padding: 20px 16px;
-            }
-
-            .wrapper {
-                padding: 28px 14px 90px;
-            }
-
-            .card {
-                padding: 24px 16px;
-                border-radius: 22px;
-            }
-
-            .invitation-summary,
-            .countdown-grid,
-            .details-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .summary-value {
-                font-size: 1.55rem;
-            }
-
-            .detail-box h3 {
-                font-size: 1.7rem;
-            }
-
-            .guest-name {
-                font-size: 1.7rem;
-            }
-
-            .actions-row {
-                flex-direction: column;
-            }
-
-            .btn {
-                width: 100%;
-                min-width: auto;
-            }
-
-            .map-wrap iframe {
-                height: 300px;
-            }
-
-            .floating-nav {
-                right: 12px;
-                bottom: 12px;
-            }
-
-            .music-hint {
-                width: calc(100% - 28px);
-                text-align: center;
-                border-radius: 16px;
-            }
-
-            .envelope {
-                height: 205px;
-                box-shadow: 0 0 40px rgba(111, 202, 126, 0.25);
-            }
-
-            .envelope-letter {
-                height: 168px;
-            }
+        {% endif %}
+        .media-bg-fallback {
+            background-image:
+                linear-gradient(rgba(25, 34, 25, .45), rgba(25, 34, 25, .48)),
+                url('{% if evento.imagen_portada %}{{ evento.imagen_portada }}{% else %}https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1600&q=80{% endif %}');
         }
     </style>
 </head>
-<body>
-
-    <div class="petals" aria-hidden="true">
-        <span class="petal" style="left:10%; animation-duration:12s;"></span>
-        <span class="petal" style="left:30%; animation-duration:15s;"></span>
-        <span class="petal" style="left:60%; animation-duration:13s;"></span>
-        <span class="petal" style="left:80%; animation-duration:16s;"></span>
+<body
+    data-event-date="{{ evento.fecha_fiesta|date:'Y-m-d\\TH:i:s' }}"
+    data-max-extras="{{ grupo.cantidad_extra_permitida|default:0 }}"
+>
+    {% if not modo_preview %}
+    <div class="intro" id="intro">
+        <div class="envelope-stage">
+            <button class="envelope-button" type="button" onclick="abrirInvitacion()" aria-label="Abrir invitación">
+                <span class="envelope-card">
+                    <span class="envelope-flap top"></span>
+                    <span class="envelope-flap left"></span>
+                    <span class="envelope-flap right"></span>
+                    <span class="envelope-flap bottom"></span>
+                    <span class="envelope-letter">
+                        <span>{{ evento.frase_portada|default:"Nuestra Boda" }}</span>
+                        <strong>{{ evento.titulo_portada }}</strong>
+                    </span>
+                    <span class="wax-seal">
+                        {% if evento.sello_sobre %}
+                            <img src="{{ evento.sello_sobre.url }}" alt="">
+                        {% else %}
+                            {{ evento.monograma_final }}
+                        {% endif %}
+                    </span>
+                </span>
+            </button>
+            <p class="envelope-hint">{{ evento.texto_boton_sobre }}</p>
+        </div>
     </div>
+    {% endif %}
 
-    <div id="intro" class="intro-screen">
-        <div class="intro-wrap">
-            <div class="intro-kicker">Invitación digital</div>
-            <h1 class="intro-title">{{ evento.novio }} & {{ evento.novia }}</h1>
-            <p class="intro-subtitle">
-                Toca el sobre para abrir nuestra invitación
-            </p>
+    <audio id="bgMusic" loop preload="auto">
+        {% if evento.cancion %}
+            <source src="{{ evento.cancion.url }}" type="audio/mpeg">
+        {% else %}
+            <source src="{% static 'music/boda.mp3' %}" type="audio/mpeg">
+        {% endif %}
+    </audio>
 
-            <div class="envelope-scene">
-                <div class="envelope" id="envelope" onclick="openInvitation()">
-                    <div class="envelope-back"></div>
-                    <div class="envelope-letter">
-                        {{ evento.novio }} & {{ evento.novia }}
-                    </div>
-                    <div class="envelope-front"></div>
-                    <div class="envelope-flap"></div>
+    <section class="hero cover-hero" id="inicio">
+        <div class="cover-card">
+            <div class="cover-photo {% if evento.portada_es_video %}media-bg-fallback{% endif %}">
+                {% if evento.portada_es_video %}
+                    <video class="cover-video" src="{{ evento.foto_portada.url }}" autoplay muted loop playsinline></video>
+                {% endif %}
+                <div class="cover-topline">{{ evento.frase_portada|default:"Nuestra Boda" }}</div>
+                <div class="cover-names {% if not evento.mostrar_nombre_secundario %}single-name{% endif %}">
+                    <h1>{{ evento.participante_principal }}</h1>
+                    {% if evento.mostrar_nombre_secundario %}
+                        <h1>{{ evento.participante_secundario }}</h1>
+                    {% endif %}
+                </div>
+                <div class="cover-date">
+                    {{ evento.fecha_fiesta|date:"d F Y" }} · {{ evento.fecha_fiesta|date:"h:i A" }}
                 </div>
             </div>
 
-            <div class="open-text">Toca el sobre para abrir</div>
-            <div class="tap-note">y descubrir nuestra invitación</div>
-        </div>
-    </div>
-
-    <audio id="bgMusic" loop preload="auto">
-        <source src="{% static 'music/boda.mp3' %}" type="audio/mpeg">
-    </audio>
-
-    <section class="hero" id="inicio">
-        <div class="hero-content">
-            <div class="hero-kicker">Nuestra boda</div>
-            <h1>{{ evento.frase_portada|default:"Nos Casamos" }}</h1>
-            <div class="hero-divider"></div>
-            <div class="hero-names">{{ evento.novio }} & {{ evento.novia }}</div>
-            <p class="hero-subtitle">
-                {{ evento.mensaje_general }}
-            </p>
-            <div class="hero-date">{{ evento.fecha_fiesta|date:"d \d\e F \d\e Y · h:i A" }}</div>
-            <div class="scroll-indicator">Desliza para ver más ↓</div>
+            {% if secciones.PADRES_PADRINOS.activa %}
+            {% if padres_novio or padres_novia or padrinos %}
+                <div class="cover-honors">
+                    <div class="cover-parent-grid">
+                        <div class="cover-parent-block">
+                            <div class="cover-label">Padres de {{ evento.etiqueta_principal|lower }}</div>
+                            <div class="cover-parent-names">
+                                {% for persona in padres_novia %}
+                                    
+                                    <p>{{ persona.nombre }}</p>
+                                {% empty %}
+                                    <p class="muted-name">Familia de {{ evento.etiqueta_principal|lower }}</p>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <div class="cover-parent-block">
+                            <div class="cover-label">Padres de {{ evento.etiqueta_secundario|lower }}</div>
+                            <div class="cover-parent-names">
+                                {% for persona in padres_novio %}
+                                
+                                    <p>{{ persona.nombre }}</p>
+                                {% empty %}
+                                    <p class="muted-name">Familia de {{ evento.etiqueta_secundario|lower }}</p>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    {% if padrinos %}
+                        <div class="cover-sponsors">
+                            <div class="cover-label">Y nuestros padrinos</div>
+                            {% for persona in padrinos %}
+                                
+                                <p>{{ persona.nombre }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            {% endif %}
+            {% endif %}
         </div>
     </section>
 
-    <main class="wrapper">
+    <nav class="section-nav" aria-label="Secciones de la invitacion">
+        {% if secciones.DETALLES.activa %}<a href="#detalles">Detalles</a>{% endif %}
+        {% if secciones.DRESS_CODE.activa %}<a href="#dress-code">Dress code</a>{% endif %}
+        {% if secciones.ITINERARIO.activa and itinerario %}<a href="#itinerario">Itinerario</a>{% endif %}
+        {% if secciones.ALBUM.activa and evento.mostrar_album and fotos_album %}<a href="#album">Album</a>{% endif %}
+        {% if secciones.MENU.activa and evento.mostrar_menu and menus %}<a href="#menu">Menu</a>{% endif %}
+        {% if secciones.REGALOS.activa and evento.mostrar_regalos %}<a href="#regalos">Regalos</a>{% endif %}
+        {% if secciones.ALBUM_COMPARTIDO.activa and evento.mostrar_album_compartido and evento.link_album_compartido %}<a href="#album-compartido">Fotos</a>{% endif %}
+        {% if secciones.RSVP.activa %}<a href="#rsvp">Confirmar</a>{% endif %}
+    </nav>
 
-        <section class="section">
-            <div class="card">
-                <h2 class="section-title">Tu invitación</h2>
-                <p class="section-subtitle">
-                    Hemos reservado este espacio con mucho cariño para celebrar juntos este día tan especial.
-                </p>
-
-                <div class="invitation-summary">
-                    <div class="summary-item">
-                        <div class="summary-label">Invitación para</div>
-                        <div class="summary-value">
-                            {% if grupo.tipo == "FAMILIAR" %}
-                                Familia {{ grupo.nombre_grupo }}
-                            {% else %}
-                                {% for invitado in invitados %}
-                                    {{ invitado.nombre }}{% if not forloop.last %}, {% endif %}
-                                {% endfor %}
-                            {% endif %}
-                        </div>
-                    </div>
-
-                    <div class="summary-item">
-                        <div class="summary-label">Tipo</div>
-                        <div class="summary-value">
-                            {% if grupo.tipo == "FAMILIAR" %}
-                                Familiar
-                            {% else %}
-                                Personal
-                            {% endif %}
-                        </div>
-                    </div>
-
-                    <div class="summary-item">
-                        <div class="summary-label">Lugares</div>
-                        <div class="summary-value">{{ grupo.cantidad_maxima }}</div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section class="section" id="countdown-section">
-            <div class="card">
-                <h2 class="section-title">Faltan</h2>
-                <p class="section-subtitle">
-                    Cada día nos acerca más a celebrar este momento contigo.
-                </p>
-
-                <div class="countdown-grid">
-                    <div class="countdown-item">
-                        <span class="countdown-number" id="dias">0</span>
-                        <div class="countdown-label">Días</div>
-                    </div>
-                    <div class="countdown-item">
-                        <span class="countdown-number" id="horas">0</span>
-                        <div class="countdown-label">Horas</div>
-                    </div>
-                    <div class="countdown-item">
-                        <span class="countdown-number" id="minutos">0</span>
-                        <div class="countdown-label">Minutos</div>
-                    </div>
-                    <div class="countdown-item">
-                        <span class="countdown-number" id="segundos">0</span>
-                        <div class="countdown-label">Segundos</div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section class="section">
-            <div class="card">
-                <h2 class="section-title">Detalles del evento</h2>
-                <p class="section-subtitle">
-                    Aquí encontrarás la información principal para acompañarnos ese día.
-                </p>
-
-                <div class="details-grid">
-                    <div class="detail-box">
-                        <h3>Ceremonia</h3>
-                        <p><strong>Fecha:</strong> {{ evento.fecha_misa|date:"d \d\e F \d\e Y" }}</p>
-                        <p><strong>Hora:</strong> {{ evento.fecha_misa|date:"h:i A" }}</p>
-                        <p><strong>Lugar:</strong> {{ evento.lugar_misa }}</p>
-                    </div>
-
-                    <div class="detail-box">
-                        <h3>Fiesta</h3>
-                        <p><strong>Fecha:</strong> {{ evento.fecha_fiesta|date:"d \d\e F \d\e Y" }}</p>
-                        <p><strong>Hora:</strong> {{ evento.fecha_fiesta|date:"h:i A" }}</p>
-                        <p><strong>Lugar:</strong> {{ evento.lugar_fiesta }}</p>
-                    </div>
-                </div>
-
-                <div class="actions-row">
-                    {% if evento.link_whatsapp %}
-                    <a
-                        class="btn btn-primary"
-                        href="{{ evento.link_whatsapp }}"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                    >
-                        Confirmar por WhatsApp
-                    </a>
-                    {% endif %}
-
-                    <a
-                        class="btn btn-secondary"
-                        href="#rsvp"
-                    >
-                        Ir a confirmar aquí
-                    </a>
-                </div>
-            </div>
-        </section>
-
-        <section class="section">
-            <div class="card">
-                <h2 class="section-title">Dress Code</h2>
-                <div class="dress-code-box">
-                    <div class="dress-code-main">{{ evento.dress_code|default:"Formal elegante" }}</div>
-                    <p class="dress-code-note">
-                        {{ evento.mensaje_general }}
-                    </p>
-                </div>
-            </div>
-        </section>
-
-        {% if evento.link_mapa %}
-        <section class="section">
-            <div class="card">
-                <h2 class="section-title">Ubicación</h2>
-                <p class="section-subtitle">
-                    Puedes usar el mapa para ubicar fácilmente el lugar del evento.
-                </p>
-
-                <div class="map-wrap">
-                    <iframe
-                        src="{{ evento.link_mapa }}"
-                        loading="lazy"
-                        referrerpolicy="no-referrer-when-downgrade"
-                        allowfullscreen>
-                    </iframe>
-                </div>
-
-                <div class="actions-row">
-                    <a
-                        class="btn btn-primary"
-                        href="{{ evento.link_mapa }}"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                    >
-                        Abrir en Google Maps
-                    </a>
+    <main class="shell">
+        {% if secciones.CUENTA_REGRESIVA.activa %}
+        <section class="section" id="cuenta" data-invitation-section="CUENTA_REGRESIVA" style="order: {{ secciones.CUENTA_REGRESIVA.orden }}; {{ secciones.CUENTA_REGRESIVA.estilo_editor }}">
+            <div class="panel countdown-panel {% if secciones.CUENTA_REGRESIVA.fondo %}bg-panel{% endif %} {% if secciones.CUENTA_REGRESIVA.fondo_es_video %}bg-video-panel{% endif %}" {% if secciones.CUENTA_REGRESIVA.fondo and not secciones.CUENTA_REGRESIVA.fondo_es_video %}style="background-image: url('{{ secciones.CUENTA_REGRESIVA.fondo.url }}'); background-position: {{ secciones.CUENTA_REGRESIVA.posicion_fondo }};"{% endif %}>
+                {% if secciones.CUENTA_REGRESIVA.fondo_es_video %}<video class="panel-bg-video" src="{{ secciones.CUENTA_REGRESIVA.fondo.url }}" autoplay muted loop playsinline preload="metadata"></video>{% endif %}
+                {% if secciones.CUENTA_REGRESIVA.imagen_titulo %}{% if secciones.CUENTA_REGRESIVA.imagen_titulo_es_video %}<video class="section-title-image" src="{{ secciones.CUENTA_REGRESIVA.imagen_titulo.url }}" autoplay muted loop playsinline preload="metadata"></video>{% else %}<img class="section-title-image" src="{{ secciones.CUENTA_REGRESIVA.imagen_titulo.url }}" alt="">{% endif %}{% endif %}
+                {% if secciones.CUENTA_REGRESIVA.mostrar_titulo_texto %}<h2 class="section-title">{{ secciones.CUENTA_REGRESIVA.titulo }}</h2>{% endif %}
+                <div class="count-grid">
+                    <div class="count-box"><strong id="dias">0</strong><span>Días</span></div>
+                    <div class="count-box"><strong id="horas">0</strong><span>Horas</span></div>
+                    <div class="count-box"><strong id="minutos">0</strong><span>Minutos</span></div>
+                    <div class="count-box"><strong id="segundos">0</strong><span>Segundos</span></div>
                 </div>
             </div>
         </section>
         {% endif %}
 
-        <section class="section" id="rsvp">
-            <div class="card">
-                <h2 class="section-title">Confirma tu asistencia</h2>
-                <p class="section-subtitle">
-                    Ayúdanos confirmando la asistencia de cada invitado incluido en esta invitación.
-                </p>
+        {% if secciones.DETALLES.activa %}
+        <section class="section" id="detalles" data-invitation-section="DETALLES" style="order: {{ secciones.DETALLES.orden }}; {{ secciones.DETALLES.estilo_editor }}">
+            <div class="panel {% if secciones.DETALLES.fondo %}bg-panel{% endif %} {% if secciones.DETALLES.fondo_es_video %}bg-video-panel{% endif %}" {% if secciones.DETALLES.fondo and not secciones.DETALLES.fondo_es_video %}style="background-image: url('{{ secciones.DETALLES.fondo.url }}'); background-position: {{ secciones.DETALLES.posicion_fondo }};"{% endif %}>
+                {% if secciones.DETALLES.fondo_es_video %}<video class="panel-bg-video" src="{{ secciones.DETALLES.fondo.url }}" autoplay muted loop playsinline preload="metadata"></video>{% endif %}
+                {% if secciones.DETALLES.imagen_titulo %}{% if secciones.DETALLES.imagen_titulo_es_video %}<video class="section-title-image" src="{{ secciones.DETALLES.imagen_titulo.url }}" autoplay muted loop playsinline preload="metadata"></video>{% else %}<img class="section-title-image" src="{{ secciones.DETALLES.imagen_titulo.url }}" alt="">{% endif %}{% endif %}
+                {% if secciones.DETALLES.mostrar_titulo_texto %}<h2 class="section-title">{{ secciones.DETALLES.titulo }}</h2>{% endif %}
+                {% if secciones.DETALLES.descripcion %}<p class="section-copy">{{ secciones.DETALLES.descripcion }}</p>{% endif %}
 
-                {% if grupo.confirmado %}
-                    <div class="confirmed-banner">
-                        Esta invitación ya fue respondida. Aún puedes revisar o actualizar la información si lo necesitas.
+                <div class="event-detail-grid">
+                    <div class="info-box event-place-card">
+                        {% if evento.foto_ceremonia %}
+                            <div class="place-media">
+                                {% if evento.ceremonia_es_video %}
+                                    <video src="{{ evento.foto_ceremonia.url }}" muted controls playsinline preload="metadata"></video>
+                                {% else %}
+                                    <img src="{{ evento.foto_ceremonia.url }}" alt="{{ evento.lugar_misa }}">
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                        <div class="card-title">Ceremonia</div>
+                        <div class="value">{{ evento.fecha_misa|date:"d/m/Y" }}</div>
+                        <p>{{ evento.fecha_misa|date:"h:i A" }} · {{ evento.lugar_misa }}</p>
+                        {% if evento.direccion_ceremonia %}
+                            <p class="place-address">{{ evento.direccion_ceremonia }}</p>
+                        {% endif %}
+                        {% if evento.link_mapa_misa %}<a class="btn secondary" href="{{ evento.link_mapa_misa }}" target="_blank">Mapa templo</a>{% endif %}
+                        {% if evento.mostrar_mapa %}
+                            {% if evento.mapa_misa_embed_html %}
+                                <div class="map-card"><div class="embed-map">{{ evento.mapa_misa_embed_html }}</div></div>
+                            {% elif evento.link_mapa_misa %}
+                                <div class="map-card"><iframe src="{{ evento.link_mapa_misa }}" loading="lazy" allowfullscreen></iframe></div>
+                            {% endif %}
+                        {% endif %}
                     </div>
+                    <div class="info-box event-place-card">
+                        {% if evento.foto_recepcion %}
+                            <div class="place-media">
+                                {% if evento.recepcion_es_video %}
+                                    <video src="{{ evento.foto_recepcion.url }}" muted controls playsinline preload="metadata"></video>
+                                {% else %}
+                                    <img src="{{ evento.foto_recepcion.url }}" alt="{{ evento.lugar_fiesta }}">
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                        <div class="card-title">Fiesta</div>
+                        <div class="value">{{ evento.fecha_fiesta|date:"d/m/Y" }}</div>
+                        <p>{{ evento.fecha_fiesta|date:"h:i A" }} · {{ evento.lugar_fiesta }}</p>
+                        {% if evento.direccion_recepcion %}
+                            <p class="place-address">{{ evento.direccion_recepcion }}</p>
+                        {% endif %}
+                        {% if evento.link_mapa_fiesta %}
+                            <a class="btn secondary" href="{{ evento.link_mapa_fiesta }}" target="_blank">Mapa fiesta</a>
+                        {% elif evento.link_mapa %}
+                            <a class="btn secondary" href="{{ evento.link_mapa }}" target="_blank">Mapa fiesta</a>
+                        {% endif %}
+                        {% if evento.mostrar_mapa %}
+                            {% if evento.mapa_fiesta_embed_html %}
+                                <div class="map-card"><div class="embed-map">{{ evento.mapa_fiesta_embed_html }}</div></div>
+                            {% elif evento.link_mapa_fiesta %}
+                                <div class="map-card"><iframe src="{{ evento.link_mapa_fiesta }}" loading="lazy" allowfullscreen></iframe></div>
+                            {% elif evento.link_mapa %}
+                                <div class="map-card"><iframe src="{{ evento.link_mapa }}" loading="lazy" allowfullscreen></iframe></div>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                    {% comment %}
+                    <div class="info-box dress-section-card" hidden>
+                        <div class="section-title">Dress Code</div>
+                        <div class="value">{{ evento.dress_code|default:"Formal elegante" }}</div>
+                        <p>{{ evento.dress_code_descripcion|default:"Gracias por acompañarnos con este estilo para la celebración." }}</p>
+                        {% if evento.dress_code_permitido_imagen %}
+                            <div class="dress-card allowed">
+                                <div class="label">Dress code permitido</div>
+                                <img class="dress-image" src="{{ evento.dress_code_permitido_imagen.url }}" alt="Dress code permitido">
+                            </div>
+                        {% endif %}
+                        {% if evento.dress_code_prohibido_imagen %}
+                            <div class="dress-card prohibited">
+                                <div class="label">Dress code no permitido</div>
+                                <img class="dress-image" src="{{ evento.dress_code_prohibido_imagen.url }}" alt="Dress code no permitido">
+                            </div>
+                        {% endif %}
+                    </div>
+                    {% endcomment %}
+                </div>
+
+                
+            </div>
+        </section>
+        {% endif %}
+
+        {% if secciones.DRESS_CODE.activa %}
+        <section class="section" id="dress-code" data-invitation-section="DRESS_CODE" style="order: {{ secciones.DRESS_CODE.orden }}; {{ secciones.DRESS_CODE.estilo_editor }}">
+            <div class="panel {% if secciones.DRESS_CODE.fondo %}bg-panel{% endif %} {% if secciones.DRESS_CODE.fondo_es_video %}bg-video-panel{% endif %}" {% if secciones.DRESS_CODE.fondo and not secciones.DRESS_CODE.fondo_es_video %}style="background-image: url('{{ secciones.DRESS_CODE.fondo.url }}'); background-position: {{ secciones.DRESS_CODE.posicion_fondo }};"{% endif %}>
+                {% if secciones.DRESS_CODE.fondo_es_video %}<video class="panel-bg-video" src="{{ secciones.DRESS_CODE.fondo.url }}" autoplay muted loop playsinline preload="metadata"></video>{% endif %}
+                {% if secciones.DRESS_CODE.imagen_titulo %}{% if secciones.DRESS_CODE.imagen_titulo_es_video %}<video class="section-title-image" src="{{ secciones.DRESS_CODE.imagen_titulo.url }}" autoplay muted loop playsinline preload="metadata"></video>{% else %}<img class="section-title-image" src="{{ secciones.DRESS_CODE.imagen_titulo.url }}" alt="">{% endif %}{% endif %}
+                {% if secciones.DRESS_CODE.mostrar_titulo_texto %}<h2 class="section-title">{{ secciones.DRESS_CODE.titulo }}</h2>{% endif %}
+                {% if secciones.DRESS_CODE.descripcion %}<p class="section-copy">{{ secciones.DRESS_CODE.descripcion }}</p>{% endif %}
+                <div class="dress-grid">
+                    <div class="info-box dress-section-card">
+                        <div class="value">{{ evento.dress_code|default:"Formal elegante" }}</div>
+                        {% if evento.dress_code_permitido_imagen %}
+                            <div class="dress-card allowed">
+                                <div class="label">Permitido</div>
+                                <img class="dress-image" src="{{ evento.dress_code_permitido_imagen.url }}" alt="Dress code permitido">
+                            </div>
+                        {% endif %}
+                        {% if evento.dress_code_prohibido_imagen %}
+                            <div class="dress-card prohibited">
+                                <div class="label">No permitido</div>
+                                <img class="dress-image" src="{{ evento.dress_code_prohibido_imagen.url }}" alt="Dress code no permitido">
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </section>
+        {% endif %}
+
+        {% if secciones.ITINERARIO.activa and itinerario %}
+            <section class="section" id="itinerario" data-invitation-section="ITINERARIO" style="order: {{ secciones.ITINERARIO.orden }}; {{ secciones.ITINERARIO.estilo_editor }}">
+                <div class="panel itinerary-panel">
+                    {% if secciones.ITINERARIO.imagen_titulo %}{% if secciones.ITINERARIO.imagen_titulo_es_video %}<video class="section-title-image" src="{{ secciones.ITINERARIO.imagen_titulo.url }}" autoplay muted loop playsinline preload="metadata"></video>{% else %}<img class="section-title-image" src="{{ secciones.ITINERARIO.imagen_titulo.url }}" alt="">{% endif %}{% endif %}
+                    {% if secciones.ITINERARIO.mostrar_titulo_texto %}<h2 class="section-title">{{ secciones.ITINERARIO.titulo }}</h2>{% endif %}
+                    {% if secciones.ITINERARIO.descripcion %}<p class="section-copy">{{ secciones.ITINERARIO.descripcion }}</p>{% endif %}
+                    <div class="itinerary-list">
+                        {% for item in itinerario %}
+                            <div class="itinerary-item">
+                                <time>{{ item.hora|time:"H:i" }}</time>
+                                <div>
+                                    <strong>{{ item.titulo }}</strong>
+                                    {% if item.descripcion %}<p>{{ item.descripcion }}</p>{% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </section>
+        {% endif %}
+
+        {% if secciones.ALBUM.activa and evento.mostrar_album and fotos_album %}
+            <section class="section" id="album" data-invitation-section="ALBUM" style="order: {{ secciones.ALBUM.orden }}; {{ secciones.ALBUM.estilo_editor }}">
+                <div class="panel {% if secciones.ALBUM.fondo %}bg-panel{% endif %} {% if secciones.ALBUM.fondo_es_video %}bg-video-panel{% endif %}" {% if secciones.ALBUM.fondo and not secciones.ALBUM.fondo_es_video %}style="background-image: url('{{ secciones.ALBUM.fondo.url }}'); background-position: {{ secciones.ALBUM.posicion_fondo }};"{% endif %}>
+                    {% if secciones.ALBUM.fondo_es_video %}<video class="panel-bg-video" src="{{ secciones.ALBUM.fondo.url }}" autoplay muted loop playsinline preload="metadata"></video>{% endif %}
+                    {% if secciones.ALBUM.imagen_titulo %}{% if secciones.ALBUM.imagen_titulo_es_video %}<video class="section-title-image" src="{{ secciones.ALBUM.imagen_titulo.url }}" autoplay muted loop playsinline preload="metadata"></video>{% else %}<img class="section-title-image" src="{{ secciones.ALBUM.imagen_titulo.url }}" alt="">{% endif %}{% endif %}
+                    {% if secciones.ALBUM.mostrar_titulo_texto %}<h2 class="section-title">{{ secciones.ALBUM.titulo }}</h2>{% endif %}
+                    {% if secciones.ALBUM.descripcion %}<p class="section-copy">{{ secciones.ALBUM.descripcion }}</p>{% endif %}
+                    <div class="album-grid">
+                        {% for foto in fotos_album %}
+                            <figure>
+                                {% if foto.es_video %}
+                                    <video src="{{ foto.imagen.url }}" controls playsinline preload="metadata"></video>
+                                {% else %}
+                                    <img src="{{ foto.imagen.url }}" alt="{{ foto.titulo|default:'Foto del evento' }}">
+                                {% endif %}
+                                {% if foto.titulo %}<figcaption>{{ foto.titulo }}</figcaption>{% endif %}
+                            </figure>
+                        {% endfor %}
+                    </div>
+                </div>
+            </section>
+        {% endif %}
+
+        {% if secciones.MENU.activa and evento.mostrar_menu and menus %}
+            <section class="section" id="menu" data-invitation-section="MENU" style="order: {{ secciones.MENU.orden }}; {{ secciones.MENU.estilo_editor }}">
+                <div class="panel {% if secciones.MENU.fondo %}bg-panel{% endif %} {% if secciones.MENU.fondo_es_video %}bg-video-panel{% endif %}" {% if secciones.MENU.fondo and not secciones.MENU.fondo_es_video %}style="background-image: url('{{ secciones.MENU.fondo.url }}'); background-position: {{ secciones.MENU.posicion_fondo }};"{% endif %}>
+                    {% if secciones.MENU.fondo_es_video %}<video class="panel-bg-video" src="{{ secciones.MENU.fondo.url }}" autoplay muted loop playsinline preload="metadata"></video>{% endif %}
+                    {% if secciones.MENU.imagen_titulo %}{% if secciones.MENU.imagen_titulo_es_video %}<video class="section-title-image" src="{{ secciones.MENU.imagen_titulo.url }}" autoplay muted loop playsinline preload="metadata"></video>{% else %}<img class="section-title-image" src="{{ secciones.MENU.imagen_titulo.url }}" alt="">{% endif %}{% endif %}
+                    {% if secciones.MENU.mostrar_titulo_texto %}<h2 class="section-title">{{ secciones.MENU.titulo }}</h2>{% endif %}
+                    {% if secciones.MENU.descripcion %}<p class="section-copy">{{ secciones.MENU.descripcion }}</p>{% endif %}
+                    <div class="menu-grid">
+                        {% for menu in menus %}
+                            <div class="menu-box"><span class="pill">{{ menu.get_tipo_display }}</span><h3>{{ menu.nombre }}</h3><p>{{ menu.descripcion }}</p></div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </section>
+        {% endif %}
+
+        {% if secciones.REGALOS.activa and evento.mostrar_regalos %}
+            <section class="section" id="regalos" data-invitation-section="REGALOS" style="order: {{ secciones.REGALOS.orden }}; {{ secciones.REGALOS.estilo_editor }}">
+                <div class="panel {% if secciones.REGALOS.fondo %}bg-panel{% endif %} {% if secciones.REGALOS.fondo_es_video %}bg-video-panel{% endif %}" {% if secciones.REGALOS.fondo and not secciones.REGALOS.fondo_es_video %}style="background-image: url('{{ secciones.REGALOS.fondo.url }}'); background-position: {{ secciones.REGALOS.posicion_fondo }};"{% endif %}>
+                    {% if secciones.REGALOS.fondo_es_video %}<video class="panel-bg-video" src="{{ secciones.REGALOS.fondo.url }}" autoplay muted loop playsinline preload="metadata"></video>{% endif %}
+                    {% if secciones.REGALOS.imagen_titulo %}{% if secciones.REGALOS.imagen_titulo_es_video %}<video class="section-title-image" src="{{ secciones.REGALOS.imagen_titulo.url }}" autoplay muted loop playsinline preload="metadata"></video>{% else %}<img class="section-title-image" src="{{ secciones.REGALOS.imagen_titulo.url }}" alt="">{% endif %}{% endif %}
+                    {% if secciones.REGALOS.mostrar_titulo_texto %}<h2 class="section-title">{{ secciones.REGALOS.titulo }}</h2>{% endif %}
+                    {% if secciones.REGALOS.descripcion %}<p class="section-copy">{{ secciones.REGALOS.descripcion }}</p>{% endif %}
+                    <div class="gift-grid">
+                        {% if evento.link_mesa_regalos %}
+                            <a class="gift-box" href="{{ evento.link_mesa_regalos }}" target="_blank">
+                                <span class="gift-kind">Mesa principal</span>
+                                <strong>Mesa de regalos</strong>
+                            </a>
+                        {% endif %}
+                        {% for regalo in regalos %}
+                            {% if regalo.es_deposito or regalo.banco or regalo.titular or regalo.numero_cuenta or regalo.clabe %}
+                                <div class="gift-box deposit-box">
+                                    <span class="gift-kind">Deposito</span>
+                                    <strong>{{ regalo.nombre }}</strong>
+                                    {% if regalo.banco %}<p>Banco: {{ regalo.banco }}</p>{% endif %}
+                                    {% if regalo.titular %}<p>Titular: {{ regalo.titular }}</p>{% endif %}
+                                    {% if regalo.numero_cuenta %}<p>Cuenta: {{ regalo.numero_cuenta }}</p>{% endif %}
+                                    {% if regalo.clabe %}<p>CLABE: {{ regalo.clabe }}</p>{% endif %}
+                                    {% if regalo.instrucciones %}<small>{{ regalo.instrucciones }}</small>{% endif %}
+                                </div>
+                            {% elif regalo.url %}
+                                <a class="gift-box" href="{{ regalo.url }}" target="_blank">
+                                    <span class="gift-kind">Tienda</span>
+                                    <strong>{{ regalo.nombre }}</strong>
+                                </a>
+                            {% else %}
+                                <div class="gift-box">
+                                    <span class="gift-kind">Regalo</span>
+                                    <strong>{{ regalo.nombre }}</strong>
+                                    <p>Informacion pendiente de completar.</p>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </section>
+        {% endif %}
+
+        {% if secciones.ALBUM_COMPARTIDO.activa and evento.mostrar_album_compartido and evento.link_album_compartido %}
+            <section class="section" id="album-compartido" data-invitation-section="ALBUM_COMPARTIDO" style="order: {{ secciones.ALBUM_COMPARTIDO.orden }}; {{ secciones.ALBUM_COMPARTIDO.estilo_editor }}">
+                <div class="panel shared-album-panel">
+                    {% if secciones.ALBUM_COMPARTIDO.imagen_titulo %}{% if secciones.ALBUM_COMPARTIDO.imagen_titulo_es_video %}<video class="section-title-image" src="{{ secciones.ALBUM_COMPARTIDO.imagen_titulo.url }}" autoplay muted loop playsinline preload="metadata"></video>{% else %}<img class="section-title-image" src="{{ secciones.ALBUM_COMPARTIDO.imagen_titulo.url }}" alt="">{% endif %}{% endif %}
+                    {% if secciones.ALBUM_COMPARTIDO.mostrar_titulo_texto %}<h2 class="section-title">{{ secciones.ALBUM_COMPARTIDO.titulo }}</h2>{% endif %}
+                    {% if secciones.ALBUM_COMPARTIDO.descripcion %}<p class="section-copy">{{ secciones.ALBUM_COMPARTIDO.descripcion }}</p>{% endif %}
+                    <div class="btn-row">
+                        <a class="btn" href="{{ evento.link_album_compartido }}" target="_blank" rel="noopener">Subir fotos y videos</a>
+                    </div>
+                </div>
+            </section>
+        {% endif %}
+
+        {% if secciones.RSVP.activa %}
+        <section class="section" id="rsvp" data-invitation-section="RSVP" style="order: {{ secciones.RSVP.orden }}; {{ secciones.RSVP.estilo_editor }}">
+            <div class="panel {% if secciones.RSVP.fondo %}bg-panel{% endif %} {% if secciones.RSVP.fondo_es_video %}bg-video-panel{% endif %}" {% if secciones.RSVP.fondo and not secciones.RSVP.fondo_es_video %}style="background-image: url('{{ secciones.RSVP.fondo.url }}'); background-position: {{ secciones.RSVP.posicion_fondo }};"{% endif %}>
+                {% if secciones.RSVP.fondo_es_video %}<video class="panel-bg-video" src="{{ secciones.RSVP.fondo.url }}" autoplay muted loop playsinline preload="metadata"></video>{% endif %}
+                <div class="invitation-summary">
+                    <h2 class="section-title">{{ evento.titulo_invitacion }}</h2>
+                    <p class="section-copy">{{ evento.texto_invitacion }}</p>
+                    <div class="summary-grid">
+                        <div class="info-box">
+                            <div class="label">Invitación para</div>
+                            <div class="value guest-summary-name">{% if grupo.es_familiar %}Familia {% endif %}{{ grupo.nombre_grupo }}</div>
+                        </div>
+                        <div class="info-box">
+                            <div class="label">Tipo</div>
+                            <div class="value">{{ grupo.get_tipo_display }}</div>
+                        </div>
+                        <div class="info-box">
+                            <div class="label">Lugares</div>
+                            <div class="value">{{ grupo.total_lugares }}</div>
+                        </div>
+                    </div>
+                </div>
+                {% if secciones.RSVP.imagen_titulo %}{% if secciones.RSVP.imagen_titulo_es_video %}<video class="section-title-image" src="{{ secciones.RSVP.imagen_titulo.url }}" autoplay muted loop playsinline preload="metadata"></video>{% else %}<img class="section-title-image" src="{{ secciones.RSVP.imagen_titulo.url }}" alt="">{% endif %}{% endif %}
+                {% if secciones.RSVP.mostrar_titulo_texto %}<h2 class="section-title">{{ secciones.RSVP.titulo }}</h2>{% endif %}
+                {% if grupo.confirmado %}
+                    <p class="section-copy">Esta invitación ya fue respondida. Puedes actualizar la información si lo necesitas.</p>
+                {% else %}
+                    <p class="section-copy">{{ secciones.RSVP.descripcion }}</p>
                 {% endif %}
 
                 <form method="post">
                     {% csrf_token %}
-
-                    <div class="form-grid">
-                        {% for invitado in invitados %}
-                            <div class="guest-card">
-                                <h3 class="guest-name">{{ invitado.nombre }}</h3>
-
-                                <div class="radio-group">
-                                    <div class="option-pill">
-                                        <input
-                                            type="radio"
-                                            id="si_{{ invitado.id }}"
-                                            name="asistira_{{ invitado.id }}"
-                                            value="si"
-                                            {% if invitado.asistira == True %}checked{% endif %}
-                                        >
-                                        <label for="si_{{ invitado.id }}">Sí asistiré</label>
-                                    </div>
-
-                                    <div class="option-pill">
-                                        <input
-                                            type="radio"
-                                            id="no_{{ invitado.id }}"
-                                            name="asistira_{{ invitado.id }}"
-                                            value="no"
-                                            {% if invitado.asistira == False %}checked{% endif %}
-                                        >
-                                        <label for="no_{{ invitado.id }}">No asistiré</label>
-                                    </div>
-                                </div>
-
-                                <textarea
-                                    name="comentario_{{ invitado.id }}"
-                                    placeholder="Escribe aquí algún comentario opcional..."
-                                >{{ invitado.comentario|default_if_none:'' }}</textarea>
-
-                                {% if invitado.asistira != None %}
-                                    <div class="guest-status">
-                                        Estado actual:
-                                        {% if invitado.asistira %}
-                                            Asistirá
-                                        {% else %}
-                                            No asistirá
-                                        {% endif %}
-                                    </div>
-                                {% endif %}
+                    {% if grupo.es_personal %}
+                        <div class="guest-box">
+                            <div class="guest-head"><h3 class="guest-name">{{ grupo.nombre_grupo }}</h3><span class="pill">Acompañantes permitidos: {{ grupo.cantidad_extra_permitida }}</span></div>
+                            <div class="radio-row">
+                                <div class="option"><input type="radio" id="si_grupo" name="asistira" value="si" {% if grupo.asistira == True %}checked{% endif %}><label for="si_grupo">Sí asistiré</label></div>
+                                <div class="option"><input type="radio" id="no_grupo" name="asistira" value="no" {% if grupo.asistira == False %}checked{% endif %}><label for="no_grupo">No asistiré</label></div>
                             </div>
-                        {% endfor %}
-                    </div>
-
-                    <div class="save-btn-wrap">
-                        <button type="submit" class="btn btn-primary">Guardar confirmación</button>
-                    </div>
-
-                    <div class="footer-note">
-                        Gracias por acompañarnos en este momento tan especial.
-                    </div>
+                            <div class="number-grid">
+                                <label>Acompañantes adultos<input type="number" id="acompanantes_adultos" name="acompanantes_adultos" min="0" max="{{ grupo.cantidad_extra_permitida }}" value="{{ grupo.acompanantes_adultos }}"></label>
+                                <label>Acompañantes niños<input type="number" id="acompanantes_ninos" name="acompanantes_ninos" min="0" max="{{ grupo.cantidad_extra_permitida }}" value="{{ grupo.acompanantes_ninos }}"></label>
+                            </div>
+                            <details class="guest-extra-details">
+                                <summary>Notas de alimentos</summary>
+                                <div class="guest-notes-grid">
+                                    <label>Restricciones alimentarias<textarea name="restricciones_alimentarias" placeholder="Vegetariano, sin gluten, etc.">{{ grupo.restricciones_alimentarias|default_if_none:'' }}</textarea></label>
+                                    <label>Alergias<textarea name="alergias" placeholder="Alergias importantes">{{ grupo.alergias|default_if_none:'' }}</textarea></label>
+                                    <label class="checkbox-line"><input type="checkbox" name="requiere_menu_infantil" {% if grupo.requiere_menu_infantil %}checked{% endif %}> Menu infantil</label>
+                                </div>
+                            </details>
+                            <textarea name="comentario" placeholder="Comentario opcional">{{ grupo.comentario|default_if_none:'' }}</textarea>
+                        </div>
+                    {% else %}
+                        <div class="form-grid">
+                            {% for invitado in grupo.invitados.all %}
+                                <div class="guest-box">
+                                    <div class="guest-head"><h3 class="guest-name">{{ invitado.nombre }}</h3><span class="pill">{{ invitado.get_tipo_persona_display }}</span></div>
+                                    <div class="radio-row">
+                                        <div class="option"><input type="radio" id="si_{{ invitado.id }}" name="asistira_{{ invitado.id }}" value="si" {% if invitado.asistira == True %}checked{% endif %}><label for="si_{{ invitado.id }}">Sí asistirá</label></div>
+                                        <div class="option"><input type="radio" id="no_{{ invitado.id }}" name="asistira_{{ invitado.id }}" value="no" {% if invitado.asistira == False %}checked{% endif %}><label for="no_{{ invitado.id }}">No asistirá</label></div>
+                                    </div>
+                                    <details class="guest-extra-details">
+                                        <summary>Notas de alimentos</summary>
+                                        <div class="guest-notes-grid">
+                                            <label>Restricciones<input type="text" name="restricciones_{{ invitado.id }}" value="{{ invitado.restricciones_alimentarias|default_if_none:'' }}" placeholder="Vegetariano, sin gluten..."></label>
+                                            <label>Alergias<input type="text" name="alergias_{{ invitado.id }}" value="{{ invitado.alergias|default_if_none:'' }}" placeholder="Alergias importantes"></label>
+                                            <label class="checkbox-line"><input type="checkbox" name="menu_infantil_{{ invitado.id }}" {% if invitado.menu_infantil %}checked{% endif %}> Menu infantil</label>
+                                        </div>
+                                    </details>
+                                    <textarea name="comentario_{{ invitado.id }}" placeholder="Comentario opcional">{{ invitado.comentario|default_if_none:'' }}</textarea>
+                                </div>
+                            {% empty %}
+                                <p class="section-copy">Esta familia aún no tiene invitados capturados en el admin.</p>
+                            {% endfor %}
+                            <textarea name="comentario_grupo" placeholder="Comentario general de la familia">{{ grupo.comentario|default_if_none:'' }}</textarea>
+                        </div>
+                    {% endif %}
+                    <div class="btn-row" style="margin-top:18px;"><button class="btn" type="submit">Guardar confirmación</button></div>
                 </form>
             </div>
+            <div class="btn-row" style="margin-top:18px;">
+                {% if evento.link_whatsapp %}<a class="btn" href="{{ evento.link_whatsapp }}" target="_blank">WhatsApp</a>{% endif %}
+                <a class="btn secondary" href="#rsvp">Confirmar asistencia por whatsapp</a>
+            </div>
         </section>
-
+        {% endif %}
     </main>
 
     <div class="floating-nav">
-        <button class="music-toggle" id="musicToggle" type="button" title="Música">♪</button>
+        <button id="musicToggle" type="button" title="Música">♪</button>
         <a href="#inicio" title="Ir arriba">↑</a>
-        <a href="#rsvp" title="Ir a confirmar">✓</a>
+        <a href="#rsvp" title="Confirmar">✓</a>
     </div>
 
-    <div class="music-hint" id="musicHint">Toca la nota para activar la música</div>
-
-    <script>
-        const fechaEvento = new Date("{{ evento.fecha_fiesta|date:'Y-m-d\\TH:i:s' }}").getTime();
-
-        function actualizarCountdown() {
-            const ahora = new Date().getTime();
-            const diferencia = fechaEvento - ahora;
-
-            const diasEl = document.getElementById("dias");
-            const horasEl = document.getElementById("horas");
-            const minutosEl = document.getElementById("minutos");
-            const segundosEl = document.getElementById("segundos");
-
-            if (diferencia <= 0) {
-                diasEl.textContent = "0";
-                horasEl.textContent = "0";
-                minutosEl.textContent = "0";
-                segundosEl.textContent = "0";
-                return;
-            }
-
-            const dias = Math.floor(diferencia / (1000 * 60 * 60 * 24));
-            const horas = Math.floor((diferencia % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            const minutos = Math.floor((diferencia % (1000 * 60 * 60)) / (1000 * 60));
-            const segundos = Math.floor((diferencia % (1000 * 60)) / 1000);
-
-            diasEl.textContent = dias;
-            horasEl.textContent = horas;
-            minutosEl.textContent = minutos;
-            segundosEl.textContent = segundos;
-        }
-
-        actualizarCountdown();
-        setInterval(actualizarCountdown, 1000);
-
-        const bgMusic = document.getElementById("bgMusic");
-        const musicToggle = document.getElementById("musicToggle");
-        const musicHint = document.getElementById("musicHint");
-        const intro = document.getElementById("intro");
-        const envelope = document.getElementById("envelope");
-
-        function showMusicHint() {
-            musicHint.textContent = texto;
-            musicHint.classList.add("show");
-            setTimeout(() => {
-                musicHint.classList.remove("show");
-            }, 3000);
-        }
-
-        async function playMusic() {
-            try {
-                bgMusic.volume = 0.55;
-                await bgMusic.play();
-                if (musicToggle) musicToggle.textContent = "♫";
-            } catch (e) {
-                if (musicToggle) musicToggle.textContent = "♪";
-                showMusicHint("No se pudo reproducir la música");
-                console.error("Error al reproducir audio:", e);
-                }
-        }
-
-        function openInvitation() {
-            if (envelope.classList.contains("opening")) return;
-
-            envelope.classList.add("opening");
-
-            setTimeout(async () => {
-                intro.classList.add("hidden");
-                playMusic();
-            }, 1000);
-        }
-
-        if (musicToggle) {
-            musicToggle.addEventListener("click", async function () {
-                if (bgMusic.paused) {
-                    await playMusic();
-                } else {
-                    bgMusic.pause();
-                    musicToggle.textContent = "♪";
-                }
-            });
-        }
-
-        bgMusic.addEventListener("error", function () {
-            console.error("No se pudo cargar el archivo de audio.");
-            showMusicHint("No se encontró el archivo de música");
-        });
-    </script>
+    <script src="{% static 'invitaciones/js/invitacion.js' %}"></script>
 </body>
 </html>

@@ -1,0 +1,387 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wedding planner | Dashboard</title>
+    <link rel="stylesheet" href="{% static 'invitaciones/css/role_dashboards.css' %}">
+</head>
+<body>
+<div class="role-shell">
+    <aside class="role-sidebar">
+        <div class="brand-lockup">
+            <span>Operacion personal</span>
+            <strong>{{ request.user.get_full_name|default:request.user.username }}</strong>
+        </div>
+        <nav class="role-nav">
+            <a href="#resumen" data-role-link>Resumen</a>
+            <a href="#crear" data-role-link>Crear evento</a>
+            <a href="#eventos" data-role-link>Mis eventos</a>
+            <a href="#proveedores" data-role-link>Proveedores</a>
+            <a href="#pendientes" data-role-link>Pendientes</a>
+            <a href="#atajos" data-role-link>Atajos</a>
+        </nav>
+        <div class="role-sidebar-footer">
+            <a class="btn ghost" href="{% url 'dashboard_profesional' %}">Panel profesional</a>
+            <a class="btn secondary" href="{% url 'portal_cliente' %}">Portal cliente</a>
+        </div>
+    </aside>
+
+    <main class="role-main">
+        <section class="role-topbar">
+            <div>
+                <span class="eyebrow">Wedding planner</span>
+                <h1>Mis eventos asignados</h1>
+                <p class="muted">Aqui aparecen tus eventos asignados y los eventos que crees como responsable.</p>
+            </div>
+            <div class="role-actions">
+                {% if puede_crear_eventos_planner %}<a href="#crear" data-role-link>Crear evento</a>{% endif %}
+                <a class="secondary" href="#eventos" data-role-link>Ver eventos</a>
+                {% if eventos_lista.0 %}<a class="secondary" href="{% url 'dashboard' %}?evento={{ eventos_lista.0.id }}">Abrir editor</a>{% endif %}
+                <form method="post" action="{% url 'logout' %}">
+                    {% csrf_token %}
+                    <button class="secondary" type="submit">Cerrar sesión</button>
+                </form>
+            </div>
+        </section>
+
+        {% if messages %}
+            <section class="message-stack">
+                {% for message in messages %}
+                    <div class="notice {{ message.tags }}">{{ message }}</div>
+                {% endfor %}
+            </section>
+        {% endif %}
+
+        <section class="role-section tab-panel" id="resumen" data-role-panel>
+            <div class="section-header">
+                <div>
+                    <h2>Resumen operativo</h2>
+                    <p class="muted">Lo mas importante para priorizar el trabajo del dia.</p>
+                </div>
+            </div>
+            <div class="quick-actions">
+                {% if puede_crear_eventos_planner %}<a href="#crear" data-role-link>Crear evento</a>{% endif %}
+                <a href="#eventos" data-role-link>Mis eventos</a>
+                <a href="#proveedores" data-role-link>Proveedores</a>
+                <a href="#pendientes" data-role-link>Pendientes</a>
+                <a href="#atajos" data-role-link>Atajos</a>
+            </div>
+            <div class="metrics-grid">
+                <article class="metric"><span>Eventos</span><strong>{{ resumen_eventos.total }}</strong><p class="muted">{{ resumen_eventos.proximos }} proximos</p></article>
+                <article class="metric"><span>Invitaciones</span><strong>{{ resumen_operativo.invitaciones }}</strong><p class="muted">{{ resumen_operativo.pendientes_rsvp }} RSVP pendientes</p></article>
+                <article class="metric"><span>Tareas</span><strong>{{ resumen_operativo.tareas_pendientes }}</strong><p class="muted">{{ resumen_operativo.tareas_vencidas }} vencidas</p></article>
+                <article class="metric"><span>Proveedores</span><strong>{{ resumen_operativo.servicios_pendientes }}</strong><p class="muted">Pendientes de cerrar</p></article>
+                <article class="metric"><span>Pagos</span><strong>{{ resumen_operativo.pagos_vencidos }}</strong><p class="muted">Vencidos</p></article>
+            </div>
+        </section>
+
+        <section class="role-section tab-panel" id="crear" data-role-panel hidden>
+            <div class="section-header">
+                <div>
+                    <h2>Crear evento</h2>
+                    <p class="muted">Registra un evento base y quedara asignado a ti automaticamente.</p>
+                </div>
+            </div>
+            {% if puede_crear_eventos_planner %}
+            <form class="mini-form" method="post">
+                {% csrf_token %}
+                <input type="hidden" name="accion" value="crear_evento_planner">
+                <div class="form-grid">
+                    <label>Empresa
+                        <select name="empresa_id">
+                            {% for empresa in empresas_creacion %}
+                                <option value="{{ empresa.id }}" {% if empresa_actual and empresa.id == empresa_actual.id %}selected{% endif %}>{{ empresa.nombre_comercial }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <label>Tipo
+                        <select name="tipo_evento">
+                            {% for valor, texto in tipos_evento %}
+                                <option value="{{ valor }}">{{ texto }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <label>Nombre del evento<input name="nombre_evento" required placeholder="Boda Wendy y Diego"></label>
+                    <label>Fecha y hora<input type="datetime-local" name="fecha_evento"></label>
+                    <label>Nombre principal<input name="nombre_principal" placeholder="Wendy"></label>
+                    <label>Nombre secundario<input name="nombre_secundario" placeholder="Diego"></label>
+                    <label>Ceremonia<input name="lugar_ceremonia" placeholder="Templo o ceremonia"></label>
+                    <label>Recepcion<input name="lugar_recepcion" placeholder="Salon o jardin"></label>
+                    <label>Capacidad contratada<input type="number" name="capacidad_contratada" min="0" value="0"></label>
+                    <label class="wide">Frase portada<input name="frase_portada" placeholder="Nuestra boda, Mis XV, Baby shower..."></label>
+                </div>
+                <button class="btn" type="submit">Crear y asignarme</button>
+            </form>
+            {% else %}
+            <article class="section-card permission-card">
+                <span>Sin permiso planner</span>
+                <strong>No puedes crear eventos desde esta vista</strong>
+                <p class="muted">Tu usuario puede consultar la informacion disponible, pero necesita una membresia activa como wedding planner para crear eventos asignados.</p>
+            </article>
+            {% endif %}
+        </section>
+
+        <section class="role-section tab-panel" id="eventos" data-role-panel hidden>
+            <div class="section-header">
+                <div>
+                    <h2>Mis eventos</h2>
+                    <p class="muted">Cambia estado y abre la operacion completa de cada evento.</p>
+                </div>
+            </div>
+            <div data-filter-scope>
+                <div class="module-toolbar">
+                    <label>Buscar<input type="search" data-filter-search placeholder="Evento, empresa o sede"></label>
+                    <label>Estado
+                        <select data-filter-field="status">
+                            <option value="">Todos</option>
+                            {% for valor, texto in estados_evento %}
+                                <option value="{{ valor }}">{{ texto }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <span class="filter-count" data-filter-count></span>
+                </div>
+            <div class="events-grid">
+                {% for evento in eventos %}
+                    <article class="event-card" data-filter-item data-status="{{ evento.estado }}" data-search="{{ evento }} {% if evento.empresa %}{{ evento.empresa.nombre_comercial }}{% endif %} {% if evento.sede %}{{ evento.sede.nombre }}{% endif %}">
+                        <div>
+                            <h3>{{ evento }}</h3>
+                            <p class="muted">{{ evento.empresa.nombre_comercial|default:"Sin empresa" }} - {{ evento.fecha_fiesta|date:"d/m/Y h:i A" }}</p>
+                        </div>
+                        <div class="event-meta">
+                            <span class="pill">{{ evento.get_tipo_evento_display }}</span>
+                            <span class="pill">{{ evento.get_estado_display }}</span>
+                            {% if evento.sede %}<span class="pill">{{ evento.sede.nombre }}</span>{% endif %}
+                        </div>
+                        <form method="post" class="mini-form">
+                            {% csrf_token %}
+                            <input type="hidden" name="accion" value="actualizar_estado_evento">
+                            <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                            <div class="form-grid">
+                                <label class="wide">Estado
+                                    <select name="estado">
+                                        {% for valor, texto in estados_evento %}
+                                            <option value="{{ valor }}" {% if evento.estado == valor %}selected{% endif %}>{{ texto }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </label>
+                            </div>
+                            <div class="event-actions">
+                                <button class="btn" type="submit">Guardar estado</button>
+                                <a class="secondary" href="{% url 'dashboard' %}?evento={{ evento.id }}">Editar invitacion</a>
+                                <a class="secondary" href="{% url 'mesas_visual' %}?evento={{ evento.id }}">Mesas</a>
+                            </div>
+                        </form>
+                    </article>
+                {% empty %}
+                    <p class="muted">Todavia no tienes eventos asignados.</p>
+                {% endfor %}
+                <p class="empty-filter-state">No hay eventos con esos filtros.</p>
+            </div>
+            </div>
+        </section>
+
+        <section class="role-section tab-panel" id="proveedores" data-role-panel hidden data-subnav-scope="planner-proveedores">
+            <div class="section-header">
+                <div>
+                    <h2>Proveedores del evento</h2>
+                    <p class="muted">Asigna proveedores autorizados del catalogo de la empresa y da seguimiento operativo.</p>
+                </div>
+            </div>
+            <div class="module-tabs" role="tablist" aria-label="Proveedores del evento">
+                <button type="button" data-subpanel-button="asignar">Asignar</button>
+                <button type="button" data-subpanel-button="seguimiento">Seguimiento</button>
+            </div>
+            <div class="cards-grid">
+                {% if eventos and proveedores_autorizados %}
+                <form class="mini-form" method="post" data-subpanel="asignar">
+                    {% csrf_token %}
+                    <input type="hidden" name="accion" value="asignar_proveedor_evento">
+                    <h3>Asignar proveedor</h3>
+                    <div class="form-grid">
+                        <label class="wide">Evento
+                            <select name="evento_id" required>
+                                {% for evento in eventos %}
+                                    <option value="{{ evento.id }}">{{ evento }} - {{ evento.fecha_fiesta|date:"d/m/Y" }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <label class="wide">Proveedor
+                            <select name="proveedor_id" required>
+                                {% for proveedor in proveedores_autorizados %}
+                                    <option value="{{ proveedor.id }}">{{ proveedor.nombre_comercial }} - {{ proveedor.get_tipo_proveedor_display }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <label class="wide">Servicio<input name="nombre_servicio" placeholder="Banquete, fotografia, decoracion..."></label>
+                        <label>Fecha<input type="date" name="fecha_servicio"></label>
+                        <label>Inicio<input type="time" name="hora_inicio_servicio"></label>
+                        <label>Fin<input type="time" name="hora_fin_servicio"></label>
+                        <label>Lugar<input name="lugar_servicio" placeholder="Salon, jardin, templo..."></label>
+                        <label class="wide">Detalle<textarea name="descripcion_servicio" rows="3" placeholder="Notas operativas del servicio"></textarea></label>
+                        <label class="wide">Notas internas<textarea name="notas_servicio" rows="2" placeholder="Pendientes, acuerdos o seguimiento"></textarea></label>
+                    </div>
+                    <button class="btn" type="submit">Asignar proveedor</button>
+                </form>
+                {% else %}
+                <article class="section-card permission-card" data-subpanel="asignar">
+                    <span>Asignacion no disponible</span>
+                    <strong>{% if not eventos %}Sin eventos asignados{% else %}Sin proveedores visibles{% endif %}</strong>
+                    <p class="muted">{% if not eventos %}Cuando tengas eventos asignados podras agregar proveedores autorizados desde aqui.{% else %}La empresa debe activar proveedores visibles para wedding planners antes de asignarlos a tus eventos.{% endif %}</p>
+                </article>
+                {% endif %}
+
+                <article class="section-card" data-filter-scope data-subpanel="seguimiento">
+                    <span>Control de servicios</span>
+                    <div class="mini-metrics">
+                        <div><strong>{{ servicios_eventos_planner|length }}</strong><span class="muted">servicios</span></div>
+                        <div><strong>${{ total_costos_proveedores|floatformat:0 }}</strong><span class="muted">contratado</span></div>
+                        <div><strong>${{ saldo_proveedores|floatformat:0 }}</strong><span class="muted">pendiente</span></div>
+                    </div>
+                    <div class="module-toolbar">
+                        <label>Buscar<input type="search" data-filter-search placeholder="Servicio, evento o proveedor"></label>
+                        <label>Estado
+                            <select data-filter-field="status">
+                                <option value="">Todos</option>
+                                {% for valor, texto in estados_servicio %}
+                                    <option value="{{ valor }}">{{ texto }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <span class="filter-count" data-filter-count></span>
+                    </div>
+                    <div class="list-stack">
+                        {% for servicio in servicios_eventos_planner|slice:":16" %}
+                            <details class="edit-panel service-panel" data-filter-item data-status="{{ servicio.estado }}" data-search="{{ servicio.nombre_servicio }} {{ servicio.evento }} {% if servicio.proveedor %}{{ servicio.proveedor.nombre_comercial }}{% endif %}">
+                                <summary>
+                                    <div>
+                                        <strong>{{ servicio.nombre_servicio }}</strong>
+                                        <span class="muted">{{ servicio.evento }} - {{ servicio.proveedor.nombre_comercial|default:"Sin proveedor" }}</span>
+                                        <span class="muted">${{ servicio.costo_total|floatformat:0 }} total - ${{ servicio.saldo_pendiente|floatformat:0 }} pendiente</span>
+                                    </div>
+                                    <span class="pill">{{ servicio.get_estado_display }}</span>
+                                </summary>
+                                <div class="service-meta">
+                                    {% if servicio.proveedor %}
+                                        <span>Contacto: {{ servicio.proveedor.contacto_visible|default:"Sin contacto" }}{% if servicio.proveedor.telefono_visible %} - {{ servicio.proveedor.telefono_visible }}{% endif %}{% if servicio.proveedor.correo_visible %} - {{ servicio.proveedor.correo_visible }}{% endif %}</span>
+                                    {% endif %}
+                                    {% if servicio.fecha_servicio %}
+                                        <span>{{ servicio.fecha_servicio|date:"d/m/Y" }}{% if servicio.hora_inicio %} - {{ servicio.hora_inicio|time:"H:i" }}{% endif %}{% if servicio.lugar %} - {{ servicio.lugar }}{% endif %}</span>
+                                    {% endif %}
+                                    <div class="file-links">
+                                        {% if servicio.cotizacion %}<a href="{{ servicio.cotizacion.url }}" target="_blank" rel="noopener">Cotizacion</a>{% endif %}
+                                        {% if servicio.contrato %}<a href="{{ servicio.contrato.url }}" target="_blank" rel="noopener">Contrato</a>{% endif %}
+                                        {% if servicio.comprobante_pago %}<a href="{{ servicio.comprobante_pago.url }}" target="_blank" rel="noopener">Comprobante</a>{% endif %}
+                                    </div>
+                                </div>
+                                <form class="mini-form nested-form" method="post" enctype="multipart/form-data">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="accion" value="actualizar_servicio_evento">
+                                    <input type="hidden" name="servicio_id" value="{{ servicio.id }}">
+                                    <div class="form-grid">
+                                        <label class="wide">Servicio<input name="nombre_servicio" value="{{ servicio.nombre_servicio }}"></label>
+                                        <label>Estado
+                                            <select name="estado_servicio">
+                                                {% for valor, texto in estados_servicio %}
+                                                    <option value="{{ valor }}" {% if servicio.estado == valor %}selected{% endif %}>{{ texto }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </label>
+                                        <label>Fecha<input type="date" name="fecha_servicio" value="{{ servicio.fecha_servicio|date:'Y-m-d' }}"></label>
+                                        <label>Inicio<input type="time" name="hora_inicio_servicio" value="{{ servicio.hora_inicio|time:'H:i' }}"></label>
+                                        <label>Fin<input type="time" name="hora_fin_servicio" value="{{ servicio.hora_fin|time:'H:i' }}"></label>
+                                        <label>Lugar<input name="lugar_servicio" value="{{ servicio.lugar|default:'' }}"></label>
+                                        <label>Costo total<input type="number" step="0.01" min="0" name="costo_total_servicio" value="{{ servicio.costo_total }}"></label>
+                                        <label>Anticipo<input type="number" step="0.01" min="0" name="anticipo_servicio" value="{{ servicio.anticipo }}"></label>
+                                        <label>Fecha limite pago<input type="date" name="fecha_limite_pago_servicio" value="{{ servicio.fecha_limite_pago|date:'Y-m-d' }}"></label>
+                                        <label>Cotizacion<input type="file" name="cotizacion" accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.jpg,.jpeg,.png,.webp"></label>
+                                        <label>Contrato<input type="file" name="contrato" accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.jpg,.jpeg,.png,.webp"></label>
+                                        <label>Comprobante<input type="file" name="comprobante_pago" accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.jpg,.jpeg,.png,.webp"></label>
+                                        <label class="wide">Detalle<textarea name="descripcion_servicio" rows="3">{{ servicio.descripcion|default:'' }}</textarea></label>
+                                        <label class="wide">Notas internas<textarea name="notas_servicio" rows="3">{{ servicio.notas|default:'' }}</textarea></label>
+                                    </div>
+                                    <button class="btn" type="submit">Guardar servicio</button>
+                                </form>
+                            </details>
+                        {% empty %}
+                            <p class="muted">Todavia no hay proveedores asignados a tus eventos.</p>
+                        {% endfor %}
+                        <p class="empty-filter-state">No hay servicios con esos filtros.</p>
+                    </div>
+                </article>
+            </div>
+        </section>
+
+        <section class="role-section tab-panel" id="pendientes" data-role-panel hidden>
+            <div class="section-header">
+                <div>
+                    <h2>Pendientes</h2>
+                    <p class="muted">Tareas y proveedores que necesitan seguimiento.</p>
+                </div>
+            </div>
+            <div class="cards-grid">
+                <article class="section-card">
+                    <span>Tareas proximas</span>
+                    <div class="list-stack">
+                        {% for tarea in tareas_proximas %}
+                            <div class="list-row">
+                                <div>
+                                    <strong>{{ tarea.titulo }}</strong>
+                                    <span class="muted">{{ tarea.evento }} - {{ tarea.fecha_limite|date:"d/m/Y"|default:"Sin fecha" }}</span>
+                                </div>
+                                <span class="pill">{{ tarea.get_prioridad_display }}</span>
+                            </div>
+                        {% empty %}
+                            <p class="muted">Sin tareas pendientes asignadas a ti.</p>
+                        {% endfor %}
+                    </div>
+                </article>
+                <article class="section-card">
+                    <span>Proveedores pendientes</span>
+                    <div class="list-stack">
+                        {% for servicio in servicios_pendientes %}
+                            <div class="list-row">
+                                <div>
+                                    <strong>{{ servicio.nombre_servicio }}</strong>
+                                    <span class="muted">{{ servicio.evento }} - {{ servicio.proveedor.nombre_comercial|default:"Sin proveedor" }}</span>
+                                </div>
+                                <span class="pill">{{ servicio.get_estado_display }}</span>
+                            </div>
+                        {% empty %}
+                            <p class="muted">Sin proveedores pendientes.</p>
+                        {% endfor %}
+                    </div>
+                </article>
+            </div>
+        </section>
+
+        <section class="role-section tab-panel" id="atajos" data-role-panel hidden>
+            <div class="section-header">
+                <div>
+                    <h2>Atajos de trabajo</h2>
+                    <p class="muted">Entra directo a las herramientas que mas vas a usar durante la planeacion.</p>
+                </div>
+            </div>
+            <div class="events-grid">
+                {% for evento in eventos %}
+                    <article class="event-card">
+                        <h3>{{ evento }}</h3>
+                        <div class="event-actions">
+                            <a href="{% url 'dashboard' %}?evento={{ evento.id }}">Invitacion</a>
+                            <a class="secondary" href="{% url 'calendario_operativo' %}?evento={{ evento.id }}">Calendario</a>
+                            <a class="secondary" href="{% url 'mesas_visual' %}?evento={{ evento.id }}">Mesas</a>
+                            <a class="secondary" href="{% url 'exportar_resumen_evento' %}?evento={{ evento.id }}">Resumen</a>
+                        </div>
+                    </article>
+                {% empty %}
+                    <p class="muted">Cuando te asignen eventos, aqui veras tus accesos rapidos.</p>
+                {% endfor %}
+            </div>
+        </section>
+    </main>
+</div>
+<script src="{% static 'invitaciones/js/role_dashboards.js' %}"></script>
+</body>
+</html>

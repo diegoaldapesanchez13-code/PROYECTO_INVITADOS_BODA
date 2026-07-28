@@ -1,0 +1,99 @@
+<section class="content-card" id="secciones-invitacion">
+    <div class="workspace-header">
+        <div>
+            <h2>Secciones editables</h2>
+            <p class="muted">Activa, ordena y personaliza cada bloque de la invitación sin convertirla en una sola imagen.</p>
+        </div>
+    </div>
+    <div class="section-editor-grid">
+        {% for seccion in secciones_editor %}
+            <details class="edit-panel section-editor-card">
+                <summary>
+                    <div>
+                        <strong>{{ seccion.get_tipo_display }}</strong>
+                        <span class="muted">Orden {{ seccion.orden }} - {% if seccion.activa %}Visible{% else %}Oculta{% endif %}</span>
+                    </div>
+                </summary>
+                <form class="mini-form nested-form" method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="hidden" name="accion" value="editar_seccion_invitacion">
+                    <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                    <input type="hidden" name="seccion_id" value="{{ seccion.id }}">
+                    <div class="design-grid">
+                        <label>
+                            Titulo
+                            <input type="text" name="titulo_seccion" value="{{ seccion.titulo|default_if_none:'' }}">
+                        </label>
+                        <label>
+                            Orden
+                            <input type="number" name="orden_seccion" min="0" value="{{ seccion.orden }}">
+                        </label>
+                        <label>
+                            Posicion del fondo
+                            <select name="posicion_fondo">
+                                {% for valor, texto in posiciones_fondo_seccion %}
+                                    <option value="{{ valor }}" {% if seccion.posicion_fondo == valor %}selected{% endif %}>{{ texto }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <label>
+                            Opacidad fondo
+                            <input type="number" name="opacidad_fondo" min="0" max="1" step="0.05" value="{{ seccion.opacidad_fondo }}">
+                        </label>
+                        <label class="wide">
+                            Descripción
+                            <textarea name="descripcion_seccion" rows="3">{{ seccion.descripcion|default_if_none:'' }}</textarea>
+                        </label>
+                        <label class="checkline">
+                            <input type="checkbox" name="activa_seccion" {% if seccion.activa %}checked{% endif %}>
+                            Mostrar seccion
+                        </label>
+                        <label class="checkline">
+                            <input type="checkbox" name="mostrar_titulo_texto" {% if seccion.mostrar_titulo_texto %}checked{% endif %}>
+                            Mostrar titulo en texto
+                        </label>
+                        <label>
+                            Color texto
+                            <input type="color" name="color_texto_seccion" value="{{ seccion.color_texto|default:'#263126' }}">
+                        </label>
+                        <label class="upload-card">
+                            <span>Imagen decorativa del titulo</span>
+                            {% if seccion.imagen_titulo %}
+                                {% if seccion.imagen_titulo_es_video %}
+                                    <video src="{{ seccion.imagen_titulo.url }}" muted controls playsinline></video>
+                                {% else %}
+                                    <img src="{{ seccion.imagen_titulo.url }}" alt="">
+                                {% endif %}
+                            {% endif %}
+                            <input type="file" name="imagen_titulo" accept="image/*,video/*">
+                            {% if seccion.imagen_titulo %}
+                                <div class="checkline">
+                                    <input type="checkbox" name="eliminar_imagen_titulo">
+                                    <span>Quitar imagen del titulo</span>
+                                </div>
+                            {% endif %}
+                        </label>
+                        <label class="upload-card">
+                            <span>Fondo de esta seccion</span>
+                            {% if seccion.fondo %}
+                                {% if seccion.fondo_es_video %}
+                                    <video src="{{ seccion.fondo.url }}" muted controls playsinline></video>
+                                {% else %}
+                                    <img src="{{ seccion.fondo.url }}" alt="">
+                                {% endif %}
+                            {% endif %}
+                            <input type="file" name="fondo" accept="image/*,video/*">
+                            {% if seccion.fondo %}
+                                <div class="checkline">
+                                    <input type="checkbox" name="eliminar_fondo">
+                                    <span>Quitar fondo de seccion</span>
+                                </div>
+                            {% endif %}
+                        </label>
+                    </div>
+                    <button class="btn" type="submit">Guardar seccion</button>
+                </form>
+            </details>
+        {% endfor %}
+    </div>
+</section>

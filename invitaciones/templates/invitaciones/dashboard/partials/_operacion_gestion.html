@@ -1,0 +1,976 @@
+<section class="catalog-panel operation-manager" id="operacion-gestion" data-subnav-scope="operacion-evento">
+    <div class="workspace-header">
+        <div>
+            <h2>Gestion operativa del evento</h2>
+            <p class="muted">Administra servicios, tareas, pagos, documentos y aprobaciones sin entrar al admin avanzado.</p>
+        </div>
+        <a class="btn secondary" href="{% url 'mesas_visual' %}?evento={{ evento.id }}">Acomodar mesas</a>
+    </div>
+
+    <div class="module-tabs operation-tabs" role="tablist" aria-label="Gestion operativa">
+        <button type="button" data-subpanel-button="servicios">Proveedores <span>{{ total_servicios_evento }}</span></button>
+        <button type="button" data-subpanel-button="paquetes">Paquetes <span>{{ total_paquetes_evento }}</span></button>
+        <button type="button" data-subpanel-button="contrato">Contrato <span>{% if detalle_produccion %}1{% else %}0{% endif %}</span></button>
+        <button type="button" data-subpanel-button="personal">Personal <span>{{ total_personal_evento }}</span></button>
+        <button type="button" data-subpanel-button="banquete">Banquete <span>{{ total_catering_evento }}</span></button>
+        <button type="button" data-subpanel-button="decoracion">Decoracion <span>{{ total_decoracion_evento }}</span></button>
+        <button type="button" data-subpanel-button="musica">Musica <span>{{ total_entretenimiento_evento }}</span></button>
+        <button type="button" data-subpanel-button="tareas">Tareas <span>{{ tareas_pendientes }}</span></button>
+        <button type="button" data-subpanel-button="presupuesto">Pagos <span>{{ gastos_vencidos }}</span></button>
+        <button type="button" data-subpanel-button="documentos">Documentos <span>{{ total_documentos_evento }}</span></button>
+        <button type="button" data-subpanel-button="aprobaciones">Cliente <span>{{ aprobaciones_pendientes }}</span></button>
+    </div>
+
+    <div class="operation-summary">
+        <article>
+            <span>Buffet</span>
+            <strong>{{ total_adultos }} adultos · {{ total_ninos }} niños</strong>
+            <small>{{ total_catering_evento }} banquete{{ total_catering_evento|pluralize }} registrado{{ total_catering_evento|pluralize }}</small>
+        </article>
+        <article class="{% if proveedores_pendientes %}needs-attention{% endif %}">
+            <span>Proveedores</span>
+            <strong>{{ total_servicios_evento }} servicios</strong>
+            <small>{{ proveedores_pendientes }} pendiente{{ proveedores_pendientes|pluralize }} por cerrar</small>
+        </article>
+        <article class="{% if tareas_vencidas %}needs-attention{% endif %}">
+            <span>Produccion</span>
+            <strong>{{ tareas_pendientes }} tarea{{ tareas_pendientes|pluralize }} activa{{ tareas_pendientes|pluralize }}</strong>
+            <small>{{ tareas_vencidas }} vencida{{ tareas_vencidas|pluralize }}</small>
+        </article>
+        <article class="{% if gastos_vencidos %}needs-attention{% endif %}">
+            <span>Presupuesto</span>
+            <strong>${{ monto_pendiente|floatformat:0 }} pendiente</strong>
+            <small>{{ gastos_vencidos }} pago{{ gastos_vencidos|pluralize }} vencido{{ gastos_vencidos|pluralize }}</small>
+        </article>
+    </div>
+
+    <div class="operation-panel-grid" data-subpanel="servicios">
+        <form class="mini-admin-form" method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <input type="hidden" name="accion" value="agregar_servicio_evento">
+            <input type="hidden" name="evento_id" value="{{ evento.id }}">
+            <h3>Agregar servicio del evento</h3>
+            <div class="design-grid">
+                <label>Proveedor
+                    <select name="proveedor_id">
+                        <option value="">Sin proveedor / por definir</option>
+                        {% for proveedor in proveedores_empresa %}
+                            <option value="{{ proveedor.id }}">{{ proveedor.nombre_comercial }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label>Servicio<input type="text" name="nombre_servicio" placeholder="Banquete, DJ, fotografia..."></label>
+                <label>Estado
+                    <select name="estado_servicio">
+                        {% for valor, texto in estados_servicio %}<option value="{{ valor }}">{{ texto }}</option>{% endfor %}
+                    </select>
+                </label>
+                <label>Fecha<input type="date" name="fecha_servicio"></label>
+                <label>Inicio<input type="time" name="hora_inicio_servicio"></label>
+                <label>Fin<input type="time" name="hora_fin_servicio"></label>
+                <label>Costo total<input type="number" name="costo_total_servicio" min="0" step="0.01" value="0"></label>
+                <label>Anticipo<input type="number" name="anticipo_servicio" min="0" step="0.01" value="0"></label>
+                <label>Limite pago<input type="date" name="fecha_limite_pago_servicio"></label>
+                <label class="wide">Lugar<input type="text" name="lugar_servicio" placeholder="Salon, jardin, ceremonia..."></label>
+                <label class="wide">Descripcion<textarea name="descripcion_servicio" rows="2"></textarea></label>
+                <label>Contrato<input type="file" name="contrato_servicio"></label>
+                <label>Cotizacion<input type="file" name="cotizacion_servicio"></label>
+                <label>Comprobante<input type="file" name="comprobante_pago_servicio"></label>
+                <label class="wide">Notas<textarea name="notas_servicio" rows="2"></textarea></label>
+            </div>
+            <div class="actions form-actions"><button class="btn" type="submit">Agregar servicio</button></div>
+        </form>
+
+        <section class="saved-items">
+            <h3>Servicios registrados</h3>
+            <div class="saved-list">
+                {% for servicio in servicios_evento %}
+                    <article class="saved-item">
+                        <div>
+                            <strong>{{ servicio.nombre_servicio }}</strong>
+                            <span>{{ servicio.get_estado_display }} - ${{ servicio.costo_total|floatformat:0 }}</span>
+                        </div>
+                        <p>{{ servicio.proveedor.nombre_comercial|default:"Proveedor por definir" }}{% if servicio.fecha_servicio %} - {{ servicio.fecha_servicio|date:"d/m/Y" }}{% endif %}</p>
+                        {% if servicio.descripcion %}<p>{{ servicio.descripcion }}</p>{% endif %}
+                        <details>
+                            <summary>Editar servicio</summary>
+                            <form class="inline-edit-form" method="post" enctype="multipart/form-data">
+                                {% csrf_token %}
+                                <input type="hidden" name="accion" value="editar_servicio_evento">
+                                <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                                <input type="hidden" name="servicio_id" value="{{ servicio.id }}">
+                                <div class="design-grid">
+                                    <label>Proveedor
+                                        <select name="proveedor_id">
+                                            <option value="">Sin proveedor</option>
+                                            {% for proveedor in proveedores_empresa %}
+                                                <option value="{{ proveedor.id }}" {% if servicio.proveedor_id == proveedor.id %}selected{% endif %}>{{ proveedor.nombre_comercial }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </label>
+                                    <label>Servicio<input type="text" name="nombre_servicio" value="{{ servicio.nombre_servicio }}"></label>
+                                    <label>Estado
+                                        <select name="estado_servicio">
+                                            {% for valor, texto in estados_servicio %}<option value="{{ valor }}" {% if servicio.estado == valor %}selected{% endif %}>{{ texto }}</option>{% endfor %}
+                                        </select>
+                                    </label>
+                                    <label>Fecha<input type="date" name="fecha_servicio" value="{{ servicio.fecha_servicio|date:'Y-m-d' }}"></label>
+                                    <label>Inicio<input type="time" name="hora_inicio_servicio" value="{{ servicio.hora_inicio|time:'H:i' }}"></label>
+                                    <label>Fin<input type="time" name="hora_fin_servicio" value="{{ servicio.hora_fin|time:'H:i' }}"></label>
+                                    <label>Costo<input type="number" name="costo_total_servicio" min="0" step="0.01" value="{{ servicio.costo_total }}"></label>
+                                    <label>Anticipo<input type="number" name="anticipo_servicio" min="0" step="0.01" value="{{ servicio.anticipo }}"></label>
+                                    <label>Limite pago<input type="date" name="fecha_limite_pago_servicio" value="{{ servicio.fecha_limite_pago|date:'Y-m-d' }}"></label>
+                                    <label class="wide">Lugar<input type="text" name="lugar_servicio" value="{{ servicio.lugar|default_if_none:'' }}"></label>
+                                    <label class="wide">Descripcion<textarea name="descripcion_servicio" rows="2">{{ servicio.descripcion|default_if_none:'' }}</textarea></label>
+                                    <label>Contrato<input type="file" name="contrato_servicio">{% if servicio.contrato %}<span class="checkline"><input type="checkbox" name="eliminar_contrato_servicio"> Quitar</span>{% endif %}</label>
+                                    <label>Cotizacion<input type="file" name="cotizacion_servicio">{% if servicio.cotizacion %}<span class="checkline"><input type="checkbox" name="eliminar_cotizacion_servicio"> Quitar</span>{% endif %}</label>
+                                    <label>Comprobante<input type="file" name="comprobante_pago_servicio">{% if servicio.comprobante_pago %}<span class="checkline"><input type="checkbox" name="eliminar_comprobante_pago_servicio"> Quitar</span>{% endif %}</label>
+                                    <label class="wide">Notas<textarea name="notas_servicio" rows="2">{{ servicio.notas|default_if_none:'' }}</textarea></label>
+                                </div>
+                                <button class="btn" type="submit">Guardar servicio</button>
+                            </form>
+                            <form method="post" data-confirm="Esta accion eliminara el servicio del evento. Deseas continuar?">
+                                {% csrf_token %}
+                                <input type="hidden" name="accion" value="eliminar_servicio_evento">
+                                <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                                <input type="hidden" name="servicio_id" value="{{ servicio.id }}">
+                                <button class="btn danger" type="submit">Eliminar servicio</button>
+                            </form>
+                        </details>
+                    </article>
+                {% empty %}
+                    <p class="muted">Todavia no hay servicios registrados.</p>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
+
+    <div class="operation-panel-grid" data-subpanel="paquetes">
+        <form class="mini-admin-form" method="post">
+            {% csrf_token %}
+            <input type="hidden" name="accion" value="agregar_paquete_evento">
+            <input type="hidden" name="evento_id" value="{{ evento.id }}">
+            <h3>Asignar paquete al evento</h3>
+            <div class="design-grid">
+                <label>Paquete
+                    <select name="paquete_id" required>
+                        <option value="">Seleccionar paquete</option>
+                        {% for paquete in paquetes_empresa %}
+                            <option value="{{ paquete.id }}">{{ paquete.nombre }} - ${{ paquete.precio_base|floatformat:0 }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label>Estado
+                    <select name="estado_paquete">
+                        {% for valor, texto in estados_paquete_evento %}<option value="{{ valor }}">{{ texto }}</option>{% endfor %}
+                    </select>
+                </label>
+                <label>Precio acordado<input type="number" name="precio_acordado_paquete" min="0" step="0.01" value="0"></label>
+                <label>Descuento<input type="number" name="descuento_paquete" min="0" step="0.01" value="0"></label>
+                <label>Total manual<input type="number" name="total_paquete" min="0" step="0.01" placeholder="Opcional"></label>
+                <label class="wide">Servicios adicionales<textarea name="servicios_adicionales_paquete" rows="2"></textarea></label>
+                <label class="wide">Notas<textarea name="notas_paquete" rows="2"></textarea></label>
+            </div>
+            <div class="actions form-actions"><button class="btn" type="submit">Asignar paquete</button></div>
+        </form>
+
+        <section class="saved-items">
+            <h3>Paquetes del evento</h3>
+            <div class="saved-list">
+                {% for paquete_evento in paquetes_evento %}
+                    <article class="saved-item">
+                        <div>
+                            <strong>{{ paquete_evento.paquete.nombre }}</strong>
+                            <span>{{ paquete_evento.get_estado_display }} - total ${{ paquete_evento.total|floatformat:0 }}</span>
+                        </div>
+                        <p>{{ paquete_evento.paquete.numero_personas_incluidas }} pax incluidos - precio ${{ paquete_evento.precio_acordado|floatformat:0 }} - descuento ${{ paquete_evento.descuento|floatformat:0 }}</p>
+                        {% if paquete_evento.servicios_adicionales %}<p>{{ paquete_evento.servicios_adicionales }}</p>{% endif %}
+                        <details>
+                            <summary>Editar paquete asignado</summary>
+                            <form class="inline-edit-form" method="post">
+                                {% csrf_token %}
+                                <input type="hidden" name="accion" value="editar_paquete_evento">
+                                <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                                <input type="hidden" name="paquete_evento_id" value="{{ paquete_evento.id }}">
+                                <div class="design-grid">
+                                    <label>Paquete
+                                        <select name="paquete_id">
+                                            {% for paquete in paquetes_empresa %}
+                                                <option value="{{ paquete.id }}" {% if paquete_evento.paquete_id == paquete.id %}selected{% endif %}>{{ paquete.nombre }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </label>
+                                    <label>Estado<select name="estado_paquete">{% for valor, texto in estados_paquete_evento %}<option value="{{ valor }}" {% if paquete_evento.estado == valor %}selected{% endif %}>{{ texto }}</option>{% endfor %}</select></label>
+                                    <label>Precio acordado<input type="number" name="precio_acordado_paquete" min="0" step="0.01" value="{{ paquete_evento.precio_acordado }}"></label>
+                                    <label>Descuento<input type="number" name="descuento_paquete" min="0" step="0.01" value="{{ paquete_evento.descuento }}"></label>
+                                    <label>Total manual<input type="number" name="total_paquete" min="0" step="0.01" value="{{ paquete_evento.total }}"></label>
+                                    <label class="wide">Servicios adicionales<textarea name="servicios_adicionales_paquete" rows="2">{{ paquete_evento.servicios_adicionales|default_if_none:'' }}</textarea></label>
+                                    <label class="wide">Notas<textarea name="notas_paquete" rows="2">{{ paquete_evento.notas|default_if_none:'' }}</textarea></label>
+                                </div>
+                                <button class="btn" type="submit">Guardar paquete</button>
+                            </form>
+                            <form method="post" data-confirm="Eliminar este paquete del evento?">
+                                {% csrf_token %}
+                                <input type="hidden" name="accion" value="eliminar_paquete_evento">
+                                <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                                <input type="hidden" name="paquete_evento_id" value="{{ paquete_evento.id }}">
+                                <button class="btn danger" type="submit">Eliminar paquete</button>
+                            </form>
+                        </details>
+                    </article>
+                {% empty %}
+                    <p class="muted">Todavia no hay paquetes asignados.</p>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
+
+    <div class="operation-panel-grid" data-subpanel="contrato">
+        <form class="mini-admin-form" method="post">
+            {% csrf_token %}
+            <input type="hidden" name="accion" value="guardar_detalle_produccion">
+            <input type="hidden" name="evento_id" value="{{ evento.id }}">
+            <h3>Contrato y produccion fina</h3>
+            <div class="design-grid">
+                <label>Folio / referencia<input type="text" name="folio_contrato" value="{{ detalle_produccion.folio_contrato|default_if_none:'' }}"></label>
+                <label>Cliente contrato<input type="text" name="cliente_contrato" value="{{ detalle_produccion.cliente_contrato|default_if_none:'' }}"></label>
+                <label>Arrendador<input type="text" name="arrendador" value="{{ detalle_produccion.arrendador|default_if_none:'' }}"></label>
+                <label>Lugar contrato<input type="text" name="lugar_contrato" value="{{ detalle_produccion.lugar_contrato|default_if_none:'' }}"></label>
+                <label>Adultos<input type="number" name="adultos_contratados" min="0" value="{{ detalle_produccion.adultos_contratados|default:0 }}"></label>
+                <label>Niños<input type="number" name="ninos_contratados" min="0" value="{{ detalle_produccion.ninos_contratados|default:0 }}"></label>
+                <label>Horas evento<input type="number" name="horas_evento" min="0" value="{{ detalle_produccion.horas_evento|default:0 }}"></label>
+                <label>Recepcion<input type="time" name="recepcion_hora" value="{{ detalle_produccion.recepcion_hora|time:'H:i' }}"></label>
+                <label>Inicio<input type="time" name="inicio_evento" value="{{ detalle_produccion.inicio_evento|time:'H:i' }}"></label>
+                <label>Termino<input type="time" name="fin_evento" value="{{ detalle_produccion.fin_evento|time:'H:i' }}"></label>
+                <label>Min. desalojo<input type="number" name="minutos_desalojo" min="0" value="{{ detalle_produccion.minutos_desalojo|default:0 }}"></label>
+                <label>Costo hora extra<input type="number" name="costo_hora_extra" min="0" step="0.01" value="{{ detalle_produccion.costo_hora_extra|default:0 }}"></label>
+            </div>
+
+            <details class="background-uploader">
+                <summary>Pagos y cuenta bancaria</summary>
+                <div class="design-grid">
+                    <label>Renta salon<input type="number" name="precio_renta_salon" min="0" step="0.01" value="{{ detalle_produccion.precio_renta_salon|default:0 }}"></label>
+                    <label>Deposito apartado<input type="number" name="deposito_apartado" min="0" step="0.01" value="{{ detalle_produccion.deposito_apartado|default:0 }}"></label>
+                    <label>Anticipo recibido<input type="number" name="anticipo_recibido" min="0" step="0.01" value="{{ detalle_produccion.anticipo_recibido|default:0 }}"></label>
+                    <label>Saldo contrato<input type="number" name="saldo_contrato" min="0" step="0.01" value="{{ detalle_produccion.saldo_contrato|default:0 }}"></label>
+                    <label>Dias antes liquidar<input type="number" name="dias_antes_liquidacion" min="0" value="{{ detalle_produccion.dias_antes_liquidacion|default:0 }}"></label>
+                    <label>Banco<input type="text" name="banco" value="{{ detalle_produccion.banco|default_if_none:'' }}"></label>
+                    <label>Cuenta<input type="text" name="numero_cuenta" value="{{ detalle_produccion.numero_cuenta|default_if_none:'' }}"></label>
+                    <label>CLABE<input type="text" name="clabe" value="{{ detalle_produccion.clabe|default_if_none:'' }}"></label>
+                    <label>Tarjeta<input type="text" name="tarjeta" value="{{ detalle_produccion.tarjeta|default_if_none:'' }}"></label>
+                </div>
+            </details>
+
+            <details class="background-uploader">
+                <summary>Montaje, mesas, manteleria y carpa</summary>
+                <div class="design-grid">
+                    <label>Color mantel<input type="text" name="color_mantel" value="{{ detalle_produccion.color_mantel|default_if_none:'' }}"></label>
+                    <label>Color servilleta<input type="text" name="color_servilleta" value="{{ detalle_produccion.color_servilleta|default_if_none:'' }}"></label>
+                    <label>Tipo de mesa<input type="text" name="tipo_mesa" value="{{ detalle_produccion.tipo_mesa|default_if_none:'' }}"></label>
+                    <label>Tamaño mesa<input type="text" name="tamano_mesa" value="{{ detalle_produccion.tamano_mesa|default_if_none:'' }}"></label>
+                    <label>Diseño carpa<input type="text" name="diseno_carpa" value="{{ detalle_produccion.diseno_carpa|default_if_none:'' }}"></label>
+                    <label>Tamaño carpa<input type="text" name="tamano_carpa" value="{{ detalle_produccion.tamano_carpa|default_if_none:'' }}"></label>
+                    <label>Color carpa<input type="text" name="color_carpa" value="{{ detalle_produccion.color_carpa|default_if_none:'' }}"></label>
+                    <label class="wide">Mobiliario<textarea name="mobiliario" rows="2">{{ detalle_produccion.mobiliario|default_if_none:'' }}</textarea></label>
+                    <label class="wide">Loza y cristaleria<textarea name="tipo_loza_cristaleria" rows="2">{{ detalle_produccion.tipo_loza_cristaleria|default_if_none:'' }}</textarea></label>
+                    <label class="wide">Montaje carpa<textarea name="montaje_carpa" rows="2">{{ detalle_produccion.montaje_carpa|default_if_none:'' }}</textarea></label>
+                </div>
+            </details>
+
+            <details class="background-uploader">
+                <summary>Menu del evento</summary>
+                <div class="design-grid">
+                    <label class="wide">Entrada<textarea name="menu_entrada" rows="2">{{ detalle_produccion.menu_entrada|default_if_none:'' }}</textarea></label>
+                    <label class="wide">Comida / plato fuerte<textarea name="menu_plato_fuerte" rows="2">{{ detalle_produccion.menu_plato_fuerte|default_if_none:'' }}</textarea></label>
+                    <label class="wide">Postre<textarea name="menu_postre" rows="2">{{ detalle_produccion.menu_postre|default_if_none:'' }}</textarea></label>
+                    <label class="wide">Trasnochado<textarea name="menu_trasnochado" rows="2">{{ detalle_produccion.menu_trasnochado|default_if_none:'' }}</textarea></label>
+                    <label class="wide">Menu infantil<textarea name="menu_infantil" rows="2">{{ detalle_produccion.menu_infantil|default_if_none:'' }}</textarea></label>
+                    <label class="wide">Bebidas<textarea name="bebidas" rows="2">{{ detalle_produccion.bebidas|default_if_none:'' }}</textarea></label>
+                </div>
+            </details>
+
+            <details class="background-uploader">
+                <summary>Servicios incluidos y notas</summary>
+                <div class="design-grid">
+                    <label class="wide">Servicios incluidos<textarea name="servicios_incluidos" rows="5">{{ detalle_produccion.servicios_incluidos|default_if_none:'' }}</textarea></label>
+                    <label class="wide">Notas puntualidad<textarea name="notas_puntualidad" rows="2">{{ detalle_produccion.notas_puntualidad|default_if_none:'' }}</textarea></label>
+                    <label class="wide">Politica cancelacion<textarea name="politica_cancelacion" rows="2">{{ detalle_produccion.politica_cancelacion|default_if_none:'' }}</textarea></label>
+                    <label class="wide">Notas contrato<textarea name="notas_contrato" rows="3">{{ detalle_produccion.notas_contrato|default_if_none:'' }}</textarea></label>
+                </div>
+            </details>
+
+            <div class="actions form-actions"><button class="btn" type="submit">Guardar contrato</button></div>
+        </form>
+
+        <section class="saved-items">
+            <h3>Resumen del contrato</h3>
+            <form method="post" class="inline-edit-form">
+                {% csrf_token %}
+                <input type="hidden" name="accion" value="generar_pendientes_contrato">
+                <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                <button class="btn secondary" type="submit">Generar pendientes</button>
+            </form>
+            <div class="saved-list">
+                {% if detalle_produccion %}
+                    <article class="saved-item">
+                        <div><strong>{{ detalle_produccion.cliente_contrato|default:"Cliente por definir" }}</strong><span>{{ detalle_produccion.total_personas_contratadas }} personas</span></div>
+                        <p>{{ detalle_produccion.horas_evento }} hrs · inicio {{ detalle_produccion.inicio_evento|time:"H:i"|default:"--" }} · termino {{ detalle_produccion.fin_evento|time:"H:i"|default:"--" }}</p>
+                        <p>Renta ${{ detalle_produccion.precio_renta_salon|floatformat:0 }} · anticipo ${{ detalle_produccion.anticipo_recibido|floatformat:0 }} · saldo ${{ detalle_produccion.saldo_contrato|floatformat:0 }}</p>
+                        {% if detalle_produccion.color_mantel or detalle_produccion.tipo_mesa or detalle_produccion.diseno_carpa %}
+                            <p>Mantel {{ detalle_produccion.color_mantel|default:"por definir" }} · mesa {{ detalle_produccion.tipo_mesa|default:"por definir" }} · carpa {{ detalle_produccion.diseno_carpa|default:"por definir" }}</p>
+                        {% endif %}
+                    </article>
+                {% else %}
+                    <p class="muted">Todavia no hay detalle de contrato capturado.</p>
+                {% endif %}
+            </div>
+        </section>
+    </div>
+
+    <div class="operation-panel-grid" data-subpanel="personal">
+        <form class="mini-admin-form" method="post">
+            {% csrf_token %}
+            <input type="hidden" name="accion" value="agregar_personal_evento">
+            <input type="hidden" name="evento_id" value="{{ evento.id }}">
+            <h3>Agregar personal operativo</h3>
+            <div class="design-grid">
+                <label>Nombre<input type="text" name="nombre_personal" placeholder="Nombre del colaborador"></label>
+                <label>Tipo<select name="tipo_personal">{% for valor, texto in tipos_personal %}<option value="{{ valor }}">{{ texto }}</option>{% endfor %}</select></label>
+                <label>Estado<select name="estado_personal">{% for valor, texto in estados_personal %}<option value="{{ valor }}">{{ texto }}</option>{% endfor %}</select></label>
+                <label>Proveedor<select name="proveedor_id"><option value="">Interno / sin proveedor</option>{% for proveedor in proveedores_empresa %}<option value="{{ proveedor.id }}">{{ proveedor.nombre_comercial }}</option>{% endfor %}</select></label>
+                <label>Telefono<input type="text" name="telefono_personal"></label>
+                <label>Entrada<input type="time" name="hora_entrada_personal"></label>
+                <label>Salida<input type="time" name="hora_salida_personal"></label>
+                <label>Costo<input type="number" name="costo_personal" min="0" step="0.01" value="0"></label>
+                <label>Area<input type="text" name="area_personal" placeholder="Cocina, recepcion, barra..."></label>
+                <label>Mesas<input type="text" name="mesas_personal" placeholder="1-5, VIP, proveedores..."></label>
+                <label class="wide">Uniforme<input type="text" name="uniforme_personal" placeholder="Negro formal, camisa blanca..."></label>
+                <label class="wide">Notas<textarea name="notas_personal" rows="2"></textarea></label>
+            </div>
+            <div class="actions form-actions"><button class="btn" type="submit">Agregar personal</button></div>
+        </form>
+
+        <section class="saved-items">
+            <h3>Personal asignado</h3>
+            <div class="saved-list">
+                {% for persona in personal_evento %}
+                    <article class="saved-item">
+                        <div><strong>{{ persona.nombre }}</strong><span>{{ persona.get_tipo_personal_display }} - {{ persona.get_estado_display }}</span></div>
+                        <p>{% if persona.hora_entrada %}{{ persona.hora_entrada|time:"H:i" }}{% endif %}{% if persona.hora_salida %} - {{ persona.hora_salida|time:"H:i" }}{% endif %}{% if persona.area_asignada %} - {{ persona.area_asignada }}{% endif %}</p>
+                        {% if persona.mesas_asignadas %}<p>Mesas: {{ persona.mesas_asignadas }}</p>{% endif %}
+                        <details>
+                            <summary>Editar personal</summary>
+                            <form class="inline-edit-form" method="post">
+                                {% csrf_token %}
+                                <input type="hidden" name="accion" value="editar_personal_evento">
+                                <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                                <input type="hidden" name="personal_id" value="{{ persona.id }}">
+                                <div class="design-grid">
+                                    <label>Nombre<input type="text" name="nombre_personal" value="{{ persona.nombre }}"></label>
+                                    <label>Tipo<select name="tipo_personal">{% for valor, texto in tipos_personal %}<option value="{{ valor }}" {% if persona.tipo_personal == valor %}selected{% endif %}>{{ texto }}</option>{% endfor %}</select></label>
+                                    <label>Estado<select name="estado_personal">{% for valor, texto in estados_personal %}<option value="{{ valor }}" {% if persona.estado == valor %}selected{% endif %}>{{ texto }}</option>{% endfor %}</select></label>
+                                    <label>Proveedor<select name="proveedor_id"><option value="">Interno / sin proveedor</option>{% for proveedor in proveedores_empresa %}<option value="{{ proveedor.id }}" {% if persona.proveedor_id == proveedor.id %}selected{% endif %}>{{ proveedor.nombre_comercial }}</option>{% endfor %}</select></label>
+                                    <label>Telefono<input type="text" name="telefono_personal" value="{{ persona.telefono|default_if_none:'' }}"></label>
+                                    <label>Entrada<input type="time" name="hora_entrada_personal" value="{{ persona.hora_entrada|time:'H:i' }}"></label>
+                                    <label>Salida<input type="time" name="hora_salida_personal" value="{{ persona.hora_salida|time:'H:i' }}"></label>
+                                    <label>Costo<input type="number" name="costo_personal" min="0" step="0.01" value="{{ persona.costo }}"></label>
+                                    <label>Area<input type="text" name="area_personal" value="{{ persona.area_asignada|default_if_none:'' }}"></label>
+                                    <label>Mesas<input type="text" name="mesas_personal" value="{{ persona.mesas_asignadas|default_if_none:'' }}"></label>
+                                    <label class="wide">Uniforme<input type="text" name="uniforme_personal" value="{{ persona.uniforme|default_if_none:'' }}"></label>
+                                    <label class="wide">Notas<textarea name="notas_personal" rows="2">{{ persona.notas|default_if_none:'' }}</textarea></label>
+                                </div>
+                                <button class="btn" type="submit">Guardar personal</button>
+                            </form>
+                            <form method="post" data-confirm="Eliminar este personal del evento?">
+                                {% csrf_token %}
+                                <input type="hidden" name="accion" value="eliminar_personal_evento">
+                                <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                                <input type="hidden" name="personal_id" value="{{ persona.id }}">
+                                <button class="btn danger" type="submit">Eliminar personal</button>
+                            </form>
+                        </details>
+                    </article>
+                {% empty %}
+                    <p class="muted">Todavia no hay personal asignado.</p>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
+
+    <div class="operation-panel-grid" data-subpanel="banquete">
+        <form class="mini-admin-form" method="post">
+            {% csrf_token %}
+            <input type="hidden" name="accion" value="agregar_catering_evento">
+            <input type="hidden" name="evento_id" value="{{ evento.id }}">
+            <h3>Agregar banquete / buffet</h3>
+            <div class="design-grid">
+                <label>Proveedor<select name="proveedor_id"><option value="">Sin proveedor</option>{% for proveedor in proveedores_empresa %}<option value="{{ proveedor.id }}">{{ proveedor.nombre_comercial }}</option>{% endfor %}</select></label>
+                <label>Paquete buffet<select name="paquete_buffet_id"><option value="">Sin paquete</option>{% for paquete in paquetes_buffet %}<option value="{{ paquete.id }}">{{ paquete.nombre }}</option>{% endfor %}</select></label>
+                <label>Adultos<input type="number" name="cantidad_adultos_catering" min="0" value="{{ total_adultos }}"></label>
+                <label>Niños<input type="number" name="cantidad_ninos_catering" min="0" value="{{ total_ninos }}"></label>
+                <label>Proveedores<input type="number" name="cantidad_proveedores_catering" min="0" value="0"></label>
+                <label>Precio total<input type="number" name="precio_total_catering" min="0" step="0.01" value="0"></label>
+                <label>Degustacion<input type="date" name="fecha_degustacion_catering"></label>
+                <label>Hora servicio<input type="time" name="hora_servicio_catering"></label>
+                <label>Montaje<input type="time" name="horario_montaje_catering"></label>
+                <label>Duracion<input type="text" name="duracion_servicio_catering" placeholder="4 horas"></label>
+                <label class="wide">Alimentos<select name="alimentos_catering" multiple size="5">{% for alimento in alimentos %}<option value="{{ alimento.id }}">{{ alimento.categoria.nombre }} - {{ alimento.nombre }}</option>{% endfor %}</select></label>
+                <label class="wide">Observaciones<textarea name="observaciones_catering" rows="2"></textarea></label>
+            </div>
+            <div class="actions form-actions"><button class="btn" type="submit">Agregar banquete</button></div>
+        </form>
+
+        <section class="saved-items">
+            <h3>Banquetes del evento</h3>
+            <div class="saved-list">
+                {% for catering in catering_evento %}
+                    <article class="saved-item">
+                        <div><strong>{{ catering.paquete_buffet.nombre|default:"Banquete personalizado" }}</strong><span>{{ catering.total_personas }} pax - ${{ catering.precio_total|floatformat:0 }}</span></div>
+                        <p>{{ catering.proveedor.nombre_comercial|default:"Proveedor por definir" }}{% if catering.hora_servicio %} - servicio {{ catering.hora_servicio|time:"H:i" }}{% endif %}</p>
+                        {% if catering.observaciones %}<p>{{ catering.observaciones }}</p>{% endif %}
+                        <details>
+                            <summary>Editar banquete</summary>
+                            <form class="inline-edit-form" method="post">
+                                {% csrf_token %}
+                                <input type="hidden" name="accion" value="editar_catering_evento">
+                                <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                                <input type="hidden" name="catering_id" value="{{ catering.id }}">
+                                <div class="design-grid">
+                                    <label>Proveedor<select name="proveedor_id"><option value="">Sin proveedor</option>{% for proveedor in proveedores_empresa %}<option value="{{ proveedor.id }}" {% if catering.proveedor_id == proveedor.id %}selected{% endif %}>{{ proveedor.nombre_comercial }}</option>{% endfor %}</select></label>
+                                    <label>Paquete buffet<select name="paquete_buffet_id"><option value="">Sin paquete</option>{% for paquete in paquetes_buffet %}<option value="{{ paquete.id }}" {% if catering.paquete_buffet_id == paquete.id %}selected{% endif %}>{{ paquete.nombre }}</option>{% endfor %}</select></label>
+                                    <label>Adultos<input type="number" name="cantidad_adultos_catering" min="0" value="{{ catering.cantidad_adultos }}"></label>
+                                    <label>Niños<input type="number" name="cantidad_ninos_catering" min="0" value="{{ catering.cantidad_ninos }}"></label>
+                                    <label>Proveedores<input type="number" name="cantidad_proveedores_catering" min="0" value="{{ catering.cantidad_proveedores }}"></label>
+                                    <label>Precio total<input type="number" name="precio_total_catering" min="0" step="0.01" value="{{ catering.precio_total }}"></label>
+                                    <label>Degustacion<input type="date" name="fecha_degustacion_catering" value="{{ catering.fecha_degustacion|date:'Y-m-d' }}"></label>
+                                    <label>Hora servicio<input type="time" name="hora_servicio_catering" value="{{ catering.hora_servicio|time:'H:i' }}"></label>
+                                    <label>Montaje<input type="time" name="horario_montaje_catering" value="{{ catering.horario_montaje|time:'H:i' }}"></label>
+                                    <label>Duracion<input type="text" name="duracion_servicio_catering" value="{{ catering.duracion_servicio|default_if_none:'' }}"></label>
+                                    <label class="wide">Alimentos<select name="alimentos_catering" multiple size="5">{% for alimento in alimentos %}<option value="{{ alimento.id }}" {% if alimento in catering.alimentos_seleccionados.all %}selected{% endif %}>{{ alimento.categoria.nombre }} - {{ alimento.nombre }}</option>{% endfor %}</select></label>
+                                    <label class="wide">Observaciones<textarea name="observaciones_catering" rows="2">{{ catering.observaciones|default_if_none:'' }}</textarea></label>
+                                </div>
+                                <button class="btn" type="submit">Guardar banquete</button>
+                            </form>
+                            <form method="post" data-confirm="Eliminar este banquete?">
+                                {% csrf_token %}
+                                <input type="hidden" name="accion" value="eliminar_catering_evento">
+                                <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                                <input type="hidden" name="catering_id" value="{{ catering.id }}">
+                                <button class="btn danger" type="submit">Eliminar banquete</button>
+                            </form>
+                        </details>
+                    </article>
+                {% empty %}
+                    <p class="muted">Todavia no hay banquete capturado.</p>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
+
+    <div class="operation-panel-grid" data-subpanel="decoracion">
+        <form class="mini-admin-form" method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <input type="hidden" name="accion" value="agregar_decoracion_evento">
+            <input type="hidden" name="evento_id" value="{{ evento.id }}">
+            <h3>Agregar decoracion</h3>
+            <div class="design-grid">
+                <label>Nombre<input type="text" name="nombre_decoracion" placeholder="Centros de mesa, flores..."></label>
+                <label>Categoria<select name="categoria_decoracion">{% for valor, texto in categorias_decoracion %}<option value="{{ valor }}">{{ texto }}</option>{% endfor %}</select></label>
+                <label>Estado<select name="estado_decoracion">{% for valor, texto in estados_decoracion %}<option value="{{ valor }}">{{ texto }}</option>{% endfor %}</select></label>
+                <label>Proveedor<select name="proveedor_id"><option value="">Sin proveedor</option>{% for proveedor in proveedores_empresa %}<option value="{{ proveedor.id }}">{{ proveedor.nombre_comercial }}</option>{% endfor %}</select></label>
+                <label>Cantidad<input type="number" name="cantidad_decoracion" min="1" value="1"></label>
+                <label>Costo<input type="number" name="costo_decoracion" min="0" step="0.01" value="0"></label>
+                <label>Color<input type="text" name="color_decoracion"></label>
+                <label>Material<input type="text" name="material_decoracion"></label>
+                <label>Referencia<input type="file" name="imagen_referencia_decoracion" accept="image/*"></label>
+                <label>Final<input type="file" name="imagen_final_decoracion" accept="image/*"></label>
+                <label class="toggle-field"><input type="checkbox" name="aprobado_cliente_decoracion"> Aprobado cliente</label>
+                <label class="wide">Descripcion<textarea name="descripcion_decoracion" rows="2"></textarea></label>
+                <label class="wide">Notas<textarea name="notas_decoracion" rows="2"></textarea></label>
+            </div>
+            <div class="actions form-actions"><button class="btn" type="submit">Agregar decoracion</button></div>
+        </form>
+
+        <section class="saved-items">
+            <h3>Decoracion del evento</h3>
+            <div class="saved-list">
+                {% for item in decoracion_evento %}
+                    <article class="saved-item {% if not item.aprobado_cliente and item.estado == 'EN_REVISION' %}needs-attention{% endif %}">
+                        <div><strong>{{ item.nombre }}</strong><span>{{ item.get_categoria_display }} - {{ item.get_estado_display }}</span></div>
+                        <p>{{ item.cantidad }} piezas - ${{ item.costo|floatformat:0 }}{% if item.aprobado_cliente %} - aprobado{% endif %}</p>
+                        <details>
+                            <summary>Editar decoracion</summary>
+                            <form class="inline-edit-form" method="post" enctype="multipart/form-data">
+                                {% csrf_token %}
+                                <input type="hidden" name="accion" value="editar_decoracion_evento">
+                                <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                                <input type="hidden" name="decoracion_id" value="{{ item.id }}">
+                                <div class="design-grid">
+                                    <label>Nombre<input type="text" name="nombre_decoracion" value="{{ item.nombre }}"></label>
+                                    <label>Categoria<select name="categoria_decoracion">{% for valor, texto in categorias_decoracion %}<option value="{{ valor }}" {% if item.categoria == valor %}selected{% endif %}>{{ texto }}</option>{% endfor %}</select></label>
+                                    <label>Estado<select name="estado_decoracion">{% for valor, texto in estados_decoracion %}<option value="{{ valor }}" {% if item.estado == valor %}selected{% endif %}>{{ texto }}</option>{% endfor %}</select></label>
+                                    <label>Proveedor<select name="proveedor_id"><option value="">Sin proveedor</option>{% for proveedor in proveedores_empresa %}<option value="{{ proveedor.id }}" {% if item.proveedor_id == proveedor.id %}selected{% endif %}>{{ proveedor.nombre_comercial }}</option>{% endfor %}</select></label>
+                                    <label>Cantidad<input type="number" name="cantidad_decoracion" min="1" value="{{ item.cantidad }}"></label>
+                                    <label>Costo<input type="number" name="costo_decoracion" min="0" step="0.01" value="{{ item.costo }}"></label>
+                                    <label>Color<input type="text" name="color_decoracion" value="{{ item.color|default_if_none:'' }}"></label>
+                                    <label>Material<input type="text" name="material_decoracion" value="{{ item.material|default_if_none:'' }}"></label>
+                                    <label>Referencia<input type="file" name="imagen_referencia_decoracion" accept="image/*">{% if item.imagen_referencia %}<span class="checkline"><input type="checkbox" name="eliminar_imagen_referencia_decoracion"> Quitar</span>{% endif %}</label>
+                                    <label>Final<input type="file" name="imagen_final_decoracion" accept="image/*">{% if item.imagen_final %}<span class="checkline"><input type="checkbox" name="eliminar_imagen_final_decoracion"> Quitar</span>{% endif %}</label>
+                                    <label class="toggle-field"><input type="checkbox" name="aprobado_cliente_decoracion" {% if item.aprobado_cliente %}checked{% endif %}> Aprobado cliente</label>
+                                    <label class="wide">Descripcion<textarea name="descripcion_decoracion" rows="2">{{ item.descripcion|default_if_none:'' }}</textarea></label>
+                                    <label class="wide">Notas<textarea name="notas_decoracion" rows="2">{{ item.notas|default_if_none:'' }}</textarea></label>
+                                </div>
+                                <button class="btn" type="submit">Guardar decoracion</button>
+                            </form>
+                            <form method="post" data-confirm="Eliminar este elemento de decoracion?">
+                                {% csrf_token %}
+                                <input type="hidden" name="accion" value="eliminar_decoracion_evento">
+                                <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                                <input type="hidden" name="decoracion_id" value="{{ item.id }}">
+                                <button class="btn danger" type="submit">Eliminar decoracion</button>
+                            </form>
+                        </details>
+                    </article>
+                {% empty %}
+                    <p class="muted">Todavia no hay decoracion capturada.</p>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
+
+    <div class="operation-panel-grid" data-subpanel="musica">
+        <div class="operation-form-stack">
+            <form class="mini-admin-form" method="post">
+                {% csrf_token %}
+                <input type="hidden" name="accion" value="agregar_entretenimiento_evento">
+                <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                <h3>Agregar entretenimiento</h3>
+                <div class="design-grid">
+                    <label>Tipo<select name="tipo_entretenimiento">{% for valor, texto in tipos_entretenimiento %}<option value="{{ valor }}">{{ texto }}</option>{% endfor %}</select></label>
+                    <label>Artista / servicio<input type="text" name="nombre_artista" placeholder="DJ, banda, mariachi..."></label>
+                    <label>Estado<select name="estado_entretenimiento">{% for valor, texto in estados_entretenimiento %}<option value="{{ valor }}">{{ texto }}</option>{% endfor %}</select></label>
+                    <label>Proveedor<select name="proveedor_id"><option value="">Sin proveedor</option>{% for proveedor in proveedores_empresa %}<option value="{{ proveedor.id }}">{{ proveedor.nombre_comercial }}</option>{% endfor %}</select></label>
+                    <label>Inicio<input type="time" name="hora_inicio_entretenimiento"></label>
+                    <label>Fin<input type="time" name="hora_fin_entretenimiento"></label>
+                    <label>Duracion<input type="text" name="duracion_entretenimiento"></label>
+                    <label>Costo<input type="number" name="costo_entretenimiento" min="0" step="0.01" value="0"></label>
+                    <label>Anticipo<input type="number" name="anticipo_entretenimiento" min="0" step="0.01" value="0"></label>
+                    <label class="wide">Requerimientos<textarea name="requerimientos_entretenimiento" rows="2"></textarea></label>
+                    <label class="wide">Notas<textarea name="notas_entretenimiento" rows="2"></textarea></label>
+                </div>
+                <div class="actions form-actions"><button class="btn" type="submit">Agregar entretenimiento</button></div>
+            </form>
+
+            <form class="mini-admin-form" method="post">
+                {% csrf_token %}
+                <input type="hidden" name="accion" value="agregar_cancion_evento">
+                <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                <h3>Agregar cancion / momento musical</h3>
+                <div class="design-grid">
+                    <label>Momento<select name="tipo_momento">{% for valor, texto in momentos_cancion %}<option value="{{ valor }}">{{ texto }}</option>{% endfor %}</select></label>
+                    <label>Cancion<input type="text" name="nombre_cancion" placeholder="Nombre de la cancion"></label>
+                    <label>Artista<input type="text" name="artista_cancion"></label>
+                    <label>Orden<input type="number" name="orden_cancion" min="0" value="0"></label>
+                    <label>Servicio<select name="entretenimiento_id"><option value="">Sin servicio ligado</option>{% for item in entretenimiento_evento %}<option value="{{ item.id }}">{{ item.nombre_artista }}</option>{% endfor %}</select></label>
+                    <label class="wide">Link<input type="text" name="enlace_cancion" placeholder="Spotify, YouTube..."></label>
+                    <label class="wide">Notas<textarea name="notas_cancion" rows="2"></textarea></label>
+                </div>
+                <div class="actions form-actions"><button class="btn" type="submit">Agregar cancion</button></div>
+            </form>
+        </div>
+
+        <section class="saved-items">
+            <h3>Entretenimiento</h3>
+            <div class="saved-list">
+                {% for item in entretenimiento_evento %}
+                    <article class="saved-item">
+                        <div><strong>{{ item.nombre_artista }}</strong><span>{{ item.get_tipo_display }} - {{ item.get_estado_display }}</span></div>
+                        <p>{% if item.hora_inicio %}{{ item.hora_inicio|time:"H:i" }}{% endif %}{% if item.hora_fin %} - {{ item.hora_fin|time:"H:i" }}{% endif %} - saldo ${{ item.saldo_pendiente|floatformat:0 }}</p>
+                        <details>
+                            <summary>Editar entretenimiento</summary>
+                            <form class="inline-edit-form" method="post">
+                                {% csrf_token %}
+                                <input type="hidden" name="accion" value="editar_entretenimiento_evento">
+                                <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                                <input type="hidden" name="entretenimiento_id" value="{{ item.id }}">
+                                <div class="design-grid">
+                                    <label>Tipo<select name="tipo_entretenimiento">{% for valor, texto in tipos_entretenimiento %}<option value="{{ valor }}" {% if item.tipo == valor %}selected{% endif %}>{{ texto }}</option>{% endfor %}</select></label>
+                                    <label>Artista<input type="text" name="nombre_artista" value="{{ item.nombre_artista }}"></label>
+                                    <label>Estado<select name="estado_entretenimiento">{% for valor, texto in estados_entretenimiento %}<option value="{{ valor }}" {% if item.estado == valor %}selected{% endif %}>{{ texto }}</option>{% endfor %}</select></label>
+                                    <label>Proveedor<select name="proveedor_id"><option value="">Sin proveedor</option>{% for proveedor in proveedores_empresa %}<option value="{{ proveedor.id }}" {% if item.proveedor_id == proveedor.id %}selected{% endif %}>{{ proveedor.nombre_comercial }}</option>{% endfor %}</select></label>
+                                    <label>Inicio<input type="time" name="hora_inicio_entretenimiento" value="{{ item.hora_inicio|time:'H:i' }}"></label>
+                                    <label>Fin<input type="time" name="hora_fin_entretenimiento" value="{{ item.hora_fin|time:'H:i' }}"></label>
+                                    <label>Duracion<input type="text" name="duracion_entretenimiento" value="{{ item.duracion|default_if_none:'' }}"></label>
+                                    <label>Costo<input type="number" name="costo_entretenimiento" min="0" step="0.01" value="{{ item.costo }}"></label>
+                                    <label>Anticipo<input type="number" name="anticipo_entretenimiento" min="0" step="0.01" value="{{ item.anticipo }}"></label>
+                                    <label class="wide">Requerimientos<textarea name="requerimientos_entretenimiento" rows="2">{{ item.requerimientos_tecnicos|default_if_none:'' }}</textarea></label>
+                                    <label class="wide">Notas<textarea name="notas_entretenimiento" rows="2">{{ item.notas|default_if_none:'' }}</textarea></label>
+                                </div>
+                                <button class="btn" type="submit">Guardar entretenimiento</button>
+                            </form>
+                            <form method="post" data-confirm="Eliminar este entretenimiento?">
+                                {% csrf_token %}
+                                <input type="hidden" name="accion" value="eliminar_entretenimiento_evento">
+                                <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                                <input type="hidden" name="entretenimiento_id" value="{{ item.id }}">
+                                <button class="btn danger" type="submit">Eliminar entretenimiento</button>
+                            </form>
+                        </details>
+                    </article>
+                {% empty %}
+                    <p class="muted">Todavia no hay entretenimiento.</p>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="saved-items">
+            <h3>Canciones y momentos</h3>
+            <div class="saved-list">
+                {% for cancion in canciones_evento %}
+                    <article class="saved-item">
+                        <div><strong>{{ cancion.nombre_cancion }}</strong><span>{{ cancion.get_tipo_momento_display }} - orden {{ cancion.orden }}</span></div>
+                        {% if cancion.artista %}<p>{{ cancion.artista }}</p>{% endif %}
+                        {% if cancion.enlace %}<a href="{{ cancion.enlace }}" target="_blank">Abrir link</a>{% endif %}
+                        <details>
+                            <summary>Editar cancion</summary>
+                            <form class="inline-edit-form" method="post">
+                                {% csrf_token %}
+                                <input type="hidden" name="accion" value="editar_cancion_evento">
+                                <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                                <input type="hidden" name="cancion_id" value="{{ cancion.id }}">
+                                <div class="design-grid">
+                                    <label>Momento<select name="tipo_momento">{% for valor, texto in momentos_cancion %}<option value="{{ valor }}" {% if cancion.tipo_momento == valor %}selected{% endif %}>{{ texto }}</option>{% endfor %}</select></label>
+                                    <label>Cancion<input type="text" name="nombre_cancion" value="{{ cancion.nombre_cancion }}"></label>
+                                    <label>Artista<input type="text" name="artista_cancion" value="{{ cancion.artista|default_if_none:'' }}"></label>
+                                    <label>Orden<input type="number" name="orden_cancion" min="0" value="{{ cancion.orden }}"></label>
+                                    <label>Servicio<select name="entretenimiento_id"><option value="">Sin servicio ligado</option>{% for item in entretenimiento_evento %}<option value="{{ item.id }}" {% if cancion.entretenimiento_id == item.id %}selected{% endif %}>{{ item.nombre_artista }}</option>{% endfor %}</select></label>
+                                    <label class="wide">Link<input type="text" name="enlace_cancion" value="{{ cancion.enlace|default_if_none:'' }}"></label>
+                                    <label class="wide">Notas<textarea name="notas_cancion" rows="2">{{ cancion.notas|default_if_none:'' }}</textarea></label>
+                                </div>
+                                <button class="btn" type="submit">Guardar cancion</button>
+                            </form>
+                            <form method="post" data-confirm="Eliminar esta cancion?">
+                                {% csrf_token %}
+                                <input type="hidden" name="accion" value="eliminar_cancion_evento">
+                                <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                                <input type="hidden" name="cancion_id" value="{{ cancion.id }}">
+                                <button class="btn danger" type="submit">Eliminar cancion</button>
+                            </form>
+                        </details>
+                    </article>
+                {% empty %}
+                    <p class="muted">Todavia no hay canciones capturadas.</p>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
+
+    <div class="operation-panel-grid" data-subpanel="tareas">
+        <form class="mini-admin-form" method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <input type="hidden" name="accion" value="agregar_tarea_evento">
+            <input type="hidden" name="evento_id" value="{{ evento.id }}">
+            <h3>Agregar tarea</h3>
+            <div class="design-grid">
+                <label>Titulo<input type="text" name="titulo_tarea" placeholder="Confirmar banquete"></label>
+                <label>Responsable
+                    <select name="responsable_id">
+                        <option value="">Sin responsable</option>
+                        {% for usuario in responsables_evento %}<option value="{{ usuario.id }}">{{ usuario.get_full_name|default:usuario.username }}</option>{% endfor %}
+                    </select>
+                </label>
+                <label>Estado
+                    <select name="estado_tarea">{% for valor, texto in estados_tarea %}<option value="{{ valor }}">{{ texto }}</option>{% endfor %}</select>
+                </label>
+                <label>Prioridad
+                    <select name="prioridad_tarea">{% for valor, texto in prioridades_tarea %}<option value="{{ valor }}">{{ texto }}</option>{% endfor %}</select>
+                </label>
+                <label>Categoria
+                    <select name="categoria_tarea">{% for valor, texto in categorias_tarea %}<option value="{{ valor }}">{{ texto }}</option>{% endfor %}</select>
+                </label>
+                <label>Inicio<input type="date" name="fecha_inicio_tarea"></label>
+                <label>Limite<input type="date" name="fecha_limite_tarea"></label>
+                <label>Avance<input type="number" name="porcentaje_avance_tarea" min="0" max="100" value="0"></label>
+                <label class="wide">Descripcion<textarea name="descripcion_tarea" rows="2"></textarea></label>
+                <label>Evidencia<input type="file" name="evidencia_tarea"></label>
+                <label class="wide">Notas<textarea name="notas_tarea" rows="2"></textarea></label>
+            </div>
+            <div class="actions form-actions"><button class="btn" type="submit">Agregar tarea</button></div>
+        </form>
+
+        <section class="saved-items">
+            <h3>Tareas del evento</h3>
+            <div class="saved-list">
+                {% for tarea in tareas_evento %}
+                    <article class="saved-item {% if tarea.esta_vencida %}needs-attention{% endif %}">
+                        <div><strong>{{ tarea.titulo }}</strong><span>{{ tarea.get_estado_display }} - {{ tarea.porcentaje_avance }}%</span></div>
+                        <p>{{ tarea.get_categoria_display }}{% if tarea.fecha_limite %} - limite {{ tarea.fecha_limite|date:"d/m/Y" }}{% endif %}{% if tarea.responsable %} - {{ tarea.responsable.get_full_name|default:tarea.responsable.username }}{% endif %}</p>
+                        <details>
+                            <summary>Editar tarea</summary>
+                            <form class="inline-edit-form" method="post" enctype="multipart/form-data">
+                                {% csrf_token %}
+                                <input type="hidden" name="accion" value="editar_tarea_evento">
+                                <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                                <input type="hidden" name="tarea_id" value="{{ tarea.id }}">
+                                <div class="design-grid">
+                                    <label>Titulo<input type="text" name="titulo_tarea" value="{{ tarea.titulo }}"></label>
+                                    <label>Responsable
+                                        <select name="responsable_id">
+                                            <option value="">Sin responsable</option>
+                                            {% for usuario in responsables_evento %}<option value="{{ usuario.id }}" {% if tarea.responsable_id == usuario.id %}selected{% endif %}>{{ usuario.get_full_name|default:usuario.username }}</option>{% endfor %}
+                                        </select>
+                                    </label>
+                                    <label>Estado<select name="estado_tarea">{% for valor, texto in estados_tarea %}<option value="{{ valor }}" {% if tarea.estado == valor %}selected{% endif %}>{{ texto }}</option>{% endfor %}</select></label>
+                                    <label>Prioridad<select name="prioridad_tarea">{% for valor, texto in prioridades_tarea %}<option value="{{ valor }}" {% if tarea.prioridad == valor %}selected{% endif %}>{{ texto }}</option>{% endfor %}</select></label>
+                                    <label>Categoria<select name="categoria_tarea">{% for valor, texto in categorias_tarea %}<option value="{{ valor }}" {% if tarea.categoria == valor %}selected{% endif %}>{{ texto }}</option>{% endfor %}</select></label>
+                                    <label>Inicio<input type="date" name="fecha_inicio_tarea" value="{{ tarea.fecha_inicio|date:'Y-m-d' }}"></label>
+                                    <label>Limite<input type="date" name="fecha_limite_tarea" value="{{ tarea.fecha_limite|date:'Y-m-d' }}"></label>
+                                    <label>Avance<input type="number" name="porcentaje_avance_tarea" min="0" max="100" value="{{ tarea.porcentaje_avance }}"></label>
+                                    <label class="wide">Descripcion<textarea name="descripcion_tarea" rows="2">{{ tarea.descripcion|default_if_none:'' }}</textarea></label>
+                                    <label>Evidencia<input type="file" name="evidencia_tarea">{% if tarea.evidencia %}<span class="checkline"><input type="checkbox" name="eliminar_evidencia_tarea"> Quitar</span>{% endif %}</label>
+                                    <label class="wide">Notas<textarea name="notas_tarea" rows="2">{{ tarea.notas|default_if_none:'' }}</textarea></label>
+                                </div>
+                                <button class="btn" type="submit">Guardar tarea</button>
+                            </form>
+                            <form method="post" data-confirm="Eliminar esta tarea?">
+                                {% csrf_token %}
+                                <input type="hidden" name="accion" value="eliminar_tarea_evento">
+                                <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                                <input type="hidden" name="tarea_id" value="{{ tarea.id }}">
+                                <button class="btn danger" type="submit">Eliminar tarea</button>
+                            </form>
+                        </details>
+                    </article>
+                {% empty %}
+                    <p class="muted">Todavia no hay tareas.</p>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
+
+    <div class="operation-panel-grid" data-subpanel="presupuesto">
+        <form class="mini-admin-form" method="post">
+            {% csrf_token %}
+            <input type="hidden" name="accion" value="agregar_gasto_evento">
+            <input type="hidden" name="evento_id" value="{{ evento.id }}">
+            <h3>Agregar gasto</h3>
+            <div class="design-grid">
+                <label>Concepto<input type="text" name="concepto_gasto" placeholder="Anticipo banquete"></label>
+                <label>Categoria
+                    <select name="categoria_gasto_id">
+                        <option value="">General</option>
+                        {% for categoria in categorias_gasto %}<option value="{{ categoria.id }}">{{ categoria.nombre }}</option>{% endfor %}
+                    </select>
+                </label>
+                <label>Nueva categoria<input type="text" name="categoria_gasto_nombre" placeholder="Solo si no existe"></label>
+                <label>Proveedor
+                    <select name="proveedor_id">
+                        <option value="">Sin proveedor</option>
+                        {% for proveedor in proveedores_empresa %}<option value="{{ proveedor.id }}">{{ proveedor.nombre_comercial }}</option>{% endfor %}
+                    </select>
+                </label>
+                <label>Estimado<input type="number" name="monto_estimado_gasto" min="0" step="0.01" value="0"></label>
+                <label>Real<input type="number" name="monto_real_gasto" min="0" step="0.01" value="0"></label>
+                <label>Limite<input type="date" name="fecha_limite_gasto"></label>
+                <label>Estado<select name="estado_gasto">{% for valor, texto in estados_gasto %}<option value="{{ valor }}">{{ texto }}</option>{% endfor %}</select></label>
+                <label class="wide">Notas<textarea name="notas_gasto" rows="2"></textarea></label>
+            </div>
+            <div class="actions form-actions"><button class="btn" type="submit">Agregar gasto</button></div>
+        </form>
+
+        <section class="saved-items">
+            <h3>Presupuesto y pagos</h3>
+            <div class="saved-list">
+                {% for gasto in gastos_evento %}
+                    <article class="saved-item {% if gasto.esta_vencido %}needs-attention{% endif %}">
+                        <div><strong>{{ gasto.concepto }}</strong><span>{{ gasto.get_estado_display }} - saldo ${{ gasto.saldo_pendiente|floatformat:0 }}</span></div>
+                        <p>{{ gasto.categoria.nombre }} - estimado ${{ gasto.monto_estimado|floatformat:0 }} - pagado ${{ gasto.total_pagado|floatformat:0 }}</p>
+                        <details>
+                            <summary>Editar gasto y pagos</summary>
+                            <form class="inline-edit-form" method="post">
+                                {% csrf_token %}
+                                <input type="hidden" name="accion" value="editar_gasto_evento">
+                                <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                                <input type="hidden" name="gasto_id" value="{{ gasto.id }}">
+                                <div class="design-grid">
+                                    <label>Concepto<input type="text" name="concepto_gasto" value="{{ gasto.concepto }}"></label>
+                                    <label>Categoria<select name="categoria_gasto_id">{% for categoria in categorias_gasto %}<option value="{{ categoria.id }}" {% if gasto.categoria_id == categoria.id %}selected{% endif %}>{{ categoria.nombre }}</option>{% endfor %}</select></label>
+                                    <label>Nueva categoria<input type="text" name="categoria_gasto_nombre"></label>
+                                    <label>Proveedor<select name="proveedor_id"><option value="">Sin proveedor</option>{% for proveedor in proveedores_empresa %}<option value="{{ proveedor.id }}" {% if gasto.proveedor_id == proveedor.id %}selected{% endif %}>{{ proveedor.nombre_comercial }}</option>{% endfor %}</select></label>
+                                    <label>Estimado<input type="number" name="monto_estimado_gasto" min="0" step="0.01" value="{{ gasto.monto_estimado }}"></label>
+                                    <label>Real<input type="number" name="monto_real_gasto" min="0" step="0.01" value="{{ gasto.monto_real }}"></label>
+                                    <label>Limite<input type="date" name="fecha_limite_gasto" value="{{ gasto.fecha_limite|date:'Y-m-d' }}"></label>
+                                    <label>Estado<select name="estado_gasto">{% for valor, texto in estados_gasto %}<option value="{{ valor }}" {% if gasto.estado == valor %}selected{% endif %}>{{ texto }}</option>{% endfor %}</select></label>
+                                    <label class="wide">Notas<textarea name="notas_gasto" rows="2">{{ gasto.notas|default_if_none:'' }}</textarea></label>
+                                </div>
+                                <button class="btn" type="submit">Guardar gasto</button>
+                            </form>
+                            <form class="inline-edit-form" method="post" enctype="multipart/form-data">
+                                {% csrf_token %}
+                                <input type="hidden" name="accion" value="agregar_pago_evento">
+                                <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                                <input type="hidden" name="gasto_id" value="{{ gasto.id }}">
+                                <h3>Agregar pago</h3>
+                                <div class="design-grid">
+                                    <label>Monto<input type="number" name="monto_pago" min="0" step="0.01" value="0"></label>
+                                    <label>Fecha<input type="date" name="fecha_pago"></label>
+                                    <label>Metodo<select name="metodo_pago">{% for valor, texto in metodos_pago %}<option value="{{ valor }}">{{ texto }}</option>{% endfor %}</select></label>
+                                    <label>Referencia<input type="text" name="referencia_pago"></label>
+                                    <label>Comprobante<input type="file" name="comprobante_pago"></label>
+                                    <label class="wide">Notas<input type="text" name="notas_pago"></label>
+                                </div>
+                                <button class="btn secondary" type="submit">Agregar pago</button>
+                            </form>
+                            {% for pago in gasto.pagos.all %}
+                                <form class="inline-edit-form" method="post" enctype="multipart/form-data">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="accion" value="editar_pago_evento">
+                                    <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                                    <input type="hidden" name="pago_id" value="{{ pago.id }}">
+                                    <div class="design-grid">
+                                        <label>Monto<input type="number" name="monto_pago" min="0" step="0.01" value="{{ pago.monto }}"></label>
+                                        <label>Fecha<input type="date" name="fecha_pago" value="{{ pago.fecha_pago|date:'Y-m-d' }}"></label>
+                                        <label>Metodo<select name="metodo_pago">{% for valor, texto in metodos_pago %}<option value="{{ valor }}" {% if pago.metodo_pago == valor %}selected{% endif %}>{{ texto }}</option>{% endfor %}</select></label>
+                                        <label>Referencia<input type="text" name="referencia_pago" value="{{ pago.referencia|default_if_none:'' }}"></label>
+                                        <label>Comprobante<input type="file" name="comprobante_pago">{% if pago.comprobante %}<span class="checkline"><input type="checkbox" name="eliminar_comprobante_pago"> Quitar</span>{% endif %}</label>
+                                        <label class="wide">Notas<input type="text" name="notas_pago" value="{{ pago.notas|default_if_none:'' }}"></label>
+                                    </div>
+                                    <div class="actions form-actions">
+                                        <button class="btn secondary" type="submit">Guardar pago</button>
+                                    </div>
+                                </form>
+                                <form method="post" data-confirm="Eliminar este pago?">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="accion" value="eliminar_pago_evento">
+                                    <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                                    <input type="hidden" name="pago_id" value="{{ pago.id }}">
+                                    <button class="btn danger" type="submit">Eliminar pago</button>
+                                </form>
+                            {% endfor %}
+                            <form method="post" data-confirm="Eliminar este gasto y sus pagos?">
+                                {% csrf_token %}
+                                <input type="hidden" name="accion" value="eliminar_gasto_evento">
+                                <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                                <input type="hidden" name="gasto_id" value="{{ gasto.id }}">
+                                <button class="btn danger" type="submit">Eliminar gasto</button>
+                            </form>
+                        </details>
+                    </article>
+                {% empty %}
+                    <p class="muted">Todavia no hay gastos.</p>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
+
+    <div class="operation-panel-grid" data-subpanel="documentos">
+        <form class="mini-admin-form" method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <input type="hidden" name="accion" value="agregar_documento_evento">
+            <input type="hidden" name="evento_id" value="{{ evento.id }}">
+            <h3>Cargar documento</h3>
+            <div class="design-grid">
+                <label>Tipo<select name="tipo_documento">{% for valor, texto in tipos_documento %}<option value="{{ valor }}">{{ texto }}</option>{% endfor %}</select></label>
+                <label>Titulo<input type="text" name="titulo_documento" placeholder="Contrato, menu, cotizacion..."></label>
+                <label>Proveedor<select name="proveedor_id"><option value="">Sin proveedor</option>{% for proveedor in proveedores_empresa %}<option value="{{ proveedor.id }}">{{ proveedor.nombre_comercial }}</option>{% endfor %}</select></label>
+                <label>Archivo<input type="file" name="archivo_documento" required></label>
+                <label class="toggle-field"><input type="checkbox" name="visible_cliente_documento"> Visible para cliente</label>
+                <label class="wide">Descripcion<textarea name="descripcion_documento" rows="2"></textarea></label>
+            </div>
+            <div class="actions form-actions"><button class="btn" type="submit">Cargar documento</button></div>
+        </form>
+        <section class="saved-items">
+            <h3>Documentos cargados</h3>
+            <div class="saved-list">
+                {% for documento in documentos_evento %}
+                    <article class="saved-item">
+                        <div><strong>{{ documento.titulo }}</strong><span>{{ documento.get_tipo_documento_display }}{% if documento.visible_cliente %} - visible cliente{% endif %}</span></div>
+                        {% if documento.archivo %}<a href="{{ documento.archivo.url }}" target="_blank">Abrir archivo</a>{% endif %}
+                        <details>
+                            <summary>Editar documento</summary>
+                            <form class="inline-edit-form" method="post" enctype="multipart/form-data">
+                                {% csrf_token %}
+                                <input type="hidden" name="accion" value="editar_documento_evento">
+                                <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                                <input type="hidden" name="documento_id" value="{{ documento.id }}">
+                                <div class="design-grid">
+                                    <label>Tipo<select name="tipo_documento">{% for valor, texto in tipos_documento %}<option value="{{ valor }}" {% if documento.tipo_documento == valor %}selected{% endif %}>{{ texto }}</option>{% endfor %}</select></label>
+                                    <label>Titulo<input type="text" name="titulo_documento" value="{{ documento.titulo }}"></label>
+                                    <label>Proveedor<select name="proveedor_id"><option value="">Sin proveedor</option>{% for proveedor in proveedores_empresa %}<option value="{{ proveedor.id }}" {% if documento.proveedor_id == proveedor.id %}selected{% endif %}>{{ proveedor.nombre_comercial }}</option>{% endfor %}</select></label>
+                                    <label>Reemplazar<input type="file" name="archivo_documento"></label>
+                                    <label class="toggle-field"><input type="checkbox" name="visible_cliente_documento" {% if documento.visible_cliente %}checked{% endif %}> Visible para cliente</label>
+                                    <label class="wide">Descripcion<textarea name="descripcion_documento" rows="2">{{ documento.descripcion|default_if_none:'' }}</textarea></label>
+                                </div>
+                                <button class="btn" type="submit">Guardar documento</button>
+                            </form>
+                            <form method="post" data-confirm="Eliminar este documento?">
+                                {% csrf_token %}
+                                <input type="hidden" name="accion" value="eliminar_documento_evento">
+                                <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                                <input type="hidden" name="documento_id" value="{{ documento.id }}">
+                                <button class="btn danger" type="submit">Eliminar documento</button>
+                            </form>
+                        </details>
+                    </article>
+                {% empty %}
+                    <p class="muted">Todavia no hay documentos.</p>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
+
+    <div class="operation-panel-grid" data-subpanel="aprobaciones">
+        <form class="mini-admin-form" method="post">
+            {% csrf_token %}
+            <input type="hidden" name="accion" value="agregar_aprobacion_evento">
+            <input type="hidden" name="evento_id" value="{{ evento.id }}">
+            <h3>Solicitar aprobacion o comentario del cliente</h3>
+            <div class="design-grid">
+                <label>Tipo<select name="tipo_aprobacion">{% for valor, texto in tipos_aprobacion %}<option value="{{ valor }}">{{ texto }}</option>{% endfor %}</select></label>
+                <label>Titulo<input type="text" name="titulo_aprobacion" placeholder="Aprobar menu, invitacion, mesas..."></label>
+                <label>Estado<select name="estado_aprobacion">{% for valor, texto in estados_aprobacion %}<option value="{{ valor }}">{{ texto }}</option>{% endfor %}</select></label>
+                <label class="wide">Descripcion<textarea name="descripcion_aprobacion" rows="2"></textarea></label>
+                <label class="wide">Comentario del cliente / interno<textarea name="comentario_aprobacion" rows="2"></textarea></label>
+            </div>
+            <div class="actions form-actions"><button class="btn" type="submit">Guardar solicitud</button></div>
+        </form>
+        <section class="saved-items">
+            <h3>Aprobaciones y comentarios</h3>
+            <div class="saved-list">
+                {% for aprobacion in aprobaciones_evento %}
+                    <article class="saved-item {% if aprobacion.estado == 'PENDIENTE' %}needs-attention{% endif %}">
+                        <div><strong>{{ aprobacion.titulo }}</strong><span>{{ aprobacion.get_tipo_display }} - {{ aprobacion.get_estado_display }}</span></div>
+                        {% if aprobacion.descripcion %}<p>{{ aprobacion.descripcion }}</p>{% endif %}
+                        {% if aprobacion.comentario %}<p>Comentario: {{ aprobacion.comentario }}</p>{% endif %}
+                        <details>
+                            <summary>Editar aprobacion</summary>
+                            <form class="inline-edit-form" method="post">
+                                {% csrf_token %}
+                                <input type="hidden" name="accion" value="editar_aprobacion_evento">
+                                <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                                <input type="hidden" name="aprobacion_id" value="{{ aprobacion.id }}">
+                                <div class="design-grid">
+                                    <label>Tipo<select name="tipo_aprobacion">{% for valor, texto in tipos_aprobacion %}<option value="{{ valor }}" {% if aprobacion.tipo == valor %}selected{% endif %}>{{ texto }}</option>{% endfor %}</select></label>
+                                    <label>Titulo<input type="text" name="titulo_aprobacion" value="{{ aprobacion.titulo }}"></label>
+                                    <label>Estado<select name="estado_aprobacion">{% for valor, texto in estados_aprobacion %}<option value="{{ valor }}" {% if aprobacion.estado == valor %}selected{% endif %}>{{ texto }}</option>{% endfor %}</select></label>
+                                    <label class="wide">Descripcion<textarea name="descripcion_aprobacion" rows="2">{{ aprobacion.descripcion|default_if_none:'' }}</textarea></label>
+                                    <label class="wide">Comentario<textarea name="comentario_aprobacion" rows="2">{{ aprobacion.comentario|default_if_none:'' }}</textarea></label>
+                                </div>
+                                <button class="btn" type="submit">Guardar aprobacion</button>
+                            </form>
+                            <form method="post" data-confirm="Eliminar esta aprobacion?">
+                                {% csrf_token %}
+                                <input type="hidden" name="accion" value="eliminar_aprobacion_evento">
+                                <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                                <input type="hidden" name="aprobacion_id" value="{{ aprobacion.id }}">
+                                <button class="btn danger" type="submit">Eliminar aprobacion</button>
+                            </form>
+                        </details>
+                    </article>
+                {% empty %}
+                    <p class="muted">Todavia no hay aprobaciones ni comentarios.</p>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
+</section>

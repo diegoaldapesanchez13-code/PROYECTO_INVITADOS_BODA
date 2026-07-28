@@ -1,0 +1,113 @@
+﻿                <form class="mini-admin-form" method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="accion" value="agregar_regalo">
+                    <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                    <h3>Mesa de regalos o depósito</h3>
+                    <div class="design-grid">
+                        <label>
+                            Tipo
+                            <select name="tipo_regalo">
+                                {% for valor, texto in tipos_regalo %}
+                                    <option value="{{ valor }}">{{ texto }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <label>
+                            Nombre
+                            <input type="text" name="nombre_regalo" placeholder="Liverpool, Palacio, depósito...">
+                        </label>
+                        <label class="wide">
+                            Link de tienda
+                            <input type="text" name="url_regalo" placeholder="https://...">
+                        </label>
+                        <label>
+                            Banco
+                            <input type="text" name="banco" placeholder="Banco">
+                        </label>
+                        <label>
+                            Titular
+                            <input type="text" name="titular" placeholder="Nombre del titular">
+                        </label>
+                        <label>
+                            Cuenta
+                            <input type="text" name="numero_cuenta" placeholder="Número de cuenta">
+                        </label>
+                        <label>
+                            CLABE
+                            <input type="text" name="clabe" placeholder="CLABE interbancaria">
+                        </label>
+                        <label class="wide">
+                            Instrucciones
+                            <input type="text" name="instrucciones" placeholder="Concepto o mensaje opcional">
+                        </label>
+                    </div>
+                    <div class="actions form-actions">
+                        <button class="btn" type="submit">Agregar regalo</button>
+                    </div>
+                </form>
+
+                <section class="mini-admin-form saved-items">
+                    <h3>Regalos guardados</h3>
+                    <div class="saved-list">
+                        {% for regalo in evento.regalos.all %}
+                            <article class="saved-item">
+                                <div>
+                                    <strong>{{ regalo.nombre }}</strong>
+                                    <span>{{ regalo.get_tipo_display }}{% if not regalo.visible %} · Oculto{% endif %}</span>
+                                </div>
+                                {% if regalo.url %}
+                                    <a href="{{ regalo.url }}" target="_blank">Abrir link</a>
+                                {% endif %}
+                                {% if regalo.banco or regalo.titular or regalo.numero_cuenta or regalo.clabe %}
+                                    <p>
+                                        {% if regalo.banco %}Banco: {{ regalo.banco }}{% endif %}
+                                        {% if regalo.titular %} · Titular: {{ regalo.titular }}{% endif %}
+                                        {% if regalo.numero_cuenta %} · Cuenta: {{ regalo.numero_cuenta }}{% endif %}
+                                        {% if regalo.clabe %} · CLABE: {{ regalo.clabe }}{% endif %}
+                                    </p>
+                                {% elif not regalo.url %}
+                                    <p class="warn">Falta agregar link o datos bancarios.</p>
+                                {% endif %}
+                                <details>
+                                    <summary>Editar</summary>
+                                    <form method="post" class="inline-edit-form">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="accion" value="editar_regalo">
+                                        <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                                        <input type="hidden" name="regalo_id" value="{{ regalo.id }}">
+                                        <div class="design-grid">
+                                            <label>
+                                                Tipo
+                                                <select name="tipo_regalo">
+                                                    {% for valor, texto in tipos_regalo %}
+                                                        <option value="{{ valor }}" {% if regalo.tipo == valor %}selected{% endif %}>{{ texto }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </label>
+                                            <label>Nombre<input type="text" name="nombre_regalo" value="{{ regalo.nombre }}"></label>
+                                            <label class="wide">Link de tienda<input type="text" name="url_regalo" value="{{ regalo.url|default_if_none:'' }}"></label>
+                                            <label>Banco<input type="text" name="banco" value="{{ regalo.banco|default_if_none:'' }}"></label>
+                                            <label>Titular<input type="text" name="titular" value="{{ regalo.titular|default_if_none:'' }}"></label>
+                                            <label>Cuenta<input type="text" name="numero_cuenta" value="{{ regalo.numero_cuenta|default_if_none:'' }}"></label>
+                                            <label>CLABE<input type="text" name="clabe" value="{{ regalo.clabe|default_if_none:'' }}"></label>
+                                            <label class="wide">Instrucciones<input type="text" name="instrucciones" value="{{ regalo.instrucciones|default_if_none:'' }}"></label>
+                                            <label class="toggle-field"><input type="checkbox" name="visible" {% if regalo.visible %}checked{% endif %}> Visible en invitación</label>
+                                        </div>
+                                        <div class="actions form-actions">
+                                            <button class="btn" type="submit">Guardar regalo</button>
+                                        </div>
+                                    </form>
+                                    <form method="post" onsubmit="return confirm('¿Eliminar este regalo?');">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="accion" value="eliminar_regalo">
+                                        <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                                        <input type="hidden" name="regalo_id" value="{{ regalo.id }}">
+                                        <button class="btn danger" type="submit">Eliminar regalo</button>
+                                    </form>
+                                </details>
+                            </article>
+                        {% empty %}
+                            <p class="muted">Todavía no hay regalos capturados para este evento.</p>
+                        {% endfor %}
+                    </div>
+                </section>
