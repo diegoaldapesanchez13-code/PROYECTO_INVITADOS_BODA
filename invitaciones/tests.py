@@ -516,6 +516,7 @@ class InvitadoTests(TestCase):
         self.assertContains(public_response, '--section-decor-align:left')
         self.assertContains(public_response, '--section-decor-content:&quot;. . .&quot;')
         self.assertContains(public_response, 'custom-public-layer')
+        self.assertContains(public_response, 'data-editor-layer="custom:capa-frase"')
         self.assertContains(public_response, 'Texto colocado libremente')
         self.assertContains(public_response, '--layer-x:132%')
         self.assertContains(public_response, '--layer-y:-10%')

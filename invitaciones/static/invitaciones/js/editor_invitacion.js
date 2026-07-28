@@ -284,10 +284,21 @@
         element.classList.toggle('is-locked', clean.locked === true);
     }
 
-    function selectSectionByType(type) {
+    function selectSectionByType(type, layer = null) {
         const section = sortedSections().find((item) => item.type === type);
         if (!section) return;
         selectedId = section.sectionId;
+        if (layer) {
+            const cfg = ensureSectionConfig(section);
+            if (['background', 'title', 'text', 'decor'].includes(layer)) {
+                cfg.activeLayer = layer;
+            } else if (isCustomLayer(layer)) {
+                cfg.customLayers = ensureCustomLayers(cfg);
+                if (cfg.customLayers.some((item) => `custom:${item.id}` === layer)) {
+                    cfg.activeLayer = layer;
+                }
+            }
+        }
         renderAll();
     }
 
@@ -296,12 +307,47 @@
         if (!frame) return;
         try {
             const doc = frame.contentDocument;
+            if (!doc.getElementById('editor-real-preview-style')) {
+                const style = doc.createElement('style');
+                style.id = 'editor-real-preview-style';
+                style.textContent = `
+                    [data-invitation-section] { cursor: crosshair; }
+                    .editor-real-selected {
+                        outline: 2px solid rgba(199, 125, 146, .72) !important;
+                        outline-offset: -4px !important;
+                    }
+                    .editor-real-layer {
+                        outline: 2px dashed rgba(38, 49, 38, .72) !important;
+                        outline-offset: 5px !important;
+                    }
+                    .custom-public-layer { pointer-events: auto !important; }
+                `;
+                doc.head.appendChild(style);
+            }
+            const paintSelection = (sectionEl, layerEl) => {
+                doc.querySelectorAll('.editor-real-selected').forEach((item) => item.classList.remove('editor-real-selected'));
+                doc.querySelectorAll('.editor-real-layer').forEach((item) => item.classList.remove('editor-real-layer'));
+                sectionEl.classList.add('editor-real-selected');
+                if (layerEl) layerEl.classList.add('editor-real-layer');
+            };
+            const layerFromTarget = (target) => {
+                const custom = target.closest('.custom-public-layer[data-editor-layer]');
+                if (custom) return { layer: custom.dataset.editorLayer, element: custom };
+                const title = target.closest('.section-title, .section-title-image, .cover-names, .cover-topline, .cover-date');
+                if (title) return { layer: 'title', element: title };
+                const text = target.closest('.section-copy, .event-detail-grid, .count-grid, .dress-visual, .menu-grid, .gift-grid, .album-grid, .form-grid, .guest-box, .cover-honors, .itinerary-list');
+                if (text) return { layer: 'text', element: text };
+                return { layer: 'background', element: null };
+            };
             doc.querySelectorAll('[data-invitation-section]').forEach((sectionEl) => {
                 sectionEl.style.cursor = 'pointer';
                 sectionEl.addEventListener('click', (event) => {
                     event.preventDefault();
                     event.stopPropagation();
-                    selectSectionByType(sectionEl.dataset.invitationSection);
+                    const selected = layerFromTarget(event.target);
+                    selectSectionByType(sectionEl.dataset.invitationSection, selected.layer);
+                    paintSelection(sectionEl, selected.element);
+                    setState(`Vista real: ${sectionEl.dataset.invitationSection.replaceAll('_', ' ')} / ${selected.layer.replace('custom:', 'capa ')}`);
                 });
             });
         } catch (error) {

@@ -1,5 +1,5 @@
 {% for capa in seccion.capas_personalizadas %}
-    <div class="custom-public-layer custom-public-layer-{{ capa.kind }}" style="{{ capa.style }}">
+    <div class="custom-public-layer custom-public-layer-{{ capa.kind }}" data-editor-layer="custom:{{ capa.id }}" style="{{ capa.style }}">
         {% if capa.kind == 'image' and capa.asset.url %}
             <img src="{{ capa.asset.url }}" alt="{{ capa.name }}">
         {% elif capa.kind == 'video' and capa.asset.url %}

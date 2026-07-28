@@ -343,6 +343,25 @@ video {
     background: var(--editor-bg);
 }
 
+.real-preview-hint {
+    position: absolute;
+    left: 50%;
+    top: 46px;
+    z-index: 4;
+    width: max-content;
+    max-width: calc(100% - 34px);
+    transform: translateX(-50%);
+    border: 1px solid color-mix(in srgb, var(--editor-accent) 42%, white);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .88);
+    color: var(--editor-primary);
+    font-size: .7rem;
+    font-weight: 800;
+    padding: 7px 11px;
+    pointer-events: none;
+    text-align: center;
+}
+
 .phone-notch {
     position: absolute;
     top: 8px;

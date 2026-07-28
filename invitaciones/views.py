@@ -1953,6 +1953,7 @@ def capas_personalizadas_publicas(item_config):
             f'--layer-fit:{capa.get("fit") if capa.get("fit") in EDITOR_MEDIA_FIT else "contain"};'
         )
         resultado.append({
+            'id': capa.get('id') or '',
             'kind': tipo,
             'name': capa.get('name') or '',
             'text': capa.get('text') or '',
