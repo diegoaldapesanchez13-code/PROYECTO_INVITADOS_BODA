@@ -258,7 +258,8 @@
     function customLayerByActive(cfg) {
         if (!isCustomLayer(cfg.activeLayer)) return null;
         const id = String(cfg.activeLayer).replace('custom:', '');
-        return ensureCustomLayers(cfg).find((layer) => layer.id === id) || null;
+        cfg.customLayers = ensureCustomLayers(cfg);
+        return cfg.customLayers.find((layer) => layer.id === id) || null;
     }
 
     function customLayerValue(layer, field) {
@@ -676,6 +677,94 @@
         setLayerValue(cfg, layer, 'z', clamp(current + direction, 1, 5));
     }
 
+    function layerListItems(cfg) {
+        const base = [
+            {
+                id: 'background',
+                label: 'Fondo',
+                type: 'Base',
+                z: 0,
+                visible: cfg.showBackgroundLayer !== false,
+                locked: true,
+                canLock: false,
+                canMove: false,
+            },
+            {
+                id: 'title',
+                label: 'Titulo',
+                type: 'Texto/imagen',
+                z: layerValue(cfg, 'title', 'z'),
+                visible: layerValue(cfg, 'title', 'visible') !== false,
+                locked: layerValue(cfg, 'title', 'locked') === true,
+                canLock: true,
+                canMove: true,
+            },
+            {
+                id: 'text',
+                label: 'Contenido real',
+                type: 'Datos',
+                z: layerValue(cfg, 'text', 'z'),
+                visible: layerValue(cfg, 'text', 'visible') !== false,
+                locked: layerValue(cfg, 'text', 'locked') === true,
+                canLock: true,
+                canMove: true,
+            },
+            {
+                id: 'decor',
+                label: 'Decoracion',
+                type: 'Adorno',
+                z: layerValue(cfg, 'decor', 'z'),
+                visible: layerValue(cfg, 'decor', 'visible') !== false,
+                locked: layerValue(cfg, 'decor', 'locked') === true,
+                canLock: true,
+                canMove: true,
+            },
+        ];
+        const custom = ensureCustomLayers(cfg).map((layer) => ({
+            id: `custom:${layer.id}`,
+            label: layer.name || 'Capa libre',
+            type: layer.kind === 'text' ? 'Texto libre' : layer.kind === 'video' ? 'Video libre' : 'Imagen libre',
+            z: layer.z || 3,
+            visible: layer.visible !== false,
+            locked: layer.locked === true,
+            canLock: true,
+            canMove: true,
+            custom: layer,
+        }));
+        return [...custom, ...base].sort((a, b) => Number(b.z || 0) - Number(a.z || 0));
+    }
+
+    function setLayerVisibility(cfg, layerId) {
+        if (layerId === 'background') {
+            cfg.showBackgroundLayer = cfg.showBackgroundLayer === false;
+            return;
+        }
+        if (isCustomLayer(layerId)) {
+            cfg.customLayers = ensureCustomLayers(cfg);
+            const custom = cfg.customLayers.find((layer) => `custom:${layer.id}` === layerId);
+            if (custom) custom.visible = custom.visible === false;
+            return;
+        }
+        setLayerValue(cfg, layerId, 'visible', layerValue(cfg, layerId, 'visible') === false);
+    }
+
+    function setLayerLocked(cfg, layerId) {
+        if (layerId === 'background') return;
+        if (isCustomLayer(layerId)) {
+            cfg.customLayers = ensureCustomLayers(cfg);
+            const custom = cfg.customLayers.find((layer) => `custom:${layer.id}` === layerId);
+            if (custom) custom.locked = custom.locked !== true;
+            return;
+        }
+        setLayerValue(cfg, layerId, 'locked', layerValue(cfg, layerId, 'locked') !== true);
+    }
+
+    function moveLayerFromList(cfg, layerId, direction) {
+        cfg.activeLayer = layerId;
+        if (layerId === 'background') return;
+        moveLayerZ(cfg, layerId, direction);
+    }
+
     function addCustomLayer(section, layer) {
         const cfg = ensureSectionConfig(section);
         const clean = normalizeCustomLayer(layer);
@@ -713,25 +802,29 @@
     function renderCustomLayerList(cfg) {
         const list = root.querySelector('[data-custom-layer-list]');
         if (!list) return;
-        const layers = ensureCustomLayers(cfg);
+        const layers = layerListItems(cfg);
         list.innerHTML = '';
         if (!layers.length) {
-            list.innerHTML = '<p class="muted">Sin capas libres en esta seccion.</p>';
+            list.innerHTML = '<p class="muted">Sin capas en esta seccion.</p>';
             return;
         }
         layers.forEach((layer) => {
-            const item = document.createElement('button');
-            item.type = 'button';
+            const item = document.createElement('article');
             item.className = 'custom-layer-item';
-            item.classList.toggle('is-active', cfg.activeLayer === `custom:${layer.id}`);
+            item.classList.toggle('is-active', cfg.activeLayer === layer.id);
+            item.classList.toggle('is-muted', layer.visible === false);
             item.innerHTML = `
-                <strong>${escapeHtml(layer.name || 'Capa libre')}</strong>
-                <span>${escapeHtml(layer.kind)} - X ${Math.round(layer.x || 0)} / Y ${Math.round(layer.y || 0)}</span>
+                <button type="button" class="layer-row-main" data-layer-list-action="select" data-layer-id="${escapeHtml(layer.id)}">
+                    <strong>${escapeHtml(layer.label)}</strong>
+                    <span>${escapeHtml(layer.type)} - z ${Number(layer.z || 0)}</span>
+                </button>
+                <div class="layer-row-tools">
+                    <button type="button" data-layer-list-action="toggle" data-layer-id="${escapeHtml(layer.id)}">${layer.visible === false ? 'Mostrar' : 'Ocultar'}</button>
+                    <button type="button" data-layer-list-action="lock" data-layer-id="${escapeHtml(layer.id)}" ${layer.canLock ? '' : 'disabled'}>${layer.locked ? 'Abrir' : 'Bloquear'}</button>
+                    <button type="button" data-layer-list-action="back" data-layer-id="${escapeHtml(layer.id)}" ${layer.canMove ? '' : 'disabled'}>Atras</button>
+                    <button type="button" data-layer-list-action="front" data-layer-id="${escapeHtml(layer.id)}" ${layer.canMove ? '' : 'disabled'}>Frente</button>
+                </div>
             `;
-            item.addEventListener('click', () => {
-                cfg.activeLayer = `custom:${layer.id}`;
-                renderAll();
-            });
             list.appendChild(item);
         });
     }
@@ -1352,6 +1445,32 @@
         });
     });
 
+    root.querySelector('[data-custom-layer-list]')?.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-layer-list-action]');
+        if (!button) return;
+        const section = selectedSection();
+        if (!section) return;
+        const cfg = ensureSectionConfig(section);
+        const layerId = button.dataset.layerId;
+        if (button.dataset.layerListAction === 'select') {
+            cfg.activeLayer = layerId;
+        }
+        if (button.dataset.layerListAction === 'toggle') {
+            setLayerVisibility(cfg, layerId);
+        }
+        if (button.dataset.layerListAction === 'lock') {
+            setLayerLocked(cfg, layerId);
+        }
+        if (button.dataset.layerListAction === 'front') {
+            moveLayerFromList(cfg, layerId, 1);
+        }
+        if (button.dataset.layerListAction === 'back') {
+            moveLayerFromList(cfg, layerId, -1);
+        }
+        setState('Capa actualizada');
+        renderAll();
+    });
+
     root.querySelectorAll('[data-layer-field]').forEach((field) => {
         field.addEventListener('input', () => {
             const section = selectedSection();
@@ -1518,6 +1637,7 @@
             ${asset.isVideo ? `<video src="${asset.url}" muted playsinline></video>` : `<img src="${asset.url}" alt="">`}
             <span>${escapeHtml(asset.title)}</span>
             ${assetTargetSelectHtml()}
+            ${assetQuickTargetHtml()}
             <div class="asset-actions">
                 <button type="button" data-asset-assign>Usar</button>
                 <button type="button" data-asset-delete>Eliminar</button>
@@ -1542,6 +1662,18 @@
                 <option value="CAPA_LIBRE">Capa libre</option>
                 <option value="ALBUM">Agregar al album</option>
             </select>
+        `;
+    }
+
+    function assetQuickTargetHtml() {
+        return `
+            <div class="asset-quick-targets">
+                <button type="button" data-asset-quick-target="CAPA_LIBRE">Capa</button>
+                <button type="button" data-asset-quick-target="FONDO_SECCION">Fondo</button>
+                <button type="button" data-asset-quick-target="TITULO_SECCION">Titulo</button>
+                <button type="button" data-asset-quick-target="PORTADA">Portada</button>
+                <button type="button" data-asset-quick-target="ALBUM">Album</button>
+            </div>
         `;
     }
 
@@ -1646,6 +1778,12 @@
         });
         item.querySelector('[data-asset-assign]')?.addEventListener('click', () => {
             assignAsset(item).catch((error) => setState(error.message));
+        });
+        item.querySelectorAll('[data-asset-quick-target]').forEach((button) => {
+            button.addEventListener('click', () => {
+                assignAssetRef(assetReferenceFromItem(item), button.dataset.assetQuickTarget, selectedSection())
+                    .catch((error) => setState(error.message));
+            });
         });
         item.querySelector('[data-asset-delete]')?.addEventListener('click', () => {
             deleteAsset(item).catch((error) => setState(error.message));

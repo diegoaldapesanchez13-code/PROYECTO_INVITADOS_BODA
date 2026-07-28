@@ -713,7 +713,10 @@ video {
 }
 
 .custom-layer-item {
+    display: grid;
+    gap: 7px;
     background: #fff;
+    cursor: default;
 }
 
 .custom-layer-item.is-active {
@@ -721,15 +724,56 @@ video {
     box-shadow: 0 0 0 2px color-mix(in srgb, var(--editor-accent) 18%, transparent);
 }
 
+.custom-layer-item.is-muted {
+    opacity: .62;
+}
+
+.layer-row-main {
+    width: 100%;
+    border: 0;
+    background: transparent;
+    color: var(--editor-primary);
+    cursor: pointer;
+    font: inherit;
+    padding: 0;
+    text-align: left;
+}
+
 .custom-layer-item strong,
-.custom-layer-item span {
+.custom-layer-item span,
+.layer-row-main strong,
+.layer-row-main span {
     display: block;
 }
 
-.custom-layer-item span {
+.custom-layer-item span,
+.layer-row-main span {
     color: var(--editor-muted);
     font-size: .68rem;
     margin-top: 2px;
+}
+
+.layer-row-tools {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 4px;
+}
+
+.layer-row-tools button {
+    min-width: 0;
+    border: 1px solid var(--editor-line);
+    border-radius: 6px;
+    background: color-mix(in srgb, var(--editor-soft) 34%, white);
+    color: var(--editor-primary);
+    cursor: pointer;
+    font-size: .62rem;
+    font-weight: 800;
+    padding: 5px 3px;
+}
+
+.layer-row-tools button:disabled {
+    cursor: not-allowed;
+    opacity: .38;
 }
 
 .layer-actions {
@@ -1002,6 +1046,29 @@ video {
     color: var(--editor-primary);
     font-size: .72rem;
     padding: 7px;
+}
+
+.asset-quick-targets {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 4px;
+}
+
+.asset-quick-targets button {
+    min-width: 0;
+    border: 1px solid var(--editor-line);
+    border-radius: 6px;
+    background: #fff;
+    color: var(--editor-primary);
+    cursor: pointer;
+    font-size: .62rem;
+    font-weight: 800;
+    padding: 5px 3px;
+}
+
+.asset-quick-targets button:first-child {
+    border-color: color-mix(in srgb, var(--editor-accent) 60%, white);
+    background: color-mix(in srgb, var(--editor-accent) 12%, white);
 }
 
 .asset-actions {
