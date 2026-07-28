@@ -469,6 +469,111 @@ video {
     line-height: 1.55;
 }
 
+.preview-real-data {
+    display: grid;
+    gap: 8px;
+    font-size: .88rem;
+    line-height: 1.35;
+}
+
+.preview-real-data p,
+.preview-real-data small,
+.preview-real-data span {
+    margin: 0;
+}
+
+.preview-real-data small,
+.preview-real-data .muted {
+    color: var(--editor-muted);
+}
+
+.preview-script {
+    display: block;
+    font-family: var(--editor-title-font);
+    font-size: clamp(1.7rem, 9vw, 3rem);
+    font-weight: 400;
+    line-height: .95;
+}
+
+.preview-cover-copy,
+.preview-countdown,
+.preview-dress,
+.preview-rsvp-box {
+    display: grid;
+    gap: 7px;
+    justify-items: center;
+}
+
+.preview-countdown > div {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 5px;
+    width: min(250px, 100%);
+}
+
+.preview-countdown > div span {
+    border-bottom: 1px solid var(--editor-line);
+    color: var(--editor-primary);
+    font-family: var(--editor-title-font);
+    font-size: 1.35rem;
+}
+
+.preview-detail-grid,
+.preview-parent-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    text-align: center;
+}
+
+.preview-detail-grid div,
+.preview-parent-grid div,
+.preview-sponsors,
+.preview-mini-list div,
+.preview-rsvp-box {
+    min-width: 0;
+}
+
+.preview-detail-grid strong,
+.preview-parent-grid strong,
+.preview-sponsors strong,
+.preview-mini-list strong {
+    display: block;
+    color: var(--editor-primary);
+    font-size: .8rem;
+    text-transform: uppercase;
+}
+
+.preview-mini-list {
+    display: grid;
+    gap: 5px;
+}
+
+.preview-mini-list p {
+    font-family: var(--editor-title-font);
+    font-size: 1.2rem;
+    line-height: 1;
+}
+
+.preview-rsvp-box {
+    border-top: 1px solid var(--editor-line);
+    margin-top: 4px;
+    padding-top: 8px;
+}
+
+.preview-rsvp-people {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    justify-content: center;
+}
+
+.preview-rsvp-people span {
+    border: 1px solid var(--editor-line);
+    border-radius: 999px;
+    padding: 4px 7px;
+}
+
 .preview-decor-layer {
     color: var(--editor-accent);
     font-family: var(--editor-title-font);

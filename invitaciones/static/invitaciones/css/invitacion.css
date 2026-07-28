@@ -1285,6 +1285,19 @@ iframe,
     font-weight: 700;
 }
 
+.compact-guests {
+    margin-top: 12px;
+}
+
+.guest-box.subtle {
+    background: rgba(255, 255, 255, .42);
+    padding: 12px;
+}
+
+.guest-box.subtle .guest-name {
+    font-size: clamp(1rem, 4vw, 1.28rem);
+}
+
 .guest-notes-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));

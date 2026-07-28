@@ -78,6 +78,36 @@ class InvitadoTests(TestCase):
         self.assertEqual(grupo.alergias, 'Nueces')
         self.assertTrue(grupo.requiere_menu_infantil)
 
+    def test_confirmacion_personal_usa_acompanantes_capturados_por_planner(self):
+        grupo = Grupoinvitacion.objects.create(
+            evento=crear_evento(),
+            nombre_grupo='Carlos',
+            tipo='PERSONAL',
+            cantidad_extra_permitida=1,
+        )
+        extra = Invitado.objects.create(
+            grupo=grupo,
+            nombre='Acompanante 1',
+            tipo_persona='NINO',
+        )
+
+        response = self.client.post(f'/invitacion/{grupo.codigo}/', {
+            'asistira': 'si',
+            f'asistira_extra_{extra.id}': 'si',
+            f'menu_infantil_extra_{extra.id}': 'on',
+            f'comentario_extra_{extra.id}': 'Prefiere nuggets',
+        })
+
+        grupo.refresh_from_db()
+        extra.refresh_from_db()
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(grupo.cantidad_confirmada, 2)
+        self.assertEqual(grupo.adultos_confirmados, 1)
+        self.assertEqual(grupo.ninos_confirmados, 1)
+        self.assertTrue(extra.asistira)
+        self.assertTrue(extra.menu_infantil)
+        self.assertEqual(extra.comentario, 'Prefiere nuggets')
+
     def test_invitacion_no_muestra_iconos_de_seccion(self):
         grupo = Grupoinvitacion.objects.create(
             evento=crear_evento(),
@@ -892,6 +922,39 @@ class InvitadoTests(TestCase):
         self.assertEqual(invitado.tipo_persona, 'NINO')
         self.assertTrue(invitado.menu_infantil)
         self.assertTrue(AsignacionMesa.objects.filter(mesa=mesa, invitado=invitado).exists())
+
+    def test_editor_importa_invitados_desde_csv(self):
+        User = get_user_model()
+        admin = User.objects.create_superuser(username='dirtec_import_editor', password='test123')
+        evento = crear_evento()
+        self.client.force_login(admin)
+        archivo = SimpleUploadedFile(
+            'invitados.csv',
+            (
+                'grupo,tipo_grupo,nombre,tipo_persona,extras,extra,telefono,correo\n'
+                'Perez,FAMILIAR,Ana Perez,ADULTO,0,,3311111111,ana@example.com\n'
+                'Perez,FAMILIAR,Luis Perez,NINO,0,,3311111111,luis@example.com\n'
+                'Carlos,PERSONAL,Carlos,ADULTO,1,,3322222222,carlos@example.com\n'
+                'Carlos,PERSONAL,Acompanante Carlos,NINO,1,si,,\n'
+            ).encode('utf-8'),
+            content_type='text/csv',
+        )
+
+        response = self.client.post(
+            f'/dashboard/editor-invitacion/{evento.id}/invitados/importar/',
+            data={'archivo': archivo},
+        )
+
+        familia = Grupoinvitacion.objects.get(evento=evento, nombre_grupo='Perez')
+        personal = Grupoinvitacion.objects.get(evento=evento, nombre_grupo='Carlos')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(familia.invitados.count(), 2)
+        self.assertEqual(familia.invitados.get(nombre='Luis Perez').tipo_persona, 'NINO')
+        self.assertEqual(personal.tipo, 'PERSONAL')
+        self.assertEqual(personal.cantidad_extra_permitida, 1)
+        self.assertEqual(personal.invitados.get(nombre='Acompanante Carlos').tipo_persona, 'NINO')
+        personal_json = next(item for item in response.json()['guests']['groups'] if item['name'] == 'Carlos')
+        self.assertEqual(personal_json['places'], 2)
 
     def test_dashboard_guarda_portadas_de_ceremonia_y_fiesta(self):
         User = get_user_model()

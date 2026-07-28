@@ -444,9 +444,9 @@
             const textLayer = document.createElement('div');
             textLayer.className = 'preview-layer preview-text-layer';
             textLayer.dataset.layer = 'text';
-            const copy = document.createElement('p');
-            copy.className = section.description ? '' : 'muted';
-            copy.textContent = section.description || 'Seccion lista para personalizar.';
+            const copy = document.createElement('div');
+            copy.className = 'preview-real-data';
+            copy.innerHTML = sectionPreviewHtml(section);
             textLayer.appendChild(copy);
             setLayerStyles(textLayer, cfg, 'text');
             attachLayerDrag(article, textLayer, section, cfg, 'text');
@@ -827,6 +827,117 @@
         }[char]));
     }
 
+    function eventData() {
+        return content.event || {};
+    }
+
+    function formatDateTime(value) {
+        if (!value) return 'Fecha por confirmar';
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return value;
+        return date.toLocaleString('es-MX', {
+            day: '2-digit',
+            month: 'long',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+        });
+    }
+
+    function previewList(items, emptyText, mapper, limit = 4) {
+        const visible = (items || []).filter((item) => item.visible !== false).slice(0, limit);
+        if (!visible.length) return `<p class="muted">${escapeHtml(emptyText)}</p>`;
+        return `<div class="preview-mini-list">${visible.map(mapper).join('')}</div>`;
+    }
+
+    function namesPreview() {
+        const event = eventData();
+        const main = event.mainName || 'Nombre principal';
+        const secondary = event.showSecondaryName === false ? '' : (event.secondaryName || 'Nombre secundario');
+        return secondary
+            ? `<strong class="preview-script">${escapeHtml(main)} & ${escapeHtml(secondary)}</strong>`
+            : `<strong class="preview-script">${escapeHtml(main)}</strong>`;
+    }
+
+    function peopleBySection(section) {
+        return (content.people || []).filter((item) => item.visible !== false && item.section === section);
+    }
+
+    function previewGuestSummary() {
+        const first = (guests.groups || [])[0];
+        if (!first) return '<p class="muted">Sin invitado de prueba capturado.</p>';
+        const people = (first.guests || []).slice(0, 4).map((guest) => `
+            <span>${escapeHtml(guest.name)} <small>${escapeHtml(guest.type || '')}</small></span>
+        `).join('');
+        return `
+            <div class="preview-rsvp-box">
+                <strong>${escapeHtml(first.type === 'FAMILIAR' ? `Familia ${first.name}` : first.name)}</strong>
+                <span>${escapeHtml(first.places)} lugar(es) - ${escapeHtml(first.adults)} adulto(s) - ${escapeHtml(first.children)} nino(s)</span>
+                ${people ? `<div class="preview-rsvp-people">${people}</div>` : ''}
+            </div>
+        `;
+    }
+
+    function sectionPreviewHtml(section) {
+        const event = eventData();
+        const description = section.description ? `<p>${escapeHtml(section.description)}</p>` : '';
+        if (section.type === 'PORTADA') {
+            return `
+                <div class="preview-cover-copy">
+                    <span>${escapeHtml(event.coverPhrase || section.title || 'Tu invitacion')}</span>
+                    ${namesPreview()}
+                    <small>${escapeHtml(formatDateTime(event.receptionDate || event.ceremonyDate))}</small>
+                </div>
+            `;
+        }
+        if (section.type === 'PADRES_PADRINOS') {
+            const novia = peopleBySection('PADRES_NOVIA');
+            const novio = peopleBySection('PADRES_NOVIO');
+            const padrinos = peopleBySection('PADRINOS');
+            return `
+                <div class="preview-parent-grid">
+                    <div><strong>Padres de ${escapeHtml((event.mainLabel || 'novia').toLowerCase())}</strong>${previewList(novia, 'Pendiente', (item) => `<p>${escapeHtml(item.name)}</p>`, 3)}</div>
+                    <div><strong>Padres de ${escapeHtml((event.secondaryLabel || 'novio').toLowerCase())}</strong>${previewList(novio, 'Pendiente', (item) => `<p>${escapeHtml(item.name)}</p>`, 3)}</div>
+                </div>
+                <div class="preview-sponsors"><strong>Padrinos</strong>${previewList(padrinos, 'Sin padrinos capturados', (item) => `<p>${escapeHtml(item.name)}</p>`, 4)}</div>
+            `;
+        }
+        if (section.type === 'CUENTA_REGRESIVA') {
+            return `
+                <div class="preview-countdown">
+                    ${namesPreview()}
+                    <div><span>244</span><span>23</span><span>31</span><span>49</span></div>
+                    <small>${escapeHtml(formatDateTime(event.receptionDate || event.ceremonyDate))}</small>
+                </div>
+            `;
+        }
+        if (section.type === 'DETALLES') {
+            return `
+                ${description}
+                <div class="preview-detail-grid">
+                    <div><strong>Ceremonia</strong><span>${escapeHtml(formatDateTime(event.ceremonyDate))}</span><p>${escapeHtml(event.ceremonyPlace || 'Templo por confirmar')}</p><small>${escapeHtml(event.ceremonyAddress || '')}</small></div>
+                    <div><strong>Recepcion</strong><span>${escapeHtml(formatDateTime(event.receptionDate))}</span><p>${escapeHtml(event.receptionPlace || 'Salon por confirmar')}</p><small>${escapeHtml(event.receptionAddress || '')}</small></div>
+                </div>
+            `;
+        }
+        if (section.type === 'DRESS_CODE') {
+            return `<div class="preview-dress"><strong>${escapeHtml(event.dressCode || 'Dress code')}</strong><p>${escapeHtml(event.dressCodeText || 'Indicaciones por capturar.')}</p></div>`;
+        }
+        if (section.type === 'ITINERARIO') {
+            return previewList(content.itinerary, 'Sin itinerario capturado', (item) => `<div><strong>${escapeHtml(item.time || '')}</strong><span>${escapeHtml(item.title || '')}</span></div>`, 5);
+        }
+        if (section.type === 'REGALOS') {
+            return previewList(content.gifts, 'Sin mesa de regalos visible', (item) => `<div><strong>${escapeHtml(item.name || item.typeLabel || 'Regalo')}</strong><span>${escapeHtml(item.bank || item.url || item.instructions || '')}</span></div>`, 4);
+        }
+        if (section.type === 'ALBUM_COMPARTIDO') {
+            return `<p>${escapeHtml(event.sharedAlbumText || section.description || 'Comparte tus fotos y videos en el album del evento.')}</p><small>${escapeHtml(event.sharedAlbumUrl || 'Link por configurar')}</small>`;
+        }
+        if (section.type === 'RSVP') {
+            return `${description || `<p>${escapeHtml(event.rsvpText || 'Confirma tu asistencia.')}</p>`}${previewGuestSummary()}`;
+        }
+        return description || '<p class="muted">Seccion lista para personalizar.</p>';
+    }
+
     function fillContentForm() {
         const form = root.querySelector('[data-content-form]');
         if (!form || !content.event) return;
@@ -1019,7 +1130,7 @@
                     <button type="button" data-edit-group>Editar grupo</button>
                     <button type="button" data-delete-group>Eliminar grupo</button>
                 </div>
-                ${group.type === 'FAMILIAR' ? '<div class="family-guest-list"></div><button class="mini-action" type="button" data-new-family-guest>Agregar invitado familiar</button>' : ''}
+                ${(group.guests || []).length || group.type === 'FAMILIAR' || group.type === 'PERSONAL' ? '<div class="family-guest-list"></div><button class="mini-action" type="button" data-new-family-guest>Agregar persona / acompanante</button>' : ''}
             `;
             article.querySelector('[data-copy-link]')?.addEventListener('click', () => {
                 navigator.clipboard?.writeText(group.link);
@@ -1071,6 +1182,7 @@
         guests = data.guests || guests;
         setState(payload.action === 'delete' ? 'Grupo eliminado' : 'Grupo guardado');
         renderGuests();
+        renderAll();
         refreshRealPreview();
     }
 
@@ -1089,6 +1201,24 @@
         guests = data.guests || guests;
         setState(payload.action === 'delete' ? 'Invitado eliminado' : 'Invitado guardado');
         renderGuests();
+        renderAll();
+        refreshRealPreview();
+    }
+
+    async function importGuests(form) {
+        const formData = new FormData(form);
+        setState('Importando lista...');
+        const response = await fetch(root.dataset.importGuestsUrl, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrfToken() },
+            body: formData,
+        });
+        const data = await response.json();
+        if (!response.ok || !data.ok) throw new Error(data.error || 'No se pudo importar la lista.');
+        guests = data.guests || guests;
+        setState(data.message || 'Lista importada');
+        renderGuests();
+        renderAll();
         refreshRealPreview();
     }
 
@@ -1107,6 +1237,7 @@
         content = data.content || content;
         setState('Contenido guardado');
         renderContent();
+        renderAll();
         refreshRealPreview();
     }
 
@@ -1125,6 +1256,7 @@
         content = data.content || content;
         setState(payload.action === 'delete' ? 'Registro eliminado' : 'Registro guardado');
         renderContent();
+        renderAll();
         refreshRealPreview();
     }
 
@@ -1581,6 +1713,13 @@
     root.querySelector('[data-guest-person-form]')?.addEventListener('submit', (event) => {
         event.preventDefault();
         saveGuestPerson(formToObject(event.currentTarget))
+            .then(() => event.currentTarget.reset())
+            .catch((error) => setState(error.message));
+    });
+
+    root.querySelector('[data-guest-import-form]')?.addEventListener('submit', (event) => {
+        event.preventDefault();
+        importGuests(event.currentTarget)
             .then(() => event.currentTarget.reset())
             .catch((error) => setState(error.message));
     });

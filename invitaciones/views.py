@@ -1,3 +1,5 @@
+import csv
+import io
 import json
 import re
 from datetime import datetime, timedelta
@@ -17,7 +19,7 @@ from django.views.decorators.http import require_POST
 from django.utils import timezone
 from django.utils.crypto import get_random_string
 from django.utils.text import slugify
-from openpyxl import Workbook
+from openpyxl import Workbook, load_workbook
 from urllib.parse import quote
 
 from .models import (
@@ -2564,6 +2566,144 @@ def asignar_mesa_a_invitado(invitado, mesa_id):
     invitado.save(update_fields=['mesa'])
 
 
+def sincronizar_acompanantes_personales(grupo):
+    if not grupo.es_personal:
+        return
+    objetivo = convertir_entero(grupo.cantidad_extra_permitida, 0)
+    actuales = list(grupo.invitados.order_by('orden', 'id'))
+    while len(actuales) < objetivo:
+        invitado = Invitado.objects.create(
+            grupo=grupo,
+            nombre=f'Acompanante {len(actuales) + 1}',
+            tipo_persona='ADULTO',
+            orden=len(actuales) + 1,
+        )
+        actuales.append(invitado)
+    if len(actuales) <= objetivo:
+        return
+    sobrantes = [
+        invitado for invitado in actuales[objetivo:]
+        if (invitado.nombre or '').startswith('Acompanante ') and invitado.asistira is None
+    ]
+    for invitado in sobrantes:
+        invitado.delete()
+
+
+def valor_importado(row, *keys):
+    for key in keys:
+        value = row.get(key)
+        if value not in (None, ''):
+            return str(value).strip()
+    return ''
+
+
+def normalizar_header_importacion(header):
+    value = str(header or '').strip().lower()
+    value = re.sub(r'[^a-z0-9]+', '_', value)
+    return value.strip('_')
+
+
+def filas_importadas_invitados(archivo):
+    nombre = (archivo.name or '').lower()
+    if nombre.endswith('.csv'):
+        texto = archivo.read().decode('utf-8-sig')
+        return [
+            {normalizar_header_importacion(key): value for key, value in row.items()}
+            for row in csv.DictReader(io.StringIO(texto))
+        ]
+    workbook = load_workbook(archivo, read_only=True, data_only=True)
+    sheet = workbook.active
+    rows = list(sheet.iter_rows(values_only=True))
+    if not rows:
+        return []
+    headers = [normalizar_header_importacion(value) for value in rows[0]]
+    resultado = []
+    for row in rows[1:]:
+        resultado.append({headers[index]: row[index] for index in range(min(len(headers), len(row))) if headers[index]})
+    return resultado
+
+
+def tipo_grupo_importado(valor):
+    valor = (valor or '').strip().upper()
+    if valor.startswith('FAM'):
+        return 'FAMILIAR'
+    return 'PERSONAL'
+
+
+def tipo_persona_importado(valor):
+    valor = (valor or '').strip().upper()
+    if valor.startswith('N') or valor in {'CHILD', 'KID', 'MENOR'}:
+        return 'NINO'
+    return 'ADULTO'
+
+
+def bool_importado(valor):
+    return str(valor or '').strip().lower() in {'1', 'si', 'sí', 'true', 'x', 'yes'}
+
+
+def importar_invitados_desde_filas(evento, filas):
+    creados = 0
+    actualizados = 0
+    grupos_tocados = set()
+    for row in filas:
+        grupo_nombre = valor_importado(row, 'grupo', 'familia', 'invitacion', 'nombre_grupo')
+        nombre = valor_importado(row, 'nombre', 'invitado', 'nombre_invitado', 'persona')
+        apellidos = valor_importado(row, 'apellidos', 'apellido')
+        if not grupo_nombre and nombre:
+            grupo_nombre = nombre
+        if not grupo_nombre:
+            continue
+        tipo_grupo = tipo_grupo_importado(valor_importado(row, 'tipo_grupo', 'tipo_invitacion', 'tipo'))
+        grupo, creado_grupo = Grupoinvitacion.objects.get_or_create(
+            evento=evento,
+            nombre_grupo=grupo_nombre[:100],
+            defaults={
+                'tipo': tipo_grupo,
+                'cantidad_maxima': 1,
+                'cantidad_extra_permitida': 0,
+            },
+        )
+        if not creado_grupo:
+            grupo.tipo = tipo_grupo
+        grupo.telefono_contacto = valor_importado(row, 'telefono', 'celular', 'whatsapp')[:20] or grupo.telefono_contacto
+        grupo.correo_contacto = valor_importado(row, 'correo', 'email')[:200] or grupo.correo_contacto
+        extras = convertir_entero(valor_importado(row, 'extras', 'acompanantes', 'acompanantes_permitidos'), grupo.cantidad_extra_permitida)
+        grupo.cantidad_extra_permitida = extras if grupo.es_personal else 0
+        grupo.cantidad_maxima = max(convertir_entero(valor_importado(row, 'lugares', 'cantidad', 'cantidad_maxima'), grupo.cantidad_maxima), 1)
+        grupo.save()
+        grupos_tocados.add(grupo.id)
+
+        es_extra = bool_importado(valor_importado(row, 'extra', 'es_extra', 'acompanante'))
+        debe_crear_invitado = grupo.es_familiar or es_extra or (grupo.es_personal and nombre and nombre != grupo.nombre_grupo)
+        if debe_crear_invitado and nombre:
+            invitado, creado_invitado = Invitado.objects.update_or_create(
+                grupo=grupo,
+                nombre=nombre[:100],
+                apellidos=apellidos[:120] or None,
+                defaults={
+                    'tipo_persona': tipo_persona_importado(valor_importado(row, 'tipo_persona', 'persona_tipo', 'adulto_nino')),
+                    'telefono': valor_importado(row, 'telefono_invitado', 'telefono', 'celular')[:30] or None,
+                    'correo': valor_importado(row, 'correo_invitado', 'correo', 'email')[:200] or None,
+                    'mesa': valor_importado(row, 'mesa')[:50] or None,
+                    'alergias': valor_importado(row, 'alergias') or None,
+                    'restricciones_alimentarias': valor_importado(row, 'restricciones', 'restricciones_alimentarias') or None,
+                    'menu_infantil': bool_importado(valor_importado(row, 'menu_infantil', 'buffet_nino')),
+                },
+            )
+            creados += 1 if creado_invitado else 0
+            actualizados += 0 if creado_invitado else 1
+            if grupo.es_personal:
+                grupo.cantidad_extra_permitida = max(grupo.cantidad_extra_permitida, grupo.invitados.count())
+                grupo.save(update_fields=['cantidad_extra_permitida'])
+        else:
+            creados += 1 if creado_grupo else 0
+            actualizados += 0 if creado_grupo else 1
+    for grupo in Grupoinvitacion.objects.filter(evento=evento, id__in=grupos_tocados, tipo='PERSONAL'):
+        if not grupo.invitados.exists():
+            sincronizar_acompanantes_personales(grupo)
+    return creados, actualizados
+
+
 def contenido_editor_payload(evento):
     return {
         'event': {
@@ -2746,11 +2886,37 @@ def ver_invitacion(request, codigo):
 def procesar_respuesta_personal(request, grupo):
     respuesta = request.POST.get('asistira')
     comentario = request.POST.get('comentario', '').strip()
+    acompanantes = list(grupo.invitados.all())
 
     if respuesta == 'si':
-        adultos = convertir_entero(request.POST.get('acompanantes_adultos'), 0)
-        ninos = convertir_entero(request.POST.get('acompanantes_ninos'), 0)
-        adultos, ninos = ajustar_acompanantes(adultos, ninos, grupo.cantidad_extra_permitida)
+        if acompanantes:
+            adultos = 0
+            ninos = 0
+            for invitado in acompanantes:
+                respuesta_extra = request.POST.get(f'asistira_extra_{invitado.id}')
+                if respuesta_extra == 'si':
+                    invitado.asistira = True
+                elif respuesta_extra == 'no':
+                    invitado.asistira = False
+                else:
+                    invitado.asistira = None
+                invitado.menu_infantil = request.POST.get(f'menu_infantil_extra_{invitado.id}') == 'on'
+                invitado.comentario = request.POST.get(f'comentario_extra_{invitado.id}', '').strip()
+                invitado.fecha_confirmacion = timezone.now() if invitado.asistira is not None else None
+                invitado.save()
+                if invitado.asistira is True and invitado.tipo_persona == 'NINO':
+                    ninos += 1
+                elif invitado.asistira is True:
+                    adultos += 1
+        else:
+            total = convertir_entero(request.POST.get('acompanantes_total'), None)
+            if total is None:
+                adultos = convertir_entero(request.POST.get('acompanantes_adultos'), 0)
+                ninos = convertir_entero(request.POST.get('acompanantes_ninos'), 0)
+            else:
+                adultos = total
+                ninos = 0
+            adultos, ninos = ajustar_acompanantes(adultos, ninos, grupo.cantidad_extra_permitida)
 
         grupo.asistira = True
         grupo.acompanantes_adultos = adultos
@@ -2761,16 +2927,24 @@ def procesar_respuesta_personal(request, grupo):
         grupo.acompanantes_adultos = 0
         grupo.acompanantes_ninos = 0
         grupo.cantidad_confirmada = 0
+        for invitado in acompanantes:
+            invitado.asistira = False
+            invitado.fecha_confirmacion = timezone.now()
+            invitado.save(update_fields=['asistira', 'fecha_confirmacion'])
     else:
         grupo.asistira = None
         grupo.acompanantes_adultos = 0
         grupo.acompanantes_ninos = 0
         grupo.cantidad_confirmada = None
+        for invitado in acompanantes:
+            invitado.asistira = None
+            invitado.fecha_confirmacion = None
+            invitado.save(update_fields=['asistira', 'fecha_confirmacion'])
 
     grupo.comentario = comentario
     grupo.restricciones_alimentarias = request.POST.get('restricciones_alimentarias', '').strip()
     grupo.alergias = request.POST.get('alergias', '').strip()
-    grupo.requiere_menu_infantil = request.POST.get('requiere_menu_infantil') == 'on'
+    grupo.requiere_menu_infantil = request.POST.get('requiere_menu_infantil') == 'on' or any(invitado.menu_infantil for invitado in acompanantes)
     grupo.confirmado = grupo.asistira is not None
     grupo.fecha_confirmacion = timezone.now() if grupo.confirmado else None
     grupo.save()
@@ -4824,6 +4998,7 @@ def editor_invitacion_visual(request, evento_id):
         'guardar_item_contenido_url': f'/dashboard/editor-invitacion/{evento.id}/contenido/item/',
         'guardar_grupo_invitado_url': f'/dashboard/editor-invitacion/{evento.id}/invitados/grupo/',
         'guardar_invitado_url': f'/dashboard/editor-invitacion/{evento.id}/invitados/persona/',
+        'importar_invitados_url': f'/dashboard/editor-invitacion/{evento.id}/invitados/importar/',
         'subir_asset_url': f'/dashboard/editor-invitacion/{evento.id}/assets/subir/',
         'asignar_asset_url': f'/dashboard/editor-invitacion/{evento.id}/assets/asignar/',
         'eliminar_asset_url': f'/dashboard/editor-invitacion/{evento.id}/assets/eliminar/',
@@ -5220,6 +5395,7 @@ def guardar_grupo_invitado_visual(request, evento_id):
     if grupo.es_familiar and payload.get('familyGuests') and not group_id:
         crear_invitados_desde_textarea(grupo, payload.get('familyGuests', ''))
     if grupo.es_personal:
+        sincronizar_acompanantes_personales(grupo)
         try:
             asignar_mesa_a_grupo_personal(grupo, payload.get('tableId'))
         except ValidationError as exc:
@@ -5253,7 +5429,7 @@ def guardar_invitado_visual(request, evento_id):
         get_object_or_404(Invitado, grupo__evento=evento, id=invitado_id).delete()
         return JsonResponse({'ok': True, 'guests': invitados_editor_payload(evento, request)})
 
-    grupo = get_object_or_404(Grupoinvitacion, evento=evento, id=payload.get('groupId'), tipo='FAMILIAR')
+    grupo = get_object_or_404(Grupoinvitacion, evento=evento, id=payload.get('groupId'))
     nombre = limpiar_json_texto(payload, 'name', 100)
     if not nombre:
         return JsonResponse({'ok': False, 'error': 'El nombre del invitado es obligatorio.'}, status=400)
@@ -5269,6 +5445,9 @@ def guardar_invitado_visual(request, evento_id):
     invitado.restricciones_alimentarias = limpiar_json_texto(payload, 'restrictions') or None
     invitado.menu_infantil = bool(payload.get('menuInfantil'))
     invitado.save()
+    if grupo.es_personal:
+        grupo.cantidad_extra_permitida = max(grupo.cantidad_extra_permitida, grupo.invitados.count())
+        grupo.save(update_fields=['cantidad_extra_permitida'])
     try:
         asignar_mesa_a_invitado(invitado, payload.get('tableId'))
     except ValidationError as exc:
@@ -5285,6 +5464,37 @@ def guardar_invitado_visual(request, evento_id):
         request=request,
     )
     return JsonResponse({'ok': True, 'guests': invitados_editor_payload(evento, request)})
+
+
+@login_required(login_url=LOGIN_DASHBOARD_URL)
+@require_POST
+def importar_invitados_visual(request, evento_id):
+    evento = get_object_or_404(eventos_visibles_usuario(request.user), id=evento_id)
+    archivo = request.FILES.get('archivo')
+    if not archivo:
+        return JsonResponse({'ok': False, 'error': 'Sube un archivo Excel o CSV.'}, status=400)
+    nombre = (archivo.name or '').lower()
+    if not nombre.endswith(('.xlsx', '.csv')):
+        return JsonResponse({'ok': False, 'error': 'Formato no soportado. Usa .xlsx o .csv.'}, status=400)
+    try:
+        filas = filas_importadas_invitados(archivo)
+        creados, actualizados = importar_invitados_desde_filas(evento, filas)
+    except Exception as exc:
+        return JsonResponse({'ok': False, 'error': f'No se pudo importar la lista: {exc}'}, status=400)
+    registrar_auditoria(
+        usuario=request.user,
+        empresa=evento.empresa,
+        evento=evento,
+        accion='IMPORTAR_INVITADOS_EDITOR_INVITACION',
+        modelo='Grupoinvitacion',
+        descripcion=f'Importo invitados desde archivo. Creados: {creados}. Actualizados: {actualizados}.',
+        request=request,
+    )
+    return JsonResponse({
+        'ok': True,
+        'message': f'Importacion lista: {creados} nuevo(s), {actualizados} actualizado(s).',
+        'guests': invitados_editor_payload(evento, request),
+    })
 
 
 @login_required(login_url=LOGIN_DASHBOARD_URL)

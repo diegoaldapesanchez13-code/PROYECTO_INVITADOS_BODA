@@ -1053,6 +1053,9 @@ class Grupoinvitacion(models.Model):
     @property
     def total_lugares(self):
         if self.es_personal:
+            invitados_count = self.invitados.count() if self.pk else 0
+            if invitados_count:
+                return 1 + invitados_count
             return 1 + self.cantidad_extra_permitida
         invitados_count = self.invitados.count() if self.pk else 0
         return invitados_count or self.cantidad_maxima
@@ -1062,12 +1065,19 @@ class Grupoinvitacion(models.Model):
         if self.es_personal:
             if self.asistira is not True:
                 return 0
+            invitados_count = self.invitados.count() if self.pk else 0
+            if invitados_count:
+                return 1 + self.invitados.filter(asistira=True).count()
             return 1 + self.acompanantes_adultos + self.acompanantes_ninos
         return self.invitados.filter(asistira=True).count()
 
     @property
     def lugares_no_asistiran(self):
         if self.es_personal:
+            invitados_count = self.invitados.count() if self.pk else 0
+            if invitados_count:
+                principal = 1 if self.asistira is False else 0
+                return principal + self.invitados.filter(asistira=False).count()
             if self.asistira is False:
                 return self.total_lugares
             if self.asistira is True:
@@ -1078,6 +1088,10 @@ class Grupoinvitacion(models.Model):
     @property
     def lugares_pendientes(self):
         if self.es_personal:
+            invitados_count = self.invitados.count() if self.pk else 0
+            if invitados_count:
+                principal = 1 if self.asistira is None else 0
+                return principal + self.invitados.filter(asistira__isnull=True).count()
             if self.asistira is None:
                 return self.total_lugares
             return 0
@@ -1086,12 +1100,19 @@ class Grupoinvitacion(models.Model):
     @property
     def adultos_confirmados(self):
         if self.es_personal:
+            invitados_count = self.invitados.count() if self.pk else 0
+            if invitados_count:
+                principal = 1 if self.asistira is True else 0
+                return principal + self.invitados.filter(asistira=True, tipo_persona='ADULTO').count()
             return (1 + self.acompanantes_adultos) if self.asistira is True else 0
         return self.invitados.filter(asistira=True, tipo_persona='ADULTO').count()
 
     @property
     def ninos_confirmados(self):
         if self.es_personal:
+            invitados_count = self.invitados.count() if self.pk else 0
+            if invitados_count:
+                return self.invitados.filter(asistira=True, tipo_persona='NINO').count()
             return self.acompanantes_ninos if self.asistira is True else 0
         return self.invitados.filter(asistira=True, tipo_persona='NINO').count()
 

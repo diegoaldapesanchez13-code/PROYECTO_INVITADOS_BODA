@@ -22,6 +22,7 @@
         data-save-content-item-url="{{ guardar_item_contenido_url }}"
         data-save-guest-group-url="{{ guardar_grupo_invitado_url }}"
         data-save-guest-url="{{ guardar_invitado_url }}"
+        data-import-guests-url="{{ importar_invitados_url }}"
         data-upload-url="{{ subir_asset_url }}"
         data-assign-asset-url="{{ asignar_asset_url }}"
         data-delete-asset-url="{{ eliminar_asset_url }}"
@@ -415,6 +416,16 @@
                     </div>
 
                     <div data-content-panel="invitados" hidden>
+                        <form class="collection-form guest-import-form" data-guest-import-form enctype="multipart/form-data">
+                            {% csrf_token %}
+                            <label>
+                                Importar Excel o CSV
+                                <input type="file" name="archivo" accept=".xlsx,.csv">
+                            </label>
+                            <p class="muted">Columnas sugeridas: grupo, tipo_grupo, nombre, apellidos, tipo_persona, extras, mesa, telefono, correo.</p>
+                            <button class="btn ghost full" type="submit">Importar lista</button>
+                        </form>
+
                         <form class="collection-form" data-guest-group-form>
                             <input type="hidden" name="id">
                             <label>Nombre / familia<input type="text" name="name" placeholder="Familia Perez o Ana Lopez"></label>
@@ -441,7 +452,7 @@
                                 <label>Telefono<input type="text" name="phone"></label>
                                 <label>Correo<input type="email" name="email"></label>
                             </div>
-                            <label>Invitados familiares nuevos<textarea rows="3" name="familyGuests" placeholder="Un nombre por linea. Puedes usar: Nombre | NINO"></textarea></label>
+                            <label>Invitados nuevos<textarea rows="3" name="familyGuests" placeholder="Un nombre por linea. Puedes usar: Nombre | NINO"></textarea></label>
                             <button class="btn ghost full" type="submit">Guardar grupo</button>
                         </form>
 
@@ -472,7 +483,7 @@
                             <label>Restricciones<input type="text" name="restrictions"></label>
                             <label>Alergias<input type="text" name="allergies"></label>
                             <label class="toggle"><input type="checkbox" name="menuInfantil"> Menu infantil</label>
-                            <button class="btn ghost full" type="submit">Guardar invitado familiar</button>
+                            <button class="btn ghost full" type="submit">Guardar persona / acompa&ntilde;ante</button>
                         </form>
 
                         <div class="guest-editor-list" data-guest-list></div>

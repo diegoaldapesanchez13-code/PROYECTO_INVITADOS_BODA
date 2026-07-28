@@ -31,6 +31,7 @@ urlpatterns = [
     path('dashboard/editor-invitacion/<int:evento_id>/contenido/item/', views.guardar_item_contenido_invitacion_visual, name='guardar_item_contenido_invitacion_visual'),
     path('dashboard/editor-invitacion/<int:evento_id>/invitados/grupo/', views.guardar_grupo_invitado_visual, name='guardar_grupo_invitado_visual'),
     path('dashboard/editor-invitacion/<int:evento_id>/invitados/persona/', views.guardar_invitado_visual, name='guardar_invitado_visual'),
+    path('dashboard/editor-invitacion/<int:evento_id>/invitados/importar/', views.importar_invitados_visual, name='importar_invitados_visual'),
     path('dashboard/editor-invitacion/<int:evento_id>/assets/subir/', views.subir_asset_invitacion_visual, name='subir_asset_invitacion_visual'),
     path('dashboard/editor-invitacion/<int:evento_id>/assets/asignar/', views.asignar_asset_invitacion_visual, name='asignar_asset_invitacion_visual'),
     path('dashboard/editor-invitacion/<int:evento_id>/assets/eliminar/', views.eliminar_asset_invitacion_visual, name='eliminar_asset_invitacion_visual'),

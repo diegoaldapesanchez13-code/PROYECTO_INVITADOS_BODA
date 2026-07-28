@@ -460,16 +460,32 @@
                                 <div class="option"><input type="radio" id="si_grupo" name="asistira" value="si" {% if grupo.asistira == True %}checked{% endif %}><label for="si_grupo">Sí asistiré</label></div>
                                 <div class="option"><input type="radio" id="no_grupo" name="asistira" value="no" {% if grupo.asistira == False %}checked{% endif %}><label for="no_grupo">No asistiré</label></div>
                             </div>
+                            {% if grupo.invitados.all %}
+                                <div class="form-grid compact-guests">
+                                    {% for invitado in grupo.invitados.all %}
+                                        <div class="guest-box subtle">
+                                            <div class="guest-head"><h3 class="guest-name">{{ invitado.nombre }}</h3><span class="pill">{{ invitado.get_tipo_persona_display }}</span></div>
+                                            <div class="radio-row">
+                                                <div class="option"><input type="radio" id="si_extra_{{ invitado.id }}" name="asistira_extra_{{ invitado.id }}" value="si" {% if invitado.asistira == True %}checked{% endif %}><label for="si_extra_{{ invitado.id }}">Si asistira</label></div>
+                                                <div class="option"><input type="radio" id="no_extra_{{ invitado.id }}" name="asistira_extra_{{ invitado.id }}" value="no" {% if invitado.asistira == False %}checked{% endif %}><label for="no_extra_{{ invitado.id }}">No asistira</label></div>
+                                            </div>
+                                            <label class="checkbox-line"><input type="checkbox" name="menu_infantil_extra_{{ invitado.id }}" {% if invitado.menu_infantil %}checked{% endif %}> Prefiere buffet infantil</label>
+                                            <textarea name="comentario_extra_{{ invitado.id }}" placeholder="Comentario opcional">{{ invitado.comentario|default_if_none:'' }}</textarea>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% elif grupo.cantidad_extra_permitida %}
                             <div class="number-grid">
                                 <label>Acompañantes adultos<input type="number" id="acompanantes_adultos" name="acompanantes_adultos" min="0" max="{{ grupo.cantidad_extra_permitida }}" value="{{ grupo.acompanantes_adultos }}"></label>
                                 <label>Acompañantes niños<input type="number" id="acompanantes_ninos" name="acompanantes_ninos" min="0" max="{{ grupo.cantidad_extra_permitida }}" value="{{ grupo.acompanantes_ninos }}"></label>
                             </div>
+                            {% endif %}
                             <details class="guest-extra-details">
                                 <summary>Notas de alimentos</summary>
                                 <div class="guest-notes-grid">
                                     <label>Restricciones alimentarias<textarea name="restricciones_alimentarias" placeholder="Vegetariano, sin gluten, etc.">{{ grupo.restricciones_alimentarias|default_if_none:'' }}</textarea></label>
                                     <label>Alergias<textarea name="alergias" placeholder="Alergias importantes">{{ grupo.alergias|default_if_none:'' }}</textarea></label>
-                                    <label class="checkbox-line"><input type="checkbox" name="requiere_menu_infantil" {% if grupo.requiere_menu_infantil %}checked{% endif %}> Menu infantil</label>
+                                    <label class="checkbox-line"><input type="checkbox" name="requiere_menu_infantil" {% if grupo.requiere_menu_infantil %}checked{% endif %}> Prefiero buffet infantil</label>
                                 </div>
                             </details>
                             <textarea name="comentario" placeholder="Comentario opcional">{{ grupo.comentario|default_if_none:'' }}</textarea>
@@ -488,7 +504,7 @@
                                         <div class="guest-notes-grid">
                                             <label>Restricciones<input type="text" name="restricciones_{{ invitado.id }}" value="{{ invitado.restricciones_alimentarias|default_if_none:'' }}" placeholder="Vegetariano, sin gluten..."></label>
                                             <label>Alergias<input type="text" name="alergias_{{ invitado.id }}" value="{{ invitado.alergias|default_if_none:'' }}" placeholder="Alergias importantes"></label>
-                                            <label class="checkbox-line"><input type="checkbox" name="menu_infantil_{{ invitado.id }}" {% if invitado.menu_infantil %}checked{% endif %}> Menu infantil</label>
+                                            <label class="checkbox-line"><input type="checkbox" name="menu_infantil_{{ invitado.id }}" {% if invitado.menu_infantil %}checked{% endif %}> Prefiere buffet infantil</label>
                                         </div>
                                     </details>
                                     <textarea name="comentario_{{ invitado.id }}" placeholder="Comentario opcional">{{ invitado.comentario|default_if_none:'' }}</textarea>
