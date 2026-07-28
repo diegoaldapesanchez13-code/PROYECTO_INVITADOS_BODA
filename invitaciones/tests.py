@@ -348,6 +348,13 @@ class InvitadoTests(TestCase):
         self.client.force_login(admin)
         self.client.get(f'/dashboard/editor-invitacion/{evento.id}/')
         seccion = SeccionInvitacion.objects.get(evento=evento, tipo='DETALLES')
+        asset_libre = AssetInvitacion.objects.create(
+            evento=evento,
+            tipo='DECORACION',
+            titulo='Flor libre',
+            archivo=SimpleUploadedFile('flor-libre.webp', b'webp-flor', content_type='image/webp'),
+            creado_por=admin,
+        )
         payload = {
             'theme': {
                 'palette': 'ROSA',
@@ -404,6 +411,36 @@ class InvitadoTests(TestCase):
                     'decorAlign': 'left',
                     'decorVisible': True,
                     'decorStyle': 'dots',
+                    'activeLayer': 'custom:capa-frase',
+                    'customLayers': [{
+                        'id': 'capa-frase',
+                        'kind': 'text',
+                        'name': 'Frase libre',
+                        'text': 'Texto colocado libremente',
+                        'x': 132,
+                        'y': -10,
+                        'scale': 1.2,
+                        'opacity': 0.8,
+                        'rotation': 12,
+                        'z': 8,
+                        'width': 44,
+                        'align': 'left',
+                        'visible': True,
+                    }, {
+                        'id': 'capa-imagen',
+                        'kind': 'image',
+                        'name': 'Flor libre',
+                        'asset': {'id': asset_libre.id},
+                        'x': 12,
+                        'y': 88,
+                        'scale': 0.75,
+                        'opacity': 0.72,
+                        'rotation': -18,
+                        'z': 7,
+                        'width': 28,
+                        'fit': 'cover',
+                        'visible': True,
+                    }],
                     'textColor': '#6f3448',
                     'showTextTitle': True,
                 },
@@ -448,6 +485,19 @@ class InvitadoTests(TestCase):
         self.assertContains(public_response, '--section-decor-width:30%')
         self.assertContains(public_response, '--section-decor-align:left')
         self.assertContains(public_response, '--section-decor-content:&quot;. . .&quot;')
+        self.assertContains(public_response, 'custom-public-layer')
+        self.assertContains(public_response, 'Texto colocado libremente')
+        self.assertContains(public_response, '--layer-x:132%')
+        self.assertContains(public_response, '--layer-y:-10%')
+        self.assertContains(public_response, '--layer-scale:1.2')
+        self.assertContains(public_response, '--layer-opacity:0.8')
+        self.assertContains(public_response, '--layer-rotation:12deg')
+        self.assertContains(public_response, '--layer-z:8')
+        self.assertContains(public_response, '--layer-width:44%')
+        self.assertContains(public_response, '--layer-align:left')
+        self.assertContains(public_response, 'custom-public-layer-image')
+        self.assertContains(public_response, 'flor-libre')
+        self.assertContains(public_response, '--layer-fit:cover')
 
     def test_editor_restaura_version_a_borrador(self):
         User = get_user_model()

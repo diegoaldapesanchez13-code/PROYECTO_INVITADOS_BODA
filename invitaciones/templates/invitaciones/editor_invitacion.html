@@ -178,22 +178,42 @@
                         <button type="button" data-layer-select="text">Texto</button>
                         <button type="button" data-layer-select="decor">Decoracion</button>
                     </div>
+                    <div class="free-layer-tools">
+                        <button type="button" data-add-text-layer>Texto libre</button>
+                        <p class="muted">Para imagen, GIF o video libre: arrastra un archivo al celular o elige "Capa libre".</p>
+                    </div>
+                    <div class="custom-layer-list" data-custom-layer-list></div>
                     <div class="layer-controls">
+                        <label>
+                            Nombre capa
+                            <input type="text" data-custom-layer-name placeholder="Nombre interno">
+                        </label>
+                        <label>
+                            Texto libre
+                            <input type="text" data-custom-layer-text placeholder="Texto de la capa">
+                        </label>
+                        <label>
+                            Ajuste capa imagen/video
+                            <select data-custom-layer-fit>
+                                <option value="contain">Contener</option>
+                                <option value="cover">Cubrir</option>
+                            </select>
+                        </label>
                         <label class="toggle"><input type="checkbox" data-layer-field="visible"> Mostrar capa</label>
                         <div class="inline-fields">
                             <label>X capa<input type="range" min="-40" max="140" step="1" data-layer-field="x"></label>
                             <label>Y capa<input type="range" min="-40" max="140" step="1" data-layer-field="y"></label>
                         </div>
                         <div class="inline-fields">
-                            <label>Escala<input type="range" min="0.5" max="2.2" step="0.05" data-layer-field="scale"></label>
+                            <label>Escala<input type="range" min="0.35" max="3" step="0.05" data-layer-field="scale"></label>
                             <label>Opacidad<input type="range" min="0" max="1" step="0.05" data-layer-field="opacity"></label>
                         </div>
                         <div class="inline-fields">
-                            <label>Rotacion<input type="range" min="-45" max="45" step="1" data-layer-field="rotation"></label>
+                            <label>Rotacion<input type="range" min="-180" max="180" step="1" data-layer-field="rotation"></label>
                             <label class="toggle"><input type="checkbox" data-layer-field="locked"> Bloquear</label>
                         </div>
                         <div class="inline-fields">
-                            <label>Ancho<input type="range" min="12" max="100" step="1" data-layer-field="width"></label>
+                            <label>Ancho<input type="range" min="8" max="120" step="1" data-layer-field="width"></label>
                             <label>
                                 Alinear
                                 <select data-layer-field="align">
@@ -217,6 +237,8 @@
                             <button type="button" data-layer-action="back">Atras</button>
                             <button type="button" data-layer-action="front">Frente</button>
                             <button type="button" data-layer-action="reset">Reset capa</button>
+                            <button type="button" data-layer-action="duplicate">Duplicar</button>
+                            <button type="button" data-layer-action="delete">Eliminar</button>
                         </div>
                         <label>
                             Decoracion
@@ -500,6 +522,7 @@
                                     <option value="RECEPCION">Portada fiesta</option>
                                     <option value="DRESS_PERMITIDO">Dress permitido</option>
                                     <option value="DRESS_PROHIBIDO">Dress prohibido</option>
+                                    <option value="CAPA_LIBRE">Capa libre</option>
                                     <option value="ALBUM">Agregar al album</option>
                                 </select>
                                 <div class="asset-actions">

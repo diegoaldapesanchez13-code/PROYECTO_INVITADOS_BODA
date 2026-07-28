@@ -820,6 +820,35 @@ video {
     z-index: 1;
 }
 
+.custom-public-layer {
+    position: absolute;
+    left: var(--layer-x, 50%);
+    top: var(--layer-y, 50%);
+    z-index: var(--layer-z, 3);
+    width: min(var(--layer-width, 64%), calc(100% - 18px));
+    opacity: var(--layer-opacity, 1);
+    pointer-events: none;
+    text-align: var(--layer-align, center);
+    transform: translate(-50%, -50%) rotate(var(--layer-rotation, 0deg)) scale(var(--layer-scale, 1));
+    transform-origin: center;
+}
+
+.custom-public-layer img,
+.custom-public-layer video {
+    width: 100%;
+    border-radius: 4px;
+    object-fit: var(--layer-fit, contain);
+}
+
+.custom-public-layer span {
+    display: block;
+    color: var(--primary);
+    font-family: var(--font-title);
+    font-size: clamp(1.1rem, 7vw, 2.45rem);
+    line-height: 1.05;
+    text-wrap: balance;
+}
+
 .section-title {
     color: var(--primary);
     display: var(--section-title-display, block);

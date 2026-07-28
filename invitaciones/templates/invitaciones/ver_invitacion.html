@@ -165,6 +165,7 @@
         <section class="section" id="cuenta" data-invitation-section="CUENTA_REGRESIVA" style="order: {{ secciones.CUENTA_REGRESIVA.orden }}; {{ secciones.CUENTA_REGRESIVA.estilo_editor }}">
             <div class="panel countdown-panel {% if secciones.CUENTA_REGRESIVA.fondo %}bg-panel{% endif %} {% if secciones.CUENTA_REGRESIVA.fondo_es_video %}bg-video-panel{% endif %}" {% if secciones.CUENTA_REGRESIVA.fondo and not secciones.CUENTA_REGRESIVA.fondo_es_video %}style="background-image: url('{{ secciones.CUENTA_REGRESIVA.fondo.url }}'); background-position: {{ secciones.CUENTA_REGRESIVA.posicion_fondo }};"{% endif %}>
                 {% if secciones.CUENTA_REGRESIVA.fondo_es_video %}<video class="panel-bg-video" src="{{ secciones.CUENTA_REGRESIVA.fondo.url }}" autoplay muted loop playsinline preload="metadata"></video>{% endif %}
+                {% include "invitaciones/partials/_capas_personalizadas.html" with seccion=secciones.CUENTA_REGRESIVA %}
                 {% if secciones.CUENTA_REGRESIVA.imagen_titulo %}{% if secciones.CUENTA_REGRESIVA.imagen_titulo_es_video %}<video class="section-title-image" src="{{ secciones.CUENTA_REGRESIVA.imagen_titulo.url }}" autoplay muted loop playsinline preload="metadata"></video>{% else %}<img class="section-title-image" src="{{ secciones.CUENTA_REGRESIVA.imagen_titulo.url }}" alt="">{% endif %}{% endif %}
                 {% if secciones.CUENTA_REGRESIVA.mostrar_titulo_texto %}<h2 class="section-title">{{ secciones.CUENTA_REGRESIVA.titulo }}</h2>{% endif %}
                 <div class="count-grid">
@@ -181,6 +182,7 @@
         <section class="section" id="detalles" data-invitation-section="DETALLES" style="order: {{ secciones.DETALLES.orden }}; {{ secciones.DETALLES.estilo_editor }}">
             <div class="panel {% if secciones.DETALLES.fondo %}bg-panel{% endif %} {% if secciones.DETALLES.fondo_es_video %}bg-video-panel{% endif %}" {% if secciones.DETALLES.fondo and not secciones.DETALLES.fondo_es_video %}style="background-image: url('{{ secciones.DETALLES.fondo.url }}'); background-position: {{ secciones.DETALLES.posicion_fondo }};"{% endif %}>
                 {% if secciones.DETALLES.fondo_es_video %}<video class="panel-bg-video" src="{{ secciones.DETALLES.fondo.url }}" autoplay muted loop playsinline preload="metadata"></video>{% endif %}
+                {% include "invitaciones/partials/_capas_personalizadas.html" with seccion=secciones.DETALLES %}
                 {% if secciones.DETALLES.imagen_titulo %}{% if secciones.DETALLES.imagen_titulo_es_video %}<video class="section-title-image" src="{{ secciones.DETALLES.imagen_titulo.url }}" autoplay muted loop playsinline preload="metadata"></video>{% else %}<img class="section-title-image" src="{{ secciones.DETALLES.imagen_titulo.url }}" alt="">{% endif %}{% endif %}
                 {% if secciones.DETALLES.mostrar_titulo_texto %}<h2 class="section-title">{{ secciones.DETALLES.titulo }}</h2>{% endif %}
                 {% if secciones.DETALLES.descripcion %}<p class="section-copy">{{ secciones.DETALLES.descripcion }}</p>{% endif %}
@@ -272,6 +274,7 @@
         <section class="section" id="dress-code" data-invitation-section="DRESS_CODE" style="order: {{ secciones.DRESS_CODE.orden }}; {{ secciones.DRESS_CODE.estilo_editor }}">
             <div class="panel {% if secciones.DRESS_CODE.fondo %}bg-panel{% endif %} {% if secciones.DRESS_CODE.fondo_es_video %}bg-video-panel{% endif %}" {% if secciones.DRESS_CODE.fondo and not secciones.DRESS_CODE.fondo_es_video %}style="background-image: url('{{ secciones.DRESS_CODE.fondo.url }}'); background-position: {{ secciones.DRESS_CODE.posicion_fondo }};"{% endif %}>
                 {% if secciones.DRESS_CODE.fondo_es_video %}<video class="panel-bg-video" src="{{ secciones.DRESS_CODE.fondo.url }}" autoplay muted loop playsinline preload="metadata"></video>{% endif %}
+                {% include "invitaciones/partials/_capas_personalizadas.html" with seccion=secciones.DRESS_CODE %}
                 {% if secciones.DRESS_CODE.imagen_titulo %}{% if secciones.DRESS_CODE.imagen_titulo_es_video %}<video class="section-title-image" src="{{ secciones.DRESS_CODE.imagen_titulo.url }}" autoplay muted loop playsinline preload="metadata"></video>{% else %}<img class="section-title-image" src="{{ secciones.DRESS_CODE.imagen_titulo.url }}" alt="">{% endif %}{% endif %}
                 {% if secciones.DRESS_CODE.mostrar_titulo_texto %}<h2 class="section-title">{{ secciones.DRESS_CODE.titulo }}</h2>{% endif %}
                 {% if secciones.DRESS_CODE.descripcion %}<p class="section-copy">{{ secciones.DRESS_CODE.descripcion }}</p>{% endif %}
@@ -299,6 +302,7 @@
         {% if secciones.ITINERARIO.activa and itinerario %}
             <section class="section" id="itinerario" data-invitation-section="ITINERARIO" style="order: {{ secciones.ITINERARIO.orden }}; {{ secciones.ITINERARIO.estilo_editor }}">
                 <div class="panel itinerary-panel">
+                    {% include "invitaciones/partials/_capas_personalizadas.html" with seccion=secciones.ITINERARIO %}
                     {% if secciones.ITINERARIO.imagen_titulo %}{% if secciones.ITINERARIO.imagen_titulo_es_video %}<video class="section-title-image" src="{{ secciones.ITINERARIO.imagen_titulo.url }}" autoplay muted loop playsinline preload="metadata"></video>{% else %}<img class="section-title-image" src="{{ secciones.ITINERARIO.imagen_titulo.url }}" alt="">{% endif %}{% endif %}
                     {% if secciones.ITINERARIO.mostrar_titulo_texto %}<h2 class="section-title">{{ secciones.ITINERARIO.titulo }}</h2>{% endif %}
                     {% if secciones.ITINERARIO.descripcion %}<p class="section-copy">{{ secciones.ITINERARIO.descripcion }}</p>{% endif %}
@@ -321,6 +325,7 @@
             <section class="section" id="album" data-invitation-section="ALBUM" style="order: {{ secciones.ALBUM.orden }}; {{ secciones.ALBUM.estilo_editor }}">
                 <div class="panel {% if secciones.ALBUM.fondo %}bg-panel{% endif %} {% if secciones.ALBUM.fondo_es_video %}bg-video-panel{% endif %}" {% if secciones.ALBUM.fondo and not secciones.ALBUM.fondo_es_video %}style="background-image: url('{{ secciones.ALBUM.fondo.url }}'); background-position: {{ secciones.ALBUM.posicion_fondo }};"{% endif %}>
                     {% if secciones.ALBUM.fondo_es_video %}<video class="panel-bg-video" src="{{ secciones.ALBUM.fondo.url }}" autoplay muted loop playsinline preload="metadata"></video>{% endif %}
+                    {% include "invitaciones/partials/_capas_personalizadas.html" with seccion=secciones.ALBUM %}
                     {% if secciones.ALBUM.imagen_titulo %}{% if secciones.ALBUM.imagen_titulo_es_video %}<video class="section-title-image" src="{{ secciones.ALBUM.imagen_titulo.url }}" autoplay muted loop playsinline preload="metadata"></video>{% else %}<img class="section-title-image" src="{{ secciones.ALBUM.imagen_titulo.url }}" alt="">{% endif %}{% endif %}
                     {% if secciones.ALBUM.mostrar_titulo_texto %}<h2 class="section-title">{{ secciones.ALBUM.titulo }}</h2>{% endif %}
                     {% if secciones.ALBUM.descripcion %}<p class="section-copy">{{ secciones.ALBUM.descripcion }}</p>{% endif %}
@@ -344,6 +349,7 @@
             <section class="section" id="menu" data-invitation-section="MENU" style="order: {{ secciones.MENU.orden }}; {{ secciones.MENU.estilo_editor }}">
                 <div class="panel {% if secciones.MENU.fondo %}bg-panel{% endif %} {% if secciones.MENU.fondo_es_video %}bg-video-panel{% endif %}" {% if secciones.MENU.fondo and not secciones.MENU.fondo_es_video %}style="background-image: url('{{ secciones.MENU.fondo.url }}'); background-position: {{ secciones.MENU.posicion_fondo }};"{% endif %}>
                     {% if secciones.MENU.fondo_es_video %}<video class="panel-bg-video" src="{{ secciones.MENU.fondo.url }}" autoplay muted loop playsinline preload="metadata"></video>{% endif %}
+                    {% include "invitaciones/partials/_capas_personalizadas.html" with seccion=secciones.MENU %}
                     {% if secciones.MENU.imagen_titulo %}{% if secciones.MENU.imagen_titulo_es_video %}<video class="section-title-image" src="{{ secciones.MENU.imagen_titulo.url }}" autoplay muted loop playsinline preload="metadata"></video>{% else %}<img class="section-title-image" src="{{ secciones.MENU.imagen_titulo.url }}" alt="">{% endif %}{% endif %}
                     {% if secciones.MENU.mostrar_titulo_texto %}<h2 class="section-title">{{ secciones.MENU.titulo }}</h2>{% endif %}
                     {% if secciones.MENU.descripcion %}<p class="section-copy">{{ secciones.MENU.descripcion }}</p>{% endif %}
@@ -360,6 +366,7 @@
             <section class="section" id="regalos" data-invitation-section="REGALOS" style="order: {{ secciones.REGALOS.orden }}; {{ secciones.REGALOS.estilo_editor }}">
                 <div class="panel {% if secciones.REGALOS.fondo %}bg-panel{% endif %} {% if secciones.REGALOS.fondo_es_video %}bg-video-panel{% endif %}" {% if secciones.REGALOS.fondo and not secciones.REGALOS.fondo_es_video %}style="background-image: url('{{ secciones.REGALOS.fondo.url }}'); background-position: {{ secciones.REGALOS.posicion_fondo }};"{% endif %}>
                     {% if secciones.REGALOS.fondo_es_video %}<video class="panel-bg-video" src="{{ secciones.REGALOS.fondo.url }}" autoplay muted loop playsinline preload="metadata"></video>{% endif %}
+                    {% include "invitaciones/partials/_capas_personalizadas.html" with seccion=secciones.REGALOS %}
                     {% if secciones.REGALOS.imagen_titulo %}{% if secciones.REGALOS.imagen_titulo_es_video %}<video class="section-title-image" src="{{ secciones.REGALOS.imagen_titulo.url }}" autoplay muted loop playsinline preload="metadata"></video>{% else %}<img class="section-title-image" src="{{ secciones.REGALOS.imagen_titulo.url }}" alt="">{% endif %}{% endif %}
                     {% if secciones.REGALOS.mostrar_titulo_texto %}<h2 class="section-title">{{ secciones.REGALOS.titulo }}</h2>{% endif %}
                     {% if secciones.REGALOS.descripcion %}<p class="section-copy">{{ secciones.REGALOS.descripcion }}</p>{% endif %}
@@ -402,6 +409,7 @@
         {% if secciones.ALBUM_COMPARTIDO.activa and evento.mostrar_album_compartido and evento.link_album_compartido %}
             <section class="section" id="album-compartido" data-invitation-section="ALBUM_COMPARTIDO" style="order: {{ secciones.ALBUM_COMPARTIDO.orden }}; {{ secciones.ALBUM_COMPARTIDO.estilo_editor }}">
                 <div class="panel shared-album-panel">
+                    {% include "invitaciones/partials/_capas_personalizadas.html" with seccion=secciones.ALBUM_COMPARTIDO %}
                     {% if secciones.ALBUM_COMPARTIDO.imagen_titulo %}{% if secciones.ALBUM_COMPARTIDO.imagen_titulo_es_video %}<video class="section-title-image" src="{{ secciones.ALBUM_COMPARTIDO.imagen_titulo.url }}" autoplay muted loop playsinline preload="metadata"></video>{% else %}<img class="section-title-image" src="{{ secciones.ALBUM_COMPARTIDO.imagen_titulo.url }}" alt="">{% endif %}{% endif %}
                     {% if secciones.ALBUM_COMPARTIDO.mostrar_titulo_texto %}<h2 class="section-title">{{ secciones.ALBUM_COMPARTIDO.titulo }}</h2>{% endif %}
                     {% if secciones.ALBUM_COMPARTIDO.descripcion %}<p class="section-copy">{{ secciones.ALBUM_COMPARTIDO.descripcion }}</p>{% endif %}
@@ -416,6 +424,7 @@
         <section class="section" id="rsvp" data-invitation-section="RSVP" style="order: {{ secciones.RSVP.orden }}; {{ secciones.RSVP.estilo_editor }}">
             <div class="panel {% if secciones.RSVP.fondo %}bg-panel{% endif %} {% if secciones.RSVP.fondo_es_video %}bg-video-panel{% endif %}" {% if secciones.RSVP.fondo and not secciones.RSVP.fondo_es_video %}style="background-image: url('{{ secciones.RSVP.fondo.url }}'); background-position: {{ secciones.RSVP.posicion_fondo }};"{% endif %}>
                 {% if secciones.RSVP.fondo_es_video %}<video class="panel-bg-video" src="{{ secciones.RSVP.fondo.url }}" autoplay muted loop playsinline preload="metadata"></video>{% endif %}
+                {% include "invitaciones/partials/_capas_personalizadas.html" with seccion=secciones.RSVP %}
                 <div class="invitation-summary">
                     <h2 class="section-title">{{ evento.titulo_invitacion }}</h2>
                     <p class="section-copy">{{ evento.texto_invitacion }}</p>

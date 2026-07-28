@@ -491,6 +491,27 @@ video {
     outline-color: color-mix(in srgb, var(--editor-accent) 74%, white);
 }
 
+.preview-custom-layer.is-active-custom {
+    outline: 1px dashed color-mix(in srgb, var(--editor-accent) 82%, white);
+    outline-offset: 6px;
+}
+
+.preview-free-media {
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: 4px;
+    object-fit: contain;
+}
+
+.preview-free-text {
+    display: block;
+    color: inherit;
+    font-family: var(--editor-title-font);
+    font-size: clamp(1.2rem, 6vw, 2.3rem);
+    line-height: 1.05;
+    text-wrap: balance;
+}
+
 .preview-title-asset {
     position: relative;
     justify-self: center;
@@ -558,9 +579,57 @@ video {
     background: color-mix(in srgb, var(--editor-soft) 25%, white);
 }
 
+.free-layer-tools {
+    display: grid;
+    gap: 6px;
+    padding: 9px;
+    border: 1px solid var(--editor-line);
+    border-radius: 8px;
+    background: #fff;
+}
+
+.free-layer-tools button,
+.custom-layer-item {
+    width: 100%;
+    border: 1px solid var(--editor-line);
+    border-radius: 7px;
+    background: var(--editor-soft);
+    color: var(--editor-primary);
+    cursor: pointer;
+    font-size: .74rem;
+    font-weight: 800;
+    padding: 8px;
+    text-align: left;
+}
+
+.custom-layer-list {
+    display: grid;
+    gap: 6px;
+}
+
+.custom-layer-item {
+    background: #fff;
+}
+
+.custom-layer-item.is-active {
+    border-color: var(--editor-accent);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--editor-accent) 18%, transparent);
+}
+
+.custom-layer-item strong,
+.custom-layer-item span {
+    display: block;
+}
+
+.custom-layer-item span {
+    color: var(--editor-muted);
+    font-size: .68rem;
+    margin-top: 2px;
+}
+
 .layer-actions {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 6px;
 }
 
@@ -574,6 +643,11 @@ video {
     font-size: .7rem;
     font-weight: 800;
     padding: 7px 5px;
+}
+
+.layer-actions button:disabled {
+    cursor: not-allowed;
+    opacity: .42;
 }
 
 .layer-toolbar button {

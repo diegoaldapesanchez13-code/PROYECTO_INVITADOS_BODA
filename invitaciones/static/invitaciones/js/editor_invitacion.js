@@ -91,11 +91,13 @@
             decorWidth: 36,
             decorAlign: 'center',
             decorStyle: 'line',
+            customLayers: [],
         };
     }
 
     function ensureSectionConfig(section) {
         section.config = { ...defaultSectionConfig(), ...(section.config || {}) };
+        section.config.customLayers = ensureCustomLayers(section.config);
         return section.config;
     }
 
@@ -215,6 +217,70 @@
             title: item.dataset.assetTitle,
             isVideo: item.dataset.assetVideo === '1',
         };
+    }
+
+    function customLayerId() {
+        if (window.crypto?.randomUUID) return `layer-${window.crypto.randomUUID()}`;
+        return `layer-${Date.now()}-${Math.round(Math.random() * 100000)}`;
+    }
+
+    function normalizeCustomLayer(layer) {
+        const isMedia = layer.kind === 'image' || layer.kind === 'video';
+        return {
+            id: layer.id || customLayerId(),
+            kind: isMedia ? layer.kind : 'text',
+            name: (layer.name || (isMedia ? 'Imagen libre' : 'Texto libre')).slice(0, 80),
+            text: (layer.text || 'Texto editable').slice(0, 220),
+            asset: layer.asset || {},
+            x: clamp(layer.x ?? 50, layerBounds.min, layerBounds.max),
+            y: clamp(layer.y ?? 50, layerBounds.min, layerBounds.max),
+            scale: clamp(layer.scale ?? 1, 0.35, 3),
+            opacity: clamp(layer.opacity ?? 1, 0, 1),
+            rotation: clamp(layer.rotation ?? 0, -180, 180),
+            z: clamp(layer.z ?? 3, 1, 12),
+            width: clamp(layer.width ?? (isMedia ? 42 : 64), 8, 120),
+            align: ['left', 'center', 'right'].includes(layer.align) ? layer.align : 'center',
+            visible: layer.visible !== false,
+            locked: layer.locked === true,
+            fit: ['contain', 'cover'].includes(layer.fit) ? layer.fit : 'contain',
+        };
+    }
+
+    function ensureCustomLayers(cfg) {
+        const layers = Array.isArray(cfg.customLayers) ? cfg.customLayers : [];
+        return layers.map(normalizeCustomLayer).slice(0, 60);
+    }
+
+    function isCustomLayer(layer) {
+        return String(layer || '').startsWith('custom:');
+    }
+
+    function customLayerByActive(cfg) {
+        if (!isCustomLayer(cfg.activeLayer)) return null;
+        const id = String(cfg.activeLayer).replace('custom:', '');
+        return ensureCustomLayers(cfg).find((layer) => layer.id === id) || null;
+    }
+
+    function customLayerValue(layer, field) {
+        return normalizeCustomLayer(layer)[field];
+    }
+
+    function setCustomLayerValue(layer, field, value) {
+        layer[field] = value;
+    }
+
+    function setCustomLayerStyles(element, layer) {
+        const clean = normalizeCustomLayer(layer);
+        element.style.setProperty('--layer-x', `${clean.x}%`);
+        element.style.setProperty('--layer-y', `${clean.y}%`);
+        element.style.setProperty('--layer-scale', clean.scale);
+        element.style.setProperty('--layer-rotation', `${clean.rotation}deg`);
+        element.style.setProperty('--layer-width', `${clean.width}%`);
+        element.style.opacity = String(clean.opacity);
+        element.style.textAlign = clean.align;
+        element.style.zIndex = String(clean.z);
+        element.classList.toggle('is-hidden', clean.visible === false);
+        element.classList.toggle('is-locked', clean.locked === true);
     }
 
     function selectSectionByType(type) {
@@ -385,6 +451,24 @@
             setLayerStyles(textLayer, cfg, 'text');
             attachLayerDrag(article, textLayer, section, cfg, 'text');
             article.appendChild(textLayer);
+            ensureCustomLayers(cfg).forEach((layer) => {
+                const layerEl = document.createElement('div');
+                layerEl.className = 'preview-layer preview-custom-layer';
+                layerEl.dataset.customLayerId = layer.id;
+                layerEl.classList.toggle('is-active-custom', cfg.activeLayer === `custom:${layer.id}`);
+                if (layer.kind === 'image' && layer.asset?.url) {
+                    layerEl.innerHTML = `<img class="preview-free-media" src="${layer.asset.url}" alt="">`;
+                } else if (layer.kind === 'video' && layer.asset?.url) {
+                    layerEl.innerHTML = `<video class="preview-free-media" src="${layer.asset.url}" autoplay muted loop playsinline></video>`;
+                } else {
+                    layerEl.innerHTML = `<span class="preview-free-text">${escapeHtml(layer.text || 'Texto editable')}</span>`;
+                }
+                const media = layerEl.querySelector('.preview-free-media');
+                if (media) media.style.objectFit = layer.fit || 'contain';
+                setCustomLayerStyles(layerEl, layer);
+                attachCustomLayerDrag(article, layerEl, section, cfg, layer);
+                article.appendChild(layerEl);
+            });
             article.addEventListener('click', () => {
                 selectedId = section.sectionId;
                 renderAll();
@@ -397,7 +481,7 @@
                 if (!payload) return;
                 event.preventDefault();
                 selectedId = section.sectionId;
-                assignAssetRef(JSON.parse(payload), 'FONDO_SECCION', section).catch((error) => setState(error.message));
+                assignAssetRef(JSON.parse(payload), 'CAPA_LIBRE', section).catch((error) => setState(error.message));
             });
             previewRoot.appendChild(article);
         });
@@ -473,38 +557,183 @@
         layerEl.addEventListener('pointercancel', () => { dragging = null; });
     }
 
+    function attachCustomLayerDrag(article, layerEl, section, cfg, layer) {
+        let dragging = null;
+        layerEl.addEventListener('click', (event) => {
+            event.stopPropagation();
+            selectedId = section.sectionId;
+            cfg.activeLayer = `custom:${layer.id}`;
+            renderAll();
+        });
+        layerEl.addEventListener('pointerdown', (event) => {
+            if (layer.locked === true) return;
+            event.stopPropagation();
+            selectedId = section.sectionId;
+            cfg.activeLayer = `custom:${layer.id}`;
+            dragging = {
+                x: event.clientX,
+                y: event.clientY,
+                startX: clamp(layer.x ?? 50, layerBounds.min, layerBounds.max),
+                startY: clamp(layer.y ?? 50, layerBounds.min, layerBounds.max),
+                width: Math.max(article.clientWidth, 1),
+                height: Math.max(article.clientHeight, 1),
+            };
+            layerEl.setPointerCapture(event.pointerId);
+        });
+        layerEl.addEventListener('pointermove', (event) => {
+            if (!dragging) return;
+            const deltaX = ((event.clientX - dragging.x) / dragging.width) * 100;
+            const deltaY = ((event.clientY - dragging.y) / dragging.height) * 100;
+            layer.x = Math.round(clamp(dragging.startX + deltaX, layerBounds.min, layerBounds.max));
+            layer.y = Math.round(clamp(dragging.startY + deltaY, layerBounds.min, layerBounds.max));
+            setCustomLayerStyles(layerEl, layer);
+            updateLayerFields(cfg);
+            renderCustomLayerList(cfg);
+            setState('Cambios sin guardar');
+        });
+        layerEl.addEventListener('pointerup', () => { dragging = null; });
+        layerEl.addEventListener('pointercancel', () => { dragging = null; });
+    }
+
     function updateLayerFields(cfg) {
         const layer = cfg.activeLayer || 'background';
+        const custom = customLayerByActive(cfg);
         root.querySelectorAll('[data-layer-field]').forEach((field) => {
             const key = field.dataset.layerField;
+            if (key === 'scale') {
+                field.min = custom ? '0.35' : '0.5';
+                field.max = custom ? '3' : '2.2';
+            }
+            if (key === 'rotation') {
+                field.min = custom ? '-180' : '-45';
+                field.max = custom ? '180' : '45';
+            }
+            if (key === 'width') {
+                field.min = custom ? '8' : '12';
+                field.max = custom ? '120' : '100';
+            }
             field.disabled = layer === 'background';
             if (field.type === 'checkbox') {
-                field.checked = layerValue(cfg, layer, key) !== false;
+                field.checked = custom ? customLayerValue(custom, key) !== false : layerValue(cfg, layer, key) !== false;
             } else {
-                field.value = layerValue(cfg, layer, key);
+                field.value = custom ? customLayerValue(custom, key) : layerValue(cfg, layer, key);
             }
+        });
+        const customText = root.querySelector('[data-custom-layer-text]');
+        const customName = root.querySelector('[data-custom-layer-name]');
+        const customFit = root.querySelector('[data-custom-layer-fit]');
+        if (customText) {
+            customText.disabled = !custom || custom.kind !== 'text';
+            customText.value = custom?.text || '';
+        }
+        if (customName) {
+            customName.disabled = !custom;
+            customName.value = custom?.name || '';
+        }
+        if (customFit) {
+            customFit.disabled = !custom || custom.kind === 'text';
+            customFit.value = custom?.fit || 'contain';
+        }
+        root.querySelectorAll('[data-layer-action="duplicate"], [data-layer-action="delete"]').forEach((button) => {
+            button.disabled = !custom;
         });
     }
 
     function resetLayer(cfg, layer) {
+        const custom = customLayerByActive(cfg);
+        if (custom) {
+            Object.assign(custom, normalizeCustomLayer({ ...custom, x: 50, y: 50, scale: 1, opacity: 1, rotation: 0, locked: false, width: custom.kind === 'text' ? 64 : 42, align: 'center' }));
+            return;
+        }
         const defaults = layerDefaults(layer);
         Object.entries(defaults).forEach(([key, value]) => setLayerValue(cfg, layer, key, value));
     }
 
     function applyLayerPreset(cfg, layer, preset) {
+        const custom = customLayerByActive(cfg);
         const presets = {
             centered: { x: 50, y: layer === 'decor' ? 12 : 50, scale: 1, rotation: 0, opacity: layer === 'decor' ? 0.42 : 1, width: layer === 'decor' ? 36 : 72, align: 'center' },
             upper: { x: 50, y: layer === 'decor' ? 10 : 28, scale: 0.9, rotation: 0, opacity: layer === 'decor' ? 0.5 : 1, width: 66, align: 'center' },
             lower: { x: 50, y: 72, scale: 0.9, rotation: 0, opacity: layer === 'decor' ? 0.36 : 0.92, width: 72, align: 'center' },
             diagonal: { x: 38, y: 48, scale: 1.05, rotation: -8, opacity: layer === 'decor' ? 0.38 : 0.9, width: 48, align: 'left' },
         };
+        if (custom) {
+            Object.entries(presets[preset] || presets.centered).forEach(([key, value]) => setCustomLayerValue(custom, key, value));
+            custom.visible = true;
+            return;
+        }
         Object.entries(presets[preset] || presets.centered).forEach(([key, value]) => setLayerValue(cfg, layer, key, value));
         setLayerValue(cfg, layer, 'visible', true);
     }
 
     function moveLayerZ(cfg, layer, direction) {
+        const custom = customLayerByActive(cfg);
+        if (custom) {
+            custom.z = clamp((Number(custom.z) || 3) + direction, 1, 12);
+            return;
+        }
         const current = clamp(layerValue(cfg, layer, 'z'), 1, 5);
         setLayerValue(cfg, layer, 'z', clamp(current + direction, 1, 5));
+    }
+
+    function addCustomLayer(section, layer) {
+        const cfg = ensureSectionConfig(section);
+        const clean = normalizeCustomLayer(layer);
+        cfg.customLayers.unshift(clean);
+        cfg.customLayers = cfg.customLayers.slice(0, 60);
+        cfg.activeLayer = `custom:${clean.id}`;
+        selectedId = section.sectionId;
+        setState('Capa libre agregada');
+        renderAll();
+    }
+
+    function deleteActiveCustomLayer(cfg) {
+        const custom = customLayerByActive(cfg);
+        if (!custom) return false;
+        cfg.customLayers = ensureCustomLayers(cfg).filter((layer) => layer.id !== custom.id);
+        cfg.activeLayer = 'title';
+        return true;
+    }
+
+    function duplicateActiveCustomLayer(cfg) {
+        const custom = customLayerByActive(cfg);
+        if (!custom) return false;
+        const copy = normalizeCustomLayer({
+            ...custom,
+            id: customLayerId(),
+            name: `${custom.name || 'Capa'} copia`,
+            x: Number(custom.x || 50) + 5,
+            y: Number(custom.y || 50) + 5,
+        });
+        cfg.customLayers.unshift(copy);
+        cfg.activeLayer = `custom:${copy.id}`;
+        return true;
+    }
+
+    function renderCustomLayerList(cfg) {
+        const list = root.querySelector('[data-custom-layer-list]');
+        if (!list) return;
+        const layers = ensureCustomLayers(cfg);
+        list.innerHTML = '';
+        if (!layers.length) {
+            list.innerHTML = '<p class="muted">Sin capas libres en esta seccion.</p>';
+            return;
+        }
+        layers.forEach((layer) => {
+            const item = document.createElement('button');
+            item.type = 'button';
+            item.className = 'custom-layer-item';
+            item.classList.toggle('is-active', cfg.activeLayer === `custom:${layer.id}`);
+            item.innerHTML = `
+                <strong>${escapeHtml(layer.name || 'Capa libre')}</strong>
+                <span>${escapeHtml(layer.kind)} - X ${Math.round(layer.x || 0)} / Y ${Math.round(layer.y || 0)}</span>
+            `;
+            item.addEventListener('click', () => {
+                cfg.activeLayer = `custom:${layer.id}`;
+                renderAll();
+            });
+            list.appendChild(item);
+        });
     }
 
     function fillProperties() {
@@ -548,6 +777,7 @@
         const presetSelect = root.querySelector('[data-layer-preset]');
         if (presetSelect) presetSelect.value = '';
         updateLayerFields(ensureSectionConfig(section));
+        renderCustomLayerList(ensureSectionConfig(section));
     }
 
     function renderAll() {
@@ -997,10 +1227,59 @@
             const cfg = ensureSectionConfig(section);
             const layer = cfg.activeLayer || 'title';
             const key = field.dataset.layerField;
-            setLayerValue(cfg, layer, key, field.type === 'checkbox' ? field.checked : field.value);
+            const custom = customLayerByActive(cfg);
+            if (custom) {
+                setCustomLayerValue(custom, key, field.type === 'checkbox' ? field.checked : field.value);
+            } else {
+                setLayerValue(cfg, layer, key, field.type === 'checkbox' ? field.checked : field.value);
+            }
             setState('Cambios sin guardar');
             renderAll();
         });
+    });
+
+    root.querySelector('[data-add-text-layer]')?.addEventListener('click', () => {
+        const section = selectedSection();
+        if (!section) return;
+        addCustomLayer(section, {
+            kind: 'text',
+            name: 'Texto libre',
+            text: 'Nuevo texto',
+            x: 50,
+            y: 50,
+            width: 60,
+            z: 4,
+        });
+    });
+
+    root.querySelector('[data-custom-layer-name]')?.addEventListener('input', (event) => {
+        const section = selectedSection();
+        if (!section) return;
+        const custom = customLayerByActive(ensureSectionConfig(section));
+        if (!custom) return;
+        custom.name = event.currentTarget.value.slice(0, 80);
+        setState('Cambios sin guardar');
+        renderAll();
+    });
+
+    root.querySelector('[data-custom-layer-text]')?.addEventListener('input', (event) => {
+        const section = selectedSection();
+        if (!section) return;
+        const custom = customLayerByActive(ensureSectionConfig(section));
+        if (!custom || custom.kind !== 'text') return;
+        custom.text = event.currentTarget.value.slice(0, 220);
+        setState('Cambios sin guardar');
+        renderAll();
+    });
+
+    root.querySelector('[data-custom-layer-fit]')?.addEventListener('change', (event) => {
+        const section = selectedSection();
+        if (!section) return;
+        const custom = customLayerByActive(ensureSectionConfig(section));
+        if (!custom || custom.kind === 'text') return;
+        custom.fit = event.currentTarget.value;
+        setState('Cambios sin guardar');
+        renderAll();
     });
 
     root.querySelector('[data-layer-preset]')?.addEventListener('change', (event) => {
@@ -1024,6 +1303,8 @@
             if (button.dataset.layerAction === 'front') moveLayerZ(cfg, layer, 1);
             if (button.dataset.layerAction === 'back') moveLayerZ(cfg, layer, -1);
             if (button.dataset.layerAction === 'reset') resetLayer(cfg, layer);
+            if (button.dataset.layerAction === 'duplicate') duplicateActiveCustomLayer(cfg);
+            if (button.dataset.layerAction === 'delete') deleteActiveCustomLayer(cfg);
             setState('Capa actualizada');
             renderAll();
         });
@@ -1126,6 +1407,7 @@
                 <option value="RECEPCION">Portada fiesta</option>
                 <option value="DRESS_PERMITIDO">Dress permitido</option>
                 <option value="DRESS_PROHIBIDO">Dress prohibido</option>
+                <option value="CAPA_LIBRE">Capa libre</option>
                 <option value="ALBUM">Agregar al album</option>
             </select>
         `;
@@ -1140,7 +1422,7 @@
     }
 
     async function assignAssetRef(assetRef, destino, section) {
-        if ((destino === 'FONDO_SECCION' || destino === 'TITULO_SECCION') && !section) {
+        if ((destino === 'FONDO_SECCION' || destino === 'TITULO_SECCION' || destino === 'CAPA_LIBRE') && !section) {
             setState('Selecciona una seccion.');
             return;
         }
@@ -1152,6 +1434,17 @@
             section.config = ensureSectionConfig(section);
             section.config.titleAsset = assetRef;
             section.config.showTitleAsset = true;
+        } else if (destino === 'CAPA_LIBRE') {
+            addCustomLayer(section, {
+                kind: assetRef.isVideo ? 'video' : 'image',
+                name: assetRef.title || 'Imagen libre',
+                asset: assetRef,
+                x: 50,
+                y: 50,
+                width: 46,
+                z: 5,
+            });
+            return;
         } else if (destino === 'ALBUM') {
             config.theme = config.theme || {};
             config.theme.albumAssets = config.theme.albumAssets || [];

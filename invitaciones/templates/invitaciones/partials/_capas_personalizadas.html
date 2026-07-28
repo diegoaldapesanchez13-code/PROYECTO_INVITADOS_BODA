@@ -1,0 +1,11 @@
+{% for capa in seccion.capas_personalizadas %}
+    <div class="custom-public-layer custom-public-layer-{{ capa.kind }}" style="{{ capa.style }}">
+        {% if capa.kind == 'image' and capa.asset.url %}
+            <img src="{{ capa.asset.url }}" alt="{{ capa.name }}">
+        {% elif capa.kind == 'video' and capa.asset.url %}
+            <video src="{{ capa.asset.url }}" autoplay muted loop playsinline preload="metadata"></video>
+        {% else %}
+            <span>{{ capa.text }}</span>
+        {% endif %}
+    </div>
+{% endfor %}

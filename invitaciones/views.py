@@ -1851,6 +1851,8 @@ EDITOR_TAMANOS_TITULO = {'small', 'medium', 'large'}
 EDITOR_BG_FIT = {'contain', 'cover', 'repeat', 'free'}
 EDITOR_LAYER_TYPES = {'background', 'title', 'text', 'decor'}
 EDITOR_DECOR_STYLES = {'line', 'flourish', 'rings', 'dots'}
+EDITOR_CUSTOM_LAYER_TYPES = {'text', 'image', 'video'}
+EDITOR_MEDIA_FIT = {'contain', 'cover'}
 HEX_COLOR_RE = re.compile(r'^#[0-9a-fA-F]{6}$')
 
 
@@ -1890,6 +1892,73 @@ def asset_ref_seguro(evento, asset_id):
         return {}
     asset = AssetInvitacion.objects.filter(evento=evento, id=asset_id, visible=True).first()
     return ref_asset_editor(asset)
+
+
+def normalizar_capas_personalizadas_editor(evento, capas):
+    capas = capas if isinstance(capas, list) else []
+    resultado = []
+    for index, capa in enumerate(capas[:60]):
+        if not isinstance(capa, dict):
+            continue
+        tipo = capa.get('kind') if capa.get('kind') in EDITOR_CUSTOM_LAYER_TYPES else 'text'
+        asset_ref = {}
+        if tipo in {'image', 'video'}:
+            asset_data = capa.get('asset') if isinstance(capa.get('asset'), dict) else {}
+            asset_ref = asset_ref_seguro(evento, asset_data.get('id'))
+            if not asset_ref:
+                continue
+            tipo = 'video' if asset_ref.get('isVideo') else 'image'
+        resultado.append({
+            'id': (str(capa.get('id') or f'layer-{index + 1}')[:80]),
+            'kind': tipo,
+            'name': (capa.get('name') or ('Imagen libre' if tipo in {'image', 'video'} else 'Texto libre'))[:80],
+            'text': (capa.get('text') or 'Texto editable')[:220],
+            'asset': asset_ref,
+            'x': numero_rango(capa.get('x'), 50, -40, 140),
+            'y': numero_rango(capa.get('y'), 50, -40, 140),
+            'scale': numero_rango(capa.get('scale'), 1, 0.35, 3, decimales=True),
+            'opacity': numero_rango(capa.get('opacity'), 1, 0, 1, decimales=True),
+            'rotation': numero_rango(capa.get('rotation'), 0, -180, 180),
+            'z': numero_rango(capa.get('z'), 3, 1, 12),
+            'width': numero_rango(capa.get('width'), 42 if tipo in {'image', 'video'} else 64, 8, 120),
+            'align': capa.get('align') if capa.get('align') in EDITOR_ALINEACIONES else 'center',
+            'visible': bool(capa.get('visible', True)),
+            'locked': bool(capa.get('locked', False)),
+            'fit': capa.get('fit') if capa.get('fit') in EDITOR_MEDIA_FIT else 'contain',
+        })
+    return resultado
+
+
+def capas_personalizadas_publicas(item_config):
+    capas = item_config.get('customLayers') if isinstance(item_config, dict) else []
+    resultado = []
+    for capa in capas if isinstance(capas, list) else []:
+        if not isinstance(capa, dict) or not capa.get('visible', True):
+            continue
+        tipo = capa.get('kind') if capa.get('kind') in EDITOR_CUSTOM_LAYER_TYPES else 'text'
+        asset = capa.get('asset') if isinstance(capa.get('asset'), dict) else {}
+        if tipo in {'image', 'video'} and not asset.get('url'):
+            continue
+        style = (
+            f'--layer-x:{numero_rango(capa.get("x"), 50, -40, 140)}%;'
+            f'--layer-y:{numero_rango(capa.get("y"), 50, -40, 140)}%;'
+            f'--layer-scale:{numero_rango(capa.get("scale"), 1, 0.35, 3, decimales=True)};'
+            f'--layer-opacity:{numero_rango(capa.get("opacity"), 1, 0, 1, decimales=True)};'
+            f'--layer-rotation:{numero_rango(capa.get("rotation"), 0, -180, 180)}deg;'
+            f'--layer-z:{numero_rango(capa.get("z"), 3, 1, 12)};'
+            f'--layer-width:{numero_rango(capa.get("width"), 42 if tipo in {"image", "video"} else 64, 8, 120)}%;'
+            f'--layer-align:{capa.get("align") if capa.get("align") in EDITOR_ALINEACIONES else "center"};'
+            f'--layer-fit:{capa.get("fit") if capa.get("fit") in EDITOR_MEDIA_FIT else "contain"};'
+        )
+        resultado.append({
+            'kind': tipo,
+            'name': capa.get('name') or '',
+            'text': capa.get('text') or '',
+            'asset': asset,
+            'fit': capa.get('fit') if capa.get('fit') in EDITOR_MEDIA_FIT else 'contain',
+            'style': style,
+        })
+    return resultado
 
 
 def serializar_seccion_editor(seccion):
@@ -1952,6 +2021,7 @@ def serializar_seccion_editor(seccion):
             'decorWidth': 36,
             'decorAlign': 'center',
             'decorStyle': 'line',
+            'customLayers': [],
         },
     }
 
@@ -2049,6 +2119,13 @@ def normalizar_configuracion_editor(evento, payload):
             continue
         usados.add(seccion_id)
         item_config = item.get('config') if isinstance(item.get('config'), dict) else {}
+        capas_personalizadas = normalizar_capas_personalizadas_editor(evento, item_config.get('customLayers'))
+        active_layer = item_config.get('activeLayer')
+        capas_ids = {capa['id'] for capa in capas_personalizadas}
+        if active_layer not in EDITOR_LAYER_TYPES and not (
+            isinstance(active_layer, str) and active_layer.startswith('custom:') and active_layer.replace('custom:', '') in capas_ids
+        ):
+            active_layer = 'background'
         config['sections'].append({
             'id': f'section-{seccion.id}',
             'sectionId': seccion.id,
@@ -2074,7 +2151,7 @@ def normalizar_configuracion_editor(evento, payload):
                 'backgroundBrightness': numero_rango(item_config.get('backgroundBrightness'), 1, 0.35, 1.75, decimales=True),
                 'backgroundBlur': numero_rango(item_config.get('backgroundBlur'), 0, 0, 12, decimales=True),
                 'sectionHeight': numero_rango(item_config.get('sectionHeight'), 190, 120, 900),
-                'activeLayer': item_config.get('activeLayer') if item_config.get('activeLayer') in EDITOR_LAYER_TYPES else 'background',
+                'activeLayer': active_layer,
                 'showBackgroundLayer': bool(item_config.get('showBackgroundLayer', True)),
                 'showTitleAsset': bool(item_config.get('showTitleAsset', True)),
                 'titleX': numero_rango(item_config.get('titleX'), 50, -40, 140),
@@ -2108,6 +2185,7 @@ def normalizar_configuracion_editor(evento, payload):
                 'decorWidth': numero_rango(item_config.get('decorWidth'), 36, 12, 100),
                 'decorAlign': item_config.get('decorAlign') if item_config.get('decorAlign') in EDITOR_ALINEACIONES else 'center',
                 'decorStyle': item_config.get('decorStyle') if item_config.get('decorStyle') in EDITOR_DECOR_STYLES else 'line',
+                'customLayers': capas_personalizadas,
             },
         })
 
@@ -2295,6 +2373,7 @@ def aplicar_configuracion_preview_a_secciones(secciones, config):
             'color_texto': color_seguro(item_config.get('textColor')) or datos.get('color_texto', ''),
             'editor_config': item_config,
             'estilo_editor': estilo_editor_seccion(item_config),
+            'capas_personalizadas': capas_personalizadas_publicas(item_config),
         })
         if item_config.get('showBackgroundLayer') is False:
             datos['fondo'] = None
