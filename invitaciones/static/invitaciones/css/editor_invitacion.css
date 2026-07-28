@@ -185,7 +185,7 @@ video {
 
 .section-item {
     display: grid;
-    grid-template-columns: 42px minmax(0, 1fr) auto;
+    grid-template-columns: 74px minmax(0, 1fr) auto;
     gap: 8px;
     align-items: center;
     padding: 8px;
@@ -194,11 +194,11 @@ video {
     background: #fff;
 }
 
-.section-thumb {
+.section-thumb,
+.section-thumb-card {
     display: grid;
-    place-items: center;
-    width: 42px;
-    aspect-ratio: 1;
+    width: 74px;
+    aspect-ratio: 4 / 5;
     border: 1px solid var(--editor-line);
     border-radius: 7px;
     background:
@@ -210,6 +210,64 @@ video {
     font-size: .58rem;
     font-weight: 800;
     overflow: hidden;
+}
+
+.section-thumb-card {
+    position: relative;
+    align-content: end;
+    gap: 2px;
+    border: 0;
+    color: var(--editor-primary);
+    cursor: pointer;
+    padding: 7px;
+    text-align: left;
+}
+
+.section-thumb-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, .22), rgba(255, 255, 255, .92)),
+        radial-gradient(circle at top, rgba(255, 255, 255, .5), transparent 60%);
+}
+
+.section-thumb-card span {
+    position: relative;
+    z-index: 1;
+}
+
+.section-thumb-title {
+    display: block;
+    font-family: var(--editor-title-font);
+    font-size: .9rem;
+    font-weight: 400;
+    line-height: .95;
+}
+
+.section-thumb-copy {
+    display: block;
+    max-height: 2.3em;
+    color: var(--editor-muted);
+    font-size: .55rem;
+    font-weight: 700;
+    line-height: 1.15;
+    overflow: hidden;
+}
+
+.section-thumb-meta,
+.section-thumb-video {
+    justify-self: start;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .8);
+    color: var(--editor-primary);
+    font-size: .5rem;
+    line-height: 1;
+    padding: 3px 5px;
+}
+
+.section-thumb-video {
+    align-self: start;
 }
 
 .section-item.is-selected {

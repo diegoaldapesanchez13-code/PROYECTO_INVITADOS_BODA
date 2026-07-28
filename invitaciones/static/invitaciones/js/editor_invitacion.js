@@ -29,6 +29,7 @@
     let guests = guestsNode ? JSON.parse(guestsNode.textContent || '{}') : {};
     let versions = versionsNode ? JSON.parse(versionsNode.textContent || '[]') : [];
     let selectedId = config.sections?.[0]?.sectionId || null;
+    let currentDeviceMode = 'iphone';
     const layerBounds = { min: -40, max: 140 };
 
     const sectionList = root.querySelector('[data-section-list]');
@@ -54,6 +55,15 @@
             backgroundX: 50,
             backgroundY: 50,
             backgroundScale: 1,
+            backgroundXMobile: 50,
+            backgroundYMobile: 50,
+            backgroundScaleMobile: 1,
+            backgroundXTablet: 50,
+            backgroundYTablet: 50,
+            backgroundScaleTablet: 1,
+            backgroundXDesktop: 50,
+            backgroundYDesktop: 50,
+            backgroundScaleDesktop: 1,
             backgroundBrightness: 1,
             backgroundBlur: 0,
             sectionHeight: 190,
@@ -126,7 +136,7 @@
     }
 
     function backgroundSizeValue(cfg) {
-        const scale = clamp(cfg.backgroundScale ?? 1, 0.4, 3);
+        const scale = clamp(effectiveBackgroundValue(cfg, 'backgroundScale') ?? 1, 0.4, 3);
         if (cfg.backgroundFit === 'cover') return `auto ${Math.round(scale * 100)}%`;
         if (cfg.backgroundFit === 'repeat') return `${Math.max(Math.round(scale * 140), 40)}px auto`;
         if (cfg.backgroundFit === 'free') return `${Math.max(Math.round(scale * 100), 40)}% auto`;
@@ -141,11 +151,52 @@
         layer.style.opacity = String(clamp(cfg.backgroundOpacity ?? 0.18, 0, 1));
         layer.style.backgroundSize = backgroundSizeValue(cfg);
         layer.style.backgroundRepeat = backgroundRepeatValue(cfg);
-        layer.style.backgroundPosition = `${clamp(cfg.backgroundX ?? 50, 0, 100)}% ${clamp(cfg.backgroundY ?? 50, 0, 100)}%`;
+        layer.style.backgroundPosition = `${clamp(effectiveBackgroundValue(cfg, 'backgroundX') ?? 50, 0, 100)}% ${clamp(effectiveBackgroundValue(cfg, 'backgroundY') ?? 50, 0, 100)}%`;
         layer.style.filter = `brightness(${clamp(cfg.backgroundBrightness ?? 1, 0.35, 1.75)}) blur(${clamp(cfg.backgroundBlur ?? 0, 0, 12)}px)`;
         if (asset?.url && !asset.isVideo) {
             layer.style.backgroundImage = `url("${asset.url}")`;
         }
+    }
+
+    function deviceSuffix() {
+        if (currentDeviceMode === 'desktop') return 'Desktop';
+        if (currentDeviceMode === 'tablet') return 'Tablet';
+        return 'Mobile';
+    }
+
+    function deviceScopedBackgroundKey(key) {
+        if (!['backgroundX', 'backgroundY', 'backgroundScale'].includes(key)) return key;
+        return `${key}${deviceSuffix()}`;
+    }
+
+    function effectiveBackgroundValue(cfg, key) {
+        const scoped = deviceScopedBackgroundKey(key);
+        return cfg[scoped] ?? cfg[key];
+    }
+
+    function setBackgroundValue(cfg, key, value) {
+        cfg[deviceScopedBackgroundKey(key)] = value;
+    }
+
+    function thumbnailBackgroundStyle(cfg, asset) {
+        const style = [];
+        if (asset?.url && !asset.isVideo) style.push(`background-image:url("${asset.url}")`);
+        style.push(`background-size:${backgroundSizeValue(cfg)}`);
+        style.push(`background-position:${clamp(effectiveBackgroundValue(cfg, 'backgroundX') ?? 50, 0, 100)}% ${clamp(effectiveBackgroundValue(cfg, 'backgroundY') ?? 50, 0, 100)}%`);
+        return style.join(';');
+    }
+
+    function sectionThumbnailHtml(section, cfg, background) {
+        const customCount = ensureCustomLayers(cfg).length;
+        const dataText = sectionPreviewHtml(section).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 82);
+        return `
+            <button type="button" class="section-thumb-card" data-section-thumb style="${thumbnailBackgroundStyle(cfg, background)}">
+                ${background?.isVideo ? '<span class="section-thumb-video">Video</span>' : ''}
+                <span class="section-thumb-title">${escapeHtml(section.title || section.type)}</span>
+                <span class="section-thumb-copy">${escapeHtml(dataText || section.type.replaceAll('_', ' '))}</span>
+                <span class="section-thumb-meta">${customCount} capa(s)</span>
+            </button>
+        `;
     }
 
     function layerPrefix(layer) {
@@ -402,12 +453,15 @@
             const mainButton = item.querySelector('.section-main');
             const detail = mainButton.querySelector('span');
             detail.textContent = `${section.type.replaceAll('_', ' ')} - ${sectionAssetLabel(background)}`;
-            const thumb = document.createElement('span');
-            thumb.className = 'section-thumb';
-            if (background.url && !background.isVideo) thumb.style.backgroundImage = `url("${background.url}")`;
-            if (background.isVideo) thumb.textContent = 'Video';
+            const thumbWrap = document.createElement('div');
+            thumbWrap.innerHTML = sectionThumbnailHtml(section, cfg, background);
+            const thumb = thumbWrap.firstElementChild;
             item.insertBefore(thumb, mainButton);
             item.querySelector('.section-main').addEventListener('click', () => {
+                selectedId = section.sectionId;
+                renderAll();
+            });
+            thumb.addEventListener('click', () => {
                 selectedId = section.sectionId;
                 renderAll();
             });
@@ -453,7 +507,7 @@
                 video.playsInline = true;
                 video.style.opacity = String(clamp(cfg.backgroundOpacity ?? 0.18, 0, 1));
                 video.style.objectFit = cfg.backgroundFit === 'cover' ? 'cover' : 'contain';
-                video.style.objectPosition = `${clamp(cfg.backgroundX ?? 50, 0, 100)}% ${clamp(cfg.backgroundY ?? 50, 0, 100)}%`;
+                video.style.objectPosition = `${clamp(effectiveBackgroundValue(cfg, 'backgroundX') ?? 50, 0, 100)}% ${clamp(effectiveBackgroundValue(cfg, 'backgroundY') ?? 50, 0, 100)}%`;
                 video.style.filter = `brightness(${clamp(cfg.backgroundBrightness ?? 1, 0.35, 1.75)}) blur(${clamp(cfg.backgroundBlur ?? 0, 0, 12)}px)`;
                 article.appendChild(video);
             }
@@ -543,8 +597,8 @@
             dragging = {
                 x: event.clientX,
                 y: event.clientY,
-                startX: clamp(cfg.backgroundX ?? 50, 0, 100),
-                startY: clamp(cfg.backgroundY ?? 50, 0, 100),
+                startX: clamp(effectiveBackgroundValue(cfg, 'backgroundX') ?? 50, 0, 100),
+                startY: clamp(effectiveBackgroundValue(cfg, 'backgroundY') ?? 50, 0, 100),
                 width: Math.max(article.clientWidth, 1),
                 height: Math.max(article.clientHeight, 1),
             };
@@ -554,13 +608,13 @@
             if (!dragging) return;
             const deltaX = ((event.clientX - dragging.x) / dragging.width) * 100;
             const deltaY = ((event.clientY - dragging.y) / dragging.height) * 100;
-            cfg.backgroundX = Math.round(clamp(dragging.startX + deltaX, 0, 100));
-            cfg.backgroundY = Math.round(clamp(dragging.startY + deltaY, 0, 100));
+            setBackgroundValue(cfg, 'backgroundX', Math.round(clamp(dragging.startX + deltaX, 0, 100)));
+            setBackgroundValue(cfg, 'backgroundY', Math.round(clamp(dragging.startY + deltaY, 0, 100)));
             setBackgroundStyles(bgLayer, cfg, cfg.backgroundAsset || {});
             const xField = root.querySelector('[data-config-field="backgroundX"]');
             const yField = root.querySelector('[data-config-field="backgroundY"]');
-            if (xField) xField.value = cfg.backgroundX;
-            if (yField) yField.value = cfg.backgroundY;
+            if (xField) xField.value = effectiveBackgroundValue(cfg, 'backgroundX');
+            if (yField) yField.value = effectiveBackgroundValue(cfg, 'backgroundY');
             setState('Cambios sin guardar');
         });
         bgLayer.addEventListener('pointerup', () => { dragging = null; });
@@ -904,6 +958,8 @@
                 field.checked = cfg[key] !== false;
             } else if (field.type === 'color') {
                 field.value = cfg[key] || '#263126';
+            } else if (['backgroundX', 'backgroundY', 'backgroundScale'].includes(key)) {
+                field.value = effectiveBackgroundValue(cfg, key) ?? '';
             } else {
                 field.value = cfg[key] ?? '';
             }
@@ -1475,7 +1531,12 @@
             const section = selectedSection();
             if (!section) return;
             section.config = ensureSectionConfig(section);
-            section.config[field.dataset.configField] = field.type === 'checkbox' ? field.checked : field.value;
+            const key = field.dataset.configField;
+            if (['backgroundX', 'backgroundY', 'backgroundScale'].includes(key)) {
+                setBackgroundValue(section.config, key, field.value);
+            } else {
+                section.config[key] = field.type === 'checkbox' ? field.checked : field.value;
+            }
             setState('Cambios sin guardar');
             renderAll();
         });
@@ -1616,6 +1677,15 @@
             backgroundX: 50,
             backgroundY: 50,
             backgroundScale: 1,
+            backgroundXMobile: 50,
+            backgroundYMobile: 50,
+            backgroundScaleMobile: 1,
+            backgroundXTablet: 50,
+            backgroundYTablet: 50,
+            backgroundScaleTablet: 1,
+            backgroundXDesktop: 50,
+            backgroundYDesktop: 50,
+            backgroundScaleDesktop: 1,
             backgroundOpacity: 0.18,
             backgroundBrightness: 1,
             backgroundBlur: 0,
@@ -1852,10 +1922,13 @@
     root.querySelectorAll('[data-device-mode]').forEach((button) => {
         button.addEventListener('click', () => {
             const mode = button.dataset.deviceMode;
+            currentDeviceMode = mode;
             root.querySelectorAll('[data-device-mode]').forEach((item) => item.classList.toggle('is-active', item === button));
             phonePreviews.forEach((preview) => {
                 preview.dataset.device = mode;
             });
+            setState(`Editando enfoque ${mode}`);
+            renderAll();
         });
     });
 

@@ -412,6 +412,15 @@ class InvitadoTests(TestCase):
                     'backgroundX': 72,
                     'backgroundY': 24,
                     'backgroundScale': 1.45,
+                    'backgroundXMobile': 30,
+                    'backgroundYMobile': 70,
+                    'backgroundScaleMobile': 1.2,
+                    'backgroundXTablet': 44,
+                    'backgroundYTablet': 62,
+                    'backgroundScaleTablet': 1.35,
+                    'backgroundXDesktop': 80,
+                    'backgroundYDesktop': 28,
+                    'backgroundScaleDesktop': 1.8,
                     'backgroundBrightness': 0.85,
                     'backgroundBlur': 2,
                     'sectionHeight': 360,
@@ -498,6 +507,10 @@ class InvitadoTests(TestCase):
         public_response = self.client.get(f'/invitacion/{grupo.codigo}/')
         self.assertContains(public_response, '--section-height:360px')
         self.assertContains(public_response, '--section-bg-position:72% 24%')
+        self.assertContains(public_response, '--section-bg-position-mobile:30% 70%')
+        self.assertContains(public_response, '--section-bg-position-tablet:44% 62%')
+        self.assertContains(public_response, '--section-bg-position-desktop:80% 28%')
+        self.assertContains(public_response, '--section-bg-size-desktop:180% auto')
         self.assertContains(public_response, '--section-bg-blur:2.0px')
         self.assertContains(public_response, '--section-title-x:-12%')
         self.assertContains(public_response, '--section-title-rotation:-6deg')

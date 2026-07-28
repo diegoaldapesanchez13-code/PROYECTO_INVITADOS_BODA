@@ -1987,6 +1987,15 @@ def serializar_seccion_editor(seccion):
             'backgroundX': 50,
             'backgroundY': 50,
             'backgroundScale': 1,
+            'backgroundXMobile': 50,
+            'backgroundYMobile': 50,
+            'backgroundScaleMobile': 1,
+            'backgroundXTablet': 50,
+            'backgroundYTablet': 50,
+            'backgroundScaleTablet': 1,
+            'backgroundXDesktop': 50,
+            'backgroundYDesktop': 50,
+            'backgroundScaleDesktop': 1,
             'backgroundBrightness': 1,
             'backgroundBlur': 0,
             'sectionHeight': 190,
@@ -2151,6 +2160,15 @@ def normalizar_configuracion_editor(evento, payload):
                 'backgroundX': numero_rango(item_config.get('backgroundX'), 50, 0, 100),
                 'backgroundY': numero_rango(item_config.get('backgroundY'), 50, 0, 100),
                 'backgroundScale': numero_rango(item_config.get('backgroundScale'), 1, 0.4, 3, decimales=True),
+                'backgroundXMobile': numero_rango(item_config.get('backgroundXMobile'), numero_rango(item_config.get('backgroundX'), 50, 0, 100), 0, 100),
+                'backgroundYMobile': numero_rango(item_config.get('backgroundYMobile'), numero_rango(item_config.get('backgroundY'), 50, 0, 100), 0, 100),
+                'backgroundScaleMobile': numero_rango(item_config.get('backgroundScaleMobile'), numero_rango(item_config.get('backgroundScale'), 1, 0.4, 3, decimales=True), 0.4, 3, decimales=True),
+                'backgroundXTablet': numero_rango(item_config.get('backgroundXTablet'), numero_rango(item_config.get('backgroundX'), 50, 0, 100), 0, 100),
+                'backgroundYTablet': numero_rango(item_config.get('backgroundYTablet'), numero_rango(item_config.get('backgroundY'), 50, 0, 100), 0, 100),
+                'backgroundScaleTablet': numero_rango(item_config.get('backgroundScaleTablet'), numero_rango(item_config.get('backgroundScale'), 1, 0.4, 3, decimales=True), 0.4, 3, decimales=True),
+                'backgroundXDesktop': numero_rango(item_config.get('backgroundXDesktop'), numero_rango(item_config.get('backgroundX'), 50, 0, 100), 0, 100),
+                'backgroundYDesktop': numero_rango(item_config.get('backgroundYDesktop'), numero_rango(item_config.get('backgroundY'), 50, 0, 100), 0, 100),
+                'backgroundScaleDesktop': numero_rango(item_config.get('backgroundScaleDesktop'), numero_rango(item_config.get('backgroundScale'), 1, 0.4, 3, decimales=True), 0.4, 3, decimales=True),
                 'backgroundBrightness': numero_rango(item_config.get('backgroundBrightness'), 1, 0.35, 1.75, decimales=True),
                 'backgroundBlur': numero_rango(item_config.get('backgroundBlur'), 0, 0, 12, decimales=True),
                 'sectionHeight': numero_rango(item_config.get('sectionHeight'), 190, 120, 900),
@@ -2303,6 +2321,9 @@ def estilo_editor_seccion(item_config):
     fit = item_config.get('backgroundFit') if item_config.get('backgroundFit') in EDITOR_BG_FIT else 'contain'
     repeat = 'repeat' if item_config.get('backgroundRepeat') == 'repeat' else 'no-repeat'
     scale = numero_rango(item_config.get('backgroundScale'), 1, 0.4, 3, decimales=True)
+    scale_mobile = numero_rango(item_config.get('backgroundScaleMobile'), scale, 0.4, 3, decimales=True)
+    scale_tablet = numero_rango(item_config.get('backgroundScaleTablet'), scale, 0.4, 3, decimales=True)
+    scale_desktop = numero_rango(item_config.get('backgroundScaleDesktop'), scale, 0.4, 3, decimales=True)
     decor = {
         'line': '-',
         'flourish': '~',
@@ -2315,12 +2336,28 @@ def estilo_editor_seccion(item_config):
         'repeat': f'{max(int(scale * 140), 40)}px auto',
         'free': f'{max(int(scale * 100), 40)}% auto',
     }.get(fit, 'contain')
+    def size_for(scale_value):
+        return {
+            'contain': 'contain',
+            'cover': 'cover',
+            'repeat': f'{max(int(scale_value * 140), 40)}px auto',
+            'free': f'{max(int(scale_value * 100), 40)}% auto',
+        }.get(fit, 'contain')
     return (
         f'--section-height:{numero_rango(item_config.get("sectionHeight"), 190, 120, 900)}px;'
         f'--section-bg-opacity:{numero_rango(item_config.get("backgroundOpacity"), 0.18, 0, 1, decimales=True)};'
         f'--section-bg-size:{size};'
         f'--section-bg-position:{numero_rango(item_config.get("backgroundX"), 50, 0, 100)}% '
         f'{numero_rango(item_config.get("backgroundY"), 50, 0, 100)}%;'
+        f'--section-bg-size-mobile:{size_for(scale_mobile)};'
+        f'--section-bg-position-mobile:{numero_rango(item_config.get("backgroundXMobile"), numero_rango(item_config.get("backgroundX"), 50, 0, 100), 0, 100)}% '
+        f'{numero_rango(item_config.get("backgroundYMobile"), numero_rango(item_config.get("backgroundY"), 50, 0, 100), 0, 100)}%;'
+        f'--section-bg-size-tablet:{size_for(scale_tablet)};'
+        f'--section-bg-position-tablet:{numero_rango(item_config.get("backgroundXTablet"), numero_rango(item_config.get("backgroundX"), 50, 0, 100), 0, 100)}% '
+        f'{numero_rango(item_config.get("backgroundYTablet"), numero_rango(item_config.get("backgroundY"), 50, 0, 100), 0, 100)}%;'
+        f'--section-bg-size-desktop:{size_for(scale_desktop)};'
+        f'--section-bg-position-desktop:{numero_rango(item_config.get("backgroundXDesktop"), numero_rango(item_config.get("backgroundX"), 50, 0, 100), 0, 100)}% '
+        f'{numero_rango(item_config.get("backgroundYDesktop"), numero_rango(item_config.get("backgroundY"), 50, 0, 100), 0, 100)}%;'
         f'--section-bg-repeat:{repeat};'
         f'--section-bg-brightness:{numero_rango(item_config.get("backgroundBrightness"), 1, 0.35, 1.75, decimales=True)};'
         f'--section-bg-blur:{numero_rango(item_config.get("backgroundBlur"), 0, 0, 12, decimales=True)}px;'

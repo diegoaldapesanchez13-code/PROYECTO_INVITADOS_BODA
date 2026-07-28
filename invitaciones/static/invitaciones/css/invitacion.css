@@ -779,6 +779,7 @@ video {
     width: 100%;
     height: 100%;
     object-fit: contain;
+    object-position: var(--section-bg-position, center center);
     opacity: var(--section-bg-opacity, .28);
     filter: brightness(var(--section-bg-brightness, 1)) blur(var(--section-bg-blur, 0));
     z-index: 0;
@@ -794,6 +795,39 @@ video {
     backdrop-filter: blur(.7px);
     opacity: calc(1 - (var(--section-bg-opacity, .18) * .28));
     z-index: 0;
+}
+
+@media (max-width: 520px) {
+    .panel.bg-panel {
+        background-size: var(--section-bg-size-mobile, var(--section-bg-size, contain));
+        background-position: var(--section-bg-position-mobile, var(--section-bg-position, center center));
+    }
+
+    .panel-bg-video {
+        object-position: var(--section-bg-position-mobile, var(--section-bg-position, center center));
+    }
+}
+
+@media (min-width: 521px) and (max-width: 900px) {
+    .panel.bg-panel {
+        background-size: var(--section-bg-size-tablet, var(--section-bg-size, contain));
+        background-position: var(--section-bg-position-tablet, var(--section-bg-position, center center));
+    }
+
+    .panel-bg-video {
+        object-position: var(--section-bg-position-tablet, var(--section-bg-position, center center));
+    }
+}
+
+@media (min-width: 901px) {
+    .panel.bg-panel {
+        background-size: var(--section-bg-size-desktop, var(--section-bg-size, contain));
+        background-position: var(--section-bg-position-desktop, var(--section-bg-position, center center));
+    }
+
+    .panel-bg-video {
+        object-position: var(--section-bg-position-desktop, var(--section-bg-position, center center));
+    }
 }
 
 .panel::after {
