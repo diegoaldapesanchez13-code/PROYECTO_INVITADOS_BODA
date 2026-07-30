@@ -5,6 +5,7 @@ from django.utils.html import format_html
 
 from .models import (
     AssetInvitacion,
+    ComponenteInvitacion,
     DetalleProduccionEvento,
     DisenoInvitacion,
     EnlaceRegalo,
@@ -763,6 +764,25 @@ class SeccionInvitacionAdmin(admin.ModelAdmin):
     save_on_top = True
 
 
+
+@admin.register(ComponenteInvitacion)
+class ComponenteInvitacionAdmin(admin.ModelAdmin):
+    list_display = ('id', 'tipo', 'evento', 'seccion', 'x', 'y', 'z_index', 'locked', 'hidden')
+    list_filter = ('tipo', 'evento', 'seccion__tipo', 'locked', 'hidden')
+    search_fields = ('evento__nombre_evento', 'evento__novio', 'evento__novia', 'seccion__titulo')
+    fields = (
+        'evento',
+        'seccion',
+        'tipo',
+        ('x', 'y'),
+        ('width', 'height'),
+        ('rotation', 'opacity', 'z_index'),
+        ('locked', 'hidden'),
+        'properties',
+        ('created_at', 'updated_at'),
+    )
+    readonly_fields = ('created_at', 'updated_at')
+    save_on_top = True
 @admin.register(EnlaceRegalo)
 class EnlaceRegaloAdmin(admin.ModelAdmin):
     list_display = ('nombre', 'tipo', 'evento', 'visible', 'abrir_link')

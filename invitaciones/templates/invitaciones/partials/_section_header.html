@@ -1,0 +1,37 @@
+{% if seccion.imagen_titulo %}
+    <div class="section-header-media">
+        {% if seccion.imagen_titulo_es_video %}
+            <video
+                class="section-title-image section-header-image"
+                src="{{ seccion.imagen_titulo.url }}"
+                autoplay
+                muted
+                loop
+                playsinline
+                preload="metadata"
+            ></video>
+        {% else %}
+            <img
+                class="section-title-image section-header-image"
+                src="{{ seccion.imagen_titulo.url }}"
+                alt="{{ texto_alt|default:'Imagen decorativa de la sección' }}"
+                loading="lazy"
+                decoding="async"
+            >
+        {% endif %}
+    </div>
+{% endif %}
+
+{% if seccion.mostrar_titulo_texto == True %}
+    <div class="section-heading-text">
+        <h2 class="section-title">
+            {{ seccion.titulo|default:titulo_default }}
+        </h2>
+
+        {% if seccion.descripcion %}
+            <p class="section-copy">
+                {{ seccion.descripcion }}
+            </p>
+        {% endif %}
+    </div>
+{% endif %}

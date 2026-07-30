@@ -836,7 +836,6 @@ video {
     position: absolute;
     left: var(--section-decor-x, 50%);
     top: var(--section-decor-y, 12%);
-    z-index: 1;
     color: var(--accent);
     font-family: var(--font-title);
     font-size: 2.1rem;
@@ -914,17 +913,7 @@ video {
     box-shadow: none;
 }
 
-.section-copy {
-    display: var(--section-text-display, block);
-    left: calc(var(--section-text-x, 50%) - 50%);
-    max-width: min(var(--section-text-width, 78%), calc(100% - 18px));
-    opacity: var(--section-text-opacity, 1);
-    text-align: var(--section-text-align, center);
-    top: calc(var(--section-text-y, 50%) - 50%);
-    transform: rotate(var(--section-text-rotation, 0deg)) scale(var(--section-text-scale, 1));
-    transform-origin: center;
-    z-index: var(--section-text-z, 2);
-}
+
 
 .card-title{
     margin:0 0 10px;
@@ -939,12 +928,30 @@ video {
 }
 
 .section-copy {
+    display: var(--section-text-display, block);
+
+    position: relative;
+    left: calc(var(--section-text-x, 50%) - 50%);
+    top: calc(var(--section-text-y, 50%) - 50%);
+
+    width: min(760px, var(--section-text-width, 78%));
+    max-width: calc(100% - 18px);
+    margin: 0 auto 22px;
+
     color: var(--muted);
-    text-align: var(--section-text-align, center);
     font-size: clamp(.96rem, 2.2vw, 1.08rem);
     line-height: 1.78;
-    max-width: min(760px, var(--section-text-width, 78%));
-    margin: 0 auto 22px;
+
+    text-align: var(--section-text-align, center);
+
+    opacity: var(--section-text-opacity, 1);
+
+    transform:
+        rotate(var(--section-text-rotation, 0deg))
+        scale(var(--section-text-scale, 1));
+
+    transform-origin: center;
+    z-index: var(--section-text-z, 2);
 }
 
 .summary-grid,
@@ -1613,4 +1620,1041 @@ textarea {
     .gift-box {
         min-height: auto;
     }
+}
+/* =========================================================
+   DRESS CODE
+   ========================================================= */
+
+#dress-code.dress-code-section {
+    width: 100%;
+    padding-left: 0;
+    padding-right: 0;
+}
+
+#dress-code .dress-code-panel {
+    width: 100%;
+}
+
+#dress-code .dress-code-content {
+    position: relative;
+    z-index: 2;
+    padding-top: 18px;
+    padding-bottom: 10px;
+}
+
+#dress-code .dress-grid,
+#dress-code .dress-section-card {
+    width: 100%;
+    margin: 0;
+}
+
+#dress-code .dress-section-card {
+    padding: 0;
+    border-top: 0;
+    background: transparent;
+}
+
+#dress-code .dress-card {
+    width: 100%;
+    margin: 0;
+    padding: 12px 0;
+    border: 0;
+    background: transparent;
+}
+
+#dress-code .dress-image {
+    display: block;
+    width: 100%;
+    max-width: none;
+    height: auto;
+    aspect-ratio: auto;
+    margin: 0;
+    object-fit: contain;
+    object-position: center;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+}
+
+#dress-code .dress-code-value {
+    margin: 0 0 14px;
+    text-align: center;
+}
+
+#dress-code .dress-card .label {
+    margin: 0 0 8px;
+}
+
+
+/* =========================================================
+   ENCABEZADO REUTILIZABLE DE SECCIONES
+   ========================================================= */
+
+.section-header-panel {
+    width: 100%;
+}
+
+/*
+El panel no agrega espacio lateral cuando contiene
+una imagen de encabezado.
+*/
+.section-header-panel.has-section-header-media {
+    padding-top: 0;
+    padding-left: 0;
+    padding-right: 0;
+    overflow: visible;
+}
+
+/*
+La portada rompe el límite de .shell y utiliza
+el ancho completo de la pantalla.
+*/
+.section-header-panel.has-section-header-media .section-header-media {
+    position: relative;
+    z-index: 2;
+
+    display: block;
+
+    width: 100vw;
+    max-width: none;
+
+    margin-top: 0;
+    margin-right: calc(50% - 50vw);
+    margin-bottom: 20px;
+    margin-left: calc(50% - 50vw);
+
+    padding: 0;
+    overflow: hidden;
+}
+
+/*
+Imagen o video de encabezado.
+*/
+.section-header-panel.has-section-header-media .section-header-image {
+    display: block !important;
+
+    width: 100% !important;
+    max-width: none !important;
+
+    height: auto !important;
+    max-height: none !important;
+    aspect-ratio: auto !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    object-fit: contain !important;
+    object-position: center center !important;
+
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+
+    opacity: var(--section-title-opacity, 1);
+
+    transform:
+        rotate(var(--section-title-rotation, 0deg))
+        scale(var(--section-title-scale, 1)) !important;
+
+    transform-origin: center center;
+}
+
+/*
+Imagen completa reutilizable para secciones hibridas.
+La imagen reemplaza el encabezado textual, pero el contenido real
+de la seccion puede seguir debajo.
+*/
+.section-header-panel.has-section-full-image {
+    padding-top: 0;
+    padding-left: 0;
+    padding-right: 0;
+    overflow: visible;
+}
+
+.section-header-panel.has-section-full-image .section-full-media {
+    position: relative;
+    z-index: 2;
+
+    display: block;
+
+    width: 100vw;
+    max-width: none;
+
+    margin-top: 0;
+    margin-right: calc(50% - 50vw);
+    margin-bottom: 20px;
+    margin-left: calc(50% - 50vw);
+
+    padding: 0;
+    overflow: hidden;
+}
+
+.section-header-panel.has-section-full-image .section-full-image {
+    display: block !important;
+
+    width: 100% !important;
+    max-width: none !important;
+
+    height: auto !important;
+    max-height: none !important;
+    aspect-ratio: auto !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    object-fit: contain !important;
+    object-position: center top !important;
+
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+}
+
+/*
+El contenido permanece centrado, aunque la portada
+ocupe todo el ancho de la pantalla.
+*/
+.section-header-panel .section-heading-text,
+.section-header-panel .section-main-content {
+    position: relative;
+    z-index: 2;
+
+    width: min(1060px, calc(100% - 28px));
+    margin-left: auto;
+    margin-right: auto;
+
+    padding-left: clamp(8px, 3vw, 24px);
+    padding-right: clamp(8px, 3vw, 24px);
+}
+
+
+/* =========================================================
+   AJUSTES MÓVILES
+   ========================================================= */
+
+@media (max-width: 600px) {
+    .section-header-panel.has-section-header-media .section-header-media {
+        margin-bottom: 16px;
+    }
+
+    .section-header-panel.has-section-full-image .section-full-media {
+        margin-bottom: 16px;
+    }
+
+    .section-header-panel .section-heading-text,
+    .section-header-panel .section-main-content {
+        width: calc(100% - 8px);
+        padding-left: 4px;
+        padding-right: 4px;
+    }
+
+    #dress-code .dress-code-content {
+        padding-top: 14px;
+        padding-bottom: 8px;
+    }
+
+    #dress-code .dress-card {
+        padding: 8px 0;
+    }
+}
+.menu-panel .section-main-content {
+    padding-top: 8px;
+    padding-bottom: 10px;
+}
+.gifts-panel .section-main-content {
+    padding-top: 8px;
+    padding-bottom: 12px;
+}
+
+.deposit-box p {
+    margin: 6px 0;
+}
+
+.deposit-box small {
+    display: block;
+    margin-top: 12px;
+}
+.shared-album-content {
+    width: 100%;
+    text-align: center;
+}
+
+.shared-album-message {
+    width: min(100%, 620px);
+    margin: 0 auto 18px;
+    color: var(--muted);
+    line-height: 1.7;
+}
+
+.shared-album-panel .btn-row {
+    justify-content: center;
+}
+.rsvp-panel .section-main-content {
+    display: grid;
+    gap: clamp(18px, 4vw, 30px);
+}
+
+.rsvp-form {
+    width: 100%;
+}
+
+.rsvp-status {
+    text-align: center;
+}
+
+.rsvp-submit-row,
+.rsvp-contact-row {
+    justify-content: center;
+    margin-top: 18px;
+}
+
+.rsvp-contact-row {
+    padding-top: 4px;
+}
+
+.invitation-summary {
+    width: 100%;
+}
+
+.invitation-summary > .section-title,
+.invitation-summary > .section-copy {
+    text-align: center;
+}
+.btn:disabled {
+    cursor: wait;
+    opacity: 0.65;
+}
+#musicToggle.is-playing {
+    transform: rotate(360deg);
+}
+/* =========================================================
+   INV-004A — CUENTA REGRESIVA HÍBRIDA
+   Imagen de diseño como fondo + contador HTML real
+   ========================================================= */
+
+#cuenta .countdown-panel {
+    position: relative;
+    min-height: var(--section-height, 620px);
+    overflow: hidden;
+    isolation: isolate;
+}
+
+/*
+El fondo sigue usando el asset que ya asigna el editor.
+Se fuerza a ocupar el lienzo completo de la sección.
+*/
+#cuenta .countdown-panel.bg-panel {
+    background-size: var(--section-bg-size, cover);
+    background-position: var(--section-bg-position, center);
+    background-repeat: var(--section-bg-repeat, no-repeat);
+}
+
+/*
+Cuando existe una imagen de diseño completa, el contador
+se convierte en una capa libre encima de ella.
+*/
+#cuenta .countdown-panel.bg-panel .countdown-interactive-layer,
+#cuenta .countdown-panel.bg-video-panel .countdown-interactive-layer {
+    position: absolute;
+    left: var(--section-text-x, 50%);
+    top: var(--section-text-y, 58%);
+    z-index: var(--section-text-z, 4);
+
+    display: var(--section-text-display, block);
+    width: min(var(--section-text-width, 84%), 96%);
+
+    padding: 0;
+    opacity: var(--section-text-opacity, 1);
+    text-align: var(--section-text-align, center);
+
+    transform:
+        translate(-50%, -50%)
+        rotate(var(--section-text-rotation, 0deg))
+        scale(var(--section-text-scale, 1));
+
+    transform-origin: center;
+}
+
+/*
+El contador no debe crear otro fondo blanco encima del diseño.
+*/
+#cuenta .countdown-panel.bg-panel .count-grid,
+#cuenta .countdown-panel.bg-video-panel .count-grid {
+    width: 100%;
+    margin: 0;
+}
+
+/*
+Cajas transparentes para que se vea el diseño de abajo.
+*/
+#cuenta .countdown-panel.bg-panel .count-box,
+#cuenta .countdown-panel.bg-video-panel .count-box {
+    background: rgba(255, 255, 255, 0.78);
+    border: 1px solid color-mix(in srgb, var(--line), transparent 20%);
+    backdrop-filter: blur(4px);
+}
+
+/*
+Cuando no existe un fondo de diseño, la sección conserva
+su comportamiento normal.
+*/
+#cuenta .countdown-panel:not(.bg-panel):not(.bg-video-panel) {
+    min-height: auto;
+}
+
+#cuenta
+.countdown-panel:not(.bg-panel):not(.bg-video-panel)
+.countdown-interactive-layer {
+    position: relative;
+    left: auto;
+    top: auto;
+    width: 100%;
+    transform: none;
+}
+
+/* Fondo de video */
+#cuenta .countdown-panel.bg-video-panel .panel-bg-video {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Mantener capas y contador por encima del fondo */
+#cuenta .countdown-panel > *:not(.panel-bg-video) {
+    position: relative;
+    z-index: 2;
+}
+
+#cuenta
+.countdown-panel
+.countdown-interactive-layer {
+    z-index: var(--section-text-z, 4);
+}
+
+@media (max-width: 600px) {
+    #cuenta .countdown-panel.bg-panel,
+    #cuenta .countdown-panel.bg-video-panel {
+        min-height: var(--section-height, 620px);
+    }
+
+    #cuenta .countdown-interactive-layer {
+        width: min(var(--section-text-width, 90%), 96%);
+    }
+
+    #cuenta .count-grid {
+        gap: 6px;
+    }
+
+    #cuenta .count-box {
+        min-width: 0;
+        padding: 12px 5px;
+    }
+
+    #cuenta .count-box strong {
+        font-size: clamp(1.35rem, 7vw, 2rem);
+    }
+
+    #cuenta .count-box span {
+        font-size: clamp(.58rem, 2.8vw, .72rem);
+    }
+}
+/* =========================================================
+   INV-004B-FIX — PORTADA COMO DISEÑO COMPLETO
+   ========================================================= */
+
+
+
+/* Elimina la copia gris y desenfocada del fondo */
+.cover-photo.cover-design-complete::before {
+    content: none;
+    display: none;
+}
+
+/* Elimina el degradado oscuro colocado encima */
+.cover-photo.cover-design-complete::after {
+    content: none;
+    display: none;
+}
+
+/* Elimina cualquier texto HTML restante */
+.cover-photo.cover-design-complete .cover-topline,
+.cover-photo.cover-design-complete .cover-names,
+.cover-photo.cover-design-complete .cover-date {
+    display: none;
+}
+
+/* Video de portada sin escala de grises */
+.cover-photo.cover-design-complete .cover-video {
+    object-fit: contain;
+    filter: none;
+}
+
+/* Evita que una capa transparente oscurezca la imagen */
+.cover-photo.cover-design-complete > * {
+    opacity: 1;
+}
+#cuenta .countdown-panel.bg-panel {
+    background-color: transparent;
+}
+
+#cuenta .countdown-panel.bg-panel::before,
+#cuenta .countdown-panel.bg-panel::after {
+    pointer-events: none;
+}
+
+#cuenta .countdown-panel.bg-panel .panel-bg-overlay {
+    display: none;
+}
+/* =========================================================
+   INV-004C — PORTADA CON IMAGEN COMPLETA
+   ========================================================= */
+
+.cover-photo.cover-design-complete::before,
+.cover-photo.cover-design-complete::after {
+    content: none !important;
+    display: none !important;
+    background: none !important;
+    opacity: 0 !important;
+}
+
+.cover-photo.cover-design-complete .cover-video {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    filter: none !important;
+    opacity: 1;
+}
+
+.cover-photo.cover-design-complete .cover-topline,
+.cover-photo.cover-design-complete .cover-names,
+.cover-photo.cover-design-complete .cover-date {
+    display: none !important;
+}
+/* =========================================================
+   INV-004E — PADRES Y PADRINOS
+   ========================================================= */
+
+.parents-panel {
+    position: relative;
+    overflow: hidden;
+}
+
+.parents-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 28px;
+    text-align: center;
+}
+
+.parents-column h3,
+.parents-sponsors h3 {
+    margin: 0 0 14px;
+    color: var(--primary);
+    font-family: var(--font-body);
+    font-size: 0.92rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.parents-column p,
+.parents-sponsors p {
+    margin: 8px 0;
+    font-family: var(--font-script);
+    font-size: clamp(1.65rem, 5vw, 2.6rem);
+    line-height: 1.05;
+}
+
+.parents-sponsors {
+    grid-column: 1 / -1;
+    padding-top: 22px;
+    border-top: 1px solid var(--line);
+}
+
+.parents-panel.bg-panel {
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+/* Cuando se usa imagen completa */
+.parents-panel.bg-panel .section-main-content:empty {
+    display: none;
+}
+
+@media (max-width: 700px) {
+    .parents-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .parents-sponsors {
+        grid-column: auto;
+    }
+}
+/* =========================================================
+   INV-004F — IMÁGENES COMPLETAS SIN OPACIDAD
+   ========================================================= */
+
+.parents-panel.bg-panel,
+.countdown-panel.bg-panel {
+    background-color: transparent !important;
+    background-size: contain !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+
+    opacity: 1 !important;
+    filter: none !important;
+}
+
+/* Eliminar capas blancas u oscuras creadas con pseudoelementos */
+.parents-panel.bg-panel::before,
+.parents-panel.bg-panel::after,
+.countdown-panel.bg-panel::before,
+.countdown-panel.bg-panel::after {
+    content: none !important;
+    display: none !important;
+    opacity: 0 !important;
+    background: none !important;
+}
+
+/* El contenido interno no debe heredar transparencia */
+.parents-panel.bg-panel > *,
+.countdown-panel.bg-panel > * {
+    opacity: 1;
+}
+
+/* Imagen completa de padres */
+.parents-panel.bg-panel {
+    min-height: 0 !important;
+    aspect-ratio: 2 / 3;
+    padding: 0 !important;
+}
+
+/* Imagen completa de cuenta regresiva */
+.countdown-panel.bg-panel {
+    min-height: 0 !important;
+    aspect-ratio: 2 / 3;
+    padding: 0 !important;
+}
+
+.cover-photo.cover-design-complete {
+    min-height: 0 !important;
+    height: auto !important;
+    aspect-ratio: 2 / 3;
+    margin: 0 !important;
+}
+
+.cover-photo.cover-design-complete + .cover-honors {
+    display: none !important;
+}
+
+#cuenta .count-grid {
+    width: min(92%, 620px);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+}
+
+#cuenta .count-box {
+    min-width: 0;
+    padding: 12px 4px;
+}
+
+#cuenta .count-box span {
+    font-size: clamp(0.58rem, 2.7vw, 0.78rem);
+    white-space: nowrap;
+}
+/* =========================================================
+   INV-004G — PORTADA DE IMAGEN COMPLETA
+   ========================================================= */
+
+.cover-section {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+.cover-card-full-image {
+    position: relative;
+    width: 100%;
+    min-height: 0 !important;
+    height: auto !important;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background: transparent;
+    border-radius: 0;
+}
+
+.cover-full-media {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    object-fit: contain;
+    object-position: center;
+    filter: none !important;
+    opacity: 1 !important;
+}
+
+/* Videos de portada completa */
+video.cover-full-media {
+    aspect-ratio: 2 / 3;
+    object-fit: contain;
+    background: #111;
+}
+
+/* Eliminar alturas antiguas */
+.cover-card:has(.cover-full-media),
+.cover-section:has(.cover-full-media) {
+    min-height: 0 !important;
+    height: auto !important;
+}
+
+/* No aplicar capas oscuras antiguas */
+.cover-card-full-image::before,
+.cover-card-full-image::after,
+.cover-full-media::before,
+.cover-full-media::after {
+    content: none !important;
+    display: none !important;
+}
+
+/* Las capas personalizadas siguen funcionando encima */
+.cover-card-full-image .custom-public-layer {
+    position: absolute;
+}
+/* =========================================================
+   INV-004H — PORTADA COMPLETA SIN RECORTE
+   Debe permanecer al final de invitacion.css
+   ========================================================= */
+
+#inicio.cover-section {
+    display: block !important;
+    width: 100% !important;
+
+    min-height: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    overflow: visible !important;
+}
+
+#inicio .cover-card-full-image {
+    position: relative !important;
+    display: block !important;
+
+    width: 100% !important;
+    min-height: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    aspect-ratio: auto !important;
+    overflow: visible !important;
+
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+}
+
+/* La imagen debe conservar su proporción natural */
+#inicio .cover-full-media {
+    position: relative !important;
+    inset: auto !important;
+
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+
+    min-height: 0 !important;
+    max-height: none !important;
+    max-width: 100% !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    aspect-ratio: auto !important;
+    object-fit: contain !important;
+    object-position: center center !important;
+
+    transform: none !important;
+    filter: none !important;
+    opacity: 1 !important;
+}
+
+/* Anular alturas antiguas de la portada */
+#inicio .cover-card,
+#inicio .cover-photo,
+#inicio .cover-design-complete {
+    min-height: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+
+    aspect-ratio: auto !important;
+    overflow: visible !important;
+}
+
+/* Evitar capas oscuras o decorativas anteriores */
+#inicio .cover-card-full-image::before,
+#inicio .cover-card-full-image::after,
+#inicio .cover-full-media::before,
+#inicio .cover-full-media::after {
+    content: none !important;
+    display: none !important;
+}
+/* =========================================================
+   FASE 1 — DRESS CODE COMO DISEÑO COMPLETO
+   ========================================================= */
+
+#dress-code.dress-code-section {
+    width: 100%;
+    padding-inline: 0;
+}
+
+#dress-code .dress-code-panel.is-image-only-section {
+    width: 100%;
+    padding: 0;
+    overflow: visible;
+    border: 0;
+    background-color: transparent;
+    box-shadow: none;
+}
+
+/*
+La imagen del encabezado es el diseño completo.
+No debe limitarse al tamaño pequeño de un título.
+*/
+#dress-code
+.dress-code-panel.is-image-only-section
+.section-header-media {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+}
+
+#dress-code
+.dress-code-panel.is-image-only-section
+.section-header-image {
+    display: block !important;
+    width: 100% !important;
+    max-width: none !important;
+    height: auto !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    object-fit: contain !important;
+    object-position: center top !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+
+    /*
+    El diseño completo no debe deformarse por las
+    transformaciones antiguas del título.
+    */
+    left: auto !important;
+    top: auto !important;
+}
+
+/*
+No debe existir separación debajo del diseño completo.
+*/
+#dress-code
+.dress-code-panel.is-image-only-section
+.section-header-media {
+    margin-bottom: 0 !important;
+}
+
+/*
+Evita que estilos heredados generen una altura mínima
+o espacio vacío debajo de la imagen.
+*/
+#dress-code
+.dress-code-panel.is-image-only-section {
+    min-height: 0 !important;
+    height: auto !important;
+}
+
+@media (max-width: 600px) {
+    #dress-code {
+        padding-top: 18px;
+        padding-bottom: 18px;
+    }
+
+    #dress-code
+    .dress-code-panel.is-image-only-section {
+        padding: 0 !important;
+    }
+
+    #dress-code
+    .dress-code-panel.is-image-only-section
+    .section-header-image {
+        width: 100% !important;
+        height: auto !important;
+        object-fit: contain !important;
+    }
+}
+/* FASE 1 — DRESS CODE COMO IMAGEN COMPLETA */
+
+#dress-code .dress-code-panel.is-image-only-section {
+    width: 100%;
+    min-height: 0;
+    height: auto;
+    padding: 0;
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    background-color: transparent;
+    box-shadow: none;
+}
+
+#dress-code .dress-code-full-image {
+    display: block;
+    width: 100%;
+    max-width: none;
+    height: auto;
+    margin: 0;
+    object-fit: contain;
+    object-position: center top;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+}
+/* =========================================================
+   FASE 1 — MENÚ COMO IMAGEN COMPLETA
+   ========================================================= */
+
+#menu .menu-panel.is-image-only-section {
+    position: relative;
+    width: 100%;
+    min-height: 0;
+    height: auto;
+    padding: 0;
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    background-color: transparent;
+    box-shadow: none;
+}
+
+#menu .menu-full-image {
+    display: block;
+    width: 100%;
+    max-width: none;
+    height: auto;
+    margin: 0;
+    padding: 0;
+    object-fit: contain;
+    object-position: center top;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+}
+
+@media (max-width: 600px) {
+    #menu.menu-section {
+        padding-top: 18px;
+        padding-bottom: 18px;
+    }
+
+    #menu .menu-panel.is-image-only-section {
+        padding: 0 !important;
+    }
+
+    #menu .menu-full-image {
+        width: 100% !important;
+        height: auto !important;
+    }
+}
+/* ===== DETALLES ===== */
+
+.details-panel.is-image-only-section{
+    padding-top:0;
+}
+
+.details-full-image{
+    display:block;
+    width:100%;
+    height:auto;
+    margin:0 0 2rem;
+}
+
+/* =========================================================
+   FASE 5.1 - MOTOR DE COMPONENTES VISUALES
+   ========================================================= */
+
+.panel {
+    position: relative;
+}
+
+.invitation-components {
+    position: absolute;
+    inset: 0;
+    z-index: 12;
+    pointer-events: none;
+}
+
+.invitation-component {
+    position: absolute;
+    left: var(--component-x, 50%);
+    top: var(--component-y, 50%);
+    width: var(--component-width, 44%);
+    min-height: var(--component-height, 12%);
+    transform: translate(-50%, -50%) rotate(var(--component-rotation, 0deg));
+    opacity: var(--component-opacity, 1);
+    z-index: var(--component-z, 20);
+    pointer-events: auto;
+}
+
+.invitation-component-text {
+    width: 100%;
+    color: var(--text);
+    font-family: var(--font-title);
+    line-height: 1.15;
+    text-align: center;
+    white-space: pre-wrap;
+}
+
+.invitation-component-imagen img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    object-position: center;
+}
+
+.invitation-component-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 42px;
+    padding: 10px 16px;
+    border-radius: 999px;
+    background: var(--primary);
+    color: #fff;
+    font-family: var(--font-body);
+    font-weight: 700;
+    line-height: 1.1;
+    text-align: center;
+    text-decoration: none;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, .16);
+}
+
+.invitation-component-button.secondary {
+    background: var(--secondary);
+    color: var(--primary);
+    border: 1px solid var(--line);
 }

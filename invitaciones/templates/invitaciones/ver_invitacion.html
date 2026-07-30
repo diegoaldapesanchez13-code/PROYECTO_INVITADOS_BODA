@@ -6,7 +6,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ evento.titulo_evento }}</title>
     <link href="https://fonts.googleapis.com/css2?family=Allura&family=Cormorant+Garamond:wght@500;600;700&family=Great+Vibes&family=Inter:wght@300;400;500;600;700&family=Lato:wght@300;400;700&family=Montserrat:wght@300;400;500;600&family=Parisienne&family=Playfair+Display:wght@500;600;700&family=Poppins:wght@300;400;500;600;700&family=Quicksand:wght@400;500;600;700&family=Tangerine:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'invitaciones/css/invitacion.css' %}">
+    <link
+        rel="stylesheet"
+        href="{% static 'invitaciones/css/invitacion.css' %}?v=20260729-23"
+    >
     <style>
         :root {
             --primary: {{ evento.color_principal_final }};
@@ -50,13 +53,21 @@
     </style>
 </head>
 <body
-    data-event-date="{{ evento.fecha_fiesta|date:'Y-m-d\\TH:i:s' }}"
+    {% if evento.fecha_fiesta %}
+        data-event-date="{{ evento.fecha_fiesta|date:'Y-m-d\\TH:i:s' }}"
+    {% endif %}
     data-max-extras="{{ grupo.cantidad_extra_permitida|default:0 }}"
 >
     {% if not modo_preview %}
     <div class="intro" id="intro">
         <div class="envelope-stage">
-            <button class="envelope-button" type="button" onclick="abrirInvitacion()" aria-label="Abrir invitación">
+            <button
+                class="envelope-button"
+                type="button"
+                onclick="abrirInvitacion()"
+                aria-label="Abrir la invitación de {{ evento.titulo_portada }}"
+                aria-describedby="envelopeHint"
+            >
                 <span class="envelope-card">
                     <span class="envelope-flap top"></span>
                     <span class="envelope-flap left"></span>
@@ -65,91 +76,128 @@
                     <span class="envelope-letter">
                         <span>{{ evento.frase_portada|default:"Nuestra Boda" }}</span>
                         <strong>{{ evento.titulo_portada }}</strong>
-                    </span>
-                    <span class="wax-seal">
-                        {% if evento.sello_sobre %}
-                            <img src="{{ evento.sello_sobre.url }}" alt="">
-                        {% else %}
-                            {{ evento.monograma_final }}
-                        {% endif %}
+                </span>
+                <span class="wax-seal">
+                    {% if evento.sello_sobre %}
+                        <img
+                            src="{{ evento.sello_sobre.url }}"
+                            alt=""
+                            loading="eager"
+                            decoding="async"
+                        >
+                    {% else %}
+                        {{ evento.monograma_final }}
+                    {% endif %}
                     </span>
                 </span>
             </button>
-            <p class="envelope-hint">{{ evento.texto_boton_sobre }}</p>
+            <p class="envelope-hint" id="envelopeHint">
+                {{ evento.texto_boton_sobre }}
+            </p>
         </div>
     </div>
     {% endif %}
 
-    <audio id="bgMusic" loop preload="auto">
+    <audio id="bgMusic" loop preload="metadata">
         {% if evento.cancion %}
             <source src="{{ evento.cancion.url }}" type="audio/mpeg">
         {% else %}
-            <source src="{% static 'music/boda.mp3' %}" type="audio/mpeg">
+            <source
+                src="{% static 'music/boda.mp3' %}"
+                type="audio/mpeg"
+            >
         {% endif %}
+
+        Tu navegador no permite reproducir este audio.
     </audio>
 
-    <section class="hero cover-hero" id="inicio">
-        <div class="cover-card">
-            <div class="cover-photo {% if evento.portada_es_video %}media-bg-fallback{% endif %}">
+    <section
+        class="cover-section"
+        id="inicio"
+        data-invitation-section="PORTADA"
+    >
+        {% if secciones.PORTADA.mostrar_titulo_texto == False and evento.foto_portada %}
+
+            <div class="cover-card cover-card-full-image">
                 {% if evento.portada_es_video %}
-                    <video class="cover-video" src="{{ evento.foto_portada.url }}" autoplay muted loop playsinline></video>
+                    <video
+                        class="cover-full-media"
+                        src="{{ evento.foto_portada.url }}"
+                        autoplay
+                        muted
+                        loop
+                        playsinline
+                        preload="metadata"
+                    ></video>
+                {% else %}
+                    <img
+                        class="cover-full-media"
+                        src="{{ evento.foto_portada.url }}"
+                        alt="Portada de {{ evento.titulo_portada }}"
+                        loading="eager"
+                        decoding="async"
+                    >
                 {% endif %}
-                <div class="cover-topline">{{ evento.frase_portada|default:"Nuestra Boda" }}</div>
-                <div class="cover-names {% if not evento.mostrar_nombre_secundario %}single-name{% endif %}">
-                    <h1>{{ evento.participante_principal }}</h1>
-                    {% if evento.mostrar_nombre_secundario %}
-                        <h1>{{ evento.participante_secundario }}</h1>
+
+                {% include "invitaciones/partials/_capas_personalizadas.html" with seccion=secciones.PORTADA %}
+            </div>
+
+        {% else %}
+
+            <div class="cover-card">
+                <div
+                    class="cover-photo
+                    {% if evento.portada_es_video %}media-bg-fallback{% endif %}"
+                    {% if evento.foto_portada and not evento.portada_es_video %}
+                        style="background-image: url('{{ evento.foto_portada.url }}');"
                     {% endif %}
-                </div>
-                <div class="cover-date">
-                    {{ evento.fecha_fiesta|date:"d F Y" }} · {{ evento.fecha_fiesta|date:"h:i A" }}
+                >
+                    {% if evento.portada_es_video and evento.foto_portada %}
+                        <video
+                            class="cover-video"
+                            src="{{ evento.foto_portada.url }}"
+                            autoplay
+                            muted
+                            loop
+                            playsinline
+                            preload="metadata"
+                        ></video>
+                    {% endif %}
+
+                    {% include "invitaciones/partials/_capas_personalizadas.html" with seccion=secciones.PORTADA %}
+
+                    <div class="cover-topline">
+                        {{ evento.frase_portada|default:"Nuestra Boda" }}
+                    </div>
+
+                    <div class="cover-names {% if not evento.mostrar_nombre_secundario %}single-name{% endif %}">
+                        <h1>{{ evento.participante_principal }}</h1>
+
+                        {% if evento.mostrar_nombre_secundario %}
+                            <h1>{{ evento.participante_secundario }}</h1>
+                        {% endif %}
+                    </div>
+
+                    {% if evento.fecha_fiesta %}
+                        <div class="cover-date">
+                            {{ evento.fecha_fiesta|date:"d F Y" }}
+                            ·
+                            {{ evento.fecha_fiesta|date:"h:i A" }}
+                        </div>
+                    {% endif %}
                 </div>
             </div>
 
-            {% if secciones.PADRES_PADRINOS.activa %}
-            {% if padres_novio or padres_novia or padrinos %}
-                <div class="cover-honors">
-                    <div class="cover-parent-grid">
-                        <div class="cover-parent-block">
-                            <div class="cover-label">Padres de {{ evento.etiqueta_principal|lower }}</div>
-                            <div class="cover-parent-names">
-                                {% for persona in padres_novia %}
-                                    
-                                    <p>{{ persona.nombre }}</p>
-                                {% empty %}
-                                    <p class="muted-name">Familia de {{ evento.etiqueta_principal|lower }}</p>
-                                {% endfor %}
-                            </div>
-                        </div>
-                        
-                        <div class="cover-parent-block">
-                            <div class="cover-label">Padres de {{ evento.etiqueta_secundario|lower }}</div>
-                            <div class="cover-parent-names">
-                                {% for persona in padres_novio %}
-                                
-                                    <p>{{ persona.nombre }}</p>
-                                {% empty %}
-                                    <p class="muted-name">Familia de {{ evento.etiqueta_secundario|lower }}</p>
-                                {% endfor %}
-                            </div>
-                        </div>
-                    </div>
-                    {% if padrinos %}
-                        <div class="cover-sponsors">
-                            <div class="cover-label">Y nuestros padrinos</div>
-                            {% for persona in padrinos %}
-                                
-                                <p>{{ persona.nombre }}</p>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-                </div>
-            {% endif %}
-            {% endif %}
-        </div>
+        {% endif %}
     </section>
 
     <nav class="section-nav" aria-label="Secciones de la invitacion">
+        {% if secciones.PADRES_PADRINOS.activa %}
+            <a href="#padres-padrinos">Padres</a>
+        {% endif %}
+        {% if secciones.CUENTA_REGRESIVA.activa %}
+            <a href="#cuenta">Cuenta regresiva</a>
+        {% endif %}
         {% if secciones.DETALLES.activa %}<a href="#detalles">Detalles</a>{% endif %}
         {% if secciones.DRESS_CODE.activa %}<a href="#dress-code">Dress code</a>{% endif %}
         {% if secciones.ITINERARIO.activa and itinerario %}<a href="#itinerario">Itinerario</a>{% endif %}
@@ -160,378 +208,28 @@
         {% if secciones.RSVP.activa %}<a href="#rsvp">Confirmar</a>{% endif %}
     </nav>
 
-    <main class="shell">
-        {% if secciones.CUENTA_REGRESIVA.activa %}
-        <section class="section" id="cuenta" data-invitation-section="CUENTA_REGRESIVA" style="order: {{ secciones.CUENTA_REGRESIVA.orden }}; {{ secciones.CUENTA_REGRESIVA.estilo_editor }}">
-            <div class="panel countdown-panel {% if secciones.CUENTA_REGRESIVA.fondo %}bg-panel{% endif %} {% if secciones.CUENTA_REGRESIVA.fondo_es_video %}bg-video-panel{% endif %}" {% if secciones.CUENTA_REGRESIVA.fondo and not secciones.CUENTA_REGRESIVA.fondo_es_video %}style="background-image: url('{{ secciones.CUENTA_REGRESIVA.fondo.url }}'); background-position: {{ secciones.CUENTA_REGRESIVA.posicion_fondo }};"{% endif %}>
-                {% if secciones.CUENTA_REGRESIVA.fondo_es_video %}<video class="panel-bg-video" src="{{ secciones.CUENTA_REGRESIVA.fondo.url }}" autoplay muted loop playsinline preload="metadata"></video>{% endif %}
-                {% include "invitaciones/partials/_capas_personalizadas.html" with seccion=secciones.CUENTA_REGRESIVA %}
-                {% if secciones.CUENTA_REGRESIVA.imagen_titulo %}{% if secciones.CUENTA_REGRESIVA.imagen_titulo_es_video %}<video class="section-title-image" src="{{ secciones.CUENTA_REGRESIVA.imagen_titulo.url }}" autoplay muted loop playsinline preload="metadata"></video>{% else %}<img class="section-title-image" src="{{ secciones.CUENTA_REGRESIVA.imagen_titulo.url }}" alt="">{% endif %}{% endif %}
-                {% if secciones.CUENTA_REGRESIVA.mostrar_titulo_texto %}<h2 class="section-title">{{ secciones.CUENTA_REGRESIVA.titulo }}</h2>{% endif %}
-                <div class="count-grid">
-                    <div class="count-box"><strong id="dias">0</strong><span>Días</span></div>
-                    <div class="count-box"><strong id="horas">0</strong><span>Horas</span></div>
-                    <div class="count-box"><strong id="minutos">0</strong><span>Minutos</span></div>
-                    <div class="count-box"><strong id="segundos">0</strong><span>Segundos</span></div>
-                </div>
-            </div>
-        </section>
-        {% endif %}
+<main class="shell">
+    {% include "invitaciones/partials/_section_parents.html" %}
+    {% include "invitaciones/partials/_section_countdown.html" %}
+    {% include "invitaciones/partials/_section_details.html" %}
+    {% include "invitaciones/partials/_section_dresscode.html" %}
+    {% include "invitaciones/partials/_section_itinerary.html" %}
+    {% include "invitaciones/partials/_section_album.html" %}
+    {% include "invitaciones/partials/_section_menu.html" %}
+    {% include "invitaciones/partials/_section_gifts.html" %}
+    {% include "invitaciones/partials/_section_shared_album.html" %}
+    {% include "invitaciones/partials/_section_rsvp.html" %}
+</main>
 
-        {% if secciones.DETALLES.activa %}
-        <section class="section" id="detalles" data-invitation-section="DETALLES" style="order: {{ secciones.DETALLES.orden }}; {{ secciones.DETALLES.estilo_editor }}">
-            <div class="panel {% if secciones.DETALLES.fondo %}bg-panel{% endif %} {% if secciones.DETALLES.fondo_es_video %}bg-video-panel{% endif %}" {% if secciones.DETALLES.fondo and not secciones.DETALLES.fondo_es_video %}style="background-image: url('{{ secciones.DETALLES.fondo.url }}'); background-position: {{ secciones.DETALLES.posicion_fondo }};"{% endif %}>
-                {% if secciones.DETALLES.fondo_es_video %}<video class="panel-bg-video" src="{{ secciones.DETALLES.fondo.url }}" autoplay muted loop playsinline preload="metadata"></video>{% endif %}
-                {% include "invitaciones/partials/_capas_personalizadas.html" with seccion=secciones.DETALLES %}
-                {% if secciones.DETALLES.imagen_titulo %}{% if secciones.DETALLES.imagen_titulo_es_video %}<video class="section-title-image" src="{{ secciones.DETALLES.imagen_titulo.url }}" autoplay muted loop playsinline preload="metadata"></video>{% else %}<img class="section-title-image" src="{{ secciones.DETALLES.imagen_titulo.url }}" alt="">{% endif %}{% endif %}
-                {% if secciones.DETALLES.mostrar_titulo_texto %}<h2 class="section-title">{{ secciones.DETALLES.titulo }}</h2>{% endif %}
-                {% if secciones.DETALLES.descripcion %}<p class="section-copy">{{ secciones.DETALLES.descripcion }}</p>{% endif %}
+<div class="floating-nav">
+    <button id="musicToggle" type="button" title="Música">♪</button>
+    <a href="#inicio" title="Ir arriba">↑</a>
 
-                <div class="event-detail-grid">
-                    <div class="info-box event-place-card">
-                        {% if evento.foto_ceremonia %}
-                            <div class="place-media">
-                                {% if evento.ceremonia_es_video %}
-                                    <video src="{{ evento.foto_ceremonia.url }}" muted controls playsinline preload="metadata"></video>
-                                {% else %}
-                                    <img src="{{ evento.foto_ceremonia.url }}" alt="{{ evento.lugar_misa }}">
-                                {% endif %}
-                            </div>
-                        {% endif %}
-                        <div class="card-title">Ceremonia</div>
-                        <div class="value">{{ evento.fecha_misa|date:"d/m/Y" }}</div>
-                        <p>{{ evento.fecha_misa|date:"h:i A" }} · {{ evento.lugar_misa }}</p>
-                        {% if evento.direccion_ceremonia %}
-                            <p class="place-address">{{ evento.direccion_ceremonia }}</p>
-                        {% endif %}
-                        {% if evento.link_mapa_misa %}<a class="btn secondary" href="{{ evento.link_mapa_misa }}" target="_blank">Mapa templo</a>{% endif %}
-                        {% if evento.mostrar_mapa %}
-                            {% if evento.mapa_misa_embed_html %}
-                                <div class="map-card"><div class="embed-map">{{ evento.mapa_misa_embed_html }}</div></div>
-                            {% elif evento.link_mapa_misa %}
-                                <div class="map-card"><iframe src="{{ evento.link_mapa_misa }}" loading="lazy" allowfullscreen></iframe></div>
-                            {% endif %}
-                        {% endif %}
-                    </div>
-                    <div class="info-box event-place-card">
-                        {% if evento.foto_recepcion %}
-                            <div class="place-media">
-                                {% if evento.recepcion_es_video %}
-                                    <video src="{{ evento.foto_recepcion.url }}" muted controls playsinline preload="metadata"></video>
-                                {% else %}
-                                    <img src="{{ evento.foto_recepcion.url }}" alt="{{ evento.lugar_fiesta }}">
-                                {% endif %}
-                            </div>
-                        {% endif %}
-                        <div class="card-title">Fiesta</div>
-                        <div class="value">{{ evento.fecha_fiesta|date:"d/m/Y" }}</div>
-                        <p>{{ evento.fecha_fiesta|date:"h:i A" }} · {{ evento.lugar_fiesta }}</p>
-                        {% if evento.direccion_recepcion %}
-                            <p class="place-address">{{ evento.direccion_recepcion }}</p>
-                        {% endif %}
-                        {% if evento.link_mapa_fiesta %}
-                            <a class="btn secondary" href="{{ evento.link_mapa_fiesta }}" target="_blank">Mapa fiesta</a>
-                        {% elif evento.link_mapa %}
-                            <a class="btn secondary" href="{{ evento.link_mapa }}" target="_blank">Mapa fiesta</a>
-                        {% endif %}
-                        {% if evento.mostrar_mapa %}
-                            {% if evento.mapa_fiesta_embed_html %}
-                                <div class="map-card"><div class="embed-map">{{ evento.mapa_fiesta_embed_html }}</div></div>
-                            {% elif evento.link_mapa_fiesta %}
-                                <div class="map-card"><iframe src="{{ evento.link_mapa_fiesta }}" loading="lazy" allowfullscreen></iframe></div>
-                            {% elif evento.link_mapa %}
-                                <div class="map-card"><iframe src="{{ evento.link_mapa }}" loading="lazy" allowfullscreen></iframe></div>
-                            {% endif %}
-                        {% endif %}
-                    </div>
-                    {% comment %}
-                    <div class="info-box dress-section-card" hidden>
-                        <div class="section-title">Dress Code</div>
-                        <div class="value">{{ evento.dress_code|default:"Formal elegante" }}</div>
-                        <p>{{ evento.dress_code_descripcion|default:"Gracias por acompañarnos con este estilo para la celebración." }}</p>
-                        {% if evento.dress_code_permitido_imagen %}
-                            <div class="dress-card allowed">
-                                <div class="label">Dress code permitido</div>
-                                <img class="dress-image" src="{{ evento.dress_code_permitido_imagen.url }}" alt="Dress code permitido">
-                            </div>
-                        {% endif %}
-                        {% if evento.dress_code_prohibido_imagen %}
-                            <div class="dress-card prohibited">
-                                <div class="label">Dress code no permitido</div>
-                                <img class="dress-image" src="{{ evento.dress_code_prohibido_imagen.url }}" alt="Dress code no permitido">
-                            </div>
-                        {% endif %}
-                    </div>
-                    {% endcomment %}
-                </div>
-
-                
-            </div>
-        </section>
-        {% endif %}
-
-        {% if secciones.DRESS_CODE.activa %}
-        <section class="section" id="dress-code" data-invitation-section="DRESS_CODE" style="order: {{ secciones.DRESS_CODE.orden }}; {{ secciones.DRESS_CODE.estilo_editor }}">
-            <div class="panel {% if secciones.DRESS_CODE.fondo %}bg-panel{% endif %} {% if secciones.DRESS_CODE.fondo_es_video %}bg-video-panel{% endif %}" {% if secciones.DRESS_CODE.fondo and not secciones.DRESS_CODE.fondo_es_video %}style="background-image: url('{{ secciones.DRESS_CODE.fondo.url }}'); background-position: {{ secciones.DRESS_CODE.posicion_fondo }};"{% endif %}>
-                {% if secciones.DRESS_CODE.fondo_es_video %}<video class="panel-bg-video" src="{{ secciones.DRESS_CODE.fondo.url }}" autoplay muted loop playsinline preload="metadata"></video>{% endif %}
-                {% include "invitaciones/partials/_capas_personalizadas.html" with seccion=secciones.DRESS_CODE %}
-                {% if secciones.DRESS_CODE.imagen_titulo %}{% if secciones.DRESS_CODE.imagen_titulo_es_video %}<video class="section-title-image" src="{{ secciones.DRESS_CODE.imagen_titulo.url }}" autoplay muted loop playsinline preload="metadata"></video>{% else %}<img class="section-title-image" src="{{ secciones.DRESS_CODE.imagen_titulo.url }}" alt="">{% endif %}{% endif %}
-                {% if secciones.DRESS_CODE.mostrar_titulo_texto %}<h2 class="section-title">{{ secciones.DRESS_CODE.titulo }}</h2>{% endif %}
-                {% if secciones.DRESS_CODE.descripcion %}<p class="section-copy">{{ secciones.DRESS_CODE.descripcion }}</p>{% endif %}
-                <div class="dress-grid">
-                    <div class="info-box dress-section-card">
-                        <div class="value">{{ evento.dress_code|default:"Formal elegante" }}</div>
-                        {% if evento.dress_code_permitido_imagen %}
-                            <div class="dress-card allowed">
-                                <div class="label">Permitido</div>
-                                <img class="dress-image" src="{{ evento.dress_code_permitido_imagen.url }}" alt="Dress code permitido">
-                            </div>
-                        {% endif %}
-                        {% if evento.dress_code_prohibido_imagen %}
-                            <div class="dress-card prohibited">
-                                <div class="label">No permitido</div>
-                                <img class="dress-image" src="{{ evento.dress_code_prohibido_imagen.url }}" alt="Dress code no permitido">
-                            </div>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-        </section>
-        {% endif %}
-
-        {% if secciones.ITINERARIO.activa and itinerario %}
-            <section class="section" id="itinerario" data-invitation-section="ITINERARIO" style="order: {{ secciones.ITINERARIO.orden }}; {{ secciones.ITINERARIO.estilo_editor }}">
-                <div class="panel itinerary-panel">
-                    {% include "invitaciones/partials/_capas_personalizadas.html" with seccion=secciones.ITINERARIO %}
-                    {% if secciones.ITINERARIO.imagen_titulo %}{% if secciones.ITINERARIO.imagen_titulo_es_video %}<video class="section-title-image" src="{{ secciones.ITINERARIO.imagen_titulo.url }}" autoplay muted loop playsinline preload="metadata"></video>{% else %}<img class="section-title-image" src="{{ secciones.ITINERARIO.imagen_titulo.url }}" alt="">{% endif %}{% endif %}
-                    {% if secciones.ITINERARIO.mostrar_titulo_texto %}<h2 class="section-title">{{ secciones.ITINERARIO.titulo }}</h2>{% endif %}
-                    {% if secciones.ITINERARIO.descripcion %}<p class="section-copy">{{ secciones.ITINERARIO.descripcion }}</p>{% endif %}
-                    <div class="itinerary-list">
-                        {% for item in itinerario %}
-                            <div class="itinerary-item">
-                                <time>{{ item.hora|time:"H:i" }}</time>
-                                <div>
-                                    <strong>{{ item.titulo }}</strong>
-                                    {% if item.descripcion %}<p>{{ item.descripcion }}</p>{% endif %}
-                                </div>
-                            </div>
-                        {% endfor %}
-                    </div>
-                </div>
-            </section>
-        {% endif %}
-
-        {% if secciones.ALBUM.activa and evento.mostrar_album and fotos_album %}
-            <section class="section" id="album" data-invitation-section="ALBUM" style="order: {{ secciones.ALBUM.orden }}; {{ secciones.ALBUM.estilo_editor }}">
-                <div class="panel {% if secciones.ALBUM.fondo %}bg-panel{% endif %} {% if secciones.ALBUM.fondo_es_video %}bg-video-panel{% endif %}" {% if secciones.ALBUM.fondo and not secciones.ALBUM.fondo_es_video %}style="background-image: url('{{ secciones.ALBUM.fondo.url }}'); background-position: {{ secciones.ALBUM.posicion_fondo }};"{% endif %}>
-                    {% if secciones.ALBUM.fondo_es_video %}<video class="panel-bg-video" src="{{ secciones.ALBUM.fondo.url }}" autoplay muted loop playsinline preload="metadata"></video>{% endif %}
-                    {% include "invitaciones/partials/_capas_personalizadas.html" with seccion=secciones.ALBUM %}
-                    {% if secciones.ALBUM.imagen_titulo %}{% if secciones.ALBUM.imagen_titulo_es_video %}<video class="section-title-image" src="{{ secciones.ALBUM.imagen_titulo.url }}" autoplay muted loop playsinline preload="metadata"></video>{% else %}<img class="section-title-image" src="{{ secciones.ALBUM.imagen_titulo.url }}" alt="">{% endif %}{% endif %}
-                    {% if secciones.ALBUM.mostrar_titulo_texto %}<h2 class="section-title">{{ secciones.ALBUM.titulo }}</h2>{% endif %}
-                    {% if secciones.ALBUM.descripcion %}<p class="section-copy">{{ secciones.ALBUM.descripcion }}</p>{% endif %}
-                    <div class="album-grid">
-                        {% for foto in fotos_album %}
-                            <figure>
-                                {% if foto.es_video %}
-                                    <video src="{{ foto.imagen.url }}" controls playsinline preload="metadata"></video>
-                                {% else %}
-                                    <img src="{{ foto.imagen.url }}" alt="{{ foto.titulo|default:'Foto del evento' }}">
-                                {% endif %}
-                                {% if foto.titulo %}<figcaption>{{ foto.titulo }}</figcaption>{% endif %}
-                            </figure>
-                        {% endfor %}
-                    </div>
-                </div>
-            </section>
-        {% endif %}
-
-        {% if secciones.MENU.activa and evento.mostrar_menu and menus %}
-            <section class="section" id="menu" data-invitation-section="MENU" style="order: {{ secciones.MENU.orden }}; {{ secciones.MENU.estilo_editor }}">
-                <div class="panel {% if secciones.MENU.fondo %}bg-panel{% endif %} {% if secciones.MENU.fondo_es_video %}bg-video-panel{% endif %}" {% if secciones.MENU.fondo and not secciones.MENU.fondo_es_video %}style="background-image: url('{{ secciones.MENU.fondo.url }}'); background-position: {{ secciones.MENU.posicion_fondo }};"{% endif %}>
-                    {% if secciones.MENU.fondo_es_video %}<video class="panel-bg-video" src="{{ secciones.MENU.fondo.url }}" autoplay muted loop playsinline preload="metadata"></video>{% endif %}
-                    {% include "invitaciones/partials/_capas_personalizadas.html" with seccion=secciones.MENU %}
-                    {% if secciones.MENU.imagen_titulo %}{% if secciones.MENU.imagen_titulo_es_video %}<video class="section-title-image" src="{{ secciones.MENU.imagen_titulo.url }}" autoplay muted loop playsinline preload="metadata"></video>{% else %}<img class="section-title-image" src="{{ secciones.MENU.imagen_titulo.url }}" alt="">{% endif %}{% endif %}
-                    {% if secciones.MENU.mostrar_titulo_texto %}<h2 class="section-title">{{ secciones.MENU.titulo }}</h2>{% endif %}
-                    {% if secciones.MENU.descripcion %}<p class="section-copy">{{ secciones.MENU.descripcion }}</p>{% endif %}
-                    <div class="menu-grid">
-                        {% for menu in menus %}
-                            <div class="menu-box"><span class="pill">{{ menu.get_tipo_display }}</span><h3>{{ menu.nombre }}</h3><p>{{ menu.descripcion }}</p></div>
-                        {% endfor %}
-                    </div>
-                </div>
-            </section>
-        {% endif %}
-
-        {% if secciones.REGALOS.activa and evento.mostrar_regalos %}
-            <section class="section" id="regalos" data-invitation-section="REGALOS" style="order: {{ secciones.REGALOS.orden }}; {{ secciones.REGALOS.estilo_editor }}">
-                <div class="panel {% if secciones.REGALOS.fondo %}bg-panel{% endif %} {% if secciones.REGALOS.fondo_es_video %}bg-video-panel{% endif %}" {% if secciones.REGALOS.fondo and not secciones.REGALOS.fondo_es_video %}style="background-image: url('{{ secciones.REGALOS.fondo.url }}'); background-position: {{ secciones.REGALOS.posicion_fondo }};"{% endif %}>
-                    {% if secciones.REGALOS.fondo_es_video %}<video class="panel-bg-video" src="{{ secciones.REGALOS.fondo.url }}" autoplay muted loop playsinline preload="metadata"></video>{% endif %}
-                    {% include "invitaciones/partials/_capas_personalizadas.html" with seccion=secciones.REGALOS %}
-                    {% if secciones.REGALOS.imagen_titulo %}{% if secciones.REGALOS.imagen_titulo_es_video %}<video class="section-title-image" src="{{ secciones.REGALOS.imagen_titulo.url }}" autoplay muted loop playsinline preload="metadata"></video>{% else %}<img class="section-title-image" src="{{ secciones.REGALOS.imagen_titulo.url }}" alt="">{% endif %}{% endif %}
-                    {% if secciones.REGALOS.mostrar_titulo_texto %}<h2 class="section-title">{{ secciones.REGALOS.titulo }}</h2>{% endif %}
-                    {% if secciones.REGALOS.descripcion %}<p class="section-copy">{{ secciones.REGALOS.descripcion }}</p>{% endif %}
-                    <div class="gift-grid">
-                        {% if evento.link_mesa_regalos %}
-                            <a class="gift-box" href="{{ evento.link_mesa_regalos }}" target="_blank">
-                                <span class="gift-kind">Mesa principal</span>
-                                <strong>Mesa de regalos</strong>
-                            </a>
-                        {% endif %}
-                        {% for regalo in regalos %}
-                            {% if regalo.es_deposito or regalo.banco or regalo.titular or regalo.numero_cuenta or regalo.clabe %}
-                                <div class="gift-box deposit-box">
-                                    <span class="gift-kind">Deposito</span>
-                                    <strong>{{ regalo.nombre }}</strong>
-                                    {% if regalo.banco %}<p>Banco: {{ regalo.banco }}</p>{% endif %}
-                                    {% if regalo.titular %}<p>Titular: {{ regalo.titular }}</p>{% endif %}
-                                    {% if regalo.numero_cuenta %}<p>Cuenta: {{ regalo.numero_cuenta }}</p>{% endif %}
-                                    {% if regalo.clabe %}<p>CLABE: {{ regalo.clabe }}</p>{% endif %}
-                                    {% if regalo.instrucciones %}<small>{{ regalo.instrucciones }}</small>{% endif %}
-                                </div>
-                            {% elif regalo.url %}
-                                <a class="gift-box" href="{{ regalo.url }}" target="_blank">
-                                    <span class="gift-kind">Tienda</span>
-                                    <strong>{{ regalo.nombre }}</strong>
-                                </a>
-                            {% else %}
-                                <div class="gift-box">
-                                    <span class="gift-kind">Regalo</span>
-                                    <strong>{{ regalo.nombre }}</strong>
-                                    <p>Informacion pendiente de completar.</p>
-                                </div>
-                            {% endif %}
-                        {% endfor %}
-                    </div>
-                </div>
-            </section>
-        {% endif %}
-
-        {% if secciones.ALBUM_COMPARTIDO.activa and evento.mostrar_album_compartido and evento.link_album_compartido %}
-            <section class="section" id="album-compartido" data-invitation-section="ALBUM_COMPARTIDO" style="order: {{ secciones.ALBUM_COMPARTIDO.orden }}; {{ secciones.ALBUM_COMPARTIDO.estilo_editor }}">
-                <div class="panel shared-album-panel">
-                    {% include "invitaciones/partials/_capas_personalizadas.html" with seccion=secciones.ALBUM_COMPARTIDO %}
-                    {% if secciones.ALBUM_COMPARTIDO.imagen_titulo %}{% if secciones.ALBUM_COMPARTIDO.imagen_titulo_es_video %}<video class="section-title-image" src="{{ secciones.ALBUM_COMPARTIDO.imagen_titulo.url }}" autoplay muted loop playsinline preload="metadata"></video>{% else %}<img class="section-title-image" src="{{ secciones.ALBUM_COMPARTIDO.imagen_titulo.url }}" alt="">{% endif %}{% endif %}
-                    {% if secciones.ALBUM_COMPARTIDO.mostrar_titulo_texto %}<h2 class="section-title">{{ secciones.ALBUM_COMPARTIDO.titulo }}</h2>{% endif %}
-                    {% if secciones.ALBUM_COMPARTIDO.descripcion %}<p class="section-copy">{{ secciones.ALBUM_COMPARTIDO.descripcion }}</p>{% endif %}
-                    <div class="btn-row">
-                        <a class="btn" href="{{ evento.link_album_compartido }}" target="_blank" rel="noopener">Subir fotos y videos</a>
-                    </div>
-                </div>
-            </section>
-        {% endif %}
-
-        {% if secciones.RSVP.activa %}
-        <section class="section" id="rsvp" data-invitation-section="RSVP" style="order: {{ secciones.RSVP.orden }}; {{ secciones.RSVP.estilo_editor }}">
-            <div class="panel {% if secciones.RSVP.fondo %}bg-panel{% endif %} {% if secciones.RSVP.fondo_es_video %}bg-video-panel{% endif %}" {% if secciones.RSVP.fondo and not secciones.RSVP.fondo_es_video %}style="background-image: url('{{ secciones.RSVP.fondo.url }}'); background-position: {{ secciones.RSVP.posicion_fondo }};"{% endif %}>
-                {% if secciones.RSVP.fondo_es_video %}<video class="panel-bg-video" src="{{ secciones.RSVP.fondo.url }}" autoplay muted loop playsinline preload="metadata"></video>{% endif %}
-                {% include "invitaciones/partials/_capas_personalizadas.html" with seccion=secciones.RSVP %}
-                <div class="invitation-summary">
-                    <h2 class="section-title">{{ evento.titulo_invitacion }}</h2>
-                    <p class="section-copy">{{ evento.texto_invitacion }}</p>
-                    <div class="summary-grid">
-                        <div class="info-box">
-                            <div class="label">Invitación para</div>
-                            <div class="value guest-summary-name">{% if grupo.es_familiar %}Familia {% endif %}{{ grupo.nombre_grupo }}</div>
-                        </div>
-                        <div class="info-box">
-                            <div class="label">Tipo</div>
-                            <div class="value">{{ grupo.get_tipo_display }}</div>
-                        </div>
-                        <div class="info-box">
-                            <div class="label">Lugares</div>
-                            <div class="value">{{ grupo.total_lugares }}</div>
-                        </div>
-                    </div>
-                </div>
-                {% if secciones.RSVP.imagen_titulo %}{% if secciones.RSVP.imagen_titulo_es_video %}<video class="section-title-image" src="{{ secciones.RSVP.imagen_titulo.url }}" autoplay muted loop playsinline preload="metadata"></video>{% else %}<img class="section-title-image" src="{{ secciones.RSVP.imagen_titulo.url }}" alt="">{% endif %}{% endif %}
-                {% if secciones.RSVP.mostrar_titulo_texto %}<h2 class="section-title">{{ secciones.RSVP.titulo }}</h2>{% endif %}
-                {% if grupo.confirmado %}
-                    <p class="section-copy">Esta invitación ya fue respondida. Puedes actualizar la información si lo necesitas.</p>
-                {% else %}
-                    <p class="section-copy">{{ secciones.RSVP.descripcion }}</p>
-                {% endif %}
-
-                <form method="post">
-                    {% csrf_token %}
-                    {% if grupo.es_personal %}
-                        <div class="guest-box">
-                            <div class="guest-head"><h3 class="guest-name">{{ grupo.nombre_grupo }}</h3><span class="pill">Acompañantes permitidos: {{ grupo.cantidad_extra_permitida }}</span></div>
-                            <div class="radio-row">
-                                <div class="option"><input type="radio" id="si_grupo" name="asistira" value="si" {% if grupo.asistira == True %}checked{% endif %}><label for="si_grupo">Sí asistiré</label></div>
-                                <div class="option"><input type="radio" id="no_grupo" name="asistira" value="no" {% if grupo.asistira == False %}checked{% endif %}><label for="no_grupo">No asistiré</label></div>
-                            </div>
-                            {% if grupo.invitados.all %}
-                                <div class="form-grid compact-guests">
-                                    {% for invitado in grupo.invitados.all %}
-                                        <div class="guest-box subtle">
-                                            <div class="guest-head"><h3 class="guest-name">{{ invitado.nombre }}</h3><span class="pill">{{ invitado.get_tipo_persona_display }}</span></div>
-                                            <div class="radio-row">
-                                                <div class="option"><input type="radio" id="si_extra_{{ invitado.id }}" name="asistira_extra_{{ invitado.id }}" value="si" {% if invitado.asistira == True %}checked{% endif %}><label for="si_extra_{{ invitado.id }}">Si asistira</label></div>
-                                                <div class="option"><input type="radio" id="no_extra_{{ invitado.id }}" name="asistira_extra_{{ invitado.id }}" value="no" {% if invitado.asistira == False %}checked{% endif %}><label for="no_extra_{{ invitado.id }}">No asistira</label></div>
-                                            </div>
-                                            <label class="checkbox-line"><input type="checkbox" name="menu_infantil_extra_{{ invitado.id }}" {% if invitado.menu_infantil %}checked{% endif %}> Prefiere buffet infantil</label>
-                                            <textarea name="comentario_extra_{{ invitado.id }}" placeholder="Comentario opcional">{{ invitado.comentario|default_if_none:'' }}</textarea>
-                                        </div>
-                                    {% endfor %}
-                                </div>
-                            {% elif grupo.cantidad_extra_permitida %}
-                            <div class="number-grid">
-                                <label>Acompañantes adultos<input type="number" id="acompanantes_adultos" name="acompanantes_adultos" min="0" max="{{ grupo.cantidad_extra_permitida }}" value="{{ grupo.acompanantes_adultos }}"></label>
-                                <label>Acompañantes niños<input type="number" id="acompanantes_ninos" name="acompanantes_ninos" min="0" max="{{ grupo.cantidad_extra_permitida }}" value="{{ grupo.acompanantes_ninos }}"></label>
-                            </div>
-                            {% endif %}
-                            <details class="guest-extra-details">
-                                <summary>Notas de alimentos</summary>
-                                <div class="guest-notes-grid">
-                                    <label>Restricciones alimentarias<textarea name="restricciones_alimentarias" placeholder="Vegetariano, sin gluten, etc.">{{ grupo.restricciones_alimentarias|default_if_none:'' }}</textarea></label>
-                                    <label>Alergias<textarea name="alergias" placeholder="Alergias importantes">{{ grupo.alergias|default_if_none:'' }}</textarea></label>
-                                    <label class="checkbox-line"><input type="checkbox" name="requiere_menu_infantil" {% if grupo.requiere_menu_infantil %}checked{% endif %}> Prefiero buffet infantil</label>
-                                </div>
-                            </details>
-                            <textarea name="comentario" placeholder="Comentario opcional">{{ grupo.comentario|default_if_none:'' }}</textarea>
-                        </div>
-                    {% else %}
-                        <div class="form-grid">
-                            {% for invitado in grupo.invitados.all %}
-                                <div class="guest-box">
-                                    <div class="guest-head"><h3 class="guest-name">{{ invitado.nombre }}</h3><span class="pill">{{ invitado.get_tipo_persona_display }}</span></div>
-                                    <div class="radio-row">
-                                        <div class="option"><input type="radio" id="si_{{ invitado.id }}" name="asistira_{{ invitado.id }}" value="si" {% if invitado.asistira == True %}checked{% endif %}><label for="si_{{ invitado.id }}">Sí asistirá</label></div>
-                                        <div class="option"><input type="radio" id="no_{{ invitado.id }}" name="asistira_{{ invitado.id }}" value="no" {% if invitado.asistira == False %}checked{% endif %}><label for="no_{{ invitado.id }}">No asistirá</label></div>
-                                    </div>
-                                    <details class="guest-extra-details">
-                                        <summary>Notas de alimentos</summary>
-                                        <div class="guest-notes-grid">
-                                            <label>Restricciones<input type="text" name="restricciones_{{ invitado.id }}" value="{{ invitado.restricciones_alimentarias|default_if_none:'' }}" placeholder="Vegetariano, sin gluten..."></label>
-                                            <label>Alergias<input type="text" name="alergias_{{ invitado.id }}" value="{{ invitado.alergias|default_if_none:'' }}" placeholder="Alergias importantes"></label>
-                                            <label class="checkbox-line"><input type="checkbox" name="menu_infantil_{{ invitado.id }}" {% if invitado.menu_infantil %}checked{% endif %}> Prefiere buffet infantil</label>
-                                        </div>
-                                    </details>
-                                    <textarea name="comentario_{{ invitado.id }}" placeholder="Comentario opcional">{{ invitado.comentario|default_if_none:'' }}</textarea>
-                                </div>
-                            {% empty %}
-                                <p class="section-copy">Esta familia aún no tiene invitados capturados en el admin.</p>
-                            {% endfor %}
-                            <textarea name="comentario_grupo" placeholder="Comentario general de la familia">{{ grupo.comentario|default_if_none:'' }}</textarea>
-                        </div>
-                    {% endif %}
-                    <div class="btn-row" style="margin-top:18px;"><button class="btn" type="submit">Guardar confirmación</button></div>
-                </form>
-            </div>
-            <div class="btn-row" style="margin-top:18px;">
-                {% if evento.link_whatsapp %}<a class="btn" href="{{ evento.link_whatsapp }}" target="_blank">WhatsApp</a>{% endif %}
-                <a class="btn secondary" href="#rsvp">Confirmar asistencia por whatsapp</a>
-            </div>
-        </section>
-        {% endif %}
-    </main>
-
-    <div class="floating-nav">
-        <button id="musicToggle" type="button" title="Música">♪</button>
-        <a href="#inicio" title="Ir arriba">↑</a>
+    {% if secciones.RSVP.activa %}
         <a href="#rsvp" title="Confirmar">✓</a>
-    </div>
+    {% endif %}
+</div>
 
-    <script src="{% static 'invitaciones/js/invitacion.js' %}"></script>
+<script src="{% static 'invitaciones/js/invitacion.js' %}"></script>
 </body>
 </html>

@@ -1,0 +1,106 @@
+{% if secciones.DRESS_CODE.activa %}
+<section
+    class="section dress-code-section"
+    id="dress-code"
+    data-invitation-section="DRESS_CODE"
+    style="
+        order: {{ secciones.DRESS_CODE.orden }};
+        {{ secciones.DRESS_CODE.estilo_editor }}
+    "
+>
+    <div
+        class="panel dress-code-panel
+        {% if secciones.DRESS_CODE.imagen_titulo %}
+            is-image-only-section
+        {% endif %}
+        {% if secciones.DRESS_CODE.fondo %}
+            bg-panel
+        {% endif %}
+        {% if secciones.DRESS_CODE.fondo_es_video %}
+            bg-video-panel
+        {% endif %}"
+        {% if secciones.DRESS_CODE.fondo and not secciones.DRESS_CODE.fondo_es_video %}
+            style="
+                background-image: url('{{ secciones.DRESS_CODE.fondo.url }}');
+                background-position: {{ secciones.DRESS_CODE.posicion_fondo }};
+            "
+        {% endif %}
+    >
+        {% if secciones.DRESS_CODE.fondo_es_video and secciones.DRESS_CODE.fondo %}
+            <video
+                class="panel-bg-video"
+                src="{{ secciones.DRESS_CODE.fondo.url }}"
+                autoplay
+                muted
+                loop
+                playsinline
+                preload="metadata"
+            ></video>
+        {% endif %}
+
+        {% include "invitaciones/partials/_capas_personalizadas.html" with seccion=secciones.DRESS_CODE %}
+
+        {% if secciones.DRESS_CODE.imagen_titulo %}
+            {% if secciones.DRESS_CODE.imagen_titulo_es_video %}
+                <video
+                    class="dress-code-full-image"
+                    src="{{ secciones.DRESS_CODE.imagen_titulo.url }}"
+                    autoplay
+                    muted
+                    loop
+                    playsinline
+                    preload="metadata"
+                ></video>
+            {% else %}
+                <img
+                    class="dress-code-full-image"
+                    src="{{ secciones.DRESS_CODE.imagen_titulo.url }}"
+                    alt="Diseño completo de Dress Code"
+                    loading="lazy"
+                    decoding="async"
+                >
+            {% endif %}
+        {% else %}
+            {% include "invitaciones/partials/_section_header.html" with seccion=secciones.DRESS_CODE titulo_default="Dress Code" texto_alt="Portada de Dress Code" %}
+
+            <div class="dress-code-content section-main-content">
+                <div class="dress-grid">
+                    <div class="info-box dress-section-card">
+                        <div class="value dress-code-value">
+                            {{ evento.dress_code|default:"Formal elegante" }}
+                        </div>
+
+                        {% if evento.dress_code_permitido_imagen %}
+                            <div class="dress-card allowed">
+                                <div class="label">Permitido</div>
+
+                                <img
+                                    class="dress-image"
+                                    src="{{ evento.dress_code_permitido_imagen.url }}"
+                                    alt="Ejemplos de vestimenta permitida"
+                                    loading="lazy"
+                                    decoding="async"
+                                >
+                            </div>
+                        {% endif %}
+
+                        {% if evento.dress_code_prohibido_imagen %}
+                            <div class="dress-card prohibited">
+                                <div class="label">No permitido</div>
+
+                                <img
+                                    class="dress-image"
+                                    src="{{ evento.dress_code_prohibido_imagen.url }}"
+                                    alt="Ejemplos de vestimenta no permitida"
+                                    loading="lazy"
+                                    decoding="async"
+                                >
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</section>
+{% endif %}

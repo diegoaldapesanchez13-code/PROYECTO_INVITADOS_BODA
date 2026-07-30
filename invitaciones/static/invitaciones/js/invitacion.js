@@ -2,14 +2,30 @@ const pageData = document.body.dataset;
 const intro = document.getElementById("intro");
 const bgMusic = document.getElementById("bgMusic");
 const musicToggle = document.getElementById("musicToggle");
-const fechaEvento = new Date(pageData.eventDate).getTime();
+const fechaEvento = pageData.eventDate
+    ? new Date(pageData.eventDate).getTime()
+    : null;
 const maxExtras = Number(pageData.maxExtras || 0);
+const rsvpForm = document.getElementById("rsvpForm");
+const rsvpSubmit = document.getElementById("rsvpSubmit");
+
+
+let invitacionAbierta = false;
 
 window.abrirInvitacion = function abrirInvitacion() {
+
+    if (invitacionAbierta) return;
+
+    invitacionAbierta = true;
+
     if (intro) {
         intro.classList.add("opening");
-        setTimeout(() => intro.classList.add("hidden"), 620);
+
+        setTimeout(() => {
+            intro.classList.add("hidden");
+        }, 620);
     }
+
     reproducirMusica();
 };
 
@@ -19,9 +35,9 @@ async function reproducirMusica() {
     try {
         bgMusic.volume = 0.55;
         await bgMusic.play();
-        musicToggle.textContent = "♫";
+        musicToggle.classList.add("is-playing");
     } catch (error) {
-        musicToggle.textContent = "♪";
+        musicToggle.classList.remove("is-playing");
     }
 }
 
@@ -47,17 +63,17 @@ function setText(id, value) {
 }
 
 function limitarAcompanantes() {
-    const adultos = document.getElementById("acompanantes_adultos");
-    const ninos = document.getElementById("acompanantes_ninos");
+    const acompanantesAdultos = document.getElementById("acompanantes_adultos");
+    const acompanantesNinos = document.getElementById("acompanantes_ninos");
     const noAsistira = document.getElementById("no_grupo");
-    if (!adultos || !ninos) return;
+    if (!acompanantesAdultos || !acompanantesNinos) return;
 
-    adultos.disabled = Boolean(noAsistira && noAsistira.checked);
-    ninos.disabled = Boolean(noAsistira && noAsistira.checked);
+    acompanantesAdultos.disabled = Boolean(noAsistira && noAsistira.checked);
+    acompanantesNinos.disabled = Boolean(noAsistira && noAsistira.checked);
 
-    const total = Number(adultos.value || 0) + Number(ninos.value || 0);
+    const total = Number(acompanantesAdultos.value || 0) + Number(acompanantesNinos.value || 0);
     if (total > maxExtras) {
-        ninos.value = Math.max(maxExtras - Number(adultos.value || 0), 0);
+        acompanantesNinos.value = Math.max(maxExtras - Number(acompanantesAdultos.value || 0), 0);
     }
 }
 
@@ -74,16 +90,21 @@ if (musicToggle) {
     });
 }
 
-document
-    .querySelectorAll('input[name="asistira"], #acompanantes_adultos, #acompanantes_ninos')
-    .forEach((input) => {
-        input.addEventListener("change", limitarAcompanantes);
-        input.addEventListener("input", limitarAcompanantes);
-    });
+const camposRSVP = document.querySelectorAll(
+    'input[name="asistira"], #acompanantes_adultos, #acompanantes_ninos'
+);
 
-actualizarCountdown();
+camposRSVP.forEach((campo) => {
+    campo.addEventListener("change", limitarAcompanantes);
+    campo.addEventListener("input", limitarAcompanantes);
+});
+
+
 limitarAcompanantes();
-setInterval(actualizarCountdown, 1000);
+if (!Number.isNaN(fechaEvento) && fechaEvento > 0) {
+    actualizarCountdown();
+    setInterval(actualizarCountdown, 1000);
+}
 
 const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 if (!reduceMotion && "IntersectionObserver" in window) {
@@ -102,4 +123,11 @@ if (!reduceMotion && "IntersectionObserver" in window) {
     });
 } else {
     document.querySelectorAll(".section .panel").forEach((panel) => panel.classList.add("is-visible"));
+}
+
+if (rsvpForm && rsvpSubmit) {
+    rsvpForm.addEventListener("submit", () => {
+        rsvpSubmit.disabled = true;
+        rsvpSubmit.textContent = "Guardando...";
+    });
 }

@@ -6,7 +6,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Editor visual - {{ evento }}</title>
     <link href="https://fonts.googleapis.com/css2?family=Allura&family=Cormorant+Garamond:wght@500;600;700&family=Great+Vibes&family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@300;400;500;600&family=Parisienne&family=Playfair+Display:wght@500;600;700&family=Poppins:wght@300;400;500;600;700&family=Tangerine:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'invitaciones/css/editor_invitacion.css' %}">
+    <link
+        rel="stylesheet"
+        href="{% static 'invitaciones/css/editor_invitacion.css' %}?v=20260730-02"
+    >
+    <script defer src="{% static 'invitaciones/js/editor_invitacion.js' %}?v=20260730-02"></script>
 </head>
 <body>
     {{ editor_config|json_script:"editor-config" }}
@@ -26,6 +30,7 @@
         data-upload-url="{{ subir_asset_url }}"
         data-assign-asset-url="{{ asignar_asset_url }}"
         data-delete-asset-url="{{ eliminar_asset_url }}"
+        data-components-url="{{ componentes_url }}"
     >
         <header class="editor-topbar">
             <div>
@@ -71,24 +76,28 @@
 
             <section class="canvas-stage">
                 <div class="canvas-toolbar">
-                    <button class="is-active" type="button" data-preview-mode="draft">Diseño rápido</button>
+                    <button class="{% if not preview_borrador_url %}is-active{% endif %}" type="button" data-preview-mode="draft">Diseno rapido</button>
                     {% if preview_borrador_url %}
-                        <button type="button" data-preview-mode="real">Vista real</button>
+                        <button class="is-active" type="button" data-preview-mode="real">Vista real</button>
+                        <div class="live-mode-toggle" data-live-mode-toggle aria-label="Modo de interaccion de la vista real">
+                            <button class="is-active" type="button" data-live-preview-mode="edit">Editar</button>
+                            <button type="button" data-live-preview-mode="test">Probar</button>
+                        </div>
                     {% endif %}
                     <button class="is-active" type="button" data-device-mode="iphone">iPhone</button>
                     <button type="button" data-device-mode="android">Android</button>
                     <button type="button" data-device-mode="tablet">Tablet</button>
                     <button type="button" data-device-mode="desktop">Desktop</button>
                 </div>
-                <div class="phone-preview" data-phone-preview data-preview-panel="draft">
+                <div class="phone-preview" data-phone-preview data-preview-panel="draft"{% if preview_borrador_url %} hidden{% endif %}>
                     <div class="phone-notch"></div>
                     <div class="invitation-preview" data-preview-root></div>
                 </div>
                 {% if preview_borrador_url %}
-                    <div class="phone-preview real-phone-preview" data-preview-panel="real" hidden>
+                    <div class="phone-preview real-phone-preview" data-preview-panel="real">
                         <div class="phone-notch"></div>
-                        <div class="real-preview-hint">Toca una seccion o capa para editarla</div>
-                        <iframe src="{{ preview_borrador_url }}" title="Vista real del borrador" data-real-preview-frame></iframe>
+                        <div class="real-preview-hint" data-live-preview-hint>Modo editar: selecciona y mueve componentes sobre la invitacion real</div>
+                        <iframe src="{{ preview_borrador_url }}" title="Vista real editable del borrador" data-real-preview-frame></iframe>
                     </div>
                 {% endif %}
             </section>
@@ -133,7 +142,12 @@
                 </section>
 
                 <section class="property-group" data-section-properties>
-                    <h3>Seccion seleccionada</h3>
+                    <div class="section-properties-heading">
+                        <div>
+                            <h3>Sección seleccionada</h3>
+                            <p class="muted">Primero elige una sección del panel izquierdo. Después usa Diseño fácil.</p>
+                        </div>
+                    </div>
                     <label>
                         Titulo
                         <input type="text" data-section-field="title">
@@ -528,22 +542,30 @@
                                 {% endif %}
                                 <span>{{ asset.titulo|default:"Archivo" }}</span>
                                 <select data-asset-target>
-                                    <option value="FONDO_SECCION">Fondo seccion</option>
-                                    <option value="TITULO_SECCION">Imagen titulo</option>
-                                    <option value="PORTADA">Portada principal</option>
-                                    <option value="CEREMONIA">Portada templo</option>
-                                    <option value="RECEPCION">Portada fiesta</option>
-                                    <option value="DRESS_PERMITIDO">Dress permitido</option>
-                                    <option value="DRESS_PROHIBIDO">Dress prohibido</option>
-                                    <option value="CAPA_LIBRE">Capa libre</option>
-                                    <option value="ALBUM">Agregar al album</option>
+                                    <option value="TITULO_SECCION">Imagen completa</option>
+                                    <option value="FONDO_SECCION">Fondo</option>
+                                    <option value="CAPA_LIBRE">Capa</option>
+                                    <option value="ALBUM">Álbum</option>
                                 </select>
                                 <div class="asset-quick-targets">
-                                    <button type="button" data-asset-quick-target="CAPA_LIBRE">Capa</button>
-                                    <button type="button" data-asset-quick-target="FONDO_SECCION">Fondo</button>
-                                    <button type="button" data-asset-quick-target="TITULO_SECCION">Titulo</button>
-                                    <button type="button" data-asset-quick-target="PORTADA">Portada</button>
-                                    <button type="button" data-asset-quick-target="ALBUM">Album</button>
+                                    <button type="button" data-asset-quick-target="TITULO_SECCION">
+                                        Imagen completa
+                                    </button>
+
+                                    <button type="button" data-asset-quick-target="FONDO_SECCION">
+                                        Fondo
+                                    </button>
+
+                                    <button type="button" data-asset-quick-target="CAPA_LIBRE">
+                                        Capa
+                                    </button>
+                                    <button type="button" data-asset-quick-target="COMPONENTE_IMAGEN">
+                                        Imagen componente
+                                    </button>
+
+                                    <button type="button" data-asset-quick-target="ALBUM">
+                                        Álbum
+                                    </button>
                                 </div>
                                 <div class="asset-actions">
                                     <button type="button" data-asset-assign>Usar</button>
@@ -558,6 +580,5 @@
             </aside>
         </main>
     </div>
-    <script src="{% static 'invitaciones/js/editor_invitacion.js' %}"></script>
 </body>
 </html>

@@ -1,0 +1,54 @@
+{% if secciones.ALBUM.activa and evento.mostrar_album and fotos_album %}
+<section
+    class="section"
+    id="album"
+    data-invitation-section="ALBUM"
+    style="
+        order: {{ secciones.ALBUM.orden }};
+        {{ secciones.ALBUM.estilo_editor }}
+    "
+>
+    <div
+        class="panel section-header-panel
+        {% if secciones.ALBUM.imagen_titulo %}has-section-header-media has-section-full-image{% endif %}
+        {% if secciones.ALBUM.fondo %}bg-panel{% endif %}
+        {% if secciones.ALBUM.fondo_es_video %}bg-video-panel{% endif %}"
+        {% if secciones.ALBUM.fondo and not secciones.ALBUM.fondo_es_video %}
+            style="
+                background-image: url('{{ secciones.ALBUM.fondo.url }}');
+                background-position: {{ secciones.ALBUM.posicion_fondo }};
+            "
+        {% endif %}
+    >
+        {% include "invitaciones/partials/_section_base.html" with seccion=secciones.ALBUM titulo_default="Álbum" texto_alt="Álbum del evento" media_class="album-full-image" %}
+
+        <div class="section-main-content">
+            <div class="album-grid">
+                {% for foto in fotos_album %}
+                    <figure>
+                        {% if foto.es_video %}
+                            <video
+                                src="{{ foto.imagen.url }}"
+                                controls
+                                playsinline
+                                preload="metadata"
+                            ></video>
+                        {% else %}
+                            <img
+                                src="{{ foto.imagen.url }}"
+                                alt="{{ foto.titulo|default:'Foto del evento' }}"
+                                loading="lazy"
+                                decoding="async"
+                            >
+                        {% endif %}
+
+                        {% if foto.titulo %}
+                            <figcaption>{{ foto.titulo }}</figcaption>
+                        {% endif %}
+                    </figure>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endif %}

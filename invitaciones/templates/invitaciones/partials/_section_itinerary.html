@@ -1,0 +1,60 @@
+{% if secciones.ITINERARIO.activa and itinerario %}
+<section
+    class="section"
+    id="itinerario"
+    data-invitation-section="ITINERARIO"
+    style="
+        order: {{ secciones.ITINERARIO.orden }};
+        {{ secciones.ITINERARIO.estilo_editor }}
+    "
+>
+    <div
+        class="panel itinerary-panel section-header-panel
+        {% if secciones.ITINERARIO.imagen_titulo %}has-section-header-media{% endif %}
+        {% if secciones.ITINERARIO.fondo %}bg-panel{% endif %}
+        {% if secciones.ITINERARIO.fondo_es_video %}bg-video-panel{% endif %}"
+        {% if secciones.ITINERARIO.fondo and not secciones.ITINERARIO.fondo_es_video %}
+            style="
+                background-image: url('{{ secciones.ITINERARIO.fondo.url }}');
+                background-position: {{ secciones.ITINERARIO.posicion_fondo }};
+            "
+        {% endif %}
+    >
+        {% if secciones.ITINERARIO.fondo_es_video and secciones.ITINERARIO.fondo %}
+            <video
+                class="panel-bg-video"
+                src="{{ secciones.ITINERARIO.fondo.url }}"
+                autoplay
+                muted
+                loop
+                playsinline
+                preload="metadata"
+            ></video>
+        {% endif %}
+
+        {% include "invitaciones/partials/_capas_personalizadas.html" with seccion=secciones.ITINERARIO %}
+
+        {% include "invitaciones/partials/_section_header.html" with seccion=secciones.ITINERARIO titulo_default="Itinerario" texto_alt="Portada del itinerario" %}
+
+        <div class="section-main-content">
+            <div class="itinerary-list">
+                {% for item in itinerario %}
+                    <div class="itinerary-item">
+                        <time datetime="{{ item.hora|time:'H:i' }}">
+                            {{ item.hora|time:"H:i" }}
+                        </time>
+
+                        <div>
+                            <strong>{{ item.titulo }}</strong>
+
+                            {% if item.descripcion %}
+                                <p>{{ item.descripcion }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endif %}

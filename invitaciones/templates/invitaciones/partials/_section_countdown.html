@@ -1,0 +1,70 @@
+{% if secciones.CUENTA_REGRESIVA.activa %}
+<section
+    class="section"
+    id="cuenta"
+    data-invitation-section="CUENTA_REGRESIVA"
+    style="
+        order: {{ secciones.CUENTA_REGRESIVA.orden }};
+        {{ secciones.CUENTA_REGRESIVA.estilo_editor }}
+    "
+>
+    <div
+        class="panel countdown-panel section-header-panel
+        {% if secciones.CUENTA_REGRESIVA.imagen_titulo %}
+            has-section-header-media
+        {% endif %}
+        {% if secciones.CUENTA_REGRESIVA.fondo %}
+            bg-panel
+        {% endif %}
+        {% if secciones.CUENTA_REGRESIVA.fondo_es_video %}
+            bg-video-panel
+        {% endif %}"
+        {% if secciones.CUENTA_REGRESIVA.fondo and not secciones.CUENTA_REGRESIVA.fondo_es_video %}
+            style="
+                background-image: url('{{ secciones.CUENTA_REGRESIVA.fondo.url }}');
+                background-position: {{ secciones.CUENTA_REGRESIVA.posicion_fondo }};
+            "
+        {% endif %}
+    >
+        {% if secciones.CUENTA_REGRESIVA.fondo_es_video and secciones.CUENTA_REGRESIVA.fondo %}
+            <video
+                class="panel-bg-video"
+                src="{{ secciones.CUENTA_REGRESIVA.fondo.url }}"
+                autoplay
+                muted
+                loop
+                playsinline
+                preload="metadata"
+            ></video>
+        {% endif %}
+
+        {% include "invitaciones/partials/_capas_personalizadas.html" with seccion=secciones.CUENTA_REGRESIVA %}
+
+        {% include "invitaciones/partials/_section_header.html" with seccion=secciones.CUENTA_REGRESIVA titulo_default="Cuenta regresiva" texto_alt="Portada de cuenta regresiva" %}
+
+        <div class="section-main-content countdown-interactive-layer" data-editor-layer="text">
+            <div class="count-grid">
+                <div class="count-box">
+                    <strong id="dias">0</strong>
+                    <span>Días</span>
+                </div>
+
+                <div class="count-box">
+                    <strong id="horas">0</strong>
+                    <span>Horas</span>
+                </div>
+
+                <div class="count-box">
+                    <strong id="minutos">0</strong>
+                    <span>Minutos</span>
+                </div>
+
+                <div class="count-box">
+                    <strong id="segundos">0</strong>
+                    <span>Segundos</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endif %}

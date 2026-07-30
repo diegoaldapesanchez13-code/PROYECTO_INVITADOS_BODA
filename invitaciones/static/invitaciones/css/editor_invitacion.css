@@ -1278,3 +1278,478 @@ video {
         font-size: 2.8rem;
     }
 }
+
+
+/* ================================================================
+   EDITOR SIMPLIFICADO 2026-07-29
+   Mantiene las funciones avanzadas, pero muestra un flujo fácil.
+   ================================================================ */
+
+.editor-shell[data-editor-mode="simple"] .advanced-only {
+    display: none !important;
+}
+
+.properties-panel > .property-group {
+    display: none;
+}
+
+.editor-shell[data-editor-panel="design"] .properties-panel > [data-editor-group="design"],
+.editor-shell[data-editor-panel="content"] .properties-panel > [data-editor-group="content"],
+.editor-shell[data-editor-panel="assets"] .properties-panel > [data-editor-group="assets"] {
+    display: grid;
+}
+
+.simple-editor-toolbar {
+    position: sticky;
+    top: -14px;
+    z-index: 8;
+    display: grid;
+    gap: 9px;
+    margin: -4px -4px 10px;
+    padding: 10px;
+    border: 1px solid var(--editor-line);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, .97);
+    box-shadow: 0 10px 24px rgba(34, 37, 45, .08);
+}
+
+.editor-mode-switch,
+.editor-panel-switch,
+.easy-actions {
+    display: grid;
+    gap: 6px;
+}
+
+.editor-mode-switch {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.editor-panel-switch {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.easy-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.simple-editor-toolbar button {
+    min-height: 36px;
+    border: 1px solid var(--editor-line);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--editor-primary);
+    cursor: pointer;
+    font-size: .74rem;
+    font-weight: 800;
+    padding: 7px 8px;
+}
+
+.simple-editor-toolbar button.is-active,
+.easy-actions button {
+    border-color: var(--editor-primary);
+    background: var(--editor-primary);
+    color: #fff;
+}
+
+.easy-actions button:last-child {
+    border-color: var(--editor-accent);
+    background: color-mix(in srgb, var(--editor-accent) 78%, var(--editor-primary));
+}
+
+.simple-editor-help {
+    margin: 0;
+    color: var(--editor-muted);
+    font-size: .72rem;
+    line-height: 1.4;
+}
+
+.section-properties-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.range-readout {
+    display: inline-flex;
+    min-width: 38px;
+    justify-content: center;
+    margin-left: 6px;
+    border-radius: 999px;
+    background: var(--editor-soft);
+    color: var(--editor-primary);
+    font-size: .68rem;
+    font-weight: 800;
+    padding: 3px 6px;
+    vertical-align: middle;
+}
+
+.properties-panel input[type="range"] {
+    width: calc(100% - 48px);
+    vertical-align: middle;
+}
+
+.editor-layout {
+    grid-template-columns: minmax(220px, 260px) minmax(430px, 1fr) minmax(340px, 390px);
+}
+
+.canvas-stage {
+    min-width: 0;
+}
+
+.preview-section {
+    min-height: 300px;
+}
+
+.preview-section[data-section-type="CUENTA_REGRESIVA"] {
+    min-height: 560px !important;
+    padding: 0;
+}
+
+.preview-section[data-section-type="CUENTA_REGRESIVA"] .preview-section-bg {
+    background-size: contain !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+}
+
+.preview-section[data-section-type="CUENTA_REGRESIVA"] .preview-countdown {
+    width: 100%;
+}
+
+.preview-section[data-section-type="CUENTA_REGRESIVA"] .preview-countdown > div {
+    width: 100%;
+}
+
+.preview-countdown > div span {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+    border: 1px solid var(--editor-line);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .86);
+    padding: 9px 3px;
+    text-align: center;
+}
+
+.preview-countdown > div span small {
+    display: block;
+    color: var(--editor-muted);
+    font-family: var(--editor-body-font);
+    font-size: .48rem;
+    text-transform: uppercase;
+}
+
+.preview-layer[data-layer="title"] {
+    z-index: 3;
+}
+
+.preview-layer[data-layer="text"] {
+    z-index: 4;
+}
+
+.preview-section.is-selected .preview-layer {
+    pointer-events: auto;
+}
+
+.preview-section:not(.is-selected) .preview-layer,
+.preview-section:not(.is-selected) .preview-section-bg {
+    pointer-events: none;
+}
+
+/* Reduce el riesgo de seleccionar y mover varias capas por accidente. */
+.editor-shell[data-editor-mode="simple"] .preview-section.is-selected .preview-layer:not([data-layer="text"]),
+.editor-shell[data-editor-mode="simple"] .preview-section.is-selected .preview-custom-layer {
+    pointer-events: none;
+}
+
+.editor-shell[data-editor-mode="simple"] .preview-section.is-selected[data-active-layer="background"] .preview-section-bg,
+.editor-shell[data-editor-mode="simple"] .preview-section.is-selected[data-active-layer="text"] .preview-layer[data-layer="text"] {
+    pointer-events: auto;
+}
+
+/* Paneles más fáciles de leer. */
+.property-group {
+    gap: 12px;
+}
+
+.property-group > h3 {
+    position: sticky;
+    top: 154px;
+    z-index: 2;
+    margin: -4px -2px 0;
+    padding: 8px 4px;
+    background: var(--editor-panel);
+}
+
+.layer-toolbar {
+    position: sticky;
+    top: 190px;
+    z-index: 3;
+    padding: 6px;
+    border: 1px solid var(--editor-line);
+    border-radius: 9px;
+    background: rgba(255,255,255,.96);
+}
+
+@media (max-width: 1220px) {
+    .editor-layout {
+        grid-template-columns: minmax(210px, 250px) minmax(390px, 1fr) minmax(320px, 370px);
+    }
+}
+
+@media (max-width: 1080px) {
+    .editor-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .section-panel,
+    .properties-panel {
+        position: static;
+        max-height: none;
+    }
+
+    .properties-panel {
+        order: 3;
+    }
+
+    .canvas-stage {
+        order: 2;
+    }
+
+    .section-panel {
+        order: 1;
+    }
+}
+/* Secciones que utilizan una imagen completa */
+
+.preview-section.is-full-image {
+    min-height: 0 !important;
+    aspect-ratio: 2 / 3;
+    padding: 0;
+}
+
+.preview-section.is-full-image .preview-section-bg {
+    background-size: contain !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+    opacity: 1 !important;
+    filter: none !important;
+}
+
+.preview-section.is-full-image .preview-title-layer {
+    display: none !important;
+}
+/* Imagen completa detectada por JavaScript */
+
+.preview-section.is-full-image {
+    min-height: 0 !important;
+    aspect-ratio: 2 / 3;
+    padding: 0;
+    background: transparent;
+}
+
+.preview-section.is-full-image .preview-section-bg {
+    background-size: contain !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+    opacity: 1 !important;
+    filter: none !important;
+}
+
+.preview-section.is-full-image .preview-title-layer {
+    display: none !important;
+}
+
+.preview-section.is-full-image.hide-real-content
+.preview-text-layer {
+    display: none !important;
+}
+
+.preview-section.is-full-image
+.preview-custom-layer {
+    pointer-events: none;
+}
+/* =========================================================
+   IMAGEN COMPLETA EN LA VISTA RÁPIDA DEL EDITOR
+   ========================================================= */
+
+.preview-section.is-full-image {
+    position: relative;
+    min-height: 0 !important;
+    padding: 0 !important;
+    aspect-ratio: 2 / 3;
+    overflow: hidden;
+}
+
+.preview-section.is-full-image .is-full-image-title-layer {
+    position: absolute;
+    inset: 0;
+    width: 100% !important;
+    height: 100% !important;
+
+    transform: none !important;
+    opacity: 1 !important;
+
+    display: block !important;
+    pointer-events: auto;
+}
+
+.preview-section.is-full-image
+.is-full-image-title-layer
+.preview-title-asset {
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+    max-width: none !important;
+
+    object-fit: contain !important;
+    object-position: center center;
+
+    margin: 0;
+    padding: 0;
+}
+/* =========================================================
+   FASE 5.1 - COMPONENTES DEL CONSTRUCTOR VISUAL
+   ========================================================= */
+
+.component-tools {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    padding: 8px;
+    border: 1px solid var(--editor-line);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, .88);
+}
+
+.component-tools span {
+    grid-column: 1 / -1;
+    color: var(--editor-muted);
+    font-size: .78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.preview-builder-component {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    min-height: 24px;
+    cursor: move;
+    touch-action: none;
+    pointer-events: auto;
+}
+
+.preview-builder-component.is-selected-component {
+    outline: 2px solid #2563eb;
+    outline-offset: 3px;
+}
+
+.preview-builder-component.is-locked {
+    cursor: not-allowed;
+    opacity: .72;
+}
+
+.preview-builder-text {
+    display: block;
+    width: 100%;
+    color: var(--editor-text);
+    line-height: 1.15;
+    text-align: center;
+    white-space: pre-wrap;
+}
+
+.preview-builder-image {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-position: center;
+}
+
+.preview-builder-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 46px;
+    border: 1px dashed #94a3b8;
+    border-radius: 8px;
+    background: rgba(248, 250, 252, .88);
+    color: #64748b;
+    font-size: .82rem;
+    font-weight: 700;
+}
+
+.preview-builder-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 38px;
+    padding: 9px 14px;
+    border-radius: 999px;
+    background: var(--editor-primary);
+    color: #fff;
+    font-weight: 800;
+    line-height: 1.1;
+    text-align: center;
+    box-shadow: 0 10px 24px rgba(37, 99, 235, .2);
+}
+
+.preview-builder-button.secondary {
+    background: #fff;
+    color: var(--editor-primary);
+    border: 1px solid var(--editor-line);
+}
+
+.preview-section:not(.is-selected) .preview-builder-component {
+    pointer-events: none;
+}
+
+.asset-quick-targets [data-asset-quick-target="COMPONENTE_IMAGEN"] {
+    grid-column: span 2;
+}
+/* =========================================================
+   FASE 5.2 - LIVE PREVIEW SOBRE INVITACION REAL
+   ========================================================= */
+
+.live-mode-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    margin-left: 3px;
+    padding: 3px;
+    border: 1px solid var(--editor-line);
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--editor-soft) 44%, white);
+}
+
+.live-mode-toggle button {
+    padding-inline: 9px;
+}
+
+.editor-shell[data-live-preview-mode="test"] .real-preview-hint {
+    border-color: color-mix(in srgb, #16a34a 46%, white);
+    background: rgba(240, 253, 244, .92);
+}
+
+.real-phone-preview {
+    isolation: isolate;
+}
+
+.real-phone-preview iframe {
+    display: block;
+}
+
+.real-preview-hint {
+    z-index: 6;
+}
+
+@media (max-width: 1180px) {
+    .live-mode-toggle {
+        width: 100%;
+        justify-content: center;
+    }
+}

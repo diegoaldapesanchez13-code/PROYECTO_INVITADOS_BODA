@@ -1,0 +1,210 @@
+{% if secciones.DETALLES.activa %}
+<section
+    class="section"
+    id="detalles"
+    data-invitation-section="DETALLES"
+    style="
+        order: {{ secciones.DETALLES.orden }};
+        {{ secciones.DETALLES.estilo_editor }}
+    "
+>
+    <div
+        class="panel details-panel section-header-panel
+        {% if secciones.DETALLES.imagen_titulo %}has-section-header-media has-section-full-image is-image-only-section{% endif %}
+        {% if secciones.DETALLES.fondo %}
+            bg-panel
+        {% endif %}
+        {% if secciones.DETALLES.fondo_es_video %}
+            bg-video-panel
+        {% endif %}"
+        {% if secciones.DETALLES.fondo and not secciones.DETALLES.fondo_es_video %}
+            style="
+                background-image: url('{{ secciones.DETALLES.fondo.url }}');
+                background-position: {{ secciones.DETALLES.posicion_fondo }};
+            "
+        {% endif %}
+    >
+        {% include "invitaciones/partials/_section_base.html" with seccion=secciones.DETALLES titulo_default="Detalles del evento" texto_alt="Detalles del evento" media_class="details-full-image" %}
+
+        <div class="section-main-content">
+            <div class="event-detail-grid">
+
+                <div class="info-box event-place-card">
+                    {% if evento.foto_ceremonia %}
+                        <div class="place-media">
+                            {% if evento.ceremonia_es_video %}
+                                <video
+                                    src="{{ evento.foto_ceremonia.url }}"
+                                    muted
+                                    controls
+                                    playsinline
+                                    preload="metadata"
+                                ></video>
+                            {% else %}
+                                <img
+                                    src="{{ evento.foto_ceremonia.url }}"
+                                    alt="{{ evento.lugar_misa }}"
+                                    loading="lazy"
+                                    decoding="async"
+                                >
+                            {% endif %}
+                        </div>
+                    {% endif %}
+
+                    <div class="card-title">
+                        Ceremonia
+                    </div>
+
+                    {% if evento.fecha_misa %}
+                        <div class="value">
+                            {{ evento.fecha_misa|date:"d/m/Y" }}
+                        </div>
+
+                        <p>
+                            {{ evento.fecha_misa|date:"h:i A" }}
+                            {% if evento.lugar_misa %}
+                                · {{ evento.lugar_misa }}
+                            {% endif %}
+                        </p>
+                    {% elif evento.lugar_misa %}
+                        <p>{{ evento.lugar_misa }}</p>
+                    {% endif %}
+
+                    {% if evento.direccion_ceremonia %}
+                        <p class="place-address">
+                            {{ evento.direccion_ceremonia }}
+                        </p>
+                    {% endif %}
+
+                    {% if evento.link_mapa_misa %}
+                        <a
+                            class="btn secondary"
+                            href="{{ evento.link_mapa_misa }}"
+                            target="_blank"
+                            rel="noopener"
+                        >
+                            Ver ubicación
+                        </a>
+                    {% endif %}
+
+                    {% if evento.mostrar_mapa %}
+                        {% if evento.mapa_misa_embed_html %}
+                            <div class="map-card">
+                                <div class="embed-map">
+                                    {{ evento.mapa_misa_embed_html }}
+                                </div>
+                            </div>
+                        {% elif evento.link_mapa_misa %}
+                            <div class="map-card">
+                                <iframe
+                                    src="{{ evento.link_mapa_misa }}"
+                                    loading="lazy"
+                                    allowfullscreen
+                                    title="Mapa de la ceremonia"
+                                ></iframe>
+                            </div>
+                        {% endif %}
+                    {% endif %}
+                </div>
+
+                <div class="info-box event-place-card">
+                    {% if evento.foto_recepcion %}
+                        <div class="place-media">
+                            {% if evento.recepcion_es_video %}
+                                <video
+                                    src="{{ evento.foto_recepcion.url }}"
+                                    muted
+                                    controls
+                                    playsinline
+                                    preload="metadata"
+                                ></video>
+                            {% else %}
+                                <img
+                                    src="{{ evento.foto_recepcion.url }}"
+                                    alt="{{ evento.lugar_fiesta }}"
+                                    loading="lazy"
+                                    decoding="async"
+                                >
+                            {% endif %}
+                        </div>
+                    {% endif %}
+
+                    <div class="card-title">
+                        Fiesta
+                    </div>
+
+                    {% if evento.fecha_fiesta %}
+                        <div class="value">
+                            {{ evento.fecha_fiesta|date:"d/m/Y" }}
+                        </div>
+
+                        <p>
+                            {{ evento.fecha_fiesta|date:"h:i A" }}
+                            {% if evento.lugar_fiesta %}
+                                · {{ evento.lugar_fiesta }}
+                            {% endif %}
+                        </p>
+                    {% elif evento.lugar_fiesta %}
+                        <p>{{ evento.lugar_fiesta }}</p>
+                    {% endif %}
+
+                    {% if evento.direccion_recepcion %}
+                        <p class="place-address">
+                            {{ evento.direccion_recepcion }}
+                        </p>
+                    {% endif %}
+
+                    {% if evento.link_mapa_fiesta %}
+                        <a
+                            class="btn secondary"
+                            href="{{ evento.link_mapa_fiesta }}"
+                            target="_blank"
+                            rel="noopener"
+                        >
+                            Ver ubicación
+                        </a>
+                    {% elif evento.link_mapa %}
+                        <a
+                            class="btn secondary"
+                            href="{{ evento.link_mapa }}"
+                            target="_blank"
+                            rel="noopener"
+                        >
+                            Ver ubicación
+                        </a>
+                    {% endif %}
+
+                    {% if evento.mostrar_mapa %}
+                        {% if evento.mapa_fiesta_embed_html %}
+                            <div class="map-card">
+                                <div class="embed-map">
+                                    {{ evento.mapa_fiesta_embed_html }}
+                                </div>
+                            </div>
+                        {% elif evento.link_mapa_fiesta %}
+                            <div class="map-card">
+                                <iframe
+                                    src="{{ evento.link_mapa_fiesta }}"
+                                    loading="lazy"
+                                    allowfullscreen
+                                    title="Mapa de la fiesta"
+                                ></iframe>
+                            </div>
+                        {% elif evento.link_mapa %}
+                            <div class="map-card">
+                                <iframe
+                                    src="{{ evento.link_mapa }}"
+                                    loading="lazy"
+                                    allowfullscreen
+                                    title="Mapa de la fiesta"
+                                ></iframe>
+                            </div>
+                        {% endif %}
+                    {% endif %}
+                </div>
+
+            </div>
+        </div>
+    </div>
+</section>
+{% endif %}

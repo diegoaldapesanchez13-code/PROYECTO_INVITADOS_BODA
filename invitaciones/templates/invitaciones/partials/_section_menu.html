@@ -1,0 +1,96 @@
+{% if secciones.MENU.activa and evento.mostrar_menu %}
+<section
+    class="section menu-section"
+    id="menu"
+    data-invitation-section="MENU"
+    style="
+        order: {{ secciones.MENU.orden }};
+        {{ secciones.MENU.estilo_editor }}
+    "
+>
+    <div
+        class="panel menu-panel
+        {% if secciones.MENU.imagen_titulo %}
+            is-image-only-section
+        {% endif %}
+        {% if secciones.MENU.fondo %}
+            bg-panel
+        {% endif %}
+        {% if secciones.MENU.fondo_es_video %}
+            bg-video-panel
+        {% endif %}"
+        {% if secciones.MENU.fondo and not secciones.MENU.fondo_es_video %}
+            style="
+                background-image: url('{{ secciones.MENU.fondo.url }}');
+                background-position: {{ secciones.MENU.posicion_fondo }};
+            "
+        {% endif %}
+    >
+        {% if secciones.MENU.fondo_es_video and secciones.MENU.fondo %}
+            <video
+                class="panel-bg-video"
+                src="{{ secciones.MENU.fondo.url }}"
+                autoplay
+                muted
+                loop
+                playsinline
+                preload="metadata"
+            ></video>
+        {% endif %}
+
+        {% include "invitaciones/partials/_capas_personalizadas.html" with seccion=secciones.MENU %}
+
+        {% if secciones.MENU.imagen_titulo %}
+
+            {% if secciones.MENU.imagen_titulo_es_video %}
+                <video
+                    class="menu-full-image"
+                    src="{{ secciones.MENU.imagen_titulo.url }}"
+                    autoplay
+                    muted
+                    loop
+                    playsinline
+                    preload="metadata"
+                ></video>
+            {% else %}
+                <img
+                    class="menu-full-image"
+                    src="{{ secciones.MENU.imagen_titulo.url }}"
+                    alt="Diseño completo del menú"
+                    loading="lazy"
+                    decoding="async"
+                >
+            {% endif %}
+
+        {% else %}
+
+            {% include "invitaciones/partials/_section_header.html" with seccion=secciones.MENU titulo_default="Menú" texto_alt="Portada del menú" %}
+
+            {% if menus %}
+                <div class="section-main-content">
+                    <div class="menu-grid">
+                        {% for menu in menus %}
+                            <div class="menu-box">
+                                <span class="pill">
+                                    {{ menu.get_tipo_display }}
+                                </span>
+
+                                <h3>
+                                    {{ menu.nombre }}
+                                </h3>
+
+                                {% if menu.descripcion %}
+                                    <p>
+                                        {{ menu.descripcion }}
+                                    </p>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+
+        {% endif %}
+    </div>
+</section>
+{% endif %}

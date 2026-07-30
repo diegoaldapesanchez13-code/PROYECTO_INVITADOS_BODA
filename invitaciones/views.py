@@ -24,6 +24,7 @@ from urllib.parse import quote
 
 from .models import (
     AssetInvitacion,
+    ComponenteInvitacion,
     DetalleProduccionEvento,
     DisenoInvitacion,
     EnlaceRegalo,
@@ -2152,7 +2153,21 @@ def normalizar_configuracion_editor(evento, payload):
                 'backgroundOpacity': str(convertir_decimal(item_config.get('backgroundOpacity'), seccion.opacidad_fondo)),
                 'backgroundPosition': item_config.get('backgroundPosition') if item_config.get('backgroundPosition') in dict(SeccionInvitacion.POSICIONES_FONDO) else seccion.posicion_fondo,
                 'textColor': color_seguro(item_config.get('textColor')),
-                'showTextTitle': bool(item_config.get('showTextTitle', True)),
+                'showTextTitle': (
+                    item_config.get('showTextTitle')
+                    if isinstance(item_config.get('showTextTitle'), bool)
+                    else seccion.mostrar_titulo_texto
+                ),
+                'layoutMode': (
+                    item_config.get('layoutMode')
+                    if item_config.get('layoutMode') in {'normal', 'full-image'}
+                    else 'normal'
+                ),
+                'keepRealContent': (
+                    item_config.get('keepRealContent')
+                    if isinstance(item_config.get('keepRealContent'), bool)
+                    else True
+                ),
                 'backgroundAsset': asset_ref_seguro(evento, (item_config.get('backgroundAsset') or {}).get('id') if isinstance(item_config.get('backgroundAsset'), dict) else None),
                 'titleAsset': asset_ref_seguro(evento, (item_config.get('titleAsset') or {}).get('id') if isinstance(item_config.get('titleAsset'), dict) else None),
                 'backgroundFit': item_config.get('backgroundFit') if item_config.get('backgroundFit') in EDITOR_BG_FIT else 'contain',
@@ -2268,7 +2283,10 @@ def aplicar_diseno_publicado(evento, config):
         seccion.descripcion = item.get('description') or ''
         seccion.orden = convertir_entero(item.get('order'), seccion.orden)
         seccion.activa = bool(item.get('visible'))
-        seccion.mostrar_titulo_texto = bool(item_config.get('showTextTitle', True))
+        if 'showTextTitle' in item_config:
+            seccion.mostrar_titulo_texto = (
+                item_config.get('showTextTitle') is True
+            )
         seccion.posicion_fondo = item_config.get('backgroundPosition') or seccion.posicion_fondo
         seccion.color_texto = color_seguro(item_config.get('textColor')) or None
         seccion.opacidad_fondo = convertir_decimal(item_config.get('backgroundOpacity'), seccion.opacidad_fondo)
@@ -2407,7 +2425,7 @@ def aplicar_configuracion_preview_a_secciones(secciones, config):
             'descripcion': item.get('description') if item.get('description') is not None else datos.get('descripcion'),
             'orden': convertir_entero(item.get('order'), datos.get('orden', 0)),
             'activa': bool(item.get('visible')),
-            'mostrar_titulo_texto': bool(item_config.get('showTextTitle', datos.get('mostrar_titulo_texto', True))),
+            'mostrar_titulo_texto': datos.get('mostrar_titulo_texto', True),
             'posicion_fondo': item_config.get('backgroundPosition') or datos.get('posicion_fondo', 'center center'),
             'opacidad_fondo': item_config.get('backgroundOpacity') or datos.get('opacidad_fondo'),
             'color_texto': color_seguro(item_config.get('textColor')) or datos.get('color_texto', ''),
@@ -5003,6 +5021,160 @@ def dashboard_metricas_json(request):
     evento, _ = obtener_evento_dashboard(request)
     return JsonResponse(construir_metricas_dashboard(evento))
 
+COMPONENTE_INVITACION_TIPOS = {'TEXTO', 'IMAGEN', 'BOTON'}
+
+
+def propiedades_componente_default(tipo):
+    if tipo == 'BOTON':
+        return {'label': 'Boton', 'href': '#', 'style': 'primary'}
+    if tipo == 'IMAGEN':
+        return {'src': '', 'alt': 'Imagen'}
+    return {'text': 'Nuevo texto', 'fontSize': 20, 'fontFamily': 'Playfair Display'}
+
+
+def normalizar_propiedades_componente(tipo, properties):
+    properties = properties if isinstance(properties, dict) else {}
+    defaults = propiedades_componente_default(tipo)
+    normalizadas = {**defaults, **properties}
+    if tipo == 'TEXTO':
+        normalizadas['text'] = str(normalizadas.get('text') or defaults['text'])[:500]
+        normalizadas['fontFamily'] = str(normalizadas.get('fontFamily') or defaults['fontFamily'])[:80]
+        normalizadas['fontSize'] = numero_rango(normalizadas.get('fontSize'), defaults['fontSize'], 8, 96)
+        normalizadas['color'] = color_seguro(normalizadas.get('color')) or normalizadas.get('color') or ''
+    elif tipo == 'IMAGEN':
+        src = str(normalizadas.get('src') or '')[:1000]
+        if src and not src.startswith(('/media/', 'http://', 'https://')):
+            src = ''
+        normalizadas['src'] = src
+        normalizadas['alt'] = str(normalizadas.get('alt') or defaults['alt'])[:180]
+        normalizadas['fit'] = normalizadas.get('fit') if normalizadas.get('fit') in EDITOR_MEDIA_FIT else 'contain'
+    elif tipo == 'BOTON':
+        href = str(normalizadas.get('href') or '#')[:1000]
+        if href != '#' and not href.startswith(('http://', 'https://', 'mailto:', 'tel:', 'whatsapp://')):
+            href = '#'
+        normalizadas['label'] = str(normalizadas.get('label') or defaults['label'])[:120]
+        normalizadas['href'] = href
+        normalizadas['style'] = normalizadas.get('style') if normalizadas.get('style') in {'primary', 'secondary'} else 'primary'
+    return normalizadas
+
+
+def serializar_componente_invitacion(componente):
+    return {
+        'id': componente.id,
+        'componentId': componente.id,
+        'sectionId': componente.seccion_id,
+        'sectionType': componente.seccion.tipo,
+        'tipo': componente.tipo,
+        'type': componente.tipo.lower(),
+        'x': componente.x,
+        'y': componente.y,
+        'width': componente.width,
+        'height': componente.height,
+        'rotation': componente.rotation,
+        'opacity': componente.opacity,
+        'zIndex': componente.z_index,
+        'locked': componente.locked,
+        'hidden': componente.hidden,
+        'properties': componente.properties or {},
+        'createdAt': componente.created_at.isoformat() if componente.created_at else None,
+        'updatedAt': componente.updated_at.isoformat() if componente.updated_at else None,
+    }
+
+
+def aplicar_payload_componente(componente, payload):
+    tipo = payload.get('tipo') or payload.get('type') or componente.tipo or 'TEXTO'
+    tipo = str(tipo).upper()
+    if tipo not in COMPONENTE_INVITACION_TIPOS:
+        tipo = 'TEXTO'
+    componente.tipo = tipo
+    componente.x = numero_rango(payload.get('x'), componente.x if componente.pk else 50, -40, 140, decimales=True)
+    componente.y = numero_rango(payload.get('y'), componente.y if componente.pk else 50, -40, 140, decimales=True)
+    componente.width = numero_rango(payload.get('width'), componente.width if componente.pk else 44, 4, 140, decimales=True)
+    componente.height = numero_rango(payload.get('height'), componente.height if componente.pk else 12, 2, 140, decimales=True)
+    componente.rotation = numero_rango(payload.get('rotation'), componente.rotation if componente.pk else 0, -180, 180, decimales=True)
+    componente.opacity = numero_rango(payload.get('opacity'), componente.opacity if componente.pk else 1, 0, 1, decimales=True)
+    componente.z_index = numero_rango(payload.get('zIndex', payload.get('z_index')), componente.z_index if componente.pk else 20, 1, 100)
+    componente.locked = bool(payload.get('locked', componente.locked if componente.pk else False))
+    componente.hidden = bool(payload.get('hidden', componente.hidden if componente.pk else False))
+    componente.properties = normalizar_propiedades_componente(tipo, payload.get('properties'))
+    return componente
+
+
+@login_required(login_url=LOGIN_DASHBOARD_URL)
+def componentes_invitacion_visual(request, evento_id):
+    evento = get_object_or_404(eventos_visibles_usuario(request.user), id=evento_id)
+    if request.method == 'GET':
+        componentes = ComponenteInvitacion.objects.filter(evento=evento).select_related('seccion')
+        return JsonResponse({
+            'ok': True,
+            'components': [serializar_componente_invitacion(componente) for componente in componentes],
+        })
+    if request.method != 'POST':
+        return JsonResponse({'ok': False, 'error': 'Metodo no permitido.'}, status=405)
+    try:
+        payload = json.loads(request.body.decode('utf-8') or '{}')
+    except json.JSONDecodeError:
+        return JsonResponse({'ok': False, 'error': 'Solicitud invalida.'}, status=400)
+    seccion = get_object_or_404(SeccionInvitacion, evento=evento, id=payload.get('sectionId'))
+    componente = ComponenteInvitacion(evento=evento, seccion=seccion)
+    aplicar_payload_componente(componente, payload)
+    try:
+        componente.full_clean()
+    except ValidationError as exc:
+        return JsonResponse({'ok': False, 'error': '; '.join(exc.messages)}, status=400)
+    componente.save()
+    registrar_auditoria(
+        usuario=request.user,
+        empresa=evento.empresa,
+        evento=evento,
+        accion='CREAR_COMPONENTE_INVITACION',
+        modelo='ComponenteInvitacion',
+        objeto_id=componente.id,
+        descripcion=f'Creo componente {componente.get_tipo_display()} en editor visual.',
+        request=request,
+    )
+    return JsonResponse({'ok': True, 'component': serializar_componente_invitacion(componente)}, status=201)
+
+
+@login_required(login_url=LOGIN_DASHBOARD_URL)
+def componente_invitacion_visual(request, evento_id, componente_id):
+    evento = get_object_or_404(eventos_visibles_usuario(request.user), id=evento_id)
+    componente = get_object_or_404(
+        ComponenteInvitacion.objects.select_related('seccion'),
+        evento=evento,
+        id=componente_id,
+    )
+    if request.method == 'DELETE':
+        componente.delete()
+        registrar_auditoria(
+            usuario=request.user,
+            empresa=evento.empresa,
+            evento=evento,
+            accion='ELIMINAR_COMPONENTE_INVITACION',
+            modelo='ComponenteInvitacion',
+            objeto_id=componente_id,
+            descripcion='Elimino componente del editor visual.',
+            request=request,
+        )
+        return JsonResponse({'ok': True, 'componentId': componente_id})
+    if request.method not in {'POST', 'PATCH'}:
+        return JsonResponse({'ok': False, 'error': 'Metodo no permitido.'}, status=405)
+    try:
+        payload = json.loads(request.body.decode('utf-8') or '{}')
+    except json.JSONDecodeError:
+        return JsonResponse({'ok': False, 'error': 'Solicitud invalida.'}, status=400)
+    if payload.get('action') == 'delete':
+        componente.delete()
+        return JsonResponse({'ok': True, 'componentId': componente_id})
+    if payload.get('sectionId'):
+        componente.seccion = get_object_or_404(SeccionInvitacion, evento=evento, id=payload.get('sectionId'))
+    aplicar_payload_componente(componente, payload)
+    try:
+        componente.full_clean()
+    except ValidationError as exc:
+        return JsonResponse({'ok': False, 'error': '; '.join(exc.messages)}, status=400)
+    componente.save()
+    return JsonResponse({'ok': True, 'component': serializar_componente_invitacion(componente)})
 
 @login_required(login_url=LOGIN_DASHBOARD_URL)
 def editor_invitacion_visual(request, evento_id):
@@ -5040,6 +5212,7 @@ def editor_invitacion_visual(request, evento_id):
         'subir_asset_url': f'/dashboard/editor-invitacion/{evento.id}/assets/subir/',
         'asignar_asset_url': f'/dashboard/editor-invitacion/{evento.id}/assets/asignar/',
         'eliminar_asset_url': f'/dashboard/editor-invitacion/{evento.id}/assets/eliminar/',
+        'componentes_url': f'/dashboard/editor-invitacion/{evento.id}/componentes/',
         'preview_borrador_url': f'/invitacion/{grupos.first().codigo}/?preview=1&draft=1' if grupos.first() else '',
         'dashboard_url': f'/dashboard/?evento={evento.id}#personalizacion',
     }
@@ -5575,16 +5748,35 @@ def asignar_asset_invitacion_visual(request, evento_id):
                     item_config['showBackgroundLayer'] = True
                 else:
                     item_config['showTitleAsset'] = True
-                seccion_objetivo = SeccionInvitacion.objects.filter(evento=evento, id=seccion_id).first()
+                    item_config['layoutMode'] = payload.get('layoutMode') or 'full-image'
+                    item_config['keepRealContent'] = bool(
+                        payload.get('keepRealContent', True)
+                    )
+                    item_config['showTextTitle'] = bool(
+                        payload.get('showTextTitle', False)
+                    )
+
+                seccion_objetivo = SeccionInvitacion.objects.filter(
+                    evento=evento,
+                    id=seccion_id,
+                ).first()
+
                 break
         else:
             return JsonResponse({'ok': False, 'error': 'Selecciona una seccion valida.'}, status=400)
         if seccion_objetivo:
             if destino == 'FONDO_SECCION':
                 seccion_objetivo.fondo = asset.archivo.name
+                seccion_objetivo.save(update_fields=['fondo'])
+
             else:
                 seccion_objetivo.imagen_titulo = asset.archivo.name
-            seccion_objetivo.save(update_fields=['fondo' if destino == 'FONDO_SECCION' else 'imagen_titulo'])
+                seccion_objetivo.save(update_fields=['imagen_titulo'])
+
+                # La sección PORTADA también alimenta la portada global del evento.
+                if seccion_objetivo.tipo == 'PORTADA':
+                    evento.foto_portada = asset.archivo.name
+                    evento.save(update_fields=['foto_portada'])
     else:
         return JsonResponse({'ok': False, 'error': 'Destino no permitido.'}, status=400)
 

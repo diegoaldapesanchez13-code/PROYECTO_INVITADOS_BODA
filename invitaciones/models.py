@@ -665,6 +665,62 @@ class MediaSeccionInvitacion(models.Model):
         return es_video_archivo(self.archivo)
 
 
+class ComponenteInvitacion(models.Model):
+    TIPOS = [
+        ('TEXTO', 'Texto'),
+        ('IMAGEN', 'Imagen'),
+        ('BOTON', 'Boton'),
+    ]
+
+    evento = models.ForeignKey(
+        EventoBoda,
+        on_delete=models.CASCADE,
+        related_name='componentes_invitacion',
+    )
+    seccion = models.ForeignKey(
+        SeccionInvitacion,
+        on_delete=models.CASCADE,
+        related_name='componentes',
+    )
+    tipo = models.CharField(max_length=20, choices=TIPOS)
+    x = models.FloatField(default=50)
+    y = models.FloatField(default=50)
+    width = models.FloatField(default=44)
+    height = models.FloatField(default=12)
+    rotation = models.FloatField(default=0)
+    opacity = models.FloatField(default=1)
+    z_index = models.PositiveIntegerField(default=20)
+    locked = models.BooleanField(default=False)
+    hidden = models.BooleanField(default=False)
+    properties = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['evento', 'seccion', 'z_index', 'id']
+        indexes = [
+            models.Index(fields=['evento', 'seccion', 'tipo']),
+            models.Index(fields=['evento', 'hidden']),
+        ]
+        verbose_name = 'Componente de invitacion'
+        verbose_name_plural = 'Componentes de invitacion'
+
+    def __str__(self):
+        return f'{self.get_tipo_display()} - {self.seccion.get_tipo_display()}'
+
+    def clean(self):
+        super().clean()
+        if self.seccion_id and self.evento_id and self.seccion.evento_id != self.evento_id:
+            raise ValidationError('La seccion no pertenece al evento seleccionado.')
+        if not isinstance(self.properties, dict):
+            raise ValidationError('Las propiedades del componente deben ser un objeto JSON.')
+
+    def save(self, *args, **kwargs):
+        if self.seccion_id:
+            self.evento_id = self.seccion.evento_id
+        super().save(*args, **kwargs)
+
+
 class DisenoInvitacion(models.Model):
     ESTADOS = [
         ('BORRADOR', 'Borrador'),
