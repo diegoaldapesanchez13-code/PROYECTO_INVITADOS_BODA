@@ -2658,3 +2658,12 @@ o espacio vacío debajo de la imagen.
     color: var(--primary);
     border: 1px solid var(--line);
 }
+/* =========================================================
+   S01-P03 — CONTENCIÓN DE COMPONENTES LAYER
+   Los componentes deben posicionarse respecto a su panel,
+   no respecto a la ventana del navegador.
+   ========================================================= */
+
+.invitation-component[data-layout-mode="LAYER"] {
+    position: absolute;
+}
