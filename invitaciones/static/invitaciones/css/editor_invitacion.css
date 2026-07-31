@@ -1,3 +1,23 @@
+/*
+DIRTEC — editor_invitacion.css COMPLETO
+S01-P06 — Limpieza controlada del modo imagen completa
+
+CAMBIOS:
+- Se eliminaron tres implementaciones repetidas de .preview-section.is-full-image.
+- Se dejó una sola implementación consolidada.
+- Se eliminó la regla que ocultaba indiscriminadamente .preview-title-layer.
+- Se conservó el soporte para titleAsset y backgroundAsset.
+- Se corrigieron los selectores multilínea para que sean explícitos.
+- No se modificó el resto del CSS.
+
+USO:
+1. Crear respaldo de editor_invitacion.css.
+2. Copiar TODO el contenido de este archivo.
+3. Reemplazar TODO editor_invitacion.css.
+4. Guardar y ejecutar py manage.py check.
+5. Recargar el navegador con Ctrl + F5.
+*/
+
 * {
     box-sizing: border-box;
 }
@@ -1520,80 +1540,69 @@ video {
         order: 1;
     }
 }
-/* Secciones que utilizan una imagen completa */
-
-.preview-section.is-full-image {
-    min-height: 0 !important;
-    aspect-ratio: 2 / 3;
-    padding: 0;
-}
-
-.preview-section.is-full-image .preview-section-bg {
-    background-size: contain !important;
-    background-position: center !important;
-    background-repeat: no-repeat !important;
-    opacity: 1 !important;
-    filter: none !important;
-}
-
-.preview-section.is-full-image .preview-title-layer {
-    display: none !important;
-}
-/* Imagen completa detectada por JavaScript */
-
-.preview-section.is-full-image {
-    min-height: 0 !important;
-    aspect-ratio: 2 / 3;
-    padding: 0;
-    background: transparent;
-}
-
-.preview-section.is-full-image .preview-section-bg {
-    background-size: contain !important;
-    background-position: center !important;
-    background-repeat: no-repeat !important;
-    opacity: 1 !important;
-    filter: none !important;
-}
-
-.preview-section.is-full-image .preview-title-layer {
-    display: none !important;
-}
-
-.preview-section.is-full-image.hide-real-content
-.preview-text-layer {
-    display: none !important;
-}
-
-.preview-section.is-full-image
-.preview-custom-layer {
-    pointer-events: none;
-}
 /* =========================================================
-   IMAGEN COMPLETA EN LA VISTA RÁPIDA DEL EDITOR
+   S01-P06 — IMAGEN COMPLETA EN LA VISTA RÁPIDA
+   Una sola implementación consolidada.
    ========================================================= */
 
 .preview-section.is-full-image {
     position: relative;
     min-height: 0 !important;
-    padding: 0 !important;
     aspect-ratio: 2 / 3;
+    padding: 0 !important;
     overflow: hidden;
+    background: transparent;
 }
 
+/*
+La capa de fondo se utiliza solamente cuando JavaScript determina
+que backgroundAsset es la fuente principal.
+*/
+.preview-section.is-full-image .preview-section-bg {
+    z-index: 0;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+    background-size: contain !important;
+    opacity: 1 !important;
+    filter: none !important;
+}
+
+.preview-section.is-full-image .preview-section-bg.is-hidden {
+    display: none;
+}
+
+/*
+Compatibilidad con recursos de video usados como fondo completo.
+*/
+.preview-section.is-full-image .preview-section-media {
+    z-index: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center;
+    opacity: 1;
+    filter: none;
+}
+
+/*
+Cuando titleAsset es la fuente principal, JavaScript agrega
+.is-full-image-title-layer a la capa del título.
+*/
 .preview-section.is-full-image .is-full-image-title-layer {
     position: absolute;
     inset: 0;
+    z-index: 20;
+    display: block !important;
     width: 100% !important;
     height: 100% !important;
-
     transform: none !important;
     opacity: 1 !important;
-
-    display: block !important;
     pointer-events: auto;
 }
 
+/*
+La imagen o video del título ocupa toda la sección.
+*/
 .preview-section.is-full-image
 .is-full-image-title-layer
 .preview-title-asset {
@@ -1601,13 +1610,29 @@ video {
     width: 100% !important;
     height: 100% !important;
     max-width: none !important;
-
-    object-fit: contain !important;
-    object-position: center center;
-
+    max-height: none !important;
     margin: 0;
     padding: 0;
+    object-fit: contain !important;
+    object-position: center center;
 }
+
+/*
+Cuando la imagen completa debe sustituir el contenido real,
+se oculta únicamente la capa de texto.
+*/
+.preview-section.is-full-image.hide-real-content .preview-text-layer {
+    display: none !important;
+}
+
+/*
+Las capas personalizadas permanecen visibles, pero no interceptan
+la selección mientras la sección usa el modo de imagen completa.
+*/
+.preview-section.is-full-image .preview-custom-layer {
+    pointer-events: none;
+}
+
 /* =========================================================
    FASE 5.1 - COMPONENTES DEL CONSTRUCTOR VISUAL
    ========================================================= */
