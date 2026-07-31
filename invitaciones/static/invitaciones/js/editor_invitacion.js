@@ -1011,19 +1011,60 @@
             const fullImage = isFullImageSection(section, cfg);
             const keepRealContent = sectionKeepsRealContent(section, cfg);
 
+            /*
+            En modo imagen completa solo puede existir una fuente visual
+            principal en la Vista Rápida.
+
+            Prioridad:
+            1. titleAsset
+            2. backgroundAsset como respaldo
+            */
+            const fullImageUsesTitle =
+                fullImage &&
+                Boolean(titleAsset.url) &&
+                cfg.showTitleAsset !== false;
+
+            const fullImageUsesBackground =
+                fullImage &&
+                !fullImageUsesTitle &&
+                Boolean(background.url) &&
+                cfg.showBackgroundLayer !== false;
+
             article.classList.toggle('is-full-image', fullImage);
-            article.classList.toggle('hide-real-content', fullImage && !keepRealContent);
+            article.classList.toggle(
+                'hide-real-content',
+                fullImage && !keepRealContent
+            );
 
             if (fullImage) {
                 article.style.minHeight = '0';
                 article.style.aspectRatio = '2 / 3';
             } else {
-                article.style.minHeight = `${clamp(cfg.sectionHeight ?? 420, 120, 900)}px`;
+                article.style.minHeight = cfg.layoutAutoHeight === false
+                    ? `${clamp(cfg.sectionHeight ?? 420, 120, 900)}px`
+                    : `${clamp(cfg.layoutMinHeight ?? 120, 0, 1200)}px`;
+
+                article.style.maxHeight = cfg.layoutMaxHeight
+                    ? `${clamp(cfg.layoutMaxHeight, 0, 2000)}px`
+                    : '';
+
                 article.style.aspectRatio = '';
             }
 
-            if (cfg.textColor) article.style.color = cfg.textColor;
-            if (cfg.showBackgroundLayer !== false && background.url && background.isVideo) {
+            if (cfg.textColor) {
+                article.style.color = cfg.textColor;
+            }
+
+            /*
+            El video de fondo no se crea cuando titleAsset ya es
+            la imagen completa principal.
+            */
+            if (
+                !fullImageUsesTitle &&
+                cfg.showBackgroundLayer !== false &&
+                background.url &&
+                background.isVideo
+            ) {
                 const video = document.createElement('video');
                 video.className = 'preview-section-media';
                 video.src = background.url;
@@ -1031,47 +1072,169 @@
                 video.muted = true;
                 video.loop = true;
                 video.playsInline = true;
-                video.style.opacity = String(clamp(cfg.backgroundOpacity ?? 1, 0, 1));
-                video.style.objectFit = cfg.backgroundFit === 'cover' ? 'cover' : 'contain';
-                video.style.objectPosition = `${clamp(effectiveBackgroundValue(cfg, 'backgroundX') ?? 50, 0, 100)}% ${clamp(effectiveBackgroundValue(cfg, 'backgroundY') ?? 50, 0, 100)}%`;
-                video.style.filter = `brightness(${clamp(cfg.backgroundBrightness ?? 1, 0.35, 1.75)}) blur(${clamp(cfg.backgroundBlur ?? 0, 0, 12)}px)`;
+
+                video.style.opacity = String(
+                    clamp(cfg.backgroundOpacity ?? 1, 0, 1)
+                );
+
+                video.style.objectFit =
+                    cfg.backgroundFit === 'cover'
+                        ? 'cover'
+                        : 'contain';
+
+                video.style.objectPosition =
+                    `${clamp(
+                        effectiveBackgroundValue(cfg, 'backgroundX') ?? 50,
+                        0,
+                        100
+                    )}% ${clamp(
+                        effectiveBackgroundValue(cfg, 'backgroundY') ?? 50,
+                        0,
+                        100
+                    )}%`;
+
+                video.style.filter =
+                    `brightness(${clamp(
+                        cfg.backgroundBrightness ?? 1,
+                        0.35,
+                        1.75
+                    )}) blur(${clamp(
+                        cfg.backgroundBlur ?? 0,
+                        0,
+                        12
+                    )}px)`;
+
                 article.appendChild(video);
             }
+
+            /*
+            La capa de fondo se oculta cuando titleAsset es la imagen
+            completa seleccionada.
+            */
             const bgLayer = document.createElement('div');
             bgLayer.className = 'preview-section-bg';
-            bgLayer.classList.toggle('is-hidden', cfg.showBackgroundLayer === false);
-            if (cfg.showBackgroundLayer !== false) setBackgroundStyles(bgLayer, cfg, background);
-            attachBackgroundDrag(article, bgLayer, section, cfg);
+
+            const hideBackgroundLayer =
+                cfg.showBackgroundLayer === false ||
+                fullImageUsesTitle;
+
+            bgLayer.classList.toggle(
+                'is-hidden',
+                hideBackgroundLayer
+            );
+
+            if (!hideBackgroundLayer) {
+                setBackgroundStyles(
+                    bgLayer,
+                    cfg,
+                    background
+                );
+            }
+
+            attachBackgroundDrag(
+                article,
+                bgLayer,
+                section,
+                cfg
+            );
+
             article.appendChild(bgLayer);
+
+            /*
+            La decoración conserva su comportamiento actual.
+            */
             const decorLayer = document.createElement('div');
-            decorLayer.className = 'preview-layer preview-decor-layer';
+            decorLayer.className =
+                'preview-layer preview-decor-layer';
             decorLayer.dataset.layer = 'decor';
             decorLayer.textContent = decorText(cfg.decorStyle);
-            setLayerStyles(decorLayer, cfg, 'decor');
-            attachLayerDrag(article, decorLayer, section, cfg, 'decor');
+
+            setLayerStyles(
+                decorLayer,
+                cfg,
+                'decor'
+            );
+
+            attachLayerDrag(
+                article,
+                decorLayer,
+                section,
+                cfg,
+                'decor'
+            );
+
             article.appendChild(decorLayer);
 
+            /*
+            La capa de título:
+            - muestra el recurso pequeño en modo normal;
+            - muestra el recurso a tamaño completo cuando full-image
+              utiliza titleAsset;
+            - se oculta cuando full-image utiliza backgroundAsset.
+            */
             const titleLayer = document.createElement('div');
-            titleLayer.className = 'preview-layer preview-title-layer';
+            titleLayer.className =
+                'preview-layer preview-title-layer';
             titleLayer.dataset.layer = 'title';
-            if (titleAsset.url && cfg.showTitleAsset !== false) {
-                titleLayer.insertAdjacentHTML('beforeend', titleAsset.isVideo
-                    ? `<video class="preview-title-asset" src="${titleAsset.url}" autoplay muted loop playsinline></video>`
-                    : `<img class="preview-title-asset" src="${titleAsset.url}" alt="">`);
+
+            const renderTitleAsset =
+                Boolean(titleAsset.url) &&
+                cfg.showTitleAsset !== false &&
+                (!fullImage || fullImageUsesTitle);
+
+            if (renderTitleAsset) {
+                titleLayer.insertAdjacentHTML(
+                    'beforeend',
+                    titleAsset.isVideo
+                        ? `<video class="preview-title-asset" src="${titleAsset.url}" autoplay muted loop playsinline></video>`
+                        : `<img class="preview-title-asset" src="${titleAsset.url}" alt="">`
+                );
             }
-            if (!fullImage && cfg.showTextTitle !== false) {
+
+            if (
+                !fullImage &&
+                cfg.showTextTitle !== false
+            ) {
                 const title = document.createElement('h2');
                 title.textContent = section.title || '';
                 titleLayer.appendChild(title);
             }
-            setLayerStyles(titleLayer, cfg, 'title');
 
-            if (fullImage && titleAsset.url) {
+            setLayerStyles(
+                titleLayer,
+                cfg,
+                'title'
+            );
+
+            if (fullImageUsesTitle) {
                 titleLayer.classList.remove('is-hidden');
-                titleLayer.classList.add('is-full-image-title-layer');
+                titleLayer.classList.add(
+                    'is-full-image-title-layer'
+                );
+            } else if (fullImageUsesBackground) {
+                titleLayer.classList.add('is-hidden');
+                titleLayer.classList.remove(
+                    'is-full-image-title-layer'
+                );
+            } else if (fullImage) {
+                titleLayer.classList.add('is-hidden');
+                titleLayer.classList.remove(
+                    'is-full-image-title-layer'
+                );
+            } else {
+                titleLayer.classList.remove(
+                    'is-full-image-title-layer'
+                );
             }
 
-            attachLayerDrag(article, titleLayer, section, cfg, 'title');
+            attachLayerDrag(
+                article,
+                titleLayer,
+                section,
+                cfg,
+                'title'
+            );
+
             article.appendChild(titleLayer);
 
             const textLayer = document.createElement('div');
