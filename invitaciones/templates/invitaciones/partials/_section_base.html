@@ -10,9 +10,6 @@
     ></video>
 {% endif %}
 
-{% include "invitaciones/partials/_capas_personalizadas.html" with seccion=seccion %}
-{% include "invitaciones/partials/_componentes_invitacion.html" with seccion=seccion %}
-
 {% if seccion.imagen_titulo %}
     <div class="section-full-media{% if media_wrap_class %} {{ media_wrap_class }}{% endif %}">
         {% if seccion.imagen_titulo_es_video %}
@@ -38,3 +35,6 @@
 {% else %}
     {% include "invitaciones/partials/_section_header.html" with seccion=seccion titulo_default=titulo_default texto_alt=texto_alt %}
 {% endif %}
+
+{% include "invitaciones/partials/_capas_personalizadas.html" with seccion=seccion %}
+{% include "invitaciones/partials/_componentes_invitacion.html" with seccion=seccion %}
