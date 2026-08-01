@@ -34,9 +34,15 @@
     let currentDeviceMode = 'iphone';
     let livePreviewMode = 'edit';
     let realPreviewDrag = null;
+    let componentTreeDrag = null;
+    let currentPreviewMode = root.querySelector('[data-real-preview-frame]')
+        ? 'real'
+        : 'draft';
+    let nativeElementRegistry = [];
     const layerBounds = { min: -40, max: 140 };
 
     const sectionList = root.querySelector('[data-section-list]');
+    const componentTree = root.querySelector('[data-component-tree]');
     const previewRoot = root.querySelector('[data-preview-root]');
     const saveState = root.querySelector('[data-save-state]');
     const sectionProps = root.querySelector('[data-section-properties]');
@@ -44,6 +50,146 @@
     const guestList = root.querySelector('[data-guest-list]');
     const phonePreviews = root.querySelectorAll('.phone-preview');
     const realPreviewFrame = root.querySelector('[data-real-preview-frame]');
+
+    const realContentSections = new Set([
+        'DETALLES',
+        'REGALOS',
+        'ALBUM',
+        'ALBUM_COMPARTIDO',
+    ]);
+
+    function defaultRealContentConfig(sectionType = '') {
+        return {
+            enabled: realContentSections.has(sectionType),
+            x: 50,
+            y: 50,
+            width: 100,
+            scale: 1,
+            rotation: 0,
+            opacity: 1,
+            zIndex: 5,
+            layout: 'grid',
+            align: 'center',
+            gap: 14,
+            cardBg: '#ffffff',
+            cardRadius: 0,
+            cardPadding: 16,
+            cardShadow: false,
+            textSize: 15,
+            showMedia: true,
+            showAddress: true,
+            showMaps: true,
+            items: {
+                ceremony: {
+                    visible: true,
+                    label: 'Ceremonia',
+                    order: 1,
+                    showTitle: true,
+                    showDate: true,
+                    showTime: true,
+                    showPlace: true,
+                    showMedia: true,
+                    showAddress: true,
+                    showButton: true,
+                    showMaps: true,
+                    cardBg: '#ffffff',
+                    mediaPosition: 'top',
+                    mapDisplay: 'button-map',
+                    buttonLabel: 'Ver ubicacion',
+                    mapAsset: {},
+                },
+                reception: {
+                    visible: true,
+                    label: 'Recepcion',
+                    order: 2,
+                    showTitle: true,
+                    showDate: true,
+                    showTime: true,
+                    showPlace: true,
+                    showMedia: true,
+                    showAddress: true,
+                    showButton: true,
+                    showMaps: true,
+                    cardBg: '#ffffff',
+                    mediaPosition: 'top',
+                    mapDisplay: 'button-map',
+                    buttonLabel: 'Ver ubicacion',
+                    mapAsset: {},
+                },
+            },
+        };
+    }
+
+    function normalizeRealContentConfig(value, sectionType = '') {
+        const defaults = defaultRealContentConfig(sectionType);
+        const source = value && typeof value === 'object' ? value : {};
+        const items = source.items && typeof source.items === 'object' ? source.items : {};
+        return {
+            ...defaults,
+            ...source,
+            enabled: realContentSections.has(sectionType) && source.enabled !== false,
+            x: clamp(source.x ?? defaults.x, 0, 100),
+            y: clamp(source.y ?? defaults.y, 0, 100),
+            width: clamp(source.width ?? defaults.width, 35, 120),
+            scale: clamp(source.scale ?? defaults.scale, 0.5, 1.8),
+            rotation: clamp(source.rotation ?? defaults.rotation, -45, 45),
+            opacity: clamp(source.opacity ?? defaults.opacity, 0, 1),
+            zIndex: clamp(source.zIndex ?? defaults.zIndex, 1, 30),
+            layout: ['grid', 'stack'].includes(source.layout) ? source.layout : defaults.layout,
+            align: ['left', 'center', 'right'].includes(source.align) ? source.align : defaults.align,
+            gap: clamp(source.gap ?? defaults.gap, 0, 42),
+            cardBg: /^#[0-9a-f]{6}$/i.test(source.cardBg || '') ? source.cardBg : defaults.cardBg,
+            cardRadius: clamp(source.cardRadius ?? defaults.cardRadius, 0, 28),
+            cardPadding: clamp(source.cardPadding ?? defaults.cardPadding, 4, 36),
+            textSize: clamp(source.textSize ?? defaults.textSize, 11, 22),
+            cardShadow: Boolean(source.cardShadow),
+            showMedia: source.showMedia !== false,
+            showAddress: source.showAddress !== false,
+            showMaps: source.showMaps !== false,
+            items: {
+                ceremony: {
+                    ...defaults.items.ceremony,
+                    ...(items.ceremony || {}),
+                    visible: items.ceremony?.visible !== false,
+                    label: String(items.ceremony?.label || defaults.items.ceremony.label).slice(0, 80),
+                    order: clamp(items.ceremony?.order ?? defaults.items.ceremony.order, 0, 20),
+                    showTitle: items.ceremony?.showTitle !== false,
+                    showDate: items.ceremony?.showDate !== false,
+                    showTime: items.ceremony?.showTime !== false,
+                    showPlace: items.ceremony?.showPlace !== false,
+                    showMedia: items.ceremony?.showMedia !== false,
+                    showAddress: items.ceremony?.showAddress !== false,
+                    showButton: items.ceremony?.showButton !== false,
+                    showMaps: items.ceremony?.showMaps !== false,
+                    cardBg: /^#[0-9a-f]{6}$/i.test(items.ceremony?.cardBg || '') ? items.ceremony.cardBg : defaults.items.ceremony.cardBg,
+                    mediaPosition: ['top', 'bottom', 'hidden'].includes(items.ceremony?.mediaPosition) ? items.ceremony.mediaPosition : defaults.items.ceremony.mediaPosition,
+                    mapDisplay: ['button-map', 'button-only', 'map-only', 'hidden'].includes(items.ceremony?.mapDisplay) ? items.ceremony.mapDisplay : defaults.items.ceremony.mapDisplay,
+                    buttonLabel: String(items.ceremony?.buttonLabel || defaults.items.ceremony.buttonLabel).slice(0, 80),
+                    mapAsset: items.ceremony?.mapAsset && typeof items.ceremony.mapAsset === 'object' ? items.ceremony.mapAsset : {},
+                },
+                reception: {
+                    ...defaults.items.reception,
+                    ...(items.reception || {}),
+                    visible: items.reception?.visible !== false,
+                    label: String(items.reception?.label || defaults.items.reception.label).slice(0, 80),
+                    order: clamp(items.reception?.order ?? defaults.items.reception.order, 0, 20),
+                    showTitle: items.reception?.showTitle !== false,
+                    showDate: items.reception?.showDate !== false,
+                    showTime: items.reception?.showTime !== false,
+                    showPlace: items.reception?.showPlace !== false,
+                    showMedia: items.reception?.showMedia !== false,
+                    showAddress: items.reception?.showAddress !== false,
+                    showButton: items.reception?.showButton !== false,
+                    showMaps: items.reception?.showMaps !== false,
+                    cardBg: /^#[0-9a-f]{6}$/i.test(items.reception?.cardBg || '') ? items.reception.cardBg : defaults.items.reception.cardBg,
+                    mediaPosition: ['top', 'bottom', 'hidden'].includes(items.reception?.mediaPosition) ? items.reception.mediaPosition : defaults.items.reception.mediaPosition,
+                    mapDisplay: ['button-map', 'button-only', 'map-only', 'hidden'].includes(items.reception?.mapDisplay) ? items.reception.mapDisplay : defaults.items.reception.mapDisplay,
+                    buttonLabel: String(items.reception?.buttonLabel || defaults.items.reception.buttonLabel).slice(0, 80),
+                    mapAsset: items.reception?.mapAsset && typeof items.reception.mapAsset === 'object' ? items.reception.mapAsset : {},
+                },
+            },
+        };
+    }
 
     function defaultSectionConfig() {
         return {
@@ -74,6 +220,17 @@
             backgroundBrightness: 1,
             backgroundBlur: 0,
             sectionHeight: 420,
+            layoutAutoHeight: false,
+            layoutWidth: 100,
+            layoutScale: 1,
+            layoutExpanded: true,
+            layoutCollapsed: false,
+            layoutPaddingX: 20,
+            layoutPaddingY: 24,
+            layoutMarginBottom: 12,
+            layoutMinHeight: 150,
+            layoutMaxHeight: 0,
+            layoutAspectRatio: '',
             activeLayer: 'background',
             showBackgroundLayer: true,
             showTitleAsset: true,
@@ -115,6 +272,7 @@
     function ensureSectionConfig(section) {
         section.config = { ...defaultSectionConfig(), ...(section.config || {}) };
         section.config.customLayers = ensureCustomLayers(section.config);
+        section.config.realContent = normalizeRealContentConfig(section.config.realContent, section.type);
         return section.config;
     }
 
@@ -263,6 +421,24 @@
         }
     }
 
+    async function deleteBuilderComponent(component) {
+        if (!component?.id || !root.dataset.componentsUrl) return;
+        setState('Eliminando componente...');
+        const response = await fetch(componentDetailUrl(component), {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': csrfToken(),
+            },
+        });
+        const data = await response.json();
+        if (!response.ok || !data.ok) throw new Error(data.error || 'No se pudo eliminar el componente.');
+        builderComponents = builderComponents.filter((item) => Number(item.id) !== Number(component.id));
+        selectedComponentId = null;
+        setState('Componente eliminado');
+        renderAll();
+        refreshRealPreview();
+    }
+
     function componentInnerHtml(component) {
         const props = component.properties || {};
         if (component.tipo === 'BOTON') {
@@ -284,10 +460,66 @@
         element.style.left = `${component.x}%`;
         element.style.top = `${component.y}%`;
         element.style.width = `${component.width}%`;
+        element.style.height = `${component.height}%`;
         element.style.minHeight = `${component.height}%`;
         element.style.transform = `translate(-50%, -50%) rotate(${component.rotation}deg)`;
         element.style.opacity = String(component.opacity);
         element.style.zIndex = String(component.zIndex);
+    }
+
+    function componentTransformHandlesHtml(component) {
+        if (!component || component.locked || Number(component.id) !== Number(selectedComponentId)) return '';
+        return `
+            <span class="component-transform-handles" aria-hidden="true">
+                <button type="button" class="component-resize-handle is-nw" data-component-resize="nw" title="Redimensionar"></button>
+                <button type="button" class="component-resize-handle is-ne" data-component-resize="ne" title="Redimensionar"></button>
+                <button type="button" class="component-resize-handle is-sw" data-component-resize="sw" title="Redimensionar"></button>
+                <button type="button" class="component-resize-handle is-se" data-component-resize="se" title="Redimensionar"></button>
+            </span>
+        `;
+    }
+
+    function resizeComponentByHandle(component, start, deltaX, deltaY, handle) {
+        if (!component || !start || !handle) return;
+        const horizontal = handle.includes('e') ? 1 : handle.includes('w') ? -1 : 0;
+        const vertical = handle.includes('s') ? 1 : handle.includes('n') ? -1 : 0;
+        let nextWidth = start.width + (deltaX * horizontal);
+        let nextHeight = start.height + (deltaY * vertical);
+        nextWidth = clamp(Math.round(nextWidth * 10) / 10, 4, 140);
+        nextHeight = clamp(Math.round(nextHeight * 10) / 10, 2, 140);
+
+        let nextX = start.x;
+        let nextY = start.y;
+        if (horizontal) nextX = start.x + (deltaX / 2);
+        if (vertical) nextY = start.y + (deltaY / 2);
+
+        component.x = Math.round(clamp(nextX, layerBounds.min, layerBounds.max) * 10) / 10;
+        component.y = Math.round(clamp(nextY, layerBounds.min, layerBounds.max) * 10) / 10;
+        component.width = nextWidth;
+        component.height = nextHeight;
+    }
+
+    function applyRealContentStyles(element, cfg, sectionType = '') {
+        const real = normalizeRealContentConfig(cfg.realContent, sectionType);
+        element.classList.add('real-content-layer');
+        element.dataset.realContentLayout = real.layout;
+        element.dataset.realContentAlign = real.align;
+        element.dataset.realContentShadow = real.cardShadow ? '1' : '0';
+        element.dataset.realContentShowMedia = real.showMedia ? '1' : '0';
+        element.dataset.realContentShowAddress = real.showAddress ? '1' : '0';
+        element.dataset.realContentShowMaps = real.showMaps ? '1' : '0';
+        element.style.setProperty('--real-content-offset-x', `${real.x - 50}%`);
+        element.style.setProperty('--real-content-offset-y', `${real.y - 50}%`);
+        element.style.setProperty('--real-content-width', `${real.width}%`);
+        element.style.setProperty('--real-content-scale', real.scale);
+        element.style.setProperty('--real-content-rotation', `${real.rotation}deg`);
+        element.style.setProperty('--real-content-opacity', real.opacity);
+        element.style.setProperty('--real-content-z', real.zIndex);
+        element.style.setProperty('--real-content-gap', `${real.gap}px`);
+        element.style.setProperty('--real-card-bg', real.cardBg);
+        element.style.setProperty('--real-card-radius', `${real.cardRadius}px`);
+        element.style.setProperty('--real-card-padding', `${real.cardPadding}px`);
+        element.style.setProperty('--real-card-text-size', `${real.textSize}px`);
     }
 
     function builderComponentById(componentId) {
@@ -344,6 +576,330 @@
         return selectedComponentId ? builderComponentById(selectedComponentId) : null;
     }
 
+    function updateComponentPreview(component) {
+        if (!component) return;
+        root.querySelectorAll(`[data-component-id="${component.id}"]`).forEach((element) => {
+            element.classList.toggle('is-selected-component', selectedComponentId === component.id);
+            element.classList.toggle('is-locked', component.locked);
+            element.innerHTML = componentInnerHtml(component);
+            setBuilderComponentStyles(element, component);
+        });
+        syncRealPreviewComponent(component);
+    }
+
+    function fillComponentProperties() {
+        const panel = root.querySelector('[data-component-properties]');
+        if (!panel) return;
+        const component = selectedComponent();
+        panel.hidden = !component;
+        if (!component) return;
+
+        const props = component.properties || {};
+        const summary = panel.querySelector('[data-component-summary]');
+        if (summary) {
+            summary.textContent = `${component.tipo} #${component.id} - ${component.sectionType || 'seccion'}`;
+        }
+
+        panel.querySelectorAll('[data-component-field]').forEach((field) => {
+            const key = field.dataset.componentField;
+            if (field.type === 'checkbox') {
+                field.checked = Boolean(component[key]);
+            } else {
+                field.value = component[key] ?? '';
+            }
+        });
+
+        panel.querySelectorAll('[data-component-type-panel]').forEach((typePanel) => {
+            typePanel.hidden = typePanel.dataset.componentTypePanel !== component.tipo;
+        });
+
+        panel.querySelectorAll('[data-component-property]').forEach((field) => {
+            const key = field.dataset.componentProperty;
+            if (field.type === 'color') {
+                field.value = props[key] || '#263126';
+            } else {
+                field.value = props[key] ?? '';
+            }
+        });
+    }
+
+    function updateAssetDetailButtons() {
+        const section = selectedSection();
+        const detailsSelected = section && section.type === 'DETALLES';
+        root.querySelectorAll('[data-asset-details-only]').forEach((element) => {
+            element.hidden = !detailsSelected;
+        });
+        root.querySelectorAll('[data-asset-target]').forEach((select) => {
+            select.querySelectorAll('option').forEach((option) => {
+                if (['CEREMONIA', 'RECEPCION', 'MAPA_CEREMONIA', 'MAPA_RECEPCION'].includes(option.value)) {
+                    option.disabled = !detailsSelected;
+                }
+            });
+        });
+    }
+
+    function inspectorTargetType() {
+        if (selectedComponent()) return 'component';
+        const selector = root.querySelector('[data-inspector-target]');
+        const requested = selector?.value || 'section';
+        const section = selectedSection();
+        if (!section) return 'none';
+        if (requested === 'real' && realContentSections.has(section.type)) return 'real';
+        if (requested === 'layer') return 'layer';
+        return 'section';
+    }
+
+    function activeLayerConfig(section) {
+        const cfg = ensureSectionConfig(section);
+        const layer = cfg.activeLayer || 'background';
+        if (isCustomLayer(layer)) {
+            const custom = selectedCustomLayer(cfg);
+            return custom ? { type: 'custom', layer, custom, cfg } : null;
+        }
+        return { type: layer, layer, cfg };
+    }
+
+    function getInspectorValue(target, field) {
+        const section = selectedSection();
+        if (!section || target === 'none') return '';
+        const cfg = ensureSectionConfig(section);
+        const component = selectedComponent();
+
+        if (target === 'component' && component) {
+            const map = { z: 'zIndex' };
+            const key = map[field] || field;
+            return component[key] ?? '';
+        }
+
+        if (target === 'real') {
+            const real = normalizeRealContentConfig(cfg.realContent, section.type);
+            const map = {
+                height: 'scale',
+                z: 'zIndex',
+                locked: null,
+                hidden: null,
+            };
+            const key = map[field] || field;
+            if (!key) return false;
+            return real[key] ?? '';
+        }
+
+        if (target === 'layer') {
+            const layerState = activeLayerConfig(section);
+            if (!layerState) return '';
+            if (layerState.type === 'custom') {
+                const map = { height: 'scale', z: 'z', rotation: 'rotation', opacity: 'opacity', hidden: 'visible' };
+                const key = map[field] || field;
+                if (field === 'hidden') return layerState.custom.visible === false;
+                return layerState.custom[key] ?? '';
+            }
+            if (layerState.type === 'background') {
+                const map = {
+                    x: 'backgroundX',
+                    y: 'backgroundY',
+                    height: 'backgroundScale',
+                    opacity: 'backgroundOpacity',
+                    hidden: 'showBackgroundLayer',
+                };
+                if (field === 'width' || field === 'rotation' || field === 'z' || field === 'locked') return '';
+                if (field === 'hidden') return cfg.showBackgroundLayer === false;
+                const key = map[field];
+                return key ? (effectiveBackgroundValue(cfg, key) ?? cfg[key] ?? '') : '';
+            }
+            const prefix = layerState.type;
+            const keyMap = {
+                x: `${prefix}X`,
+                y: `${prefix}Y`,
+                width: `${prefix}Width`,
+                height: `${prefix}Scale`,
+                rotation: `${prefix}Rotation`,
+                opacity: `${prefix}Opacity`,
+                z: `${prefix}Z`,
+                locked: `${prefix}Locked`,
+                hidden: `${prefix}Visible`,
+            };
+            if (field === 'hidden') return cfg[keyMap.hidden] === false;
+            return cfg[keyMap[field]] ?? '';
+        }
+
+        if (target === 'section') {
+            const values = {
+                x: '',
+                y: '',
+                width: cfg.layoutWidth ?? 100,
+                height: cfg.sectionHeight ?? 420,
+                rotation: '',
+                opacity: cfg.backgroundOpacity ?? 1,
+                z: '',
+                locked: '',
+                hidden: section.visible === false,
+            };
+            return values[field] ?? '';
+        }
+        return '';
+    }
+
+    function setInspectorValue(target, field, rawValue) {
+        const section = selectedSection();
+        if (!section || target === 'none') return;
+        const cfg = ensureSectionConfig(section);
+        const component = selectedComponent();
+        const isCheckbox = typeof rawValue === 'boolean';
+        const value = isCheckbox ? rawValue : Number(rawValue);
+
+        if (target === 'component' && component) {
+            const map = { z: 'zIndex' };
+            const key = map[field] || field;
+            component[key] = isCheckbox ? rawValue : (Number.isFinite(value) ? value : rawValue);
+            updateComponentPreview(component);
+            return;
+        }
+
+        if (target === 'real') {
+            const real = normalizeRealContentConfig(cfg.realContent, section.type);
+            if (field === 'height') real.scale = Number.isFinite(value) ? value : real.scale;
+            else if (field === 'z') real.zIndex = Number.isFinite(value) ? value : real.zIndex;
+            else if (!['locked', 'hidden'].includes(field)) real[field] = Number.isFinite(value) ? value : rawValue;
+            cfg.realContent = normalizeRealContentConfig(real, section.type);
+            return;
+        }
+
+        if (target === 'layer') {
+            const layerState = activeLayerConfig(section);
+            if (!layerState) return;
+            if (layerState.type === 'custom') {
+                const keyMap = { height: 'scale', z: 'z' };
+                if (field === 'hidden') layerState.custom.visible = !rawValue;
+                else layerState.custom[keyMap[field] || field] = Number.isFinite(value) ? value : rawValue;
+                return;
+            }
+            if (layerState.type === 'background') {
+                if (field === 'hidden') cfg.showBackgroundLayer = !rawValue;
+                else if (field === 'x') setBackgroundValue(cfg, 'backgroundX', value);
+                else if (field === 'y') setBackgroundValue(cfg, 'backgroundY', value);
+                else if (field === 'height') setBackgroundValue(cfg, 'backgroundScale', value);
+                else if (field === 'opacity') cfg.backgroundOpacity = String(rawValue);
+                return;
+            }
+            const prefix = layerState.type;
+            const keyMap = {
+                x: `${prefix}X`,
+                y: `${prefix}Y`,
+                width: `${prefix}Width`,
+                height: `${prefix}Scale`,
+                rotation: `${prefix}Rotation`,
+                opacity: `${prefix}Opacity`,
+                z: `${prefix}Z`,
+                locked: `${prefix}Locked`,
+                hidden: `${prefix}Visible`,
+            };
+            if (field === 'hidden') cfg[keyMap.hidden] = !rawValue;
+            else cfg[keyMap[field]] = Number.isFinite(value) ? value : rawValue;
+            return;
+        }
+
+        if (target === 'section') {
+            if (field === 'width') cfg.layoutWidth = Number.isFinite(value) ? value : cfg.layoutWidth;
+            else if (field === 'height') cfg.sectionHeight = Number.isFinite(value) ? value : cfg.sectionHeight;
+            else if (field === 'opacity') cfg.backgroundOpacity = String(rawValue);
+            else if (field === 'hidden') section.visible = !rawValue;
+        }
+    }
+
+    function updateUniversalInspector() {
+        const panel = root.querySelector('[data-universal-inspector]');
+        if (!panel) return;
+        const section = selectedSection();
+        const component = selectedComponent();
+        const target = inspectorTargetType();
+        const kind = panel.querySelector('[data-inspector-kind]');
+        const summary = panel.querySelector('[data-inspector-summary]');
+        const selector = panel.querySelector('[data-inspector-target]');
+
+        panel.classList.toggle('is-empty', !section && !component);
+        if (selector) {
+            selector.querySelector('option[value="component"]').disabled = !component;
+            selector.querySelector('option[value="real"]').disabled = !section || !realContentSections.has(section.type);
+            if (component && selector.value !== 'component') selector.value = 'component';
+            if (!component && selector.value === 'component') selector.value = realContentSections.has(section?.type) ? 'real' : 'section';
+        }
+
+        const labels = {
+            none: 'Sin seleccion',
+            section: 'Seccion',
+            layer: 'Capa',
+            real: 'Contenido real',
+            component: component ? component.tipo : 'Componente',
+        };
+        if (kind) kind.textContent = labels[target] || 'Inspector';
+        if (summary) {
+            if (target === 'component' && component) summary.textContent = `${component.tipo} en ${component.sectionType || 'seccion'} #${component.id}`;
+            else if (section) summary.textContent = `${section.title || section.type} - ${labels[target] || target}`;
+            else summary.textContent = 'Selecciona una seccion o componente.';
+        }
+
+        panel.querySelector('[data-inspector-action="delete-component"]')?.toggleAttribute('hidden', target !== 'component');
+        panel.querySelectorAll('[data-inspector-field]').forEach((field) => {
+            const key = field.dataset.inspectorField;
+            const value = getInspectorValue(target, key);
+            field.disabled = target === 'none' || value === '';
+            if (field.type === 'checkbox') field.checked = Boolean(value);
+            else if (value !== '') field.value = value;
+        });
+    }
+
+    function fillRealContentProperties() {
+        const panel = root.querySelector('[data-real-content-properties]');
+        if (!panel) return;
+        const section = selectedSection();
+        const supported = section && realContentSections.has(section.type);
+        panel.hidden = !supported;
+        if (!supported) return;
+
+        const real = ensureSectionConfig(section).realContent;
+        const summary = panel.querySelector('[data-real-content-summary]');
+        if (summary) {
+            summary.textContent = section.type === 'DETALLES'
+                ? 'Ceremonia y recepcion separadas, vinculadas a datos reales.'
+                : `Acomodo visual del contenido dinamico de ${section.title || section.type}.`;
+        }
+
+        panel.querySelectorAll('[data-real-content-details-only]').forEach((element) => {
+            element.hidden = section.type !== 'DETALLES';
+        });
+        panel.querySelectorAll('[data-real-content-generic-only]').forEach((element) => {
+            element.hidden = section.type === 'DETALLES';
+        });
+
+        panel.querySelectorAll('[data-real-content-field]').forEach((field) => {
+            const key = field.dataset.realContentField;
+            if (field.type === 'checkbox') {
+                field.checked = Boolean(real[key]);
+            } else if (field.type === 'color') {
+                field.value = real[key] || '#ffffff';
+            } else {
+                field.value = real[key] ?? '';
+            }
+        });
+
+        panel.querySelectorAll('[data-real-content-items]').forEach((group) => {
+            group.hidden = group.dataset.realContentItems !== section.type;
+        });
+
+        panel.querySelectorAll('[data-real-content-item]').forEach((field) => {
+            const itemKey = field.dataset.realContentItem;
+            const itemField = field.dataset.realContentItemField;
+            const item = real.items?.[itemKey] || {};
+            if (field.type === 'checkbox') {
+                field.checked = item[itemField] !== false;
+            } else if (field.type === 'color') {
+                field.value = item[itemField] || '#ffffff';
+            } else {
+                field.value = item[itemField] ?? '';
+            }
+        });
+    }
+
     function selectBuilderComponent(componentId, options = {}) {
         const component = builderComponentById(componentId);
         if (!component) return null;
@@ -364,17 +920,19 @@
             renderAll();
         });
         element.addEventListener('pointerdown', (event) => {
+            if (event.target.closest('[data-component-resize]')) return;
             if (component.locked) return;
             event.stopPropagation();
             selectedId = component.sectionId;
             selectedComponentId = component.id;
+            const rect = article.getBoundingClientRect();
             dragging = {
                 x: event.clientX,
                 y: event.clientY,
                 startX: component.x,
                 startY: component.y,
-                width: Math.max(article.clientWidth, 1),
-                height: Math.max(article.clientHeight, 1),
+                width: Math.max(rect.width, 1),
+                height: Math.max(rect.height, 1),
             };
             element.setPointerCapture(event.pointerId);
         });
@@ -390,9 +948,60 @@
         element.addEventListener('pointerup', () => {
             if (!dragging) return;
             dragging = null;
-            saveBuilderComponent(component).catch((error) => setState(error.message));
+            saveBuilderComponent(component, { skipRealRefresh: true }).catch((error) => setState(error.message));
         });
         element.addEventListener('pointercancel', () => { dragging = null; });
+    }
+
+    function attachBuilderComponentResize(article, element, component) {
+        let resizing = null;
+        element.querySelectorAll('[data-component-resize]').forEach((handle) => {
+            handle.addEventListener('click', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+            });
+            handle.addEventListener('pointerdown', (event) => {
+                if (component.locked) return;
+                event.preventDefault();
+                event.stopPropagation();
+                selectedId = component.sectionId;
+                selectedComponentId = component.id;
+                const rect = article.getBoundingClientRect();
+                resizing = {
+                    handle: handle.dataset.componentResize,
+                    x: event.clientX,
+                    y: event.clientY,
+                    start: {
+                        x: component.x,
+                        y: component.y,
+                        width: component.width,
+                        height: component.height,
+                    },
+                    width: Math.max(rect.width, 1),
+                    height: Math.max(rect.height, 1),
+                };
+                handle.setPointerCapture(event.pointerId);
+                setState('Redimensionando componente...');
+            });
+            handle.addEventListener('pointermove', (event) => {
+                if (!resizing) return;
+                event.preventDefault();
+                event.stopPropagation();
+                const deltaX = ((event.clientX - resizing.x) / resizing.width) * 100;
+                const deltaY = ((event.clientY - resizing.y) / resizing.height) * 100;
+                resizeComponentByHandle(component, resizing.start, deltaX, deltaY, resizing.handle);
+                setBuilderComponentStyles(element, component);
+                fillProperties();
+            });
+            handle.addEventListener('pointerup', (event) => {
+                if (!resizing) return;
+                event.preventDefault();
+                event.stopPropagation();
+                resizing = null;
+                saveBuilderComponent(component, { skipRealRefresh: true }).catch((error) => setState(error.message));
+            });
+            handle.addEventListener('pointercancel', () => { resizing = null; });
+        });
     }
 
     function renderBuilderComponents(article, section) {
@@ -403,12 +1012,15 @@
             element.dataset.componentType = component.tipo;
             element.classList.toggle('is-selected-component', selectedComponentId === component.id);
             element.classList.toggle('is-locked', component.locked);
-            element.innerHTML = componentInnerHtml(component);
+            element.innerHTML = componentInnerHtml(component) + componentTransformHandlesHtml(component);
             setBuilderComponentStyles(element, component);
             attachBuilderComponentDrag(article, element, component);
+            attachBuilderComponentResize(article, element, component);
             article.appendChild(element);
         });
-    }    function refreshRealPreview() {
+    }
+
+    function refreshRealPreview() {
         const frame = realPreviewFrame;
         if (!frame) return;
         const url = new URL(frame.src, window.location.href);
@@ -699,17 +1311,19 @@
             .editor-live-selection-handle {
                 position: absolute;
                 z-index: 9999;
-                width: 9px;
-                height: 9px;
+                width: 13px;
+                height: 13px;
                 border: 2px solid #fff;
                 border-radius: 50%;
                 background: #2563eb;
                 box-shadow: 0 1px 4px rgba(15, 23, 42, .28);
-                pointer-events: none;
+                cursor: nwse-resize;
+                pointer-events: auto;
+                touch-action: none;
             }
             .editor-live-selection-handle[data-handle="nw"] { left: -7px; top: -7px; }
-            .editor-live-selection-handle[data-handle="ne"] { right: -7px; top: -7px; }
-            .editor-live-selection-handle[data-handle="sw"] { left: -7px; bottom: -7px; }
+            .editor-live-selection-handle[data-handle="ne"] { right: -7px; top: -7px; cursor: nesw-resize; }
+            .editor-live-selection-handle[data-handle="sw"] { left: -7px; bottom: -7px; cursor: nesw-resize; }
             .editor-live-selection-handle[data-handle="se"] { right: -7px; bottom: -7px; }
             .editor-live-section-label {
                 position: absolute;
@@ -794,6 +1408,7 @@
         const rect = stage?.getBoundingClientRect();
         if (!rect || rect.width <= 0 || rect.height <= 0) return;
         realPreviewDrag = {
+            mode: 'move',
             pointerId: event.pointerId,
             component,
             componentEl,
@@ -808,13 +1423,43 @@
         setState('Moviendo componente sobre vista real...');
     }
 
+    function startRealComponentResize(event, handleEl, componentEl, component) {
+        if (!component || component.locked) return;
+        const stage = componentEl.parentElement;
+        const rect = stage?.getBoundingClientRect();
+        if (!rect || rect.width <= 0 || rect.height <= 0) return;
+        realPreviewDrag = {
+            mode: 'resize',
+            pointerId: event.pointerId,
+            component,
+            componentEl,
+            handle: handleEl.dataset.handle,
+            startClientX: event.clientX,
+            startClientY: event.clientY,
+            start: {
+                x: component.x,
+                y: component.y,
+                width: component.width,
+                height: component.height,
+            },
+            width: rect.width,
+            height: rect.height,
+        };
+        handleEl.setPointerCapture?.(event.pointerId);
+        setState('Redimensionando componente sobre vista real...');
+    }
+
     function updateRealComponentDrag(event) {
         if (!realPreviewDrag) return;
         const drag = realPreviewDrag;
         const deltaX = ((event.clientX - drag.startClientX) / drag.width) * 100;
         const deltaY = ((event.clientY - drag.startClientY) / drag.height) * 100;
-        drag.component.x = Math.round(clamp(drag.startX + deltaX, layerBounds.min, layerBounds.max) * 10) / 10;
-        drag.component.y = Math.round(clamp(drag.startY + deltaY, layerBounds.min, layerBounds.max) * 10) / 10;
+        if (drag.mode === 'resize') {
+            resizeComponentByHandle(drag.component, drag.start, deltaX, deltaY, drag.handle);
+        } else {
+            drag.component.x = Math.round(clamp(drag.startX + deltaX, layerBounds.min, layerBounds.max) * 10) / 10;
+            drag.component.y = Math.round(clamp(drag.startY + deltaY, layerBounds.min, layerBounds.max) * 10) / 10;
+        }
         setRealComponentStyles(drag.componentEl, drag.component);
         emitRealPreviewComponentUpdate(drag.component);
     }
@@ -827,19 +1472,75 @@
         saveBuilderComponent(component, { skipRealRefresh: true }).catch((error) => setState(error.message));
     }
 
+
+    function normalizeNativeElement(node) {
+        return {
+            id: node.dataset.elementId || '',
+            type: node.dataset.elementType || 'unknown',
+            role: node.dataset.elementRole || '',
+            section: node.dataset.elementSection || '',
+            item: node.dataset.elementItem || '',
+            node,
+        };
+    }
+
+    function registerNativeElements(frameDocument) {
+        if (!frameDocument) {
+            nativeElementRegistry = [];
+            return nativeElementRegistry;
+        }
+
+        const seen = new Set();
+        nativeElementRegistry = [...frameDocument.querySelectorAll('[data-native-element]')]
+            .map(normalizeNativeElement)
+            .filter((element) => {
+                if (!element.id || seen.has(element.id)) return false;
+                seen.add(element.id);
+                return true;
+            });
+
+        root.dataset.nativeElementCount = String(nativeElementRegistry.length);
+        console.info(`DIRTEC Element Registry: ${nativeElementRegistry.length} elementos nativos registrados.`);
+        return nativeElementRegistry;
+    }
+
+    function nativeElementById(elementId) {
+        return nativeElementRegistry.find((element) => element.id === elementId) || null;
+    }
+
     function bindRealPreviewInteractions() {
         const frame = realPreviewFrame;
         if (!frame) return;
         try {
             const doc = frame.contentDocument;
             if (!doc) return;
+
+            /*
+             * S03-P01
+             * Registrar siempre antes de comprobar si los listeners
+             * del iframe ya fueron conectados.
+             */
+            registerNativeElements(doc);
+
             ensureRealPreviewStyle(doc);
             applyRealPreviewMode(doc);
+
             if (doc.__invitationLiveEditorBound) return;
             doc.__invitationLiveEditorBound = true;
 
             doc.addEventListener('pointerdown', (event) => {
                 if (livePreviewMode !== 'edit') return;
+                const resizeHandle = event.target.closest('.editor-live-selection-handle[data-handle]');
+                if (resizeHandle) {
+                    const componentEl = resizeHandle.closest('[data-component-id]');
+                    const component = selectBuilderComponent(componentEl?.dataset.componentId, { skipRender: true, silent: true });
+                    if (!componentEl || !component) return;
+                    event.preventDefault();
+                    event.stopPropagation();
+                    paintRealPreviewSelection(doc);
+                    startRealComponentResize(event, resizeHandle, componentEl, component);
+                    return;
+                }
                 const componentEl = event.target.closest('[data-component-id]');
                 const sectionEl = event.target.closest('[data-invitation-section]');
                 if (!componentEl && !sectionEl) return;
@@ -968,6 +1669,160 @@
         });
     }
 
+    function componentTreeRow({
+        level = 0,
+        kind = '',
+        label = '',
+        meta = '',
+        active = false,
+        muted = false,
+        action = '',
+        sectionId = '',
+        layerId = '',
+        componentId = '',
+        canHide = false,
+        canLock = false,
+        canMove = false,
+        canDelete = false,
+        locked = false,
+        visible = true,
+        canReorder = false,
+    }) {
+        const tools = [];
+        if (canHide) {
+            tools.push(`<button type="button" title="${visible ? 'Ocultar' : 'Mostrar'}" data-tree-tool="toggle-visible">${visible ? 'Ocultar' : 'Mostrar'}</button>`);
+        }
+        if (canLock) {
+            tools.push(`<button type="button" title="${locked ? 'Desbloquear' : 'Bloquear'}" data-tree-tool="toggle-lock">${locked ? 'Abrir' : 'Bloquear'}</button>`);
+        }
+        if (canMove) {
+            tools.push('<button type="button" title="Enviar atras" data-tree-tool="z-back">Atras</button>');
+            tools.push('<button type="button" title="Traer al frente" data-tree-tool="z-front">Frente</button>');
+        }
+        if (canDelete) {
+            tools.push('<button type="button" title="Eliminar" class="danger-link" data-tree-tool="delete">Eliminar</button>');
+        }
+        return `
+            <article
+                class="component-tree-row ${active ? 'is-active' : ''} ${muted ? 'is-muted' : ''}"
+                style="--tree-level:${level};"
+                draggable="${canReorder ? 'true' : 'false'}"
+                data-tree-action="${escapeHtml(action)}"
+                data-tree-section-id="${escapeHtml(sectionId)}"
+                data-tree-layer-id="${escapeHtml(layerId)}"
+                data-tree-component-id="${escapeHtml(componentId)}"
+            >
+                <button
+                    type="button"
+                    class="component-tree-main"
+                    data-tree-action="${escapeHtml(action)}"
+                    data-tree-section-id="${escapeHtml(sectionId)}"
+                    data-tree-layer-id="${escapeHtml(layerId)}"
+                    data-tree-component-id="${escapeHtml(componentId)}"
+                >
+                    <span class="tree-kind">${escapeHtml(kind)}</span>
+                    <span class="tree-label">${escapeHtml(label)}</span>
+                    ${meta ? `<small>${escapeHtml(meta)}</small>` : ''}
+                </button>
+                ${tools.length ? `<div class="component-tree-tools">${tools.join('')}</div>` : ''}
+            </article>
+        `;
+    }
+
+    function renderComponentTree() {
+        if (!componentTree) return;
+        const sections = sortedSections();
+        const selected = selectedSection();
+        const selectedCfg = selected ? ensureSectionConfig(selected) : {};
+        const activeLayer = selectedCfg.activeLayer || '';
+        const rows = [
+            componentTreeRow({
+                level: 0,
+                kind: 'Pagina',
+                label: 'Invitacion',
+                meta: `${sections.length} secciones`,
+                action: 'page',
+                active: !selected,
+            }),
+        ];
+
+        sections.forEach((section) => {
+            const cfg = ensureSectionConfig(section);
+            const sectionActive = Number(section.sectionId) === Number(selectedId) && !selectedComponentId;
+            rows.push(componentTreeRow({
+                level: 1,
+                kind: 'Seccion',
+                label: section.title || section.type,
+                meta: section.type.replaceAll('_', ' '),
+                action: 'section',
+                sectionId: section.sectionId,
+                active: sectionActive && !activeLayer,
+                muted: section.visible === false,
+                canHide: true,
+                visible: section.visible !== false,
+            }));
+
+            layerListItems(cfg).forEach((layer) => {
+                rows.push(componentTreeRow({
+                    level: 2,
+                    kind: layer.type,
+                    label: layer.label,
+                    meta: layer.locked ? 'Bloqueada' : `z ${layer.z || 0}`,
+                    action: 'layer',
+                    sectionId: section.sectionId,
+                    layerId: layer.id,
+                    active: Number(section.sectionId) === Number(selectedId) && !selectedComponentId && activeLayer === layer.id,
+                    muted: layer.visible === false,
+                    canHide: true,
+                    canLock: layer.canLock,
+                    canMove: layer.canMove,
+                    canDelete: isCustomLayer(layer.id),
+                    locked: layer.locked,
+                    visible: layer.visible !== false,
+                    canReorder: layer.canMove,
+                }));
+            });
+
+            if (realContentSections.has(section.type)) {
+                rows.push(componentTreeRow({
+                    level: 2,
+                    kind: 'Datos',
+                    label: 'Contenido real',
+                    meta: section.type === 'DETALLES' ? 'Ceremonia / Recepcion' : 'Dinamico',
+                    action: 'real',
+                    sectionId: section.sectionId,
+                    active: Number(section.sectionId) === Number(selectedId) && root.querySelector('[data-inspector-target]')?.value === 'real',
+                }));
+            }
+
+            builderComponents
+                .filter((component) => Number(component.sectionId) === Number(section.sectionId))
+                .sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0))
+                .forEach((component) => {
+                    rows.push(componentTreeRow({
+                        level: 2,
+                        kind: component.tipo,
+                        label: component.properties?.label || component.properties?.text || component.properties?.alt || `Componente #${component.id}`,
+                        meta: `z ${component.zIndex || 0}`,
+                        action: 'component',
+                        sectionId: section.sectionId,
+                        componentId: component.id,
+                        active: Number(component.id) === Number(selectedComponentId),
+                        muted: component.hidden,
+                        canHide: true,
+                        canLock: true,
+                        canMove: true,
+                        canDelete: true,
+                        locked: component.locked,
+                        visible: component.hidden !== true,
+                        canReorder: true,
+                    }));
+                });
+        });
+
+        componentTree.innerHTML = rows.join('');
+    }
+
 
     function isFullImageSection(section, cfg) {
         const hasFullImage =
@@ -984,7 +1839,6 @@
             'ALBUM',
             'REGALOS',
             'ALBUM_COMPARTIDO',
-            'RSVP',
         ].includes(sectionType);
     }
 
@@ -992,6 +1846,138 @@
         if (!isFullImageSection(section, cfg)) return true;
         if (typeof cfg.keepRealContent === 'boolean') return cfg.keepRealContent;
         return defaultKeepRealContent(section.type);
+    }
+
+    function sectionLayoutValue(cfg, key, fallback, min, max, decimals = false) {
+        const value = Number(cfg[key] ?? fallback);
+        const safeValue = Number.isFinite(value) ? value : fallback;
+        const clamped = clamp(safeValue, min, max);
+        return decimals ? Math.round(clamped * 100) / 100 : Math.round(clamped);
+    }
+
+    function applyPreviewSectionLayout(article, cfg, fullImage) {
+        const collapsed = cfg.layoutCollapsed === true;
+        const autoHeight = cfg.layoutAutoHeight === true;
+        const height = sectionLayoutValue(cfg, 'sectionHeight', 420, 80, 1400);
+        const minHeight = sectionLayoutValue(cfg, 'layoutMinHeight', 150, 0, 1400);
+        const maxHeight = sectionLayoutValue(cfg, 'layoutMaxHeight', 0, 0, 2400);
+        const width = sectionLayoutValue(cfg, 'layoutWidth', 100, 20, 140);
+        const scale = sectionLayoutValue(cfg, 'layoutScale', 1, 0.25, 3, true);
+        const paddingX = sectionLayoutValue(cfg, 'layoutPaddingX', 20, 0, 160);
+        const paddingY = sectionLayoutValue(cfg, 'layoutPaddingY', 24, 0, 160);
+        const marginBottom = sectionLayoutValue(cfg, 'layoutMarginBottom', 12, 0, 220);
+        const aspectRatio = typeof cfg.layoutAspectRatio === 'string' ? cfg.layoutAspectRatio.trim() : '';
+
+        article.classList.toggle('is-collapsed-layout', collapsed);
+        article.classList.toggle('is-expanded-layout', cfg.layoutExpanded !== false && !collapsed);
+        article.style.width = `${width}%`;
+        article.style.transform = `scale(${scale})`;
+        article.style.transformOrigin = 'top center';
+        article.style.setProperty('padding', `${paddingY}px ${paddingX}px`, 'important');
+        article.style.marginBottom = `${marginBottom}px`;
+        article.style.setProperty('min-height', collapsed
+            ? '72px'
+            : (autoHeight ? `${minHeight}px` : `${height}px`), 'important');
+        article.style.maxHeight = !collapsed && maxHeight ? `${maxHeight}px` : '';
+        article.style.height = collapsed ? '72px' : '';
+        article.style.setProperty('aspect-ratio', !collapsed && fullImage && aspectRatio ? aspectRatio : 'auto', 'important');
+    }
+
+    function syncConfigInspectorFields(cfg, keys) {
+        keys.forEach((key) => {
+            root.querySelectorAll(`[data-config-field="${key}"]`).forEach((field) => {
+                if (field.type === 'checkbox') {
+                    field.checked = Boolean(cfg[key]);
+                } else {
+                    field.value = cfg[key] ?? '';
+                }
+            });
+        });
+    }
+
+    function attachSectionResizeHandles(article, section, cfg, fullImage) {
+        if (section.sectionId !== selectedId || cfg.layoutCollapsed === true) return;
+
+        const box = document.createElement('div');
+        box.className = 'preview-section-resize-handles';
+        box.innerHTML = `
+            <button type="button" class="preview-section-resize-handle is-east" data-section-resize="east" aria-label="Cambiar ancho"></button>
+            <button type="button" class="preview-section-resize-handle is-south" data-section-resize="south" aria-label="Cambiar alto"></button>
+            <button type="button" class="preview-section-resize-handle is-corner" data-section-resize="corner" aria-label="Cambiar ancho y alto"></button>
+        `;
+
+        box.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+        });
+
+        box.querySelectorAll('[data-section-resize]').forEach((handle) => {
+            handle.addEventListener('pointerdown', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+
+                selectedId = section.sectionId;
+                selectedComponentId = null;
+
+                const mode = handle.dataset.sectionResize;
+                const parentRect = article.parentElement?.getBoundingClientRect();
+                if (!parentRect || parentRect.width <= 0) return;
+
+                const visualScale = sectionLayoutValue(cfg, 'layoutScale', 1, 0.25, 3, true);
+                const drag = {
+                    pointerId: event.pointerId,
+                    startClientX: event.clientX,
+                    startClientY: event.clientY,
+                    startWidth: sectionLayoutValue(cfg, 'layoutWidth', 100, 20, 140),
+                    startHeight: sectionLayoutValue(cfg, 'sectionHeight', 420, 80, 1400),
+                    parentWidth: parentRect.width,
+                    scale: visualScale || 1,
+                    mode,
+                };
+
+                handle.setPointerCapture?.(event.pointerId);
+                article.classList.add('is-resizing-layout');
+
+                const move = (moveEvent) => {
+                    if (moveEvent.pointerId !== drag.pointerId) return;
+                    moveEvent.preventDefault();
+
+                    cfg.layoutAutoHeight = false;
+                    cfg.layoutCollapsed = false;
+                    cfg.layoutExpanded = true;
+                    cfg.layoutAspectRatio = '';
+
+                    if (drag.mode === 'east' || drag.mode === 'corner') {
+                        const deltaWidth = ((moveEvent.clientX - drag.startClientX) / (drag.parentWidth * drag.scale)) * 100;
+                        cfg.layoutWidth = Math.round(clamp(drag.startWidth + deltaWidth, 20, 140));
+                    }
+
+                    if (drag.mode === 'south' || drag.mode === 'corner') {
+                        const deltaHeight = (moveEvent.clientY - drag.startClientY) / drag.scale;
+                        cfg.sectionHeight = Math.round(clamp(drag.startHeight + deltaHeight, 80, 1400));
+                    }
+
+                    applyPreviewSectionLayout(article, cfg, fullImage);
+                    syncConfigInspectorFields(cfg, ['layoutWidth', 'sectionHeight', 'layoutAutoHeight', 'layoutCollapsed']);
+                    setState('Cambios sin guardar');
+                };
+
+                const finish = (finishEvent) => {
+                    if (finishEvent?.pointerId && finishEvent.pointerId !== drag.pointerId) return;
+                    article.classList.remove('is-resizing-layout');
+                    document.removeEventListener('pointermove', move);
+                    document.removeEventListener('pointerup', finish);
+                    document.removeEventListener('pointercancel', finish);
+                    renderAll();
+                };
+
+                document.addEventListener('pointermove', move);
+                document.addEventListener('pointerup', finish);
+                document.addEventListener('pointercancel', finish);
+            });
+        });
+
+        article.appendChild(box);
     }
 
     function renderPreview() {
@@ -1036,20 +2022,7 @@
                 fullImage && !keepRealContent
             );
 
-            if (fullImage) {
-                article.style.minHeight = '0';
-                article.style.aspectRatio = '2 / 3';
-            } else {
-                article.style.minHeight = cfg.layoutAutoHeight === false
-                    ? `${clamp(cfg.sectionHeight ?? 420, 120, 900)}px`
-                    : `${clamp(cfg.layoutMinHeight ?? 120, 0, 1200)}px`;
-
-                article.style.maxHeight = cfg.layoutMaxHeight
-                    ? `${clamp(cfg.layoutMaxHeight, 0, 2000)}px`
-                    : '';
-
-                article.style.aspectRatio = '';
-            }
+            applyPreviewSectionLayout(article, cfg, fullImage);
 
             if (cfg.textColor) {
                 article.style.color = cfg.textColor;
@@ -1242,7 +2215,10 @@
             textLayer.dataset.layer = 'text';
             const copy = document.createElement('div');
             copy.className = 'preview-real-data';
-            copy.innerHTML = sectionPreviewHtml(section);
+            copy.innerHTML = sectionPreviewHtml(section, cfg);
+            if (realContentSections.has(section.type)) {
+                applyRealContentStyles(copy, cfg, section.type);
+            }
             textLayer.appendChild(copy);
             setLayerStyles(textLayer, cfg, 'text');
             if (fullImage && !keepRealContent) textLayer.classList.add('is-hidden');
@@ -1266,8 +2242,11 @@
                 attachCustomLayerDrag(article, layerEl, section, cfg, layer);
                 article.appendChild(layerEl);
             });
+            renderBuilderComponents(article, section);
+            attachSectionResizeHandles(article, section, cfg, fullImage);
             article.addEventListener('click', () => {
                 selectedId = section.sectionId;
+                selectedComponentId = null;
                 renderAll();
             });
             article.addEventListener('dragover', (event) => {
@@ -1561,6 +2540,98 @@
         moveLayerZ(cfg, layerId, direction);
     }
 
+    function setLayerTreeZ(cfg, layerId, value) {
+        if (!cfg || !layerId || layerId === 'background') return;
+        if (isCustomLayer(layerId)) {
+            cfg.customLayers = ensureCustomLayers(cfg);
+            const id = String(layerId).replace('custom:', '');
+            const custom = cfg.customLayers.find((layer) => layer.id === id);
+            if (custom) custom.z = clamp(value, 1, 12);
+            return;
+        }
+        setLayerValue(cfg, layerId, 'z', clamp(value, 1, 5));
+    }
+
+    function reorderLayerTreeByDrop(section, cfg, draggedLayerId, targetLayerId) {
+        if (!section || !cfg || !draggedLayerId || !targetLayerId || draggedLayerId === targetLayerId) return false;
+        const ordered = layerListItems(cfg).filter((layer) => layer.canMove);
+        const from = ordered.findIndex((layer) => layer.id === draggedLayerId);
+        const to = ordered.findIndex((layer) => layer.id === targetLayerId);
+        if (from < 0 || to < 0) return false;
+        const [dragged] = ordered.splice(from, 1);
+        ordered.splice(to, 0, dragged);
+        ordered.forEach((layer, index) => {
+            setLayerTreeZ(cfg, layer.id, ordered.length - index);
+        });
+        selectedId = section.sectionId;
+        selectedComponentId = null;
+        cfg.activeLayer = draggedLayerId;
+        setState('Orden de capas actualizado');
+        renderAll();
+        return true;
+    }
+
+    function reorderComponentTreeByDrop(draggedComponentId, targetComponentId) {
+        if (!draggedComponentId || !targetComponentId || draggedComponentId === targetComponentId) return false;
+        const dragged = builderComponentById(draggedComponentId);
+        const target = builderComponentById(targetComponentId);
+        if (!dragged || !target || Number(dragged.sectionId) !== Number(target.sectionId)) return false;
+        const ordered = builderComponents
+            .filter((component) => Number(component.sectionId) === Number(dragged.sectionId))
+            .sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0) || (a.id || 0) - (b.id || 0));
+        const from = ordered.findIndex((component) => Number(component.id) === Number(draggedComponentId));
+        const to = ordered.findIndex((component) => Number(component.id) === Number(targetComponentId));
+        if (from < 0 || to < 0) return false;
+        const [item] = ordered.splice(from, 1);
+        ordered.splice(to, 0, item);
+        ordered.forEach((component, index) => {
+            component.zIndex = clamp((index + 1) * 5, 1, 100);
+        });
+        selectedId = dragged.sectionId;
+        selectedComponentId = dragged.id;
+        setState('Guardando orden de componentes...');
+        renderAll();
+        Promise.all(
+            ordered
+                .filter((component) => component.id)
+                .map((component) => saveBuilderComponent(component, { skipRealRefresh: true }))
+        )
+            .then(() => {
+                setState('Orden de componentes guardado');
+                refreshRealPreview();
+            })
+            .catch((error) => setState(error.message));
+        return true;
+    }
+
+    function treePayloadFromRow(row) {
+        if (!row) return null;
+        return {
+            action: row.dataset.treeAction || '',
+            sectionId: Number(row.dataset.treeSectionId || 0),
+            layerId: row.dataset.treeLayerId || '',
+            componentId: Number(row.dataset.treeComponentId || 0),
+        };
+    }
+
+    function compatibleTreeDrop(source, target) {
+        if (!source || !target || source.action !== target.action) return false;
+        if (!['layer', 'component'].includes(source.action)) return false;
+        if (Number(source.sectionId) !== Number(target.sectionId)) return false;
+        if (source.action === 'layer') return Boolean(source.layerId && target.layerId && source.layerId !== target.layerId);
+        return Boolean(source.componentId && target.componentId && source.componentId !== target.componentId);
+    }
+
+    function applyComponentTreeDrop(source, target) {
+        if (!compatibleTreeDrop(source, target)) return false;
+        if (source.action === 'component') {
+            return reorderComponentTreeByDrop(source.componentId, target.componentId);
+        }
+        const section = config.sections.find((item) => Number(item.sectionId) === Number(source.sectionId));
+        const cfg = section ? ensureSectionConfig(section) : null;
+        return reorderLayerTreeByDrop(section, cfg, source.layerId, target.layerId);
+    }
+
     function addCustomLayer(section, layer) {
         const cfg = ensureSectionConfig(section);
         const clean = normalizeCustomLayer(layer);
@@ -1638,6 +2709,7 @@
 
         const section = selectedSection();
         sectionProps.classList.toggle('is-empty', !section);
+        updateAssetDetailButtons();
         if (!section) return;
         root.querySelectorAll('[data-section-field]').forEach((field) => {
             const key = field.dataset.sectionField;
@@ -1669,6 +2741,9 @@
         if (presetSelect) presetSelect.value = '';
         updateLayerFields(ensureSectionConfig(section));
         renderCustomLayerList(ensureSectionConfig(section));
+        fillRealContentProperties();
+        fillComponentProperties();
+        updateUniversalInspector();
     }
 
 
@@ -1676,6 +2751,79 @@
         mode: 'simple',
         panel: 'design',
     };
+
+    function ensureEditorUiIntegrity() {
+        /*
+         * S02-P01 — Integridad de herramientas del editor.
+         *
+         * El HTML ya incluye los grupos de panel, pero esta función
+         * conserva compatibilidad con templates antiguos y evita que
+         * todos los controles queden ocultos si falta un atributo.
+         */
+        root.dataset.editorMode =
+            root.dataset.editorMode || editorUi.mode;
+
+        root.dataset.editorPanel =
+            root.dataset.editorPanel || editorUi.panel;
+
+        const groups = [
+            ...root.querySelectorAll(
+                '.properties-panel > .property-group'
+            ),
+        ];
+
+        groups.forEach((group, index) => {
+            if (!group.dataset.editorGroup) {
+                if (
+                    group.hasAttribute('data-universal-inspector') ||
+                    group.hasAttribute('data-section-properties') ||
+                    index <= 1
+                ) {
+                    group.dataset.editorGroup = 'design';
+                } else if (
+                    group.classList.contains('quick-content-panel') ||
+                    group.querySelector(
+                        '[data-content-form], [data-guest-form]'
+                    )
+                ) {
+                    group.dataset.editorGroup = 'content';
+                } else if (
+                    group.querySelector(
+                        '[data-asset-form], [data-asset-list]'
+                    )
+                ) {
+                    group.dataset.editorGroup = 'assets';
+                } else {
+                    group.dataset.editorGroup = 'content';
+                }
+            }
+        });
+
+        const inspector = root.querySelector(
+            '[data-universal-inspector]'
+        );
+
+        if (inspector) {
+            inspector.dataset.editorPersistent = 'true';
+        }
+
+        const missingPanels = [
+            'design',
+            'content',
+            'assets',
+        ].filter((panel) => {
+            return !root.querySelector(
+                `[data-editor-group="${panel}"]`
+            );
+        });
+
+        if (missingPanels.length) {
+            console.warn(
+                'DIRTEC Editor: faltan grupos de propiedades:',
+                missingPanels
+            );
+        }
+    }
 
     const easySectionPresets = {
         PORTADA: { height: 620, titleY: 36, textY: 70, titleWidth: 88, textWidth: 90 },
@@ -1717,6 +2865,17 @@
             layoutMode: fullImage ? 'full-image' : 'normal',
             keepRealContent,
             sectionHeight: preset.height,
+            layoutAutoHeight: false,
+            layoutExpanded: true,
+            layoutCollapsed: false,
+            layoutWidth: 100,
+            layoutScale: 1,
+            layoutPaddingX: fullImage ? 0 : 20,
+            layoutPaddingY: fullImage ? 0 : 24,
+            layoutMarginBottom: 12,
+            layoutMinHeight: fullImage ? preset.height : 150,
+            layoutMaxHeight: 0,
+            layoutAspectRatio: fullImage ? '' : '',
             backgroundOpacity: 1,
             backgroundFit: 'contain',
             backgroundRepeat: 'no-repeat',
@@ -1760,6 +2919,15 @@
             showTitleAsset: false,
             activeLayer: keepRealContent ? 'text' : 'background',
         });
+        cfg.realContent = normalizeRealContentConfig({
+            ...(cfg.realContent || {}),
+            x: 50,
+            y: fullImage ? 50 : 50,
+            width: fullImage ? 94 : 100,
+            scale: 1,
+            opacity: 1,
+            layout: 'grid',
+        }, section.type);
 
         setState(
             fullImage
@@ -1784,63 +2952,148 @@
         });
     }
 
+    function editorContextLabel() {
+        const component = selectedComponent();
+        if (component) {
+            const labels = {
+                TEXTO: 'Texto',
+                IMAGEN: 'Imagen',
+                BOTON: 'Botón',
+            };
+            return {
+                title: labels[component.tipo] || 'Componente',
+                help: 'Edita únicamente las propiedades del componente seleccionado.',
+                panel: 'design',
+            };
+        }
+
+        const section = selectedSection();
+        if (!section) {
+            return {
+                title: 'Invitación',
+                help: 'Selecciona una sección o un elemento visible.',
+                panel: 'design',
+            };
+        }
+
+        const cfg = ensureSectionConfig(section);
+        const inspectorTarget = inspectorTargetType();
+
+        if (inspectorTarget === 'real' && realContentSections.has(section.type)) {
+            return {
+                title: `Contenido · ${section.title || section.type}`,
+                help: 'Controla tarjetas, fotos, dirección, botón y mapa.',
+                panel: 'design',
+            };
+        }
+
+        if (inspectorTarget === 'layer') {
+            return {
+                title: `Capa · ${section.title || section.type}`,
+                help: `Capa activa: ${cfg.activeLayer || 'fondo'}.`,
+                panel: 'design',
+            };
+        }
+
+        return {
+            title: section.title || section.type || 'Sección',
+            help: currentPreviewMode === 'real'
+                ? 'La Vista Real es la referencia visual de publicación.'
+                : 'Diseño rápido sirve para estructura, fondos, capas y componentes.',
+            panel: 'design',
+        };
+    }
+
+    function updateEditorContextCard() {
+        const context = editorContextLabel();
+        const title = root.querySelector('[data-editor-context-title]');
+        const help = root.querySelector('[data-editor-context-help]');
+        const openButton = root.querySelector('[data-editor-context-open]');
+
+        if (title) title.textContent = context.title;
+        if (help) help.textContent = context.help;
+        if (openButton) {
+            openButton.dataset.targetPanel = context.panel;
+            openButton.textContent =
+                editorUi.panel === context.panel
+                    ? 'Controles abiertos'
+                    : 'Ver controles';
+        }
+    }
+
     function setEditorPanel(panel) {
         editorUi.panel = panel;
         root.dataset.editorPanel = panel;
         root.querySelectorAll('[data-editor-panel-button]').forEach((button) => {
-            button.classList.toggle('is-active', button.dataset.editorPanelButton === panel);
+            button.classList.toggle(
+                'is-active',
+                button.dataset.editorPanelButton === panel
+            );
         });
+        updateEditorContextCard();
     }
 
     function setEditorMode(mode) {
         editorUi.mode = mode;
         root.dataset.editorMode = mode;
         root.querySelectorAll('[data-editor-mode]').forEach((button) => {
-            button.classList.toggle('is-active', button.dataset.editorMode === mode);
+            button.classList.toggle(
+                'is-active',
+                button.dataset.editorMode === mode
+            );
         });
         setState(mode === 'simple' ? 'Modo fácil' : 'Modo avanzado');
+        updateEditorContextCard();
     }
 
     function installSimplifiedEditorUi() {
-        if (root.querySelector('[data-simple-editor-toolbar]')) return;
+        /*
+         * S02-P02
+         * La barra principal ahora viene renderizada desde Django.
+         * Se conserva este fallback para templates anteriores, pero
+         * la función SIEMPRE continúa para conectar sus listeners.
+         */
+        let toolbar = root.querySelector('[data-simple-editor-toolbar]');
 
-        const propertiesPanel = root.querySelector('.properties-panel');
-        const panelHeading = propertiesPanel?.querySelector(':scope > .panel-heading');
-        if (propertiesPanel && panelHeading) {
-            const toolbar = document.createElement('div');
-            toolbar.className = 'simple-editor-toolbar';
-            toolbar.dataset.simpleEditorToolbar = '';
-            toolbar.innerHTML = `
-                <div class="editor-mode-switch" aria-label="Nivel de edición">
-                    <button type="button" class="is-active" data-editor-mode="simple">Fácil</button>
-                    <button type="button" data-editor-mode="advanced">Avanzado</button>
-                </div>
-                <div class="editor-panel-switch" aria-label="Panel del editor">
-                    <button type="button" class="is-active" data-editor-panel-button="design">Diseño</button>
-                    <button type="button" data-editor-panel-button="content">Contenido</button>
-                    <button type="button" data-editor-panel-button="assets">Archivos</button>
-                </div>
-                <div class="easy-actions">
-                    <button type="button" data-easy-action="repair">Reparar distribución</button>
-                    <button type="button" data-easy-action="full-image">Usar imagen completa</button>
-                </div>
-                <div class="component-tools" data-component-tools>
-                    <span>Componentes</span>
-                    <button type="button" data-add-component="TEXTO">Texto</button>
-                    <button type="button" data-add-component="IMAGEN">Imagen</button>
-                    <button type="button" data-add-component="BOTON">Boton</button>
-                </div>
-                <p class="simple-editor-help">
-                    Selecciona una sección, asigna una imagen como fondo y usa “Usar imagen completa”.
-                    Después mueve únicamente “Contenido real”.
-                </p>
-            `;
-            panelHeading.insertAdjacentElement('afterend', toolbar);
+        if (!toolbar) {
+            const propertiesPanel = root.querySelector('.properties-panel');
+            const panelHeading = propertiesPanel?.querySelector(':scope > .panel-heading');
+
+            if (propertiesPanel && panelHeading) {
+                toolbar = document.createElement('div');
+                toolbar.className = 'simple-editor-toolbar';
+                toolbar.dataset.simpleEditorToolbar = '';
+                toolbar.innerHTML = `
+                    <div class="editor-mode-switch" aria-label="Nivel de edición">
+                        <button type="button" class="is-active" data-editor-mode="simple">Fácil</button>
+                        <button type="button" data-editor-mode="advanced">Avanzado</button>
+                    </div>
+                    <div class="editor-panel-switch" aria-label="Panel del editor">
+                        <button type="button" class="is-active" data-editor-panel-button="design">Diseño</button>
+                        <button type="button" data-editor-panel-button="content">Contenido</button>
+                        <button type="button" data-editor-panel-button="assets">Archivos</button>
+                    </div>
+                    <div class="easy-actions">
+                        <button type="button" data-easy-action="repair">Reparar distribución</button>
+                        <button type="button" data-easy-action="full-image">Usar imagen completa</button>
+                    </div>
+                    <div class="component-tools" data-component-tools>
+                        <span>Componentes</span>
+                        <button type="button" data-add-component="TEXTO">Texto</button>
+                        <button type="button" data-add-component="IMAGEN">Imagen</button>
+                        <button type="button" data-add-component="BOTON">Botón</button>
+                    </div>
+                    <p class="simple-editor-help">
+                        Selecciona una sección, ajusta su diseño y agrega componentes sin salir del editor.
+                    </p>
+                `;
+                panelHeading.insertAdjacentElement('afterend', toolbar);
+            }
         }
 
         const propertyGroups = [...root.querySelectorAll('.properties-panel > .property-group')];
         propertyGroups.forEach((group, index) => {
-            if (group.hasAttribute('data-section-properties') || index === 0) {
+            if (group.hasAttribute('data-universal-inspector') || group.hasAttribute('data-section-properties') || index <= 1) {
                 group.dataset.editorGroup = 'design';
             } else if (group.classList.contains('quick-content-panel') || group.querySelector('[data-content-form], [data-guest-form]')) {
                 group.dataset.editorGroup = 'content';
@@ -1876,6 +3129,194 @@
         root.querySelectorAll('[data-editor-panel-button]').forEach((button) => {
             button.addEventListener('click', () => setEditorPanel(button.dataset.editorPanelButton));
         });
+        root.querySelector('[data-editor-context-open]')?.addEventListener('click', (event) => {
+            const panel = event.currentTarget.dataset.targetPanel || 'design';
+            setEditorPanel(panel);
+            root.querySelector(
+                `[data-editor-group="${panel}"]:not([hidden])`
+            )?.scrollIntoView({
+                block: 'start',
+                behavior: 'smooth',
+            });
+        });
+        root.querySelector('[data-inspector-target]')?.addEventListener('change', () => {
+            if (selectedComponent() && root.querySelector('[data-inspector-target]')?.value !== 'component') {
+                selectedComponentId = null;
+            }
+            updateUniversalInspector();
+            renderAll();
+        });
+        root.querySelectorAll('[data-inspector-panel]').forEach((button) => {
+            button.addEventListener('click', () => setEditorPanel(button.dataset.inspectorPanel));
+        });
+        root.querySelectorAll('[data-inspector-field]').forEach((field) => {
+            field.addEventListener('input', () => {
+                const target = inspectorTargetType();
+                const value = field.type === 'checkbox' ? field.checked : field.value;
+                setInspectorValue(target, field.dataset.inspectorField, value);
+                setState(target === 'component' ? 'Cambios sin guardar en componente' : 'Cambios sin guardar');
+                renderAll();
+            });
+            field.addEventListener('change', () => {
+                const component = selectedComponent();
+                if (component) {
+                    saveBuilderComponent(component, { skipRealRefresh: true }).catch((error) => setState(error.message));
+                }
+            });
+        });
+        root.querySelector('[data-inspector-action="delete-component"]')?.addEventListener('click', () => {
+            const component = selectedComponent();
+            if (!component) return;
+            deleteBuilderComponent(component).catch((error) => setState(error.message));
+        });
+        root.querySelector('[data-component-tree]')?.addEventListener('dragstart', (event) => {
+            const row = event.target.closest('.component-tree-row[draggable="true"]');
+            if (!row || event.target.closest('[data-tree-tool]')) {
+                event.preventDefault();
+                return;
+            }
+            componentTreeDrag = treePayloadFromRow(row);
+            if (!componentTreeDrag) {
+                event.preventDefault();
+                return;
+            }
+            row.classList.add('is-dragging');
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('application/x-component-tree', JSON.stringify(componentTreeDrag));
+            event.dataTransfer.setData('text/plain', JSON.stringify(componentTreeDrag));
+        });
+        root.querySelector('[data-component-tree]')?.addEventListener('dragover', (event) => {
+            const row = event.target.closest('.component-tree-row[draggable="true"]');
+            if (!row || !componentTreeDrag) return;
+            const target = treePayloadFromRow(row);
+            if (!compatibleTreeDrop(componentTreeDrag, target)) return;
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'move';
+            root.querySelectorAll('.component-tree-row.is-drop-target').forEach((item) => item.classList.remove('is-drop-target'));
+            row.classList.add('is-drop-target');
+        });
+        root.querySelector('[data-component-tree]')?.addEventListener('dragleave', (event) => {
+            const row = event.target.closest('.component-tree-row');
+            if (row && !row.contains(event.relatedTarget)) {
+                row.classList.remove('is-drop-target');
+            }
+        });
+        root.querySelector('[data-component-tree]')?.addEventListener('drop', (event) => {
+            const row = event.target.closest('.component-tree-row[draggable="true"]');
+            if (!row) return;
+            const target = treePayloadFromRow(row);
+            const source = componentTreeDrag || (() => {
+                try {
+                    return JSON.parse(event.dataTransfer.getData('application/x-component-tree') || event.dataTransfer.getData('text/plain') || 'null');
+                } catch (error) {
+                    return null;
+                }
+            })();
+            if (!compatibleTreeDrop(source, target)) return;
+            event.preventDefault();
+            root.querySelectorAll('.component-tree-row.is-drop-target, .component-tree-row.is-dragging').forEach((item) => {
+                item.classList.remove('is-drop-target', 'is-dragging');
+            });
+            componentTreeDrag = null;
+            applyComponentTreeDrop(source, target);
+        });
+        root.querySelector('[data-component-tree]')?.addEventListener('dragend', () => {
+            componentTreeDrag = null;
+            root.querySelectorAll('.component-tree-row.is-drop-target, .component-tree-row.is-dragging').forEach((item) => {
+                item.classList.remove('is-drop-target', 'is-dragging');
+            });
+        });
+        root.querySelector('[data-component-tree]')?.addEventListener('click', (event) => {
+            const tool = event.target.closest('[data-tree-tool]');
+            if (tool) {
+                const row = tool.closest('.component-tree-row');
+                if (!row) return;
+                event.stopPropagation();
+                const sectionId = Number(row.dataset.treeSectionId || 0);
+                if (sectionId) selectedId = sectionId;
+                const section = selectedSection();
+                const cfg = section ? ensureSectionConfig(section) : null;
+                const layerId = row.dataset.treeLayerId || '';
+                const componentId = Number(row.dataset.treeComponentId || 0);
+                const component = componentId ? builderComponentById(componentId) : null;
+                const action = tool.dataset.treeTool;
+
+                if (component) {
+                    selectedComponentId = component.id;
+                    if (action === 'toggle-visible') component.hidden = !component.hidden;
+                    if (action === 'toggle-lock') component.locked = !component.locked;
+                    if (action === 'z-back') component.zIndex = clamp((Number(component.zIndex) || 20) - 1, 1, 100);
+                    if (action === 'z-front') component.zIndex = clamp((Number(component.zIndex) || 20) + 1, 1, 100);
+                    if (action === 'delete') {
+                        deleteBuilderComponent(component).catch((error) => setState(error.message));
+                        return;
+                    }
+                    saveBuilderComponent(component, { skipRealRefresh: action !== 'toggle-visible' }).catch((error) => setState(error.message));
+                    renderAll();
+                    return;
+                }
+
+                selectedComponentId = null;
+                if (layerId && cfg) {
+                    cfg.activeLayer = layerId;
+                    if (action === 'toggle-visible') setLayerVisibility(cfg, layerId);
+                    if (action === 'toggle-lock') setLayerLocked(cfg, layerId);
+                    if (action === 'z-back') moveLayerFromList(cfg, layerId, -1);
+                    if (action === 'z-front') moveLayerFromList(cfg, layerId, 1);
+                    if (action === 'delete' && isCustomLayer(layerId)) {
+                        cfg.activeLayer = layerId;
+                        deleteActiveCustomLayer(cfg);
+                    }
+                    setState('Cambios sin guardar');
+                    renderAll();
+                    return;
+                }
+
+                if (section) {
+                    if (action === 'toggle-visible') {
+                        section.visible = !section.visible;
+                        setState('Cambios sin guardar');
+                        renderAll();
+                    }
+                }
+                return;
+            }
+            const row = event.target.closest('[data-tree-action]');
+            if (!row) return;
+            const action = row.dataset.treeAction;
+            const sectionId = Number(row.dataset.treeSectionId || 0);
+            const inspectorSelect = root.querySelector('[data-inspector-target]');
+
+            if (action === 'page') {
+                selectedComponentId = null;
+                if (inspectorSelect) inspectorSelect.value = 'section';
+                renderAll();
+                return;
+            }
+
+            if (sectionId) selectedId = sectionId;
+            const section = selectedSection();
+            const cfg = section ? ensureSectionConfig(section) : null;
+
+            if (action === 'section') {
+                selectedComponentId = null;
+                if (inspectorSelect) inspectorSelect.value = 'section';
+            } else if (action === 'layer' && cfg) {
+                selectedComponentId = null;
+                cfg.activeLayer = row.dataset.treeLayerId || 'background';
+                if (inspectorSelect) inspectorSelect.value = 'layer';
+            } else if (action === 'real') {
+                selectedComponentId = null;
+                if (inspectorSelect) inspectorSelect.value = 'real';
+            } else if (action === 'component') {
+                const componentId = Number(row.dataset.treeComponentId || 0);
+                if (componentId) selectedComponentId = componentId;
+                if (inspectorSelect) inspectorSelect.value = 'component';
+            }
+
+            setEditorPanel('design');
+            renderAll();
+        });
         root.querySelector('[data-easy-action="repair"]')?.addEventListener('click', () => applyEasyLayout());
         root.querySelector('[data-easy-action="full-image"]')?.addEventListener('click', () => applyEasyLayout({ fullImage: true }));
         root.querySelectorAll('[data-add-component]').forEach((button) => {
@@ -1891,13 +3332,43 @@
         setEditorMode('simple');
         setEditorPanel('design');
         updateRangeReadouts();
+
+        const requiredControls = [
+            '[data-editor-mode="simple"]',
+            '[data-editor-mode="advanced"]',
+            '[data-editor-panel-button="design"]',
+            '[data-editor-panel-button="content"]',
+            '[data-editor-panel-button="assets"]',
+            '[data-easy-action="repair"]',
+            '[data-easy-action="full-image"]',
+            '[data-add-component="TEXTO"]',
+            '[data-add-component="IMAGEN"]',
+            '[data-add-component="BOTON"]',
+        ];
+
+        const missingControls = requiredControls.filter(
+            (selector) => !root.querySelector(selector)
+        );
+
+        root.dataset.editorToolsReady =
+            missingControls.length ? 'false' : 'true';
+
+        if (missingControls.length) {
+            console.warn(
+                'DIRTEC Editor: herramientas faltantes:',
+                missingControls
+            );
+            setState('Editor cargado con herramientas incompletas');
+        }
     }
 
     function renderAll() {
         applyTheme();
         renderSectionList();
+        renderComponentTree();
         renderPreview();
         fillProperties();
+        updateEditorContextCard();
     }
 
     function moveSection(index, direction) {
@@ -1979,19 +3450,190 @@
     function previewGuestSummary() {
         const first = (guests.groups || [])[0];
         if (!first) return '<p class="muted">Sin invitado de prueba capturado.</p>';
-        const people = (first.guests || []).slice(0, 4).map((guest) => `
-            <span>${escapeHtml(guest.name)} <small>${escapeHtml(guest.type || '')}</small></span>
-        `).join('');
         return `
-            <div class="preview-rsvp-box">
-                <strong>${escapeHtml(first.type === 'FAMILIAR' ? `Familia ${first.name}` : first.name)}</strong>
-                <span>${escapeHtml(first.places)} lugar(es) - ${escapeHtml(first.adults)} adulto(s) - ${escapeHtml(first.children)} nino(s)</span>
-                ${people ? `<div class="preview-rsvp-people">${people}</div>` : ''}
+            <div class="summary-grid">
+                <div class="info-box">
+                    <div class="label">Invitacion para</div>
+                    <div class="value guest-summary-name">${escapeHtml(first.type === 'FAMILIAR' ? `Familia ${first.name}` : first.name)}</div>
+                </div>
+                <div class="info-box">
+                    <div class="label">Tipo</div>
+                    <div class="value">${escapeHtml(first.typeLabel || first.type || 'Invitado')}</div>
+                </div>
+                <div class="info-box">
+                    <div class="label">Lugares</div>
+                    <div class="value">${escapeHtml(first.places || 0)}</div>
+                </div>
             </div>
         `;
     }
 
-    function sectionPreviewHtml(section) {
+    function extractMapPreviewUrl(embedHtml, fallbackUrl) {
+        const source = String(embedHtml || '').trim();
+
+        if (source) {
+            const srcMatch = source.match(/\bsrc\s*=\s*["']([^"']+)["']/i);
+            if (srcMatch?.[1]) return srcMatch[1];
+        }
+
+        return String(fallbackUrl || '').trim();
+    }
+
+    function formatDatePart(value) {
+        if (!value) return '';
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return String(value);
+        return new Intl.DateTimeFormat('es-MX', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+        }).format(date);
+    }
+
+    function formatTimePart(value) {
+        if (!value) return '';
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return '';
+        return new Intl.DateTimeFormat('es-MX', {
+            hour: '2-digit',
+            minute: '2-digit',
+        }).format(date);
+    }
+
+    function detailLocationPreviewHtml({
+        kind,
+        title,
+        date,
+        place,
+        address,
+        mapUrl,
+        mapEmbed,
+        mediaAsset = {},
+        itemConfig = {},
+    }) {
+        const previewUrl = extractMapPreviewUrl(mapEmbed, mapUrl);
+        const safeMapUrl = mapUrl ? escapeHtml(mapUrl) : (previewUrl ? escapeHtml(previewUrl) : '');
+        const mediaUrl = mediaAsset?.url || '';
+        const showMedia = itemConfig.showMedia !== false && itemConfig.mediaPosition !== 'hidden' && Boolean(mediaUrl);
+        const mapAsset = itemConfig.mapAsset && typeof itemConfig.mapAsset === 'object' ? itemConfig.mapAsset : {};
+        const mapDisplay = itemConfig.mapDisplay || 'button-map';
+        const mapsAllowed = itemConfig.showMaps !== false && mapDisplay !== 'hidden';
+        const showTitle = itemConfig.showTitle !== false;
+        const showDate = itemConfig.showDate !== false;
+        const showTime = itemConfig.showTime !== false;
+        const showPlace = itemConfig.showPlace !== false;
+        const showAddress = itemConfig.showAddress !== false;
+        const showButton =
+            itemConfig.showButton !== false &&
+            ['button-map', 'button-only'].includes(mapDisplay);
+        const showMap = mapsAllowed && ['button-map', 'map-only'].includes(mapDisplay);
+        const hasButton = Boolean(safeMapUrl);
+        const buttonLabel = itemConfig.buttonLabel || 'Ver ubicacion';
+        const dateText = formatDatePart(date);
+        const timeText = formatTimePart(date);
+
+        return `
+            <article
+                class="info-box event-place-card"
+                data-detail-kind="${escapeHtml(kind)}"
+                data-real-card-media-position="${escapeHtml(itemConfig.mediaPosition || 'top')}"
+                style="--real-card-bg:${escapeHtml(itemConfig.cardBg || '#ffffff')};order:${Number(itemConfig.order || 0)};"
+            >
+                ${showMedia ? `
+                    <div class="place-media">
+                        ${mediaAsset.isVideo
+                            ? `<video src="${escapeHtml(mediaUrl)}" muted playsinline preload="metadata"></video>`
+                            : `<img src="${escapeHtml(mediaUrl)}" alt="${escapeHtml(title)}">`
+                        }
+                    </div>
+                ` : ''}
+                ${showTitle ? `<div class="card-title">${escapeHtml(title)}</div>` : ''}
+                ${showDate && dateText ? `<div class="value">${escapeHtml(dateText)}</div>` : ''}
+                ${showTime && timeText ? `<p class="place-time">${escapeHtml(timeText)}</p>` : ''}
+                ${showPlace ? `<p class="place-name">${escapeHtml(place || 'Lugar por confirmar')}</p>` : ''}
+                ${showAddress && address ? `<p class="place-address">${escapeHtml(address)}</p>` : ''}
+                ${showButton ? `
+                ${
+                    hasButton
+                        ? `
+                            <a
+                                class="btn secondary"
+                                href="${safeMapUrl}"
+                                target="_blank"
+                                rel="noopener"
+                                tabindex="-1"
+                                aria-disabled="true"
+                            >
+                                ${escapeHtml(buttonLabel)}
+                            </a>
+                        `
+                        : `
+                            <span class="btn secondary is-disabled">
+                                ${escapeHtml(buttonLabel)}
+                            </span>
+                        `
+                }
+                ` : ''}
+                ${showMap ? `
+                <div class="map-card preview-map-placeholder">
+                    ${mapAsset.url
+                        ? (mapAsset.isVideo
+                            ? `<video src="${escapeHtml(mapAsset.url)}" muted playsinline preload="metadata"></video>`
+                            : `<img src="${escapeHtml(mapAsset.url)}" alt="Imagen de ubicacion">`
+                        )
+                        : `<small>${previewUrl ? 'Mapa configurado' : 'Mapa pendiente'}</small>`
+                    }
+                </div>
+                ` : ''}
+            </article>
+        `;
+    }
+
+    function giftPreviewHtml(item) {
+        const isDeposit = item.isDeposit || item.bank || item.holder || item.account || item.clabe;
+        if (isDeposit) {
+            return `
+                <div class="gift-box deposit-box">
+                    <span class="gift-kind">Deposito</span>
+                    <strong>${escapeHtml(item.name || 'Datos bancarios')}</strong>
+                    ${item.bank ? `<p><b>Banco:</b> ${escapeHtml(item.bank)}</p>` : ''}
+                    ${item.holder ? `<p><b>Titular:</b> ${escapeHtml(item.holder)}</p>` : ''}
+                    ${item.account ? `<p><b>Cuenta:</b> ${escapeHtml(item.account)}</p>` : ''}
+                    ${item.clabe ? `<p><b>CLABE:</b> ${escapeHtml(item.clabe)}</p>` : ''}
+                    ${item.instructions ? `<small>${escapeHtml(item.instructions)}</small>` : ''}
+                </div>
+            `;
+        }
+        return `
+            <div class="gift-box">
+                <span class="gift-kind">${escapeHtml(item.url ? 'Tienda' : 'Regalo')}</span>
+                <strong>${escapeHtml(item.name || item.typeLabel || 'Regalo')}</strong>
+                ${item.url ? `<p>${escapeHtml(item.url)}</p>` : `<p>${escapeHtml(item.instructions || 'Informacion pendiente de completar.')}</p>`}
+            </div>
+        `;
+    }
+
+    function albumPreviewHtml() {
+        const assets = (config.theme?.albumAssets || []).filter((asset) => asset?.url).slice(0, 6);
+        if (!assets.length) {
+            return '<p class="section-copy muted">Agrega fotos al album para verlas aqui.</p>';
+        }
+        return `
+            <div class="album-grid">
+                ${assets.map((asset) => `
+                    <figure>
+                        ${asset.isVideo
+                            ? `<video src="${escapeHtml(asset.url)}" playsinline muted preload="metadata"></video>`
+                            : `<img src="${escapeHtml(asset.url)}" alt="${escapeHtml(asset.title || 'Foto del evento')}">`
+                        }
+                        ${asset.title ? `<figcaption>${escapeHtml(asset.title)}</figcaption>` : ''}
+                    </figure>
+                `).join('')}
+            </div>
+        `;
+    }
+
+    function sectionPreviewHtml(section, cfg = ensureSectionConfig(section)) {
         const event = eventData();
         const description = section.description ? `<p>${escapeHtml(section.description)}</p>` : '';
         if (section.type === 'PORTADA') {
@@ -2028,11 +3670,40 @@
             `;
         }
         if (section.type === 'DETALLES') {
+            const real = normalizeRealContentConfig(cfg.realContent, section.type);
+            const ceremony = real.items.ceremony;
+            const reception = real.items.reception;
             return `
-                ${description}
-                <div class="preview-detail-grid">
-                    <div><strong>Ceremonia</strong><span>${escapeHtml(formatDateTime(event.ceremonyDate))}</span><p>${escapeHtml(event.ceremonyPlace || 'Templo por confirmar')}</p><small>${escapeHtml(event.ceremonyAddress || '')}</small></div>
-                    <div><strong>Recepcion</strong><span>${escapeHtml(formatDateTime(event.receptionDate))}</span><p>${escapeHtml(event.receptionPlace || 'Salon por confirmar')}</p><small>${escapeHtml(event.receptionAddress || '')}</small></div>
+                <div class="preview-detail-flow">
+                    ${description}
+                    <div class="event-detail-grid">
+                        ${ceremony.visible !== false ? detailLocationPreviewHtml({
+                            kind: 'ceremony',
+                            title: ceremony.label || 'Ceremonia',
+                            date: event.ceremonyDate,
+                            place: event.ceremonyPlace || 'Templo por confirmar',
+                            address: real.showAddress && ceremony.showAddress !== false ? event.ceremonyAddress : '',
+                            mapUrl: real.showMaps && ceremony.showMaps !== false ? event.ceremonyMapUrl : '',
+                            mapEmbed: real.showMaps && ceremony.showMaps !== false ? event.ceremonyMapEmbed : '',
+                            mediaAsset: config.theme?.ceremonyAsset?.url
+                                ? config.theme.ceremonyAsset
+                                : { url: event.ceremonyMediaUrl || '', isVideo: Boolean(event.ceremonyMediaIsVideo), title: ceremony.label || 'Ceremonia' },
+                            itemConfig: ceremony,
+                        }) : ''}
+                        ${reception.visible !== false ? detailLocationPreviewHtml({
+                            kind: 'reception',
+                            title: reception.label || 'Recepcion',
+                            date: event.receptionDate,
+                            place: event.receptionPlace || 'Salon por confirmar',
+                            address: real.showAddress && reception.showAddress !== false ? event.receptionAddress : '',
+                            mapUrl: real.showMaps && reception.showMaps !== false ? event.receptionMapUrl : '',
+                            mapEmbed: real.showMaps && reception.showMaps !== false ? event.receptionMapEmbed : '',
+                            mediaAsset: config.theme?.receptionAsset?.url
+                                ? config.theme.receptionAsset
+                                : { url: event.receptionMediaUrl || '', isVideo: Boolean(event.receptionMediaIsVideo), title: reception.label || 'Recepcion' },
+                            itemConfig: reception,
+                        }) : ''}
+                    </div>
                 </div>
             `;
         }
@@ -2043,13 +3714,48 @@
             return previewList(content.itinerary, 'Sin itinerario capturado', (item) => `<div><strong>${escapeHtml(item.time || '')}</strong><span>${escapeHtml(item.title || '')}</span></div>`, 5);
         }
         if (section.type === 'REGALOS') {
-            return previewList(content.gifts, 'Sin mesa de regalos visible', (item) => `<div><strong>${escapeHtml(item.name || item.typeLabel || 'Regalo')}</strong><span>${escapeHtml(item.bank || item.url || item.instructions || '')}</span></div>`, 4);
+            const gifts = (content.gifts || []).filter((item) => item.visible !== false).slice(0, 6);
+            return `
+                <div class="gift-grid">
+                    ${gifts.length ? gifts.map(giftPreviewHtml).join('') : '<p class="section-copy muted">Aun no se han agregado opciones de regalo.</p>'}
+                </div>
+            `;
+        }
+        if (section.type === 'ALBUM') {
+            return albumPreviewHtml();
         }
         if (section.type === 'ALBUM_COMPARTIDO') {
-            return `<p>${escapeHtml(event.sharedAlbumText || section.description || 'Comparte tus fotos y videos en el album del evento.')}</p><small>${escapeHtml(event.sharedAlbumUrl || 'Link por configurar')}</small>`;
+            return `
+                <div class="shared-album-content">
+                    <p class="shared-album-message">${escapeHtml(event.sharedAlbumText || section.description || 'Comparte con nosotros las fotos y videos que captures durante el evento.')}</p>
+                    <div class="btn-row">
+                        <a class="btn" href="${escapeHtml(event.sharedAlbumUrl || '#')}" target="_blank" rel="noopener" tabindex="-1" aria-disabled="true">
+                            Subir fotos y videos
+                        </a>
+                    </div>
+                </div>
+            `;
         }
         if (section.type === 'RSVP') {
-            return `${description || `<p>${escapeHtml(event.rsvpText || 'Confirma tu asistencia.')}</p>`}${previewGuestSummary()}`;
+            return `
+                <div class="invitation-summary">
+                    <h2 class="section-title">${escapeHtml(event.invitationTitle || section.title || 'Confirmar asistencia')}</h2>
+                    <p class="section-copy">${escapeHtml(event.invitationText || event.rsvpText || 'Confirma tu asistencia.')}</p>
+                    ${previewGuestSummary()}
+                </div>
+                <div class="rsvp-form preview-rsvp-form">
+                    <div class="guest-box">
+                        <div class="guest-head">
+                            <h3 class="guest-name">Invitado de prueba</h3>
+                            <span class="pill">Formulario RSVP</span>
+                        </div>
+                        <div class="radio-row">
+                            <div class="option"><span class="preview-radio"></span><label>Si asistire</label></div>
+                            <div class="option"><span class="preview-radio"></span><label>No asistire</label></div>
+                        </div>
+                    </div>
+                </div>
+            `;
         }
         return description || '<p class="muted">Seccion lista para personalizar.</p>';
     }
@@ -2463,6 +4169,51 @@
         });
     });
 
+    root.querySelectorAll('[data-real-content-field]').forEach((field) => {
+        field.addEventListener('input', () => {
+            const section = selectedSection();
+            if (!section || !realContentSections.has(section.type)) return;
+            const real = ensureSectionConfig(section).realContent;
+            const key = field.dataset.realContentField;
+            if (!key) return;
+            if (field.type === 'checkbox') {
+                real[key] = field.checked;
+            } else if (field.type === 'range' || field.type === 'number') {
+                const numeric = Number(field.value);
+                real[key] = Number.isFinite(numeric) ? numeric : field.value;
+            } else {
+                real[key] = field.value;
+            }
+            section.config.realContent = normalizeRealContentConfig(real, section.type);
+            setState('Cambios sin guardar');
+            renderAll();
+        });
+    });
+
+    root.querySelectorAll('[data-real-content-item]').forEach((field) => {
+        field.addEventListener('input', () => {
+            const section = selectedSection();
+            if (!section || !realContentSections.has(section.type)) return;
+            const real = ensureSectionConfig(section).realContent;
+            const itemKey = field.dataset.realContentItem;
+            const itemField = field.dataset.realContentItemField;
+            if (!itemKey || !itemField) return;
+            real.items = real.items || {};
+            real.items[itemKey] = real.items[itemKey] || {};
+            if (field.type === 'checkbox') {
+                real.items[itemKey][itemField] = field.checked;
+            } else if (field.type === 'number' || field.type === 'range') {
+                const numeric = Number(field.value);
+                real.items[itemKey][itemField] = Number.isFinite(numeric) ? numeric : field.value;
+            } else {
+                real.items[itemKey][itemField] = field.value;
+            }
+            section.config.realContent = normalizeRealContentConfig(real, section.type);
+            setState('Cambios sin guardar');
+            renderAll();
+        });
+    });
+
     root.querySelectorAll('[data-layer-select]').forEach((button) => {
         button.addEventListener('click', () => {
             const section = selectedSection();
@@ -2514,6 +4265,79 @@
             }
             setState('Cambios sin guardar');
             renderAll();
+        });
+    });
+
+    function setSelectedComponentField(field) {
+        const component = selectedComponent();
+        if (!component) return null;
+        const key = field.dataset.componentField;
+        if (!key) return component;
+        if (field.type === 'checkbox') {
+            component[key] = field.checked;
+        } else {
+            const numeric = Number(field.value);
+            component[key] = Number.isFinite(numeric) ? numeric : field.value;
+        }
+        return component;
+    }
+
+    function setSelectedComponentProperty(field) {
+        const component = selectedComponent();
+        if (!component) return null;
+        const key = field.dataset.componentProperty;
+        if (!key) return component;
+        component.properties = component.properties || {};
+        if (field.type === 'number') {
+            const numeric = Number(field.value);
+            component.properties[key] = Number.isFinite(numeric) ? numeric : field.value;
+        } else {
+            component.properties[key] = field.value;
+        }
+        return component;
+    }
+
+    root.querySelectorAll('[data-component-field]').forEach((field) => {
+        field.addEventListener('input', () => {
+            const component = setSelectedComponentField(field);
+            if (!component) return;
+            setState('Cambios sin guardar en componente');
+            if (field.dataset.componentField === 'hidden') {
+                renderAll();
+            } else {
+                updateComponentPreview(component);
+            }
+        });
+        field.addEventListener('change', () => {
+            const component = selectedComponent();
+            if (!component) return;
+            saveBuilderComponent(component, {
+                skipRealRefresh: field.dataset.componentField !== 'hidden',
+            }).catch((error) => setState(error.message));
+        });
+    });
+
+    root.querySelectorAll('[data-component-property]').forEach((field) => {
+        field.addEventListener('input', () => {
+            const component = setSelectedComponentProperty(field);
+            if (!component) return;
+            setState('Cambios sin guardar en componente');
+            updateComponentPreview(component);
+        });
+        field.addEventListener('change', () => {
+            const component = selectedComponent();
+            if (!component) return;
+            saveBuilderComponent(component, { skipRealRefresh: true }).catch((error) => setState(error.message));
+        });
+    });
+
+    root.querySelectorAll('[data-component-action]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const component = selectedComponent();
+            if (!component) return;
+            if (button.dataset.componentAction === 'delete') {
+                deleteBuilderComponent(component).catch((error) => setState(error.message));
+            }
         });
     });
 
@@ -2616,7 +4440,16 @@
         renderAll();
     });
 
-    async function postJson(url) {
+    async function syncQuickContentBeforeDesignPost() {
+        const form = root.querySelector('[data-content-form]');
+        if (!form) return;
+        await saveContent(formToObject(form));
+    }
+
+    async function postJson(url, { syncContent = false } = {}) {
+        if (syncContent) {
+            await syncQuickContentBeforeDesignPost();
+        }
         setState('Guardando...');
         const response = await fetch(url, {
             method: 'POST',
@@ -2639,10 +4472,10 @@
     }
 
     root.querySelector('[data-action="save"]')?.addEventListener('click', () => {
-        postJson(root.dataset.saveUrl).catch((error) => setState(error.message));
+        postJson(root.dataset.saveUrl, { syncContent: true }).catch((error) => setState(error.message));
     });
     root.querySelector('[data-action="publish"]')?.addEventListener('click', () => {
-        postJson(root.dataset.publishUrl).catch((error) => setState(error.message));
+        postJson(root.dataset.publishUrl, { syncContent: true }).catch((error) => setState(error.message));
     });
     root.querySelector('[data-apply-template]')?.addEventListener('click', () => {
         applyTemplate().catch((error) => setState(error.message));
@@ -2682,6 +4515,7 @@
         `;
         assetList.prepend(item);
         bindAssetItem(item);
+        updateAssetDetailButtons();
         form.reset();
         setState('Archivo subido');
     });
@@ -2692,6 +4526,10 @@
                 <option value="TITULO_SECCION">Imagen completa</option>
                 <option value="FONDO_SECCION">Fondo</option>
                 <option value="CAPA_LIBRE">Capa</option>
+                <option value="CEREMONIA">Foto ceremonia</option>
+                <option value="RECEPCION">Foto recepcion</option>
+                <option value="MAPA_CEREMONIA">Imagen mapa ceremonia</option>
+                <option value="MAPA_RECEPCION">Imagen mapa recepcion</option>
                 <option value="ALBUM">Álbum</option>
             </select>
         `;
@@ -2729,6 +4567,38 @@
 
                 <button
                     type="button"
+                    data-asset-quick-target="CEREMONIA"
+                    data-asset-details-only
+                >
+                    Foto ceremonia
+                </button>
+
+                <button
+                    type="button"
+                    data-asset-quick-target="RECEPCION"
+                    data-asset-details-only
+                >
+                    Foto recepcion
+                </button>
+
+                <button
+                    type="button"
+                    data-asset-quick-target="MAPA_CEREMONIA"
+                    data-asset-details-only
+                >
+                    Mapa ceremonia
+                </button>
+
+                <button
+                    type="button"
+                    data-asset-quick-target="MAPA_RECEPCION"
+                    data-asset-details-only
+                >
+                    Mapa recepcion
+                </button>
+
+                <button
+                    type="button"
                     data-asset-quick-target="ALBUM"
                 >
                     Álbum
@@ -2752,13 +4622,24 @@
             'ALBUM',
             'REGALOS',
             'ALBUM_COMPARTIDO',
-            'RSVP',
         ].includes(sectionType);
     }
 
     async function assignAssetRef(assetRef, destino, section) {
-        if ((destino === 'FONDO_SECCION' || destino === 'TITULO_SECCION' || destino === 'CAPA_LIBRE' || destino === 'COMPONENTE_IMAGEN') && !section) {
+        const sectionDestinations = new Set([
+            'FONDO_SECCION',
+            'TITULO_SECCION',
+            'CAPA_LIBRE',
+            'COMPONENTE_IMAGEN',
+            'MAPA_CEREMONIA',
+            'MAPA_RECEPCION',
+        ]);
+        if (sectionDestinations.has(destino) && !section) {
             setState('Selecciona una seccion.');
+            return;
+        }
+        if (['MAPA_CEREMONIA', 'MAPA_RECEPCION'].includes(destino) && section.type !== 'DETALLES') {
+            setState('Selecciona la seccion Detalles para asignar esta imagen.');
             return;
         }
         if (destino === 'COMPONENTE_IMAGEN') {
@@ -2815,6 +4696,15 @@
             if (!config.theme.albumAssets.some((asset) => asset.id === assetRef.id)) {
                 config.theme.albumAssets.push(assetRef);
             }
+        } else if (destino === 'MAPA_CEREMONIA' || destino === 'MAPA_RECEPCION') {
+            section.config = ensureSectionConfig(section);
+            const real = normalizeRealContentConfig(section.config.realContent, section.type);
+            const itemKey = destino === 'MAPA_CEREMONIA' ? 'ceremony' : 'reception';
+            real.items[itemKey].mapAsset = assetRef;
+            if (real.items[itemKey].mapDisplay === 'hidden') {
+                real.items[itemKey].mapDisplay = 'map-only';
+            }
+            section.config.realContent = real;
         } else {
             const themeKey = {
                 PORTADA: 'coverAsset',
@@ -2898,14 +4788,22 @@
     root.querySelectorAll('[data-preview-mode]').forEach((button) => {
         button.addEventListener('click', () => {
             const mode = button.dataset.previewMode;
-            root.querySelectorAll('[data-preview-mode]').forEach((item) => item.classList.toggle('is-active', item === button));
+            currentPreviewMode = mode;
+
+            root.querySelectorAll('[data-preview-mode]').forEach((item) => {
+                item.classList.toggle('is-active', item === button);
+            });
+
             root.querySelectorAll('[data-preview-panel]').forEach((panel) => {
                 panel.hidden = panel.dataset.previewPanel !== mode;
             });
+
             if (mode === 'real') {
                 refreshRealPreview();
                 setLivePreviewMode(livePreviewMode);
             }
+
+            updateEditorContextCard();
         });
     });
 
@@ -2926,8 +4824,38 @@
         button.addEventListener('click', () => setLivePreviewMode(button.dataset.livePreviewMode));
     });
 
-    realPreviewFrame?.addEventListener('load', bindRealPreviewInteractions);
+    realPreviewFrame?.addEventListener(
+        'load',
+        bindRealPreviewInteractions
+    );
+
+    /*
+     * El iframe puede terminar de cargar antes de que este listener
+     * sea conectado. En ese caso registramos inmediatamente.
+     */
+    if (
+        realPreviewFrame?.contentDocument?.readyState === 'interactive' ||
+        realPreviewFrame?.contentDocument?.readyState === 'complete'
+    ) {
+        bindRealPreviewInteractions();
+    }
+
     setLivePreviewMode('edit');
+
+    if (realPreviewFrame) {
+        currentPreviewMode = 'real';
+
+        root.querySelectorAll('[data-preview-mode]').forEach((button) => {
+            button.classList.toggle(
+                'is-active',
+                button.dataset.previewMode === 'real'
+            );
+        });
+
+        root.querySelectorAll('[data-preview-panel]').forEach((panel) => {
+            panel.hidden = panel.dataset.previewPanel !== 'real';
+        });
+    }
 
     root.querySelectorAll('[data-content-tab]').forEach((button) => {
         button.addEventListener('click', () => {
@@ -2979,7 +4907,35 @@
     renderContent();
     renderGuests();
     renderVersions();
+    ensureEditorUiIntegrity();
     installSimplifiedEditorUi();
     renderAll();
+
+    window.DIRTECNativeElements = Object.freeze({
+        list: () => nativeElementRegistry.map(
+            ({ id, type, role, section, item }) => ({
+                id,
+                type,
+                role,
+                section,
+                item,
+            })
+        ),
+        get: (elementId) => {
+            const element = nativeElementById(elementId);
+
+            if (!element) return null;
+
+            return {
+                id: element.id,
+                type: element.type,
+                role: element.role,
+                section: element.section,
+                item: element.item,
+            };
+        },
+        count: () => nativeElementRegistry.length,
+    });
+
     loadBuilderComponents().catch((error) => setState(error.message));
 }());

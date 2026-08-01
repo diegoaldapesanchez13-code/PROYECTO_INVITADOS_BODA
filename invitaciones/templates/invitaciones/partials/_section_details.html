@@ -26,12 +26,28 @@
     >
         {% include "invitaciones/partials/_section_base.html" with seccion=secciones.DETALLES titulo_default="Detalles del evento" texto_alt="Detalles del evento" media_class="details-full-image" %}
 
-        <div class="section-main-content">
-            <div class="event-detail-grid">
+        {% with real_content=secciones.DETALLES.editor_config.realContent %}
+        <div
+            class="section-main-content real-content-layer details-real-content"
+            data-real-content-layout="{{ real_content.layout|default:'grid' }}"
+            data-real-content-align="{{ real_content.align|default:'center' }}"
+            data-real-content-shadow="{% if real_content.cardShadow %}1{% else %}0{% endif %}"
+            data-real-content-show-media="{% if real_content.showMedia != False %}1{% else %}0{% endif %}"
+            data-real-content-show-address="{% if real_content.showAddress != False %}1{% else %}0{% endif %}"
+            data-real-content-show-maps="{% if real_content.showMaps != False %}1{% else %}0{% endif %}"
+        >
+            <div class="event-detail-grid real-content-grid">
 
-                <div class="info-box event-place-card">
-                    {% if evento.foto_ceremonia %}
-                        <div class="place-media">
+                {% if real_content.items.ceremony.visible != False %}
+                <div
+                    class="info-box event-place-card"
+                    data-real-card="ceremony" data-native-element data-element-id="details-ceremony-card" data-element-type="container" data-element-role="event-place-card" data-element-section="DETALLES" data-element-item="ceremony"
+                    data-real-card-media-position="{{ real_content.items.ceremony.mediaPosition|default:'top' }}"
+                    data-real-card-map-display="{{ real_content.items.ceremony.mapDisplay|default:'button-map' }}"
+                    style="--real-card-bg: {{ real_content.items.ceremony.cardBg|default:'#ffffff' }}; order: {{ real_content.items.ceremony.order|default:1 }};"
+                >
+                    {% if real_content.showMedia != False and real_content.items.ceremony.showMedia != False and real_content.items.ceremony.mediaPosition != 'hidden' and evento.foto_ceremonia %}
+                        <div class="place-media" data-native-element data-element-id="details-ceremony-media" data-element-type="media" data-element-role="event-place-media" data-element-section="DETALLES" data-element-item="ceremony">
                             {% if evento.ceremonia_es_video %}
                                 <video
                                     src="{{ evento.foto_ceremonia.url }}"
@@ -51,44 +67,68 @@
                         </div>
                     {% endif %}
 
-                    <div class="card-title">
-                        Ceremonia
-                    </div>
-
-                    {% if evento.fecha_misa %}
-                        <div class="value">
-                            {{ evento.fecha_misa|date:"d/m/Y" }}
+                    {% if real_content.items.ceremony.showTitle != False %}
+                        <div class="card-title" data-native-element data-element-id="details-ceremony-title" data-element-type="text" data-element-role="event-place-title" data-element-section="DETALLES" data-element-item="ceremony">
+                            {{ real_content.items.ceremony.label|default:"Ceremonia" }}
                         </div>
-
-                        <p>
-                            {{ evento.fecha_misa|date:"h:i A" }}
-                            {% if evento.lugar_misa %}
-                                · {{ evento.lugar_misa }}
-                            {% endif %}
-                        </p>
-                    {% elif evento.lugar_misa %}
-                        <p>{{ evento.lugar_misa }}</p>
                     {% endif %}
 
-                    {% if evento.direccion_ceremonia %}
-                        <p class="place-address">
+                    {% if real_content.items.ceremony.showDate != False and evento.fecha_misa %}
+                        <div class="value" data-native-element data-element-id="details-ceremony-date" data-element-type="date" data-element-role="event-place-date" data-element-section="DETALLES" data-element-item="ceremony">
+                            {{ evento.fecha_misa|date:"d/m/Y" }}
+                        </div>
+                    {% endif %}
+
+                    {% if real_content.items.ceremony.showTime != False and evento.fecha_misa %}
+                        <p class="place-time" data-native-element data-element-id="details-ceremony-time" data-element-type="time" data-element-role="event-place-time" data-element-section="DETALLES" data-element-item="ceremony">
+                            {{ evento.fecha_misa|date:"h:i A" }}
+                        </p>
+                    {% endif %}
+
+                    {% if real_content.items.ceremony.showPlace != False and evento.lugar_misa %}
+                        <p class="place-name" data-native-element data-element-id="details-ceremony-place" data-element-type="text" data-element-role="event-place-name" data-element-section="DETALLES" data-element-item="ceremony">
+                            {{ evento.lugar_misa }}
+                        </p>
+                    {% endif %}
+
+                    {% if real_content.showAddress != False and real_content.items.ceremony.showAddress != False and evento.direccion_ceremonia %}
+                        <p class="place-address" data-native-element data-element-id="details-ceremony-address" data-element-type="text" data-element-role="event-place-address" data-element-section="DETALLES" data-element-item="ceremony">
                             {{ evento.direccion_ceremonia }}
                         </p>
                     {% endif %}
 
-                    {% if evento.link_mapa_misa %}
+                    {% if real_content.items.ceremony.showButton != False and real_content.items.ceremony.mapDisplay != 'hidden' and real_content.items.ceremony.mapDisplay != 'map-only' and evento.link_mapa_misa %}
                         <a
-                            class="btn secondary"
+                            class="btn secondary" data-native-element data-element-id="details-ceremony-button" data-element-type="button" data-element-role="event-place-button" data-element-section="DETALLES" data-element-item="ceremony"
                             href="{{ evento.link_mapa_misa }}"
                             target="_blank"
                             rel="noopener"
                         >
-                            Ver ubicación
+                            {{ real_content.items.ceremony.buttonLabel|default:"Ver ubicacion" }}
                         </a>
                     {% endif %}
 
-                    {% if evento.mostrar_mapa %}
-                        {% if evento.mapa_misa_embed_html %}
+                    {% if real_content.showMaps != False and real_content.items.ceremony.showMaps != False and real_content.items.ceremony.mapDisplay != 'hidden' and real_content.items.ceremony.mapDisplay != 'button-only' and evento.mostrar_mapa %}
+                        {% if real_content.items.ceremony.mapAsset.url %}
+                            <div class="map-card map-image-card" data-native-element data-element-id="details-ceremony-map" data-element-type="map" data-element-role="event-place-map" data-element-section="DETALLES" data-element-item="ceremony">
+                                {% if real_content.items.ceremony.mapAsset.isVideo %}
+                                    <video
+                                        src="{{ real_content.items.ceremony.mapAsset.url }}"
+                                        muted
+                                        controls
+                                        playsinline
+                                        preload="metadata"
+                                    ></video>
+                                {% else %}
+                                    <img
+                                        src="{{ real_content.items.ceremony.mapAsset.url }}"
+                                        alt="Ubicacion de la ceremonia"
+                                        loading="lazy"
+                                        decoding="async"
+                                    >
+                                {% endif %}
+                            </div>
+                        {% elif evento.mapa_misa_embed_html %}
                             <div class="map-card">
                                 <div class="embed-map">
                                     {{ evento.mapa_misa_embed_html }}
@@ -106,10 +146,18 @@
                         {% endif %}
                     {% endif %}
                 </div>
+                {% endif %}
 
-                <div class="info-box event-place-card">
-                    {% if evento.foto_recepcion %}
-                        <div class="place-media">
+                {% if real_content.items.reception.visible != False %}
+                <div
+                    class="info-box event-place-card"
+                    data-real-card="reception" data-native-element data-element-id="details-reception-card" data-element-type="container" data-element-role="event-place-card" data-element-section="DETALLES" data-element-item="reception"
+                    data-real-card-media-position="{{ real_content.items.reception.mediaPosition|default:'top' }}"
+                    data-real-card-map-display="{{ real_content.items.reception.mapDisplay|default:'button-map' }}"
+                    style="--real-card-bg: {{ real_content.items.reception.cardBg|default:'#ffffff' }}; order: {{ real_content.items.reception.order|default:2 }};"
+                >
+                    {% if real_content.showMedia != False and real_content.items.reception.showMedia != False and real_content.items.reception.mediaPosition != 'hidden' and evento.foto_recepcion %}
+                        <div class="place-media" data-native-element data-element-id="details-reception-media" data-element-type="media" data-element-role="event-place-media" data-element-section="DETALLES" data-element-item="reception">
                             {% if evento.recepcion_es_video %}
                                 <video
                                     src="{{ evento.foto_recepcion.url }}"
@@ -129,53 +177,77 @@
                         </div>
                     {% endif %}
 
-                    <div class="card-title">
-                        Fiesta
-                    </div>
-
-                    {% if evento.fecha_fiesta %}
-                        <div class="value">
-                            {{ evento.fecha_fiesta|date:"d/m/Y" }}
+                    {% if real_content.items.reception.showTitle != False %}
+                        <div class="card-title" data-native-element data-element-id="details-reception-title" data-element-type="text" data-element-role="event-place-title" data-element-section="DETALLES" data-element-item="reception">
+                            {{ real_content.items.reception.label|default:"Recepcion" }}
                         </div>
-
-                        <p>
-                            {{ evento.fecha_fiesta|date:"h:i A" }}
-                            {% if evento.lugar_fiesta %}
-                                · {{ evento.lugar_fiesta }}
-                            {% endif %}
-                        </p>
-                    {% elif evento.lugar_fiesta %}
-                        <p>{{ evento.lugar_fiesta }}</p>
                     {% endif %}
 
-                    {% if evento.direccion_recepcion %}
-                        <p class="place-address">
+                    {% if real_content.items.reception.showDate != False and evento.fecha_fiesta %}
+                        <div class="value" data-native-element data-element-id="details-reception-date" data-element-type="date" data-element-role="event-place-date" data-element-section="DETALLES" data-element-item="reception">
+                            {{ evento.fecha_fiesta|date:"d/m/Y" }}
+                        </div>
+                    {% endif %}
+
+                    {% if real_content.items.reception.showTime != False and evento.fecha_fiesta %}
+                        <p class="place-time" data-native-element data-element-id="details-reception-time" data-element-type="time" data-element-role="event-place-time" data-element-section="DETALLES" data-element-item="reception">
+                            {{ evento.fecha_fiesta|date:"h:i A" }}
+                        </p>
+                    {% endif %}
+
+                    {% if real_content.items.reception.showPlace != False and evento.lugar_fiesta %}
+                        <p class="place-name" data-native-element data-element-id="details-reception-place" data-element-type="text" data-element-role="event-place-name" data-element-section="DETALLES" data-element-item="reception">
+                            {{ evento.lugar_fiesta }}
+                        </p>
+                    {% endif %}
+
+                    {% if real_content.showAddress != False and real_content.items.reception.showAddress != False and evento.direccion_recepcion %}
+                        <p class="place-address" data-native-element data-element-id="details-reception-address" data-element-type="text" data-element-role="event-place-address" data-element-section="DETALLES" data-element-item="reception">
                             {{ evento.direccion_recepcion }}
                         </p>
                     {% endif %}
 
-                    {% if evento.link_mapa_fiesta %}
+                    {% if real_content.items.reception.showButton != False and real_content.items.reception.mapDisplay != 'hidden' and real_content.items.reception.mapDisplay != 'map-only' and evento.link_mapa_fiesta %}
                         <a
-                            class="btn secondary"
+                            class="btn secondary" data-native-element data-element-id="details-reception-button" data-element-type="button" data-element-role="event-place-button" data-element-section="DETALLES" data-element-item="reception"
                             href="{{ evento.link_mapa_fiesta }}"
                             target="_blank"
                             rel="noopener"
                         >
-                            Ver ubicación
+                            {{ real_content.items.reception.buttonLabel|default:"Ver ubicacion" }}
                         </a>
-                    {% elif evento.link_mapa %}
+                    {% elif real_content.items.reception.showButton != False and real_content.items.reception.mapDisplay != 'hidden' and real_content.items.reception.mapDisplay != 'map-only' and evento.link_mapa %}
                         <a
-                            class="btn secondary"
+                            class="btn secondary" data-native-element data-element-id="details-reception-button" data-element-type="button" data-element-role="event-place-button" data-element-section="DETALLES" data-element-item="reception"
                             href="{{ evento.link_mapa }}"
                             target="_blank"
                             rel="noopener"
                         >
-                            Ver ubicación
+                            {{ real_content.items.reception.buttonLabel|default:"Ver ubicacion" }}
                         </a>
                     {% endif %}
 
-                    {% if evento.mostrar_mapa %}
-                        {% if evento.mapa_fiesta_embed_html %}
+                    {% if real_content.showMaps != False and real_content.items.reception.showMaps != False and real_content.items.reception.mapDisplay != 'hidden' and real_content.items.reception.mapDisplay != 'button-only' and evento.mostrar_mapa %}
+                        {% if real_content.items.reception.mapAsset.url %}
+                            <div class="map-card map-image-card" data-native-element data-element-id="details-reception-map" data-element-type="map" data-element-role="event-place-map" data-element-section="DETALLES" data-element-item="reception">
+                                {% if real_content.items.reception.mapAsset.isVideo %}
+                                    <video
+                                        src="{{ real_content.items.reception.mapAsset.url }}"
+                                        muted
+                                        controls
+                                        playsinline
+                                        preload="metadata"
+                                    ></video>
+                                {% else %}
+                                    <img
+                                        src="{{ real_content.items.reception.mapAsset.url }}"
+                                        alt="Ubicacion de la recepcion"
+                                        loading="lazy"
+                                        decoding="async"
+                                    >
+                                {% endif %}
+                            </div>
+                        {% elif evento.mapa_fiesta_embed_html %}
                             <div class="map-card">
                                 <div class="embed-map">
                                     {{ evento.mapa_fiesta_embed_html }}
@@ -202,9 +274,11 @@
                         {% endif %}
                     {% endif %}
                 </div>
+                {% endif %}
 
             </div>
         </div>
+        {% endwith %}
     </div>
 </section>
 {% endif %}

@@ -1,5 +1,5 @@
 {% if seccion.imagen_titulo %}
-    <div class="section-header-media">
+    <div class="section-header-media" data-native-element data-element-id="{{ seccion.tipo|default:'section'|lower }}-header-media" data-element-type="media" data-element-role="section-header-media">
         {% if seccion.imagen_titulo_es_video %}
             <video
                 class="section-title-image section-header-image"
@@ -23,13 +23,13 @@
 {% endif %}
 
 {% if seccion.mostrar_titulo_texto == True %}
-    <div class="section-heading-text">
-        <h2 class="section-title">
+    <div class="section-heading-text" data-native-element data-element-id="{{ seccion.tipo|default:'section'|lower }}-heading" data-element-type="container" data-element-role="section-heading">
+        <h2 class="section-title" data-native-element data-element-id="{{ seccion.tipo|default:'section'|lower }}-title" data-element-type="text" data-element-role="section-title">
             {{ seccion.titulo|default:titulo_default }}
         </h2>
 
         {% if seccion.descripcion %}
-            <p class="section-copy">
+            <p class="section-copy" data-native-element data-element-id="{{ seccion.tipo|default:'section'|lower }}-description" data-element-type="text" data-element-role="section-description">
                 {{ seccion.descripcion }}
             </p>
         {% endif %}
