@@ -64,7 +64,10 @@ const cases = [
 for (const [type, intent, handled] of cases) {
     const result = engine.execute(
         nodeFor(type, {
-            value: "valor",
+            value:
+                type === INTERACTION_TYPES.URL
+                    ? "https://example.com"
+                    : "valor",
             target: "destino",
         })
     );

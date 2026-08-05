@@ -11,6 +11,10 @@ import {
     createDefaultInteractionExecutors,
 } from "./executors/index.js";
 
+import {
+    BrowserInteractionRuntime,
+} from "./runtime.js";
+
 export class InteractionEngine {
     constructor(options = {}) {
         const {
@@ -18,6 +22,8 @@ export class InteractionEngine {
                 requireInteractionDefinition,
             executors =
                 createDefaultInteractionExecutors(),
+            runtime =
+                new BrowserInteractionRuntime(),
         } = options;
 
         if (
@@ -34,6 +40,7 @@ export class InteractionEngine {
         this.executors = normalizeExecutors(
             executors
         );
+        this.runtime = runtime;
     }
 
     registerExecutor(type, executor) {
@@ -117,6 +124,10 @@ export class InteractionEngine {
                     : null,
             metadata:
                 clone(options.metadata || {}),
+            runtime:
+                options.runtime
+                || this.runtime
+                || null,
         });
 
         const result = executor(context);
