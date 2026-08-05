@@ -67,7 +67,9 @@ for (const [type, intent, handled] of cases) {
             value:
                 type === INTERACTION_TYPES.URL
                     ? "https://example.com"
-                    : "valor",
+                    : type === INTERACTION_TYPES.GOOGLE_MAPS
+                        ? "https://maps.app.goo.gl/AbCdEf"
+                        : "valor",
             target: "destino",
         })
     );
