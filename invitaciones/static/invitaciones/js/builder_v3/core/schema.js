@@ -1,3 +1,7 @@
+import {
+    normalizeInteraction,
+} from "../interaction/index.js";
+
 export const SCHEMA_VERSION = 3;
 
 export const NODE_TYPES = Object.freeze({
@@ -106,6 +110,7 @@ export function createNode(type, overrides = {}) {
         zIndex: defaultZIndex(type),
         style: {},
         content: {},
+        interaction: normalizeInteraction(),
         responsive: {},
         children: [],
     };
@@ -154,6 +159,9 @@ export function normalizeNode(rawNode) {
     node.zIndex = integer(node.zIndex, defaultZIndex(node.type));
     node.style = plainObject(node.style);
     node.content = plainObject(node.content);
+    node.interaction = normalizeInteraction(
+        node.interaction
+    );
     node.responsive = plainObject(node.responsive);
     node.children = Array.isArray(node.children)
         ? [...new Set(node.children.map(String))]
@@ -331,6 +339,7 @@ function createNodeDefaults(type) {
         zIndex: defaultZIndex(type),
         style: {},
         content: {},
+        interaction: normalizeInteraction(),
         responsive: {},
         children: [],
     };

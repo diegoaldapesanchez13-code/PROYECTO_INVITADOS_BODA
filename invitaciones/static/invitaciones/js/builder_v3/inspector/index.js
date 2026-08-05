@@ -53,6 +53,10 @@ import {
     decorationPanel,
 } from "./panels/decoration.js";
 
+import {
+    interactionPanel,
+} from "./panels/interaction.js";
+
 export class UniversalInspector {
     constructor(options = {}) {
         const {
@@ -279,11 +283,18 @@ export class UniversalInspector {
                 COMPONENT_CAPABILITIES.CONSTRAINTS
             );
 
+        const canUseInteraction =
+            componentSupports(
+                node.type,
+                COMPONENT_CAPABILITIES.ACTIONABLE
+            );
+
         return [
             ...generalPanel(),
             ...(canAutoLayout ? autoLayoutPanel() : []),
             ...(canUseConstraints ? constraintsPanel() : []),
             ...(createSpecific ? createSpecific() : []),
+            ...(canUseInteraction ? interactionPanel() : []),
         ];
     }
 
