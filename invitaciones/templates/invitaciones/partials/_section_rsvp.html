@@ -22,19 +22,54 @@
     >
         {% include "invitaciones/partials/_section_base.html" with seccion=secciones.RSVP titulo_default="Confirmar asistencia" texto_alt="Confirmación de asistencia" media_class="rsvp-full-image" %}
 
-        <div class="section-main-content">
-            <div class="invitation-summary">
-                <h2 class="section-title">
+        <div
+            class="section-main-content"
+            data-native-element
+            data-element-id="rsvp-content"
+            data-element-type="container"
+            data-element-role="rsvp-content"
+            data-element-section="RSVP"
+        >
+            <div
+                class="invitation-summary"
+                data-native-element
+                data-element-id="rsvp-summary"
+                data-element-type="container"
+                data-element-role="rsvp-summary"
+                data-element-section="RSVP"
+            >
+                <h2
+                    class="section-title"
+                    data-native-element
+                    data-element-id="rsvp-event-title"
+                    data-element-type="text"
+                    data-element-role="rsvp-event-title"
+                    data-element-section="RSVP"
+                >
                     {{ evento.titulo_invitacion }}
                 </h2>
 
                 {% if evento.texto_invitacion %}
-                    <p class="section-copy">
+                    <p
+                        class="section-copy"
+                        data-native-element
+                        data-element-id="rsvp-event-copy"
+                        data-element-type="text"
+                        data-element-role="rsvp-event-copy"
+                        data-element-section="RSVP"
+                    >
                         {{ evento.texto_invitacion }}
                     </p>
                 {% endif %}
 
-                <div class="summary-grid">
+                <div
+                    class="summary-grid"
+                    data-native-element
+                    data-element-id="rsvp-summary-grid"
+                    data-element-type="container"
+                    data-element-role="rsvp-summary-grid"
+                    data-element-section="RSVP"
+                >
                     <div class="info-box">
                         <div class="label">Invitación para</div>
 
@@ -64,7 +99,14 @@
                 </div>
             </div>
 
-            <div class="rsvp-status">
+            <div
+                class="rsvp-status"
+                data-native-element
+                data-element-id="rsvp-status"
+                data-element-type="container"
+                data-element-role="rsvp-status"
+                data-element-section="RSVP"
+            >
                 {% if grupo.confirmado %}
                     <p class="section-copy">
                         Esta invitación ya fue respondida. Puedes actualizar la información si lo necesitas.
@@ -76,6 +118,11 @@
                 method="post"
                 class="rsvp-form"
                 id="rsvpForm"
+                data-native-element
+                data-element-id="rsvp-form"
+                data-element-type="form"
+                data-element-role="rsvp-form"
+                data-element-section="RSVP"
             >
                 {% csrf_token %}
 
@@ -352,22 +399,46 @@
                     </div>
                 {% endif %}
 
-                <div class="btn-row rsvp-submit-row">
+                <div
+                    class="btn-row rsvp-submit-row"
+                    data-native-element
+                    data-element-id="rsvp-submit-row"
+                    data-element-type="container"
+                    data-element-role="rsvp-submit-row"
+                    data-element-section="RSVP"
+                >
                     <button
                         class="btn"
                         type="submit"
                         id="rsvpSubmit"
+                        data-native-element
+                        data-element-id="rsvp-submit-button"
+                        data-element-type="button"
+                        data-element-role="rsvp-submit-button"
+                        data-element-section="RSVP"
                     >
                         Guardar confirmación
                     </button>
                 </div>
 
                 {% if evento.link_whatsapp %}
-                    <div class="btn-row rsvp-contact-row">
+                    <div
+                        class="btn-row rsvp-contact-row"
+                        data-native-element
+                        data-element-id="rsvp-contact-row"
+                        data-element-type="container"
+                        data-element-role="rsvp-contact-row"
+                        data-element-section="RSVP"
+                    >
                         <a
                             class="btn secondary"
                             href="{{ evento.link_whatsapp }}"
                             target="_blank"
+                            data-native-element
+                            data-element-id="rsvp-whatsapp-button"
+                            data-element-type="button"
+                            data-element-role="rsvp-whatsapp-button"
+                            data-element-section="RSVP"
                             rel="noopener"
                         >
                             Contactar por WhatsApp

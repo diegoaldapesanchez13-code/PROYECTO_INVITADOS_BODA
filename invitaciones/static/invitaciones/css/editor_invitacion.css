@@ -1,23 +1,3 @@
-/*
-DIRTEC — editor_invitacion.css COMPLETO
-S01-P06 — Limpieza controlada del modo imagen completa
-
-CAMBIOS:
-- Se eliminaron tres implementaciones repetidas de .preview-section.is-full-image.
-- Se dejó una sola implementación consolidada.
-- Se eliminó la regla que ocultaba indiscriminadamente .preview-title-layer.
-- Se conservó el soporte para titleAsset y backgroundAsset.
-- Se corrigieron los selectores multilínea para que sean explícitos.
-- No se modificó el resto del CSS.
-
-USO:
-1. Crear respaldo de editor_invitacion.css.
-2. Copiar TODO el contenido de este archivo.
-3. Reemplazar TODO editor_invitacion.css.
-4. Guardar y ejecutar py manage.py check.
-5. Recargar el navegador con Ctrl + F5.
-*/
-
 * {
     box-sizing: border-box;
 }
@@ -372,6 +352,10 @@ video {
     padding: 8px 10px;
 }
 
+.canvas-toolbar [data-preview-mode="draft"] {
+    display: none !important;
+}
+
 .canvas-toolbar button.is-active {
     background: var(--editor-primary);
     color: #fff;
@@ -479,6 +463,83 @@ video {
     outline: 2px solid var(--editor-accent);
 }
 
+.preview-section.is-resizing-layout {
+    cursor: nwse-resize;
+    user-select: none;
+}
+
+.preview-section-resize-handles {
+    position: absolute;
+    inset: 0;
+    z-index: 80;
+    pointer-events: none;
+}
+
+.preview-section-resize-handle {
+    position: absolute;
+    display: block;
+    border: 2px solid #fff;
+    border-radius: 999px;
+    background: var(--editor-accent);
+    box-shadow: 0 6px 16px rgba(28, 32, 29, .22);
+    pointer-events: auto;
+    touch-action: none;
+}
+
+.preview-section-resize-handle.is-east {
+    top: 50%;
+    right: -8px;
+    width: 16px;
+    height: 34px;
+    transform: translateY(-50%);
+    cursor: ew-resize;
+}
+
+.preview-section-resize-handle.is-south {
+    left: 50%;
+    bottom: -8px;
+    width: 34px;
+    height: 16px;
+    transform: translateX(-50%);
+    cursor: ns-resize;
+}
+
+.preview-section-resize-handle.is-corner {
+    right: -9px;
+    bottom: -9px;
+    width: 20px;
+    height: 20px;
+    cursor: nwse-resize;
+}
+
+.preview-section-resize-handle:focus-visible {
+    outline: 3px solid color-mix(in srgb, var(--editor-accent) 32%, white);
+    outline-offset: 3px;
+}
+
+.preview-section.is-collapsed-layout {
+    align-content: start;
+    overflow: hidden;
+}
+
+.preview-section.is-collapsed-layout .preview-layer,
+.preview-section.is-collapsed-layout .preview-section-bg,
+.preview-section.is-collapsed-layout .preview-section-media,
+.preview-section.is-collapsed-layout .preview-builder-component {
+    display: none !important;
+}
+
+.preview-section.is-collapsed-layout::after {
+    content: "Seccion colapsada";
+    position: relative;
+    z-index: 4;
+    display: block;
+    color: var(--editor-muted);
+    font-size: .82rem;
+    font-weight: 700;
+    text-align: center;
+}
+
 .preview-section-bg {
     position: absolute;
     inset: 0;
@@ -571,6 +632,60 @@ video {
     gap: 8px;
     font-size: .88rem;
     line-height: 1.35;
+}
+
+.preview-real-data.real-content-layer {
+    width: min(var(--real-content-width, 100%), 100%);
+    opacity: var(--real-content-opacity, 1);
+    transform:
+        translate(var(--real-content-offset-x, 0%), var(--real-content-offset-y, 0%))
+        rotate(var(--real-content-rotation, 0deg))
+        scale(var(--real-content-scale, 1));
+    transform-origin: center top;
+}
+
+.preview-real-data.real-content-layer[data-real-content-align="left"] {
+    text-align: left;
+}
+
+.preview-real-data.real-content-layer[data-real-content-align="center"] {
+    text-align: center;
+}
+
+.preview-real-data.real-content-layer[data-real-content-align="right"] {
+    text-align: right;
+}
+
+.preview-real-data.real-content-layer[data-real-content-layout="stack"] .event-detail-grid {
+    grid-template-columns: 1fr;
+}
+
+.preview-real-data.real-content-layer .event-detail-grid,
+.preview-real-data.real-content-layer .gift-grid,
+.preview-real-data.real-content-layer .album-grid,
+.preview-real-data.real-content-layer .summary-grid {
+    gap: var(--real-content-gap, 10px);
+}
+
+.preview-real-data.real-content-layer .info-box,
+.preview-real-data.real-content-layer .gift-box,
+.preview-real-data.real-content-layer .guest-box {
+    padding: var(--real-card-padding, 12px);
+    border-radius: var(--real-card-radius, 0);
+    background: color-mix(in srgb, var(--real-card-bg, #ffffff) 74%, transparent);
+}
+
+.preview-real-data.real-content-layer[data-real-content-shadow="1"] .info-box,
+.preview-real-data.real-content-layer[data-real-content-shadow="1"] .gift-box,
+.preview-real-data.real-content-layer[data-real-content-shadow="1"] .guest-box {
+    box-shadow: 0 10px 24px rgba(17, 24, 39, .14);
+}
+
+.preview-real-data.real-content-layer .event-place-card > p,
+.preview-real-data.real-content-layer .place-address,
+.preview-real-data.real-content-layer .gift-box p,
+.preview-real-data.real-content-layer .deposit-box small {
+    font-size: var(--real-card-text-size, .74rem);
 }
 
 .preview-real-data p,
@@ -669,6 +784,191 @@ video {
     border: 1px solid var(--editor-line);
     border-radius: 999px;
     padding: 4px 7px;
+}
+
+/* =========================================================
+   S01-P04 — PARIDAD DE CONTENIDO CON VISTA REAL
+   Estas reglas son solo para el telefono de Vista Rapida.
+   ========================================================= */
+
+.preview-real-data .summary-grid,
+.preview-real-data .event-detail-grid,
+.preview-real-data .album-grid,
+.preview-real-data .gift-grid {
+    display: grid;
+    width: 100%;
+    gap: 10px;
+}
+
+.preview-real-data .summary-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.preview-real-data .event-detail-grid,
+.preview-real-data .gift-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+}
+
+.preview-real-data .album-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.preview-real-data .info-box,
+.preview-real-data .gift-box,
+.preview-real-data .guest-box {
+    min-width: 0;
+    padding: 12px 9px;
+    border: 0;
+    border-top: 1px solid var(--editor-line);
+    border-radius: 0;
+    background: rgba(255, 255, 255, .62);
+}
+
+.preview-real-data .event-place-card {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    text-align: center;
+}
+
+.preview-real-data .card-title,
+.preview-real-data .label,
+.preview-real-data .gift-kind {
+    color: var(--editor-muted);
+    font-size: .64rem;
+    font-weight: 800;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+.preview-real-data .value,
+.preview-real-data .guest-summary-name {
+    color: var(--editor-primary);
+    font-family: var(--editor-title-font);
+    font-size: clamp(1rem, 4.5vw, 1.35rem);
+    line-height: 1.1;
+}
+
+.preview-real-data .place-address,
+.preview-real-data .deposit-box p,
+.preview-real-data .deposit-box small,
+.preview-real-data .gift-box p,
+.preview-real-data .shared-album-message {
+    color: var(--editor-muted);
+    font-size: .74rem;
+    line-height: 1.38;
+    overflow-wrap: anywhere;
+}
+
+.preview-real-data .map-card.preview-map-placeholder {
+    display: grid;
+    min-height: 58px;
+    margin-top: auto;
+    place-items: center;
+    border: 1px dashed var(--editor-line);
+    border-radius: 4px;
+    background: rgba(255, 255, 255, .44);
+}
+
+.preview-real-data .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 34px;
+    padding: 8px 12px;
+    border: 1px solid var(--editor-primary);
+    border-radius: 999px;
+    background: var(--editor-primary);
+    color: #fff;
+    font-size: .72rem;
+    font-weight: 800;
+    line-height: 1;
+    text-decoration: none;
+    pointer-events: none;
+}
+
+.preview-real-data .btn.secondary {
+    background: transparent;
+    color: var(--editor-primary);
+}
+
+.preview-real-data .btn.is-disabled {
+    border-color: var(--editor-line);
+    color: var(--editor-muted);
+}
+
+.preview-real-data .album-grid figure {
+    margin: 0;
+    overflow: hidden;
+}
+
+.preview-real-data .album-grid img,
+.preview-real-data .album-grid video {
+    display: block;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: contain;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, .58);
+}
+
+.preview-real-data .album-grid figcaption {
+    margin-top: 4px;
+    color: var(--editor-muted);
+    font-size: .7rem;
+}
+
+.preview-real-data .invitation-summary {
+    display: grid;
+    gap: 10px;
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--editor-line);
+}
+
+.preview-real-data .invitation-summary .section-title {
+    margin: 0;
+    font-size: clamp(1.3rem, 6vw, 2rem);
+}
+
+.preview-real-data .rsvp-form {
+    display: grid;
+    gap: 10px;
+}
+
+.preview-real-data .guest-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.preview-real-data .guest-name {
+    margin: 0;
+    font-size: .95rem;
+}
+
+.preview-real-data .pill {
+    border-radius: 999px;
+    padding: 4px 7px;
+    background: var(--editor-soft);
+    color: var(--editor-muted);
+    font-size: .64rem;
+    font-weight: 800;
+}
+
+.preview-real-data .option {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.preview-real-data .preview-radio {
+    width: 12px;
+    height: 12px;
+    border: 1px solid var(--editor-primary);
+    border-radius: 50%;
 }
 
 .preview-decor-layer {
@@ -1319,6 +1619,22 @@ video {
     display: grid;
 }
 
+/*
+El Inspector Universal permanece visible en los tres paneles.
+Esto evita que desaparezca al cambiar entre Diseño, Contenido y Archivos.
+*/
+.properties-panel > [data-editor-persistent="true"] {
+    display: grid;
+}
+
+/*
+Fallback seguro: si el JavaScript tarda en iniciar, el panel Diseño
+ya queda visible gracias a los atributos renderizados por Django.
+*/
+.editor-shell:not([data-editor-panel]) .properties-panel > [data-editor-group="design"] {
+    display: grid;
+}
+
 .simple-editor-toolbar {
     position: sticky;
     top: -14px;
@@ -1381,6 +1697,207 @@ video {
     color: var(--editor-muted);
     font-size: .72rem;
     line-height: 1.4;
+}
+
+.component-tree-panel {
+    display: grid;
+    gap: 8px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--editor-line);
+}
+
+.component-tree {
+    display: grid;
+    gap: 4px;
+    max-height: 320px;
+    overflow: auto;
+    padding-right: 3px;
+}
+
+.component-tree-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: center;
+    gap: 5px;
+    width: 100%;
+    padding: 4px 5px 4px calc(5px + (var(--tree-level, 0) * 13px));
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--editor-primary);
+    text-align: left;
+}
+
+.component-tree-row:hover {
+    background: color-mix(in srgb, var(--editor-soft) 46%, white);
+}
+
+.component-tree-row.is-active {
+    border-color: color-mix(in srgb, var(--editor-primary) 38%, var(--editor-line));
+    background: color-mix(in srgb, var(--editor-primary) 9%, white);
+}
+
+.component-tree-row.is-muted {
+    opacity: .52;
+}
+
+.component-tree-row[draggable="true"] {
+    cursor: grab;
+}
+
+.component-tree-row[draggable="true"]:active {
+    cursor: grabbing;
+}
+
+.component-tree-row.is-dragging {
+    opacity: .38;
+}
+
+.component-tree-row.is-drop-target {
+    border-color: color-mix(in srgb, var(--editor-accent) 62%, var(--editor-line));
+    background: color-mix(in srgb, var(--editor-accent) 14%, white);
+    box-shadow: inset 3px 0 0 var(--editor-accent);
+}
+
+.component-tree-main {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    gap: 6px 8px;
+    width: 100%;
+    min-height: 32px;
+    padding: 2px;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    text-align: left;
+}
+
+.tree-kind {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 48px;
+    padding: 3px 6px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--editor-soft) 64%, white);
+    color: var(--editor-muted);
+    font-size: .58rem;
+    font-weight: 900;
+    line-height: 1;
+    text-transform: uppercase;
+}
+
+.tree-label {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--editor-primary);
+    font-size: .74rem;
+    font-weight: 850;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.component-tree-row small {
+    grid-column: 2;
+    margin-top: -4px;
+    overflow: hidden;
+    color: var(--editor-muted);
+    font-size: .64rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.component-tree-tools {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding-left: 56px;
+}
+
+.component-tree-tools button {
+    min-height: 24px;
+    padding: 3px 6px;
+    border: 1px solid var(--editor-line);
+    border-radius: 999px;
+    background: #fff;
+    color: var(--editor-primary);
+    cursor: pointer;
+    font-size: .58rem;
+    font-weight: 850;
+}
+
+.component-tree-tools button:hover {
+    border-color: color-mix(in srgb, var(--editor-primary) 32%, var(--editor-line));
+}
+
+.component-tree-tools .danger-link {
+    color: #b42318;
+    border-color: color-mix(in srgb, #b42318 28%, var(--editor-line));
+}
+
+.universal-inspector {
+    border-color: color-mix(in srgb, var(--editor-primary) 32%, var(--editor-line));
+    background:
+        linear-gradient(180deg, color-mix(in srgb, var(--editor-soft) 52%, white), #fff);
+}
+
+.universal-inspector-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.universal-inspector-head h3 {
+    margin-bottom: 3px;
+}
+
+.inspector-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 26px;
+    padding: 4px 8px;
+    border: 1px solid color-mix(in srgb, var(--editor-primary) 22%, var(--editor-line));
+    border-radius: 999px;
+    background: #fff;
+    color: var(--editor-primary);
+    font-size: .66rem;
+    font-weight: 900;
+    white-space: nowrap;
+}
+
+.inspector-actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+}
+
+.inspector-actions button {
+    min-height: 32px;
+    border: 1px solid var(--editor-line);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--editor-primary);
+    cursor: pointer;
+    font-size: .7rem;
+    font-weight: 850;
+    padding: 6px 8px;
+}
+
+.inspector-actions .danger-link {
+    grid-column: 1 / -1;
+    border-color: color-mix(in srgb, #b42318 35%, var(--editor-line));
+    color: #b42318;
+}
+
+.universal-inspector.is-empty [data-inspector-field],
+.universal-inspector [data-inspector-field]:disabled {
+    opacity: .55;
+    cursor: not-allowed;
 }
 
 .section-properties-heading {
@@ -1540,69 +2057,80 @@ video {
         order: 1;
     }
 }
+/* Secciones que utilizan una imagen completa */
+
+.preview-section.is-full-image {
+    min-height: 0 !important;
+    aspect-ratio: 2 / 3;
+    padding: 0;
+}
+
+.preview-section.is-full-image .preview-section-bg {
+    background-size: contain !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+    opacity: 1 !important;
+    filter: none !important;
+}
+
+.preview-section.is-full-image .preview-title-layer {
+    display: none !important;
+}
+/* Imagen completa detectada por JavaScript */
+
+.preview-section.is-full-image {
+    min-height: 0 !important;
+    aspect-ratio: 2 / 3;
+    padding: 0;
+    background: transparent;
+}
+
+.preview-section.is-full-image .preview-section-bg {
+    background-size: contain !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+    opacity: 1 !important;
+    filter: none !important;
+}
+
+.preview-section.is-full-image .preview-title-layer {
+    display: none !important;
+}
+
+.preview-section.is-full-image.hide-real-content
+.preview-text-layer {
+    display: none !important;
+}
+
+.preview-section.is-full-image
+.preview-custom-layer {
+    pointer-events: none;
+}
 /* =========================================================
-   S01-P06 — IMAGEN COMPLETA EN LA VISTA RÁPIDA
-   Una sola implementación consolidada.
+   IMAGEN COMPLETA EN LA VISTA RÁPIDA DEL EDITOR
    ========================================================= */
 
 .preview-section.is-full-image {
     position: relative;
     min-height: 0 !important;
-    aspect-ratio: 2 / 3;
     padding: 0 !important;
+    aspect-ratio: 2 / 3;
     overflow: hidden;
-    background: transparent;
 }
 
-/*
-La capa de fondo se utiliza solamente cuando JavaScript determina
-que backgroundAsset es la fuente principal.
-*/
-.preview-section.is-full-image .preview-section-bg {
-    z-index: 0;
-    background-position: center !important;
-    background-repeat: no-repeat !important;
-    background-size: contain !important;
-    opacity: 1 !important;
-    filter: none !important;
-}
-
-.preview-section.is-full-image .preview-section-bg.is-hidden {
-    display: none;
-}
-
-/*
-Compatibilidad con recursos de video usados como fondo completo.
-*/
-.preview-section.is-full-image .preview-section-media {
-    z-index: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    object-position: center;
-    opacity: 1;
-    filter: none;
-}
-
-/*
-Cuando titleAsset es la fuente principal, JavaScript agrega
-.is-full-image-title-layer a la capa del título.
-*/
 .preview-section.is-full-image .is-full-image-title-layer {
     position: absolute;
     inset: 0;
-    z-index: 20;
-    display: block !important;
     width: 100% !important;
     height: 100% !important;
+
     transform: none !important;
     opacity: 1 !important;
+
+    display: block !important;
     pointer-events: auto;
 }
 
-/*
-La imagen o video del título ocupa toda la sección.
-*/
 .preview-section.is-full-image
 .is-full-image-title-layer
 .preview-title-asset {
@@ -1610,29 +2138,13 @@ La imagen o video del título ocupa toda la sección.
     width: 100% !important;
     height: 100% !important;
     max-width: none !important;
-    max-height: none !important;
-    margin: 0;
-    padding: 0;
+
     object-fit: contain !important;
     object-position: center center;
-}
 
-/*
-Cuando la imagen completa debe sustituir el contenido real,
-se oculta únicamente la capa de texto.
-*/
-.preview-section.is-full-image.hide-real-content .preview-text-layer {
-    display: none !important;
+    margin: 0;
+    padding: 0;
 }
-
-/*
-Las capas personalizadas permanecen visibles, pero no interceptan
-la selección mientras la sección usa el modo de imagen completa.
-*/
-.preview-section.is-full-image .preview-custom-layer {
-    pointer-events: none;
-}
-
 /* =========================================================
    FASE 5.1 - COMPONENTES DEL CONSTRUCTOR VISUAL
    ========================================================= */
@@ -1655,6 +2167,96 @@ la selección mientras la sección usa el modo de imagen completa.
     text-transform: uppercase;
 }
 
+.component-properties {
+    display: grid;
+    gap: 12px;
+    margin-top: 14px;
+    padding: 12px;
+    border: 1px solid color-mix(in srgb, var(--editor-accent) 42%, var(--editor-line));
+    border-radius: 8px;
+    background: rgba(255, 255, 255, .9);
+}
+
+.real-content-properties {
+    display: grid;
+    gap: 12px;
+    margin-top: 14px;
+    padding: 12px;
+    border: 1px solid color-mix(in srgb, var(--editor-primary) 28%, var(--editor-line));
+    border-radius: 8px;
+    background: rgba(255, 255, 255, .92);
+}
+
+.real-content-properties[hidden] {
+    display: none !important;
+}
+
+.real-content-items {
+    display: grid;
+    gap: 10px;
+    padding-top: 8px;
+    border-top: 1px solid var(--editor-line);
+}
+
+.real-content-item-editor {
+    display: grid;
+    gap: 9px;
+    padding: 10px;
+    border: 1px solid var(--editor-line);
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--editor-soft) 45%, white);
+}
+
+.real-content-item-editor > strong {
+    color: var(--editor-primary);
+    font-size: .82rem;
+    text-transform: uppercase;
+}
+
+.real-content-items[hidden] {
+    display: none !important;
+}
+
+.component-properties[hidden] {
+    display: none !important;
+}
+
+.component-properties-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.component-properties-head h4 {
+    margin: 0;
+    color: var(--editor-primary);
+    font-size: .92rem;
+}
+
+.component-properties [data-component-type-panel] {
+    display: grid;
+    gap: 10px;
+}
+
+.component-properties [data-component-type-panel][hidden] {
+    display: none !important;
+}
+
+.danger-link {
+    border: 0;
+    background: transparent;
+    color: #b42318;
+    cursor: pointer;
+    font-size: .78rem;
+    font-weight: 800;
+    text-decoration: underline;
+}
+
+.danger-link:hover {
+    color: #7a1a12;
+}
+
 .preview-builder-component {
     position: absolute;
     display: flex;
@@ -1670,6 +2272,67 @@ la selección mientras la sección usa el modo de imagen completa.
 .preview-builder-component.is-selected-component {
     outline: 2px solid #2563eb;
     outline-offset: 3px;
+    box-shadow: 0 0 0 8px rgba(37, 99, 235, .12);
+}
+
+.preview-builder-component.is-selected-component::after {
+    content: attr(data-component-type);
+    position: absolute;
+    left: 50%;
+    top: -25px;
+    transform: translateX(-50%);
+    border-radius: 999px;
+    background: #2563eb;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 900;
+    line-height: 1;
+    padding: 5px 7px;
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+.component-transform-handles {
+    position: absolute;
+    inset: 0;
+    z-index: 12;
+    pointer-events: none;
+}
+
+.component-resize-handle {
+    position: absolute;
+    width: 13px;
+    height: 13px;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    background: #2563eb;
+    box-shadow: 0 2px 6px rgba(15, 23, 42, .24);
+    pointer-events: auto;
+    touch-action: none;
+}
+
+.component-resize-handle.is-nw {
+    left: -8px;
+    top: -8px;
+    cursor: nwse-resize;
+}
+
+.component-resize-handle.is-ne {
+    right: -8px;
+    top: -8px;
+    cursor: nesw-resize;
+}
+
+.component-resize-handle.is-sw {
+    left: -8px;
+    bottom: -8px;
+    cursor: nesw-resize;
+}
+
+.component-resize-handle.is-se {
+    right: -8px;
+    bottom: -8px;
+    cursor: nwse-resize;
 }
 
 .preview-builder-component.is-locked {
@@ -1777,4 +2440,1161 @@ la selección mientras la sección usa el modo de imagen completa.
         width: 100%;
         justify-content: center;
     }
+}
+
+/* =========================================================
+   FASE 6.2A — DETALLES COMO CONTENEDORES FLEXIBLES
+   Vista Rápida únicamente. La Vista Real permanece intacta.
+   ========================================================= */
+
+.preview-detail-flow {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 14px;
+}
+
+.preview-detail-flow > p {
+    margin: 0;
+}
+
+.preview-detail-grid {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 14px;
+    text-align: left;
+}
+
+.preview-detail-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    min-width: 0;
+    gap: 11px;
+    padding: 14px;
+    border: 1px solid color-mix(in srgb, var(--editor-line) 72%, transparent);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, .88);
+    box-shadow: 0 10px 28px rgba(34, 37, 45, .08);
+    overflow: hidden;
+}
+
+.preview-detail-card-head {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.preview-detail-kicker {
+    color: var(--editor-accent);
+    font-size: .68rem;
+    font-weight: 900;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+}
+
+.preview-detail-card-head strong {
+    display: block;
+    color: inherit;
+    font-family: var(--editor-title-font);
+    font-size: clamp(1.35rem, 6vw, 2rem);
+    font-weight: 400;
+    line-height: 1.05;
+    text-transform: none;
+}
+
+.preview-detail-card-head time {
+    color: var(--editor-muted);
+    font-size: .76rem;
+    font-weight: 700;
+}
+
+.preview-detail-address {
+    display: flex;
+    align-items: flex-start;
+    gap: 7px;
+    min-width: 0;
+    color: var(--editor-muted);
+}
+
+.preview-detail-address > span {
+    flex: 0 0 auto;
+    color: var(--editor-accent);
+    font-size: 1rem;
+    line-height: 1.25;
+}
+
+.preview-detail-address p {
+    min-width: 0;
+    margin: 0;
+    font-size: .78rem;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+}
+
+.preview-detail-map {
+    position: relative;
+    width: 100%;
+    min-height: 150px;
+    aspect-ratio: 16 / 9;
+    border: 1px solid var(--editor-line);
+    border-radius: 12px;
+    background:
+        linear-gradient(135deg, rgba(255,255,255,.65), rgba(237,226,208,.78)),
+        repeating-linear-gradient(
+            45deg,
+            transparent 0 12px,
+            rgba(34,37,45,.04) 12px 13px
+        );
+    overflow: hidden;
+}
+
+.preview-detail-map iframe {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    pointer-events: none;
+}
+
+.preview-detail-map-shield {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    cursor: default;
+}
+
+.preview-detail-map-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    color: var(--editor-muted);
+    text-align: center;
+}
+
+.preview-detail-map-empty > span {
+    color: var(--editor-accent);
+    font-size: 1.6rem;
+}
+
+.preview-detail-map-empty small {
+    max-width: 180px;
+    font-size: .72rem;
+    line-height: 1.35;
+}
+
+.preview-detail-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    align-self: stretch;
+    min-height: 38px;
+    padding: 9px 14px;
+    border: 1px solid var(--editor-primary);
+    border-radius: 999px;
+    background: var(--editor-primary);
+    color: #fff;
+    font-size: .76rem;
+    font-weight: 900;
+    line-height: 1;
+    text-decoration: none;
+    pointer-events: none;
+}
+
+.preview-detail-button.is-disabled {
+    border-color: var(--editor-line);
+    background: color-mix(in srgb, var(--editor-soft) 52%, white);
+    color: var(--editor-muted);
+}
+
+.phone-preview[data-device="tablet"] .preview-detail-grid,
+.phone-preview[data-device="desktop"] .preview-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+}
+
+.preview-section[data-section-type="DETALLES"] .preview-text-layer {
+    width: min(var(--layer-width, 94%), calc(100% - 16px));
+}
+
+/* S01-P06 - variables finales del contenido real en Vista Rapida */
+.preview-section .preview-real-data.real-content-layer .info-box,
+.preview-section .preview-real-data.real-content-layer .gift-box,
+.preview-section .preview-real-data.real-content-layer .guest-box {
+    padding: var(--real-card-padding, 12px);
+    border-radius: var(--real-card-radius, 0);
+    background: color-mix(in srgb, var(--real-card-bg, #ffffff) 74%, transparent);
+}
+
+.preview-section .preview-real-data.real-content-layer .event-place-card {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.preview-section .preview-real-data.real-content-layer .place-media img,
+.preview-section .preview-real-data.real-content-layer .place-media video,
+.preview-section .preview-real-data.real-content-layer .map-card img,
+.preview-section .preview-real-data.real-content-layer .map-card video {
+    display: block;
+    width: 100%;
+    height: auto;
+    border: 0;
+}
+
+.preview-section .preview-real-data.real-content-layer[data-real-content-layout="stack"] .event-detail-grid,
+.preview-section .preview-real-data.real-content-layer[data-real-content-layout="stack"] .gift-grid,
+.preview-section .preview-real-data.real-content-layer[data-real-content-layout="stack"] .album-grid,
+.preview-section .preview-real-data.real-content-layer[data-real-content-layout="stack"] .summary-grid {
+    grid-template-columns: 1fr;
+}
+
+
+/* =========================================================
+   S02-P02 — BARRA DE HERRAMIENTAS ESTÁTICA Y VERIFICABLE
+   ========================================================= */
+
+.editor-shell[data-editor-tools-ready="false"] .simple-editor-toolbar {
+    border-color: #b45309;
+    box-shadow: 0 0 0 3px rgba(180, 83, 9, .12);
+}
+
+.editor-shell[data-editor-tools-ready="false"] .simple-editor-toolbar::before {
+    content: "Algunas herramientas no pudieron conectarse. Revisa la consola.";
+    display: block;
+    margin-bottom: 8px;
+    padding: 8px 10px;
+    border-radius: 7px;
+    background: #fff7ed;
+    color: #9a3412;
+    font-size: .72rem;
+    font-weight: 800;
+    line-height: 1.35;
+}
+
+
+/* =========================================================
+   S02-P03 — VISTA REAL PRINCIPAL E INSPECTOR FÁCIL CONTEXTUAL
+   ========================================================= */
+
+.editor-context-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+    padding: 11px;
+    border: 1px solid var(--editor-line);
+    border-radius: 9px;
+    background:
+        linear-gradient(
+            135deg,
+            color-mix(in srgb, var(--editor-soft) 52%, white),
+            white
+        );
+}
+
+.editor-context-card > div {
+    min-width: 0;
+}
+
+.editor-context-kicker,
+.editor-context-card strong,
+.editor-context-card small {
+    display: block;
+}
+
+.editor-context-kicker {
+    margin-bottom: 3px;
+    color: var(--editor-muted);
+    font-size: .62rem;
+    font-weight: 900;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+.editor-context-card strong {
+    overflow: hidden;
+    font-size: .86rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.editor-context-card small {
+    margin-top: 3px;
+    color: var(--editor-muted);
+    font-size: .68rem;
+    line-height: 1.3;
+}
+
+.editor-context-card button {
+    flex: 0 0 auto;
+    border: 1px solid var(--editor-line);
+    border-radius: 7px;
+    background: #fff;
+    color: var(--editor-primary);
+    cursor: pointer;
+    font-size: .68rem;
+    font-weight: 800;
+    padding: 7px 9px;
+}
+
+/*
+En modo Fácil se ocultan los paneles técnicos duplicados.
+El panel de sección conserva solamente los controles esenciales.
+*/
+.editor-shell[data-editor-mode="simple"]
+.properties-panel > [data-advanced-panel="true"] {
+    display: none !important;
+}
+
+.editor-shell[data-editor-mode="simple"]
+.easy-section-panel > * {
+    display: none;
+}
+
+.editor-shell[data-editor-mode="simple"]
+.easy-section-panel > .section-properties-heading,
+.editor-shell[data-editor-mode="simple"]
+.easy-section-panel > [data-easy-control] {
+    display: grid;
+}
+
+.editor-shell[data-editor-mode="simple"]
+.easy-section-panel > [data-easy-control="section-state"] {
+    display: grid;
+}
+
+.editor-shell[data-editor-mode="simple"]
+.easy-section-panel > [data-easy-control="real-content"][hidden],
+.editor-shell[data-editor-mode="simple"]
+.easy-section-panel > [data-easy-control="component"][hidden] {
+    display: none;
+}
+
+.easy-section-note {
+    padding: 9px 10px;
+    border: 1px solid color-mix(
+        in srgb,
+        var(--editor-accent) 34%,
+        var(--editor-line)
+    );
+    border-radius: 8px;
+    background: color-mix(
+        in srgb,
+        var(--editor-soft) 36%,
+        white
+    );
+    color: var(--editor-muted);
+    font-size: .7rem;
+    line-height: 1.4;
+}
+
+/*
+En Avanzado reaparecen todos los paneles y controles existentes.
+*/
+.editor-shell[data-editor-mode="advanced"]
+.properties-panel > [data-advanced-panel="true"] {
+    display: grid;
+}
+
+/*
+En móvil el contexto se mantiene compacto.
+*/
+@media (max-width: 760px) {
+    .editor-context-card {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .editor-context-card button {
+        width: 100%;
+    }
+}
+
+
+/* =========================================================
+   S02-P04 — VISIBILIDAD COMPLETA DE DETALLES
+   ========================================================= */
+
+.real-content-visibility-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+    padding: 9px;
+    border: 1px solid var(--editor-line);
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--editor-soft) 26%, white);
+}
+
+.real-content-visibility-grid .real-content-subheading {
+    grid-column: 1 / -1;
+    color: var(--editor-muted);
+    font-size: .66rem;
+    font-weight: 900;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+}
+
+.real-content-visibility-grid .toggle {
+    min-width: 0;
+    margin: 0;
+    font-size: .7rem;
+}
+
+.preview-detail-flow .place-time,
+.preview-detail-flow .place-name {
+    margin: 0;
+}
+
+.preview-detail-flow .place-time {
+    color: var(--editor-muted);
+    font-size: .78rem;
+}
+
+.preview-detail-flow .place-name {
+    font-weight: 700;
+}
+
+@media (max-width: 760px) {
+    .real-content-visibility-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .real-content-visibility-grid .real-content-subheading {
+        grid-column: 1;
+    }
+}
+
+
+/* =========================================================
+   S03-P02 — SELECCIÓN DIRECTA DE ELEMENTOS NATIVOS
+   ========================================================= */
+
+.editor-shell[data-live-preview-mode="edit"]
+[data-real-preview-frame] {
+    cursor: default;
+}
+
+.editor-context-card[data-native-selected="true"] {
+    border-color: #7c3aed;
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, .12);
+}
+
+.editor-context-card[data-native-selected="true"]
+.editor-context-kicker {
+    color: #7c3aed;
+}
+
+
+/* =========================================================
+   S03-P03 — INSPECTOR CONTEXTUAL POR TIPO DE ELEMENTO
+   ========================================================= */
+
+.native-element-inspector {
+    gap: 10px;
+    border-color: color-mix(
+        in srgb,
+        #7c3aed 38%,
+        var(--editor-line)
+    );
+}
+
+.native-inspector-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.native-inspector-head > div {
+    min-width: 0;
+}
+
+.native-inspector-kicker {
+    display: block;
+    margin-bottom: 3px;
+    color: #7c3aed;
+    font-size: .62rem;
+    font-weight: 900;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+.native-inspector-head h3 {
+    margin: 0;
+}
+
+.native-inspector-head p {
+    margin: 3px 0 0;
+    overflow-wrap: anywhere;
+}
+
+.native-visibility-control {
+    padding: 9px 10px;
+    border: 1px solid var(--editor-line);
+    border-radius: 8px;
+    background: color-mix(
+        in srgb,
+        var(--editor-soft) 34%,
+        white
+    );
+}
+
+.native-element-inspector [data-native-group] {
+    display: grid;
+    gap: 9px;
+}
+
+.native-element-inspector [data-native-group][hidden] {
+    display: none;
+}
+
+.native-inspector-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 7px;
+}
+
+.native-inspector-actions button {
+    min-height: 36px;
+    border: 1px solid var(--editor-line);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--editor-primary);
+    cursor: pointer;
+    font-size: .72rem;
+    font-weight: 850;
+}
+
+.native-inspector-actions button:first-child {
+    border-color: var(--editor-primary);
+    background: var(--editor-primary);
+    color: #fff;
+}
+
+.editor-shell[data-editor-mode="simple"]
+.native-element-inspector {
+    display: grid;
+}
+
+.editor-shell[data-editor-mode="advanced"]
+.native-element-inspector {
+    display: grid;
+}
+
+
+/* =========================================================
+   S03-P04 — CONTROLES DE TRANSFORMACIÓN SEGURA
+   ========================================================= */
+
+.native-control-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 9px;
+}
+
+.native-control-grid-compact {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.native-range-field {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 58px;
+    align-items: center;
+    gap: 8px;
+}
+
+.native-range-field output {
+    min-width: 0;
+    padding: 5px 6px;
+    border: 1px solid var(--editor-line);
+    border-radius: 6px;
+    background: #fff;
+    color: var(--editor-muted);
+    font-size: .66rem;
+    font-weight: 800;
+    text-align: center;
+}
+
+.native-range-field input[type="range"] {
+    width: 100%;
+    min-width: 0;
+}
+
+@media (max-width: 760px) {
+    .native-control-grid-compact {
+        grid-template-columns: 1fr;
+    }
+}
+
+
+/* =========================================================
+   S03-P05 — ÁRBOL UNIVERSAL DE ELEMENTOS
+   ========================================================= */
+
+.universal-element-tree-panel .panel-heading.compact {
+    align-items: center;
+}
+
+.universal-element-tree-panel .panel-heading.compact small {
+    display: block;
+    margin-top: 2px;
+    color: var(--editor-muted);
+    font-size: .62rem;
+    font-weight: 600;
+}
+
+.element-tree-heading-actions {
+    display: flex;
+    gap: 5px;
+}
+
+.element-tree-heading-actions button {
+    display: grid;
+    width: 28px;
+    height: 28px;
+    place-items: center;
+    border: 1px solid var(--editor-line);
+    border-radius: 7px;
+    background: #fff;
+    color: var(--editor-primary);
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 900;
+}
+
+.component-tree-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.component-tree-main {
+    grid-template-columns: 14px auto minmax(0, 1fr);
+}
+
+.tree-chevron {
+    display: inline-grid;
+    width: 14px;
+    height: 14px;
+    place-items: center;
+    color: var(--editor-muted);
+    font-size: .7rem;
+    line-height: 1;
+}
+
+.tree-chevron-placeholder {
+    opacity: 0;
+}
+
+.component-tree-row[data-tree-action="native"] .tree-kind {
+    color: #7c3aed;
+}
+
+.component-tree-row[data-tree-action="native"].is-active {
+    border-color: #7c3aed;
+    background: rgba(124, 58, 237, .08);
+    box-shadow: inset 3px 0 0 #7c3aed;
+}
+
+.component-tree-row[data-tree-action="tree-group"] {
+    background: color-mix(
+        in srgb,
+        var(--editor-soft) 38%,
+        white
+    );
+}
+
+.component-tree-row[data-tree-action="tree-group"]
+.component-tree-main {
+    font-weight: 850;
+}
+
+.component-tree-row.is-muted .tree-label,
+.component-tree-row.is-muted small {
+    opacity: .48;
+}
+
+@media (max-width: 760px) {
+    .universal-element-tree-panel {
+        max-height: 42vh;
+        overflow: auto;
+    }
+}
+
+
+/* =========================================================
+   S03-P06 — RESIZE VISUAL NATIVO CON MOUSE Y TOUCH
+   ========================================================= */
+
+.native-resize-help {
+    margin: 6px 0 0;
+    padding: 7px 8px;
+    border-radius: 7px;
+    background: rgba(124, 58, 237, .08);
+    color: #6d28d9;
+    font-size: .66rem;
+    font-weight: 750;
+    line-height: 1.35;
+}
+
+.editor-shell[data-native-transforming="true"] {
+    cursor: resizing;
+    user-select: none;
+}
+
+.editor-shell[data-native-transforming="true"]
+.editor-panel,
+.editor-shell[data-native-transforming="true"]
+.editor-canvas {
+    user-select: none;
+}
+
+@media (pointer: coarse) {
+    .native-resize-help {
+        font-size: .7rem;
+    }
+}
+
+
+/* =========================================================
+   S03-P07 — ASSETS CONTEXTUALES
+   ========================================================= */
+
+.native-current-asset {
+    display: grid;
+    gap: 9px;
+    padding: 10px;
+    border: 1px solid color-mix(
+        in srgb,
+        #7c3aed 28%,
+        var(--editor-line)
+    );
+    border-radius: 9px;
+    background: rgba(124, 58, 237, .035);
+}
+
+.native-current-asset[hidden] {
+    display: none;
+}
+
+.native-current-asset-head,
+.native-asset-picker-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.native-current-asset-head span {
+    display: block;
+    color: var(--editor-muted);
+    font-size: .62rem;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.native-current-asset-head strong {
+    display: block;
+    margin-top: 2px;
+    font-size: .76rem;
+}
+
+.native-current-asset-head button,
+.native-asset-picker-head button {
+    border: 1px solid var(--editor-line);
+    border-radius: 7px;
+    background: #fff;
+    color: var(--editor-primary);
+    cursor: pointer;
+    font-size: .66rem;
+    font-weight: 800;
+    padding: 6px 8px;
+}
+
+.native-current-asset-head button:disabled {
+    cursor: not-allowed;
+    opacity: .42;
+}
+
+.native-current-asset-preview {
+    display: grid;
+    min-height: 108px;
+    place-items: center;
+    overflow: hidden;
+    border: 1px solid var(--editor-line);
+    border-radius: 8px;
+    background:
+        linear-gradient(135deg, #f8fafc, #eef2f7);
+    color: var(--editor-muted);
+    font-size: .7rem;
+}
+
+.native-current-asset-preview img,
+.native-current-asset-preview video {
+    display: block;
+    width: 100%;
+    max-height: 190px;
+    object-fit: contain;
+}
+
+.native-asset-picker {
+    display: grid;
+    gap: 7px;
+}
+
+.native-asset-picker-head strong {
+    font-size: .7rem;
+}
+
+.native-asset-choices {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 7px;
+    max-height: 245px;
+    overflow: auto;
+}
+
+.native-asset-choice {
+    display: grid;
+    min-width: 0;
+    gap: 4px;
+    padding: 4px;
+    border: 1px solid var(--editor-line);
+    border-radius: 7px;
+    background: #fff;
+    cursor: pointer;
+    text-align: left;
+}
+
+.native-asset-choice:hover {
+    border-color: #7c3aed;
+    box-shadow: 0 0 0 2px rgba(124, 58, 237, .1);
+}
+
+.native-asset-choice img,
+.native-asset-choice video {
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: 5px;
+    object-fit: cover;
+}
+
+.native-asset-choice span {
+    overflow: hidden;
+    color: var(--editor-muted);
+    font-size: .58rem;
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+    .native-asset-choices {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+/* =========================================================
+   R2.01B-01 — INSPECTOR UNIVERSAL LIMPIO
+   ========================================================= */
+
+.section-builder-inspector {
+    display: grid;
+    gap: 14px;
+}
+
+.builder-inspector-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.builder-inspector-header h3,
+.builder-inspector-header p {
+    margin: 0;
+}
+
+.builder-inspector-kicker {
+    display: block;
+    margin-bottom: 3px;
+    color: var(--editor-accent);
+    font-size: .68rem;
+    font-weight: 900;
+    letter-spacing: .09em;
+    text-transform: uppercase;
+}
+
+.builder-inspector-tabs {
+    position: sticky;
+    top: -14px;
+    z-index: 3;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 5px;
+    padding: 6px;
+    border: 1px solid var(--editor-line);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, .96);
+    backdrop-filter: blur(12px);
+}
+
+.builder-inspector-tabs button {
+    min-height: 36px;
+    border: 0;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--editor-muted);
+    cursor: pointer;
+    font-size: .76rem;
+    font-weight: 850;
+}
+
+.builder-inspector-tabs button.is-active {
+    background: var(--editor-primary);
+    color: #fff;
+}
+
+.builder-inspector-pane {
+    display: none;
+    gap: 12px;
+}
+
+.builder-inspector-pane.is-active:not([hidden]) {
+    display: grid;
+}
+
+.builder-control-group {
+    display: grid;
+    gap: 11px;
+    padding: 13px;
+    border: 1px solid var(--editor-line);
+    border-radius: 10px;
+    background: #fff;
+}
+
+.builder-control-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    padding-bottom: 9px;
+    border-bottom: 1px solid var(--editor-line);
+}
+
+.builder-control-heading strong,
+.builder-control-heading small {
+    display: block;
+}
+
+.builder-control-heading small {
+    margin-top: 3px;
+    color: var(--editor-muted);
+    font-size: .72rem;
+    line-height: 1.35;
+}
+
+.builder-control-group > label,
+.builder-control-grid > label {
+    display: grid;
+    gap: 6px;
+    color: var(--editor-primary);
+    font-size: .76rem;
+    font-weight: 800;
+}
+
+.builder-control-group input,
+.builder-control-group select,
+.builder-control-group textarea {
+    width: 100%;
+    min-width: 0;
+    border: 1px solid var(--editor-line);
+    border-radius: 7px;
+    background: #fff;
+    color: var(--editor-primary);
+    padding: 9px 10px;
+}
+
+.builder-control-group textarea {
+    resize: vertical;
+}
+
+.builder-control-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px;
+}
+
+.builder-number-control {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    align-items: center;
+    gap: 12px !important;
+}
+
+.builder-number-control > span small {
+    display: block;
+    margin-top: 2px;
+    color: var(--editor-muted);
+    font-size: .68rem;
+    font-weight: 600;
+    line-height: 1.25;
+}
+
+.builder-number-control > div {
+    display: grid;
+    grid-template-columns: minmax(72px, 90px) auto;
+    align-items: center;
+    gap: 5px;
+}
+
+.builder-number-control input {
+    text-align: right;
+}
+
+.builder-number-control > div > span {
+    color: var(--editor-muted);
+    font-size: .72rem;
+    font-weight: 800;
+}
+
+.builder-toggle {
+    display: flex !important;
+    grid-template-columns: none !important;
+    align-items: center;
+    gap: 8px !important;
+}
+
+.builder-toggle input {
+    width: auto;
+}
+
+.layout-preset-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+}
+
+.layout-preset-grid button,
+.layer-actions button,
+.free-layer-tools button,
+.layer-toolbar button {
+    min-height: 36px;
+    border: 1px solid var(--editor-line);
+    border-radius: 7px;
+    background: color-mix(in srgb, var(--editor-soft) 44%, white);
+    color: var(--editor-primary);
+    cursor: pointer;
+    font-size: .72rem;
+    font-weight: 850;
+}
+
+.layout-preset-grid button:hover,
+.layout-preset-grid button:focus-visible {
+    border-color: var(--editor-accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--editor-accent) 16%, transparent);
+}
+
+.legacy-layer-disclosure {
+    border: 1px dashed var(--editor-line);
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--editor-soft) 24%, white);
+    overflow: hidden;
+}
+
+.legacy-layer-disclosure > summary {
+    cursor: pointer;
+    padding: 12px;
+    color: var(--editor-muted);
+    font-size: .75rem;
+    font-weight: 850;
+}
+
+.legacy-layer-disclosure[open] {
+    padding: 0 12px 12px;
+}
+
+.legacy-layer-disclosure[open] > summary {
+    margin: 0 -12px 12px;
+    border-bottom: 1px solid var(--editor-line);
+}
+
+.properties-panel
+> .component-properties-persistent.is-active:not([hidden]) {
+    display: grid !important;
+}
+
+.component-properties-persistent {
+    scroll-margin-top: 82px;
+}
+
+@media (max-width: 1180px) {
+    .builder-control-grid,
+    .layout-preset-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .builder-number-control {
+        grid-template-columns: 1fr !important;
+    }
+
+    .builder-number-control > div {
+        grid-template-columns: minmax(0, 1fr) auto;
+    }
+}
+
+
+/* R2.01B-02 — controles del contador */
+.countdown-layout-controls {
+    border-color: color-mix(
+        in srgb,
+        var(--editor-accent) 55%,
+        var(--editor-line)
+    );
+}
+
+.builder-drag-help {
+    margin: 0;
+    padding: 9px 10px;
+    border-radius: 7px;
+    background: color-mix(
+        in srgb,
+        var(--editor-accent) 14%,
+        white
+    );
+    color: var(--editor-primary);
+    font-size: .72rem;
+    line-height: 1.4;
+}
+
+
+/* =========================================================
+   R2.01B-04 — AUTO-FIT Y FONDO EDITABLE
+   ========================================================= */
+
+.background-position-actions {
+    display: grid;
+    gap: 8px;
+}
+
+[data-toggle-background-positioning].is-active {
+    border-color: var(--editor-accent);
+    background:
+        color-mix(
+            in srgb,
+            var(--editor-accent) 18%,
+            white
+        );
+    box-shadow:
+        0 0 0 3px
+        color-mix(
+            in srgb,
+            var(--editor-accent) 14%,
+            transparent
+        );
 }

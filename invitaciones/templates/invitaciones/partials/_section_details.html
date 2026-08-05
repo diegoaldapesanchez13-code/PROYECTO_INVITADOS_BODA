@@ -44,7 +44,34 @@
                     data-real-card="ceremony" data-native-element data-element-id="details-ceremony-card" data-element-type="container" data-element-role="event-place-card" data-element-section="DETALLES" data-element-item="ceremony"
                     data-real-card-media-position="{{ real_content.items.ceremony.mediaPosition|default:'top' }}"
                     data-real-card-map-display="{{ real_content.items.ceremony.mapDisplay|default:'button-map' }}"
-                    style="--real-card-bg: {{ real_content.items.ceremony.cardBg|default:'#ffffff' }}; order: {{ real_content.items.ceremony.order|default:1 }};"
+                    style="
+                        --real-card-bg: {{ real_content.items.ceremony.cardBg|default:'#ffffff' }};
+                        --native-card-width: {{ real_content.items.ceremony.cardWidth|default:100 }}%;
+                        --native-card-min-height: {{ real_content.items.ceremony.cardMinHeight|default:0 }}px;
+                        --native-card-padding: {{ real_content.items.ceremony.cardPadding|default:16 }}px;
+                        --native-card-gap: {{ real_content.items.ceremony.cardGap|default:8 }}px;
+                        --native-card-radius: {{ real_content.items.ceremony.cardRadius|default:0 }}px;
+                        --native-card-border-width: {{ real_content.items.ceremony.cardBorderWidth|default:0 }}px;
+                        --native-card-border-color: {{ real_content.items.ceremony.cardBorderColor|default:'#e5e7eb' }};
+                        --native-card-align: {{ real_content.items.ceremony.cardAlign|default:'center' }};
+                        --native-card-shadow: {% if real_content.items.ceremony.cardShadow %}0 14px 34px rgba(17, 24, 39, .16){% else %}none{% endif %};
+                        {% if real_content.items.ceremony.cardBackgroundAsset.url and not real_content.items.ceremony.cardBackgroundAsset.isVideo %}
+                            --native-card-background-image: url('{{ real_content.items.ceremony.cardBackgroundAsset.url }}');
+                        {% else %}
+                            --native-card-background-image: none;
+                        {% endif %}
+                        --native-card-background-fit: {{ real_content.items.ceremony.cardBackgroundFit|default:'cover' }};
+                        --native-card-background-position:
+                            {{ real_content.items.ceremony.cardBackgroundX|default:50 }}%
+                            {{ real_content.items.ceremony.cardBackgroundY|default:50 }}%;
+                        --native-card-background-opacity:
+                            {{ real_content.items.ceremony.cardBackgroundOpacity|default:0.35 }};
+                        --native-media-height: {{ real_content.items.ceremony.mediaHeight|default:220 }}px;
+                        --native-media-fit: {{ real_content.items.ceremony.mediaFit|default:'cover' }};
+                        --native-media-x: {{ real_content.items.ceremony.mediaX|default:50 }}%;
+                        --native-media-y: {{ real_content.items.ceremony.mediaY|default:50 }}%;
+                        order: {{ real_content.items.ceremony.order|default:1 }};
+                    "
                 >
                     {% if real_content.showMedia != False and real_content.items.ceremony.showMedia != False and real_content.items.ceremony.mediaPosition != 'hidden' and evento.foto_ceremonia %}
                         <div class="place-media" data-native-element data-element-id="details-ceremony-media" data-element-type="media" data-element-role="event-place-media" data-element-section="DETALLES" data-element-item="ceremony">
@@ -154,7 +181,34 @@
                     data-real-card="reception" data-native-element data-element-id="details-reception-card" data-element-type="container" data-element-role="event-place-card" data-element-section="DETALLES" data-element-item="reception"
                     data-real-card-media-position="{{ real_content.items.reception.mediaPosition|default:'top' }}"
                     data-real-card-map-display="{{ real_content.items.reception.mapDisplay|default:'button-map' }}"
-                    style="--real-card-bg: {{ real_content.items.reception.cardBg|default:'#ffffff' }}; order: {{ real_content.items.reception.order|default:2 }};"
+                    style="
+                        --real-card-bg: {{ real_content.items.reception.cardBg|default:'#ffffff' }};
+                        --native-card-width: {{ real_content.items.reception.cardWidth|default:100 }}%;
+                        --native-card-min-height: {{ real_content.items.reception.cardMinHeight|default:0 }}px;
+                        --native-card-padding: {{ real_content.items.reception.cardPadding|default:16 }}px;
+                        --native-card-gap: {{ real_content.items.reception.cardGap|default:8 }}px;
+                        --native-card-radius: {{ real_content.items.reception.cardRadius|default:0 }}px;
+                        --native-card-border-width: {{ real_content.items.reception.cardBorderWidth|default:0 }}px;
+                        --native-card-border-color: {{ real_content.items.reception.cardBorderColor|default:'#e5e7eb' }};
+                        --native-card-align: {{ real_content.items.reception.cardAlign|default:'center' }};
+                        --native-card-shadow: {% if real_content.items.reception.cardShadow %}0 14px 34px rgba(17, 24, 39, .16){% else %}none{% endif %};
+                        {% if real_content.items.reception.cardBackgroundAsset.url and not real_content.items.reception.cardBackgroundAsset.isVideo %}
+                            --native-card-background-image: url('{{ real_content.items.reception.cardBackgroundAsset.url }}');
+                        {% else %}
+                            --native-card-background-image: none;
+                        {% endif %}
+                        --native-card-background-fit: {{ real_content.items.reception.cardBackgroundFit|default:'cover' }};
+                        --native-card-background-position:
+                            {{ real_content.items.reception.cardBackgroundX|default:50 }}%
+                            {{ real_content.items.reception.cardBackgroundY|default:50 }}%;
+                        --native-card-background-opacity:
+                            {{ real_content.items.reception.cardBackgroundOpacity|default:0.35 }};
+                        --native-media-height: {{ real_content.items.reception.mediaHeight|default:220 }}px;
+                        --native-media-fit: {{ real_content.items.reception.mediaFit|default:'cover' }};
+                        --native-media-x: {{ real_content.items.reception.mediaX|default:50 }}%;
+                        --native-media-y: {{ real_content.items.reception.mediaY|default:50 }}%;
+                        order: {{ real_content.items.reception.order|default:2 }};
+                    "
                 >
                     {% if real_content.showMedia != False and real_content.items.reception.showMedia != False and real_content.items.reception.mediaPosition != 'hidden' and evento.foto_recepcion %}
                         <div class="place-media" data-native-element data-element-id="details-reception-media" data-element-type="media" data-element-role="event-place-media" data-element-section="DETALLES" data-element-item="reception">

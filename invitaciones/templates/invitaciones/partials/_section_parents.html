@@ -1,87 +1,77 @@
 {% if secciones.PADRES_PADRINOS.activa %}
-<section
-    class="section"
-    id="padres-padrinos"
-    data-invitation-section="PADRES_PADRINOS"
-    style="
-        order: {{ secciones.PADRES_PADRINOS.orden }};
-        {{ secciones.PADRES_PADRINOS.estilo_editor }}
-    "
->
-    <div
-        class="panel parents-panel section-header-panel
+<section class="section" id="padres-padrinos" data-invitation-section="PADRES_PADRINOS"
+    style="order: {{ secciones.PADRES_PADRINOS.orden }}; {{ secciones.PADRES_PADRINOS.estilo_editor }}">
+    <div class="panel parents-panel section-header-panel
         {% if secciones.PADRES_PADRINOS.imagen_titulo %}has-section-header-media{% endif %}
         {% if secciones.PADRES_PADRINOS.fondo %}bg-panel{% endif %}
         {% if secciones.PADRES_PADRINOS.fondo_es_video %}bg-video-panel{% endif %}"
         {% if secciones.PADRES_PADRINOS.fondo and not secciones.PADRES_PADRINOS.fondo_es_video %}
-            style="
-                background-image: url('{{ secciones.PADRES_PADRINOS.fondo.url }}');
-                background-position: {{ secciones.PADRES_PADRINOS.posicion_fondo }};
-            "
-        {% endif %}
-    >
-        {% if secciones.PADRES_PADRINOS.fondo_es_video and secciones.PADRES_PADRINOS.fondo %}
-            <video
-                class="panel-bg-video"
-                src="{{ secciones.PADRES_PADRINOS.fondo.url }}"
-                autoplay
-                muted
-                loop
-                playsinline
-                preload="metadata"
-            ></video>
-        {% endif %}
-
-        {% include "invitaciones/partials/_capas_personalizadas.html" with seccion=secciones.PADRES_PADRINOS %}
-
+            style="background-image: url('{{ secciones.PADRES_PADRINOS.fondo.url }}'); background-position: {{ secciones.PADRES_PADRINOS.posicion_fondo }};"
+        {% endif %}>
+        {% include "invitaciones/partials/_section_base.html" with seccion=secciones.PADRES_PADRINOS titulo_default="Nuestros padres y padrinos" texto_alt="Portada de padres y padrinos" media_class="parents-full-image" %}
         {% if secciones.PADRES_PADRINOS.mostrar_titulo_texto != False %}
-            {% include "invitaciones/partials/_section_header.html" with seccion=secciones.PADRES_PADRINOS titulo_default="Nuestros padres y padrinos" texto_alt="Portada de padres y padrinos" %}
-        {% endif %}
-
-        {% if secciones.PADRES_PADRINOS.mostrar_titulo_texto != False %}
-            <div class="section-main-content">
-                <div class="parents-grid">
-
-                    <div class="parents-column">
-                        <h3>
-                            Padres de {{ evento.etiqueta_principal|lower }}
-                        </h3>
-
-                        {% for persona in padres_novia %}
-                            <p>{{ persona.nombre }}</p>
-                        {% empty %}
-                            <p class="muted-name">
-                                Familia de {{ evento.etiqueta_principal|lower }}
-                            </p>
-                        {% endfor %}
-                    </div>
-
-                    <div class="parents-column">
-                        <h3>
-                            Padres de {{ evento.etiqueta_secundario|lower }}
-                        </h3>
-
-                        {% for persona in padres_novio %}
-                            <p>{{ persona.nombre }}</p>
-                        {% empty %}
-                            <p class="muted-name">
-                                Familia de {{ evento.etiqueta_secundario|lower }}
-                            </p>
-                        {% endfor %}
-                    </div>
-
-                    {% if padrinos %}
-                        <div class="parents-sponsors">
-                            <h3>Y nuestros padrinos</h3>
-
-                            {% for persona in padrinos %}
-                                <p>{{ persona.nombre }}</p>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-
+        <div class="section-main-content" data-native-element data-element-id="parents-content"
+            data-element-type="container" data-element-role="parents-content"
+            data-element-section="PADRES_PADRINOS">
+            <div class="parents-grid" data-native-element data-element-id="parents-grid"
+                data-element-type="container" data-element-role="parents-grid"
+                data-element-section="PADRES_PADRINOS">
+                <div class="parents-column" data-native-element data-element-id="parents-primary-column"
+                    data-element-type="container" data-element-role="parents-column"
+                    data-element-section="PADRES_PADRINOS">
+                    <h3 data-native-element data-element-id="parents-primary-title"
+                        data-element-type="text" data-element-role="parents-column-title"
+                        data-element-section="PADRES_PADRINOS">
+                        Padres de {{ evento.etiqueta_principal|lower }}
+                    </h3>
+                    {% for persona in padres_novia %}
+                    <p data-native-element data-element-id="parents-primary-person-{{ persona.id }}"
+                        data-element-type="text" data-element-role="parents-person"
+                        data-element-section="PADRES_PADRINOS">{{ persona.nombre }}</p>
+                    {% empty %}
+                    <p class="muted-name" data-native-element data-element-id="parents-primary-empty"
+                        data-element-type="text" data-element-role="parents-empty"
+                        data-element-section="PADRES_PADRINOS">
+                        Familia de {{ evento.etiqueta_principal|lower }}
+                    </p>
+                    {% endfor %}
                 </div>
+                <div class="parents-column" data-native-element data-element-id="parents-secondary-column"
+                    data-element-type="container" data-element-role="parents-column"
+                    data-element-section="PADRES_PADRINOS">
+                    <h3 data-native-element data-element-id="parents-secondary-title"
+                        data-element-type="text" data-element-role="parents-column-title"
+                        data-element-section="PADRES_PADRINOS">
+                        Padres de {{ evento.etiqueta_secundario|lower }}
+                    </h3>
+                    {% for persona in padres_novio %}
+                    <p data-native-element data-element-id="parents-secondary-person-{{ persona.id }}"
+                        data-element-type="text" data-element-role="parents-person"
+                        data-element-section="PADRES_PADRINOS">{{ persona.nombre }}</p>
+                    {% empty %}
+                    <p class="muted-name" data-native-element data-element-id="parents-secondary-empty"
+                        data-element-type="text" data-element-role="parents-empty"
+                        data-element-section="PADRES_PADRINOS">
+                        Familia de {{ evento.etiqueta_secundario|lower }}
+                    </p>
+                    {% endfor %}
+                </div>
+                {% if padrinos %}
+                <div class="parents-sponsors" data-native-element data-element-id="parents-sponsors"
+                    data-element-type="container" data-element-role="parents-sponsors"
+                    data-element-section="PADRES_PADRINOS">
+                    <h3 data-native-element data-element-id="parents-sponsors-title"
+                        data-element-type="text" data-element-role="parents-sponsors-title"
+                        data-element-section="PADRES_PADRINOS">Y nuestros padrinos</h3>
+                    {% for persona in padrinos %}
+                    <p data-native-element data-element-id="parents-sponsor-{{ persona.id }}"
+                        data-element-type="text" data-element-role="parents-person"
+                        data-element-section="PADRES_PADRINOS">{{ persona.nombre }}</p>
+                    {% endfor %}
+                </div>
+                {% endif %}
             </div>
+        </div>
         {% endif %}
     </div>
 </section>

@@ -7,6 +7,10 @@
                         <div
                             class="invitation-component invitation-component-{{ componente.tipo|lower }}"
                             data-component-id="{{ componente.id }}"
+                            data-layout-mode="{{ componente.layout_mode|default:'ABSOLUTE' }}"
+                            data-coordinate-space="{{ componente.coordinate_space|default:'SECTION' }}"
+                            data-parent-key="{{ componente.parent_key|default:'' }}"
+                            data-component-locked="{% if componente.locked %}1{% else %}0{% endif %}"
                             style="
                                 --component-x: {{ componente.x }}%;
                                 --component-y: {{ componente.y }}%;

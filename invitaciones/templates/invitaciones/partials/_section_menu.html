@@ -1,95 +1,40 @@
 {% if secciones.MENU.activa and evento.mostrar_menu %}
-<section
-    class="section menu-section"
-    id="menu"
-    data-invitation-section="MENU"
-    style="
-        order: {{ secciones.MENU.orden }};
-        {{ secciones.MENU.estilo_editor }}
-    "
->
-    <div
-        class="panel menu-panel
-        {% if secciones.MENU.imagen_titulo %}
-            is-image-only-section
-        {% endif %}
-        {% if secciones.MENU.fondo %}
-            bg-panel
-        {% endif %}
-        {% if secciones.MENU.fondo_es_video %}
-            bg-video-panel
-        {% endif %}"
+<section class="section menu-section" id="menu" data-invitation-section="MENU"
+    style="order: {{ secciones.MENU.orden }}; {{ secciones.MENU.estilo_editor }}">
+    <div class="panel menu-panel section-header-panel
+        {% if secciones.MENU.imagen_titulo %}is-image-only-section has-section-header-media has-section-full-image{% endif %}
+        {% if secciones.MENU.fondo %}bg-panel{% endif %}
+        {% if secciones.MENU.fondo_es_video %}bg-video-panel{% endif %}"
         {% if secciones.MENU.fondo and not secciones.MENU.fondo_es_video %}
-            style="
-                background-image: url('{{ secciones.MENU.fondo.url }}');
-                background-position: {{ secciones.MENU.posicion_fondo }};
-            "
-        {% endif %}
-    >
-        {% if secciones.MENU.fondo_es_video and secciones.MENU.fondo %}
-            <video
-                class="panel-bg-video"
-                src="{{ secciones.MENU.fondo.url }}"
-                autoplay
-                muted
-                loop
-                playsinline
-                preload="metadata"
-            ></video>
-        {% endif %}
-
-        {% include "invitaciones/partials/_capas_personalizadas.html" with seccion=secciones.MENU %}
-
-        {% if secciones.MENU.imagen_titulo %}
-
-            {% if secciones.MENU.imagen_titulo_es_video %}
-                <video
-                    class="menu-full-image"
-                    src="{{ secciones.MENU.imagen_titulo.url }}"
-                    autoplay
-                    muted
-                    loop
-                    playsinline
-                    preload="metadata"
-                ></video>
-            {% else %}
-                <img
-                    class="menu-full-image"
-                    src="{{ secciones.MENU.imagen_titulo.url }}"
-                    alt="Diseño completo del menú"
-                    loading="lazy"
-                    decoding="async"
-                >
-            {% endif %}
-
-        {% else %}
-
-            {% include "invitaciones/partials/_section_header.html" with seccion=secciones.MENU titulo_default="Menú" texto_alt="Portada del menú" %}
-
-            {% if menus %}
-                <div class="section-main-content">
-                    <div class="menu-grid">
-                        {% for menu in menus %}
-                            <div class="menu-box">
-                                <span class="pill">
-                                    {{ menu.get_tipo_display }}
-                                </span>
-
-                                <h3>
-                                    {{ menu.nombre }}
-                                </h3>
-
-                                {% if menu.descripcion %}
-                                    <p>
-                                        {{ menu.descripcion }}
-                                    </p>
-                                {% endif %}
-                            </div>
-                        {% endfor %}
-                    </div>
+            style="background-image: url('{{ secciones.MENU.fondo.url }}'); background-position: {{ secciones.MENU.posicion_fondo }};"
+        {% endif %}>
+        {% include "invitaciones/partials/_section_base.html" with seccion=secciones.MENU titulo_default="Menú" texto_alt="Diseño completo del menú" media_class="menu-full-image" %}
+        {% if not secciones.MENU.imagen_titulo and menus %}
+        <div class="section-main-content" data-native-element data-element-id="menu-content"
+            data-element-type="container" data-element-role="menu-content" data-element-section="MENU">
+            <div class="menu-grid" data-native-element data-element-id="menu-grid"
+                data-element-type="container" data-element-role="menu-grid" data-element-section="MENU">
+                {% for menu in menus %}
+                <div class="menu-box" data-native-element data-element-id="menu-item-{{ menu.id }}"
+                    data-element-type="container" data-element-role="menu-item" data-element-section="MENU">
+                    <span class="pill" data-native-element data-element-id="menu-type-{{ menu.id }}"
+                        data-element-type="text" data-element-role="menu-type" data-element-section="MENU">
+                        {{ menu.get_tipo_display }}
+                    </span>
+                    <h3 data-native-element data-element-id="menu-title-{{ menu.id }}"
+                        data-element-type="text" data-element-role="menu-title" data-element-section="MENU">
+                        {{ menu.nombre }}
+                    </h3>
+                    {% if menu.descripcion %}
+                    <p data-native-element data-element-id="menu-description-{{ menu.id }}"
+                        data-element-type="text" data-element-role="menu-description" data-element-section="MENU">
+                        {{ menu.descripcion }}
+                    </p>
+                    {% endif %}
                 </div>
-            {% endif %}
-
+                {% endfor %}
+            </div>
+        </div>
         {% endif %}
     </div>
 </section>

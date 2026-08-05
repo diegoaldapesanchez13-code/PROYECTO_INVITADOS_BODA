@@ -985,6 +985,48 @@ video {
     gap: 12px;
 }
 
+.event-place-card {
+    position: relative;
+    width: var(--native-card-width, 100%);
+    min-height: var(--native-card-min-height, 0);
+    padding: var(--native-card-padding, 16px);
+    gap: var(--native-card-gap, 8px);
+    border:
+        var(--native-card-border-width, 0)
+        solid
+        var(--native-card-border-color, #e5e7eb);
+    border-radius: var(--native-card-radius, 0);
+    background-color: var(--real-card-bg, #ffffff);
+    box-shadow: var(--native-card-shadow, none);
+    text-align: var(--native-card-align, center);
+    justify-self: center;
+    overflow: hidden;
+    isolation: isolate;
+}
+
+.event-place-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background-image:
+        var(--native-card-background-image, none);
+    background-size:
+        var(--native-card-background-fit, cover);
+    background-position:
+        var(--native-card-background-position, center);
+    background-repeat: no-repeat;
+    opacity:
+        var(--native-card-background-opacity, .35);
+    pointer-events: none;
+}
+
+
+.event-place-card > * {
+    position: relative;
+    z-index: 1;
+}
+
 .place-media {
     width: 100%;
     overflow: hidden;
@@ -1827,6 +1869,119 @@ ocupe todo el ancho de la pantalla.
     padding-right: clamp(8px, 3vw, 24px);
 }
 
+/* =========================================================
+   S01-P06 - CONTENIDO REAL EDITABLE
+   ========================================================= */
+
+.section-main-content.real-content-layer {
+    z-index: var(--real-content-z, 5);
+    width: min(var(--real-content-width, 100%), calc(100% - 8px));
+    opacity: var(--real-content-opacity, 1);
+    text-align: var(--section-text-align, center);
+    transform:
+        translate(var(--real-content-offset-x, 0%), var(--real-content-offset-y, 0%))
+        rotate(var(--real-content-rotation, 0deg))
+        scale(var(--real-content-scale, 1));
+    transform-origin: center top;
+}
+
+.real-content-layer[data-real-content-align="left"] {
+    text-align: left;
+}
+
+.real-content-layer[data-real-content-align="center"] {
+    text-align: center;
+}
+
+.real-content-layer[data-real-content-align="right"] {
+    text-align: right;
+}
+
+.real-content-layer .real-content-grid,
+.real-content-layer .gift-grid,
+.real-content-layer .album-grid,
+.real-content-layer.event-detail-grid {
+    gap: var(--real-content-gap, 14px);
+}
+
+.real-content-layer[data-real-content-layout="stack"] .real-content-grid,
+.real-content-layer[data-real-content-layout="stack"] .gift-grid,
+.real-content-layer[data-real-content-layout="stack"] .album-grid {
+    grid-template-columns: 1fr;
+}
+
+.real-content-layer .info-box,
+.real-content-layer .gift-box,
+.real-content-layer .guest-box,
+.real-content-layer .album-grid figure,
+.real-content-layer .shared-album-content {
+    padding: var(--real-card-padding, 16px);
+    border-radius: var(--real-card-radius, 0);
+    background: color-mix(in srgb, var(--real-card-bg, #ffffff) 78%, transparent);
+    box-shadow: var(--real-card-shadow, none);
+}
+
+.real-content-layer .event-place-card {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    overflow: hidden;
+}
+
+.real-content-layer .place-media {
+    margin-bottom: 0;
+    border-radius: max(0px, calc(var(--real-card-radius, 0px) - 2px));
+}
+
+.real-content-layer .event-place-card[data-real-card-media-position="bottom"] .place-media {
+    order: 20;
+    margin-top: 8px;
+}
+
+.real-content-layer .event-place-card[data-real-card-media-position="hidden"] .place-media {
+    display: none;
+}
+
+.real-content-layer[data-real-content-shadow="1"] .info-box,
+.real-content-layer[data-real-content-shadow="1"] .gift-box,
+.real-content-layer[data-real-content-shadow="1"] .guest-box,
+.real-content-layer[data-real-content-shadow="1"] .album-grid figure,
+.real-content-layer[data-real-content-shadow="1"] .shared-album-content {
+    box-shadow: var(--real-card-shadow, 0 14px 34px rgba(17, 24, 39, .12));
+}
+
+.real-content-layer .event-place-card > p,
+.real-content-layer .place-address,
+.real-content-layer .gift-box p,
+.real-content-layer .deposit-box small {
+    font-size: var(--real-card-text-size, 15px);
+}
+
+.real-content-layer[data-real-content-show-media="0"] .place-media {
+    display: none;
+}
+
+.real-content-layer[data-real-content-show-address="0"] .place-address {
+    display: none;
+}
+
+.real-content-layer[data-real-content-show-maps="0"] .map-card,
+.real-content-layer[data-real-content-show-maps="0"] .event-place-card > a.btn {
+    display: none;
+}
+
+.real-content-layer .map-image-card {
+    overflow: hidden;
+}
+
+.real-content-layer .map-image-card img,
+.real-content-layer .map-image-card video {
+    display: block;
+    width: 100%;
+    height: auto;
+    border: 0;
+}
+
 
 /* =========================================================
    AJUSTES MÓVILES
@@ -1926,141 +2081,6 @@ ocupe todo el ancho de la pantalla.
 }
 #musicToggle.is-playing {
     transform: rotate(360deg);
-}
-/* =========================================================
-   INV-004A — CUENTA REGRESIVA HÍBRIDA
-   Imagen de diseño como fondo + contador HTML real
-   ========================================================= */
-
-#cuenta .countdown-panel {
-    position: relative;
-    min-height: var(--section-height, 620px);
-    overflow: hidden;
-    isolation: isolate;
-}
-
-/*
-El fondo sigue usando el asset que ya asigna el editor.
-Se fuerza a ocupar el lienzo completo de la sección.
-*/
-#cuenta .countdown-panel.bg-panel {
-    background-size: var(--section-bg-size, cover);
-    background-position: var(--section-bg-position, center);
-    background-repeat: var(--section-bg-repeat, no-repeat);
-}
-
-/*
-Cuando existe una imagen de diseño completa, el contador
-se convierte en una capa libre encima de ella.
-*/
-#cuenta .countdown-panel.bg-panel .countdown-interactive-layer,
-#cuenta .countdown-panel.bg-video-panel .countdown-interactive-layer {
-    position: absolute;
-    left: var(--section-text-x, 50%);
-    top: var(--section-text-y, 58%);
-    z-index: var(--section-text-z, 4);
-
-    display: var(--section-text-display, block);
-    width: min(var(--section-text-width, 84%), 96%);
-
-    padding: 0;
-    opacity: var(--section-text-opacity, 1);
-    text-align: var(--section-text-align, center);
-
-    transform:
-        translate(-50%, -50%)
-        rotate(var(--section-text-rotation, 0deg))
-        scale(var(--section-text-scale, 1));
-
-    transform-origin: center;
-}
-
-/*
-El contador no debe crear otro fondo blanco encima del diseño.
-*/
-#cuenta .countdown-panel.bg-panel .count-grid,
-#cuenta .countdown-panel.bg-video-panel .count-grid {
-    width: 100%;
-    margin: 0;
-}
-
-/*
-Cajas transparentes para que se vea el diseño de abajo.
-*/
-#cuenta .countdown-panel.bg-panel .count-box,
-#cuenta .countdown-panel.bg-video-panel .count-box {
-    background: rgba(255, 255, 255, 0.78);
-    border: 1px solid color-mix(in srgb, var(--line), transparent 20%);
-    backdrop-filter: blur(4px);
-}
-
-/*
-Cuando no existe un fondo de diseño, la sección conserva
-su comportamiento normal.
-*/
-#cuenta .countdown-panel:not(.bg-panel):not(.bg-video-panel) {
-    min-height: auto;
-}
-
-#cuenta
-.countdown-panel:not(.bg-panel):not(.bg-video-panel)
-.countdown-interactive-layer {
-    position: relative;
-    left: auto;
-    top: auto;
-    width: 100%;
-    transform: none;
-}
-
-/* Fondo de video */
-#cuenta .countdown-panel.bg-video-panel .panel-bg-video {
-    position: absolute;
-    inset: 0;
-    z-index: 0;
-
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-/* Mantener capas y contador por encima del fondo */
-#cuenta .countdown-panel > *:not(.panel-bg-video) {
-    position: relative;
-    z-index: 2;
-}
-
-#cuenta
-.countdown-panel
-.countdown-interactive-layer {
-    z-index: var(--section-text-z, 4);
-}
-
-@media (max-width: 600px) {
-    #cuenta .countdown-panel.bg-panel,
-    #cuenta .countdown-panel.bg-video-panel {
-        min-height: var(--section-height, 620px);
-    }
-
-    #cuenta .countdown-interactive-layer {
-        width: min(var(--section-text-width, 90%), 96%);
-    }
-
-    #cuenta .count-grid {
-        gap: 6px;
-    }
-
-    #cuenta .count-box {
-        min-width: 0;
-        padding: 12px 5px;
-    }
-
-    #cuenta .count-box strong {
-        font-size: clamp(1.35rem, 7vw, 2rem);
-    }
-
-    #cuenta .count-box span {
-        font-size: clamp(.58rem, 2.8vw, .72rem);
-    }
 }
 /* =========================================================
    INV-004B-FIX — PORTADA COMO DISEÑO COMPLETO
@@ -2666,4 +2686,351 @@ o espacio vacío debajo de la imagen.
 
 .invitation-component[data-layout-mode="LAYER"] {
     position: absolute;
+}
+
+
+/* =========================================================
+   S03-P04 — TRANSFORMACIONES SEGURAS DE ELEMENTOS NATIVOS
+   Mantiene las tarjetas dentro del flujo y de sus contenedores.
+   ========================================================= */
+
+.real-content-layer .event-place-card[data-native-element] {
+    width: min(100%, var(--native-card-width, 100%));
+    min-height: var(--native-card-min-height, 0);
+    justify-self: center;
+    padding: var(--native-card-padding, var(--real-card-padding, 16px));
+    gap: var(--native-card-gap, 8px);
+    border:
+        var(--native-card-border-width, 0)
+        solid
+        var(--native-card-border-color, transparent);
+    border-radius: var(--native-card-radius, var(--real-card-radius, 0));
+    box-shadow: var(--native-card-shadow, none);
+    text-align: var(--native-card-align, center);
+}
+
+.real-content-layer .event-place-card[data-native-element] .place-media {
+    width: 100%;
+    height: var(--native-media-height, 220px);
+    min-height: 0;
+    overflow: hidden;
+}
+
+.real-content-layer .event-place-card[data-native-element] .place-media img,
+.real-content-layer .event-place-card[data-native-element] .place-media video {
+    width: 100%;
+    height: 100%;
+    object-fit: var(--native-media-fit, cover);
+    object-position:
+        var(--native-media-x, 50%)
+        var(--native-media-y, 50%);
+}
+
+@media (max-width: 760px) {
+    .real-content-layer .event-place-card[data-native-element] {
+        width: min(100%, var(--native-card-width, 100%));
+    }
+}
+
+#detalles .details-panel {
+    position: relative;
+    width: 100%;
+    height: auto;
+    min-height: var(--section-height, auto);
+    overflow: hidden;
+    isolation: isolate;
+}
+
+#detalles .details-panel[data-layout-auto-height="1"] {
+    min-height: 0;
+    height: auto;
+}
+
+#detalles .details-panel.bg-panel {
+    background-size: var(--section-bg-size, cover);
+    background-position: var(--section-bg-position, center center);
+    background-repeat: var(--section-bg-repeat, no-repeat);
+    background-attachment: scroll;
+}
+
+#detalles .details-panel .details-real-content,
+#detalles .details-panel .event-detail-grid,
+#detalles .details-panel .event-place-card {
+    height: auto;
+    max-height: none;
+}
+
+/* =========================================================
+   R2.01B-01 — MOTOR UNIVERSAL DEFINITIVO
+   ========================================================= */
+
+.section {
+    position: relative;
+}
+
+.section > .panel {
+    position: relative;
+    isolation: isolate;
+    display: flex;
+    flex-direction: column;
+    min-height: var(--section-layout-min-height, 150px);
+    max-height: var(--section-layout-max-height, none);
+    padding:
+        var(--section-layout-padding-y, 24px)
+        var(--section-layout-padding-x, 20px);
+    overflow: var(--section-layout-overflow, visible);
+    background-size: var(--section-bg-size, cover);
+    background-position: var(--section-bg-position, center);
+    background-repeat: var(--section-bg-repeat, no-repeat);
+}
+
+.section > .panel[data-layout-auto-height="1"] {
+    height: auto;
+}
+
+.section > .panel[data-layout-auto-height="0"] {
+    min-height:
+        max(
+            var(--section-layout-min-height, 150px),
+            var(--section-height, 150px)
+        );
+}
+
+.panel-bg-video {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    pointer-events: none;
+}
+
+.section-full-media,
+.section-heading-text,
+.section-main-content {
+    position: relative;
+    z-index: 20;
+}
+
+.section > .panel > .universal-layout-content {
+    display: var(--section-layout-display, flex);
+    flex-direction: var(--section-layout-direction, column);
+    align-items: var(--section-layout-align, center);
+    justify-content: var(--section-layout-justify, center);
+    gap: var(--section-layout-gap, 18px);
+    width: min(var(--section-layout-content-width, 100%), 100%);
+    max-width: var(--section-layout-content-max-width, 1060px);
+    margin-inline: auto;
+}
+
+.section > .panel
+> .universal-layout-content
+> * {
+    min-width: 0;
+}
+
+/* Contenido nativo grande: siempre FLOW. */
+.countdown-interactive-layer,
+.details-content,
+.dress-code-content,
+.itinerary-list,
+.menu-grid,
+.album-grid,
+.gifts-grid,
+.shared-album-content,
+.rsvp-form {
+    position: relative;
+    left: auto;
+    top: auto;
+    transform: none;
+}
+
+/* Cuenta regresiva universal. */
+#cuenta .countdown-panel {
+    justify-content: var(--section-layout-justify, center);
+}
+
+#cuenta .countdown-interactive-layer {
+    min-height: 0;
+    padding: 0;
+}
+
+#cuenta .count-grid {
+    width: 100%;
+    margin: 0;
+    gap: var(--section-layout-gap, 18px);
+}
+
+#cuenta .count-box {
+    min-width: 0;
+}
+
+/* Capas libres. */
+.custom-public-layer {
+    position: absolute;
+    z-index: var(--layer-z, 40);
+    pointer-events: auto;
+}
+
+/* Componentes persistentes ABSOLUTE. */
+.panel > .invitation-components,
+[data-invitation-section] .invitation-components,
+.cover-section .invitation-components {
+    position: absolute;
+    inset: 0;
+    z-index: 900;
+    pointer-events: none;
+    overflow: visible;
+}
+
+.invitation-components > .invitation-component {
+    pointer-events: auto;
+    touch-action: none;
+}
+
+.invitation-component[data-layout-mode="ABSOLUTE"],
+.invitation-component[data-layout-mode="LAYER"],
+.invitation-component:not([data-layout-mode]) {
+    position: absolute;
+    left: var(--component-x, 50%);
+    top: var(--component-y, 50%);
+    width: var(--component-width, 40%);
+    min-height: var(--component-height, 10%);
+    transform:
+        translate(-50%, -50%)
+        rotate(var(--component-rotation, 0deg));
+    opacity: var(--component-opacity, 1);
+    z-index: var(--component-z, 20);
+}
+
+.invitation-component[data-layout-mode="FLOW"] {
+    position: relative;
+    left: auto;
+    top: auto;
+    width: var(--component-width, auto);
+    min-height: var(--component-height, auto);
+    transform: rotate(var(--component-rotation, 0deg));
+    opacity: var(--component-opacity, 1);
+    z-index: var(--component-z, 20);
+}
+
+html[data-editor-live-mode="edit"]
+.invitation-component {
+    cursor: grab;
+}
+
+html[data-editor-live-mode="edit"]
+.invitation-component:active {
+    cursor: grabbing;
+}
+
+html[data-editor-live-mode="edit"]
+.editor-real-component-selected {
+    z-index: 10000 !important;
+}
+
+@media (max-width: 600px) {
+    .section > .panel {
+        padding:
+            min(var(--section-layout-padding-y, 24px), 32px)
+            min(var(--section-layout-padding-x, 20px), 20px);
+    }
+
+    .section > .panel
+    > .universal-layout-content {
+        width: 100%;
+    }
+
+    .section > .panel
+    > .universal-layout-content[style*="row"] {
+        flex-direction: column;
+    }
+}
+
+
+/* =========================================================
+   R2.01B-02 — CONTADOR NATIVO LIBRE
+   ========================================================= */
+
+#cuenta .countdown-panel {
+    min-height: max(
+        var(--section-layout-min-height, 520px),
+        var(--section-height, 520px)
+    );
+}
+
+#cuenta .countdown-interactive-layer {
+    position: absolute;
+    left: var(--counter-x, 50%);
+    top: var(--counter-y, 68%);
+    z-index: var(--counter-z, 35);
+    width: min(var(--counter-width, 92%), 140%);
+    max-width: none;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    transform:
+        translate(-50%, -50%)
+        scale(var(--counter-scale, 1));
+    transform-origin: center;
+    touch-action: none;
+}
+
+#cuenta .countdown-interactive-layer > .count-grid {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+}
+
+.editor-countdown-resize-handle {
+    display: none;
+}
+
+html[data-editor-live-mode="edit"]
+#cuenta .countdown-interactive-layer {
+    cursor: move;
+    outline: 1px dashed #7c3aed;
+    outline-offset: 5px;
+}
+
+html[data-editor-live-mode="edit"]
+#cuenta .editor-countdown-resize-handle {
+    position: absolute;
+    right: -10px;
+    bottom: -10px;
+    z-index: 5;
+    display: block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid #fff;
+    border-radius: 5px;
+    background: #7c3aed;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, .25);
+    cursor: nwse-resize;
+    pointer-events: auto;
+    touch-action: none;
+}
+
+
+/* =========================================================
+   R2.01B-04 — AUTO-FIT UNIVERSAL
+   ========================================================= */
+
+.section > .panel[data-layout-auto-height="1"] {
+    height: auto;
+    transition:
+        min-height .18s ease,
+        padding .18s ease;
+}
+
+html[data-editor-live-mode="edit"]
+.section > .panel {
+    scroll-margin-block: 24px;
+}
+
+html[data-editor-live-mode="edit"]
+body[data-background-positioning="true"]
+.section > .panel {
+    cursor: move;
 }

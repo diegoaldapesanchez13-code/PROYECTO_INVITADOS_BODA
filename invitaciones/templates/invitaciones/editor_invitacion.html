@@ -8,9 +8,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Allura&family=Cormorant+Garamond:wght@500;600;700&family=Great+Vibes&family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@300;400;500;600&family=Parisienne&family=Playfair+Display:wght@500;600;700&family=Poppins:wght@300;400;500;600;700&family=Tangerine:wght@400;700&display=swap" rel="stylesheet">
     <link
         rel="stylesheet"
-        href="{% static 'invitaciones/css/editor_invitacion.css' %}?v=20260730-02"
+        href="{% static 'invitaciones/css/editor_invitacion.css' %}?v=20260804-r201b04"
     >
-    <script defer src="{% static 'invitaciones/js/editor_invitacion.js' %}?v=20260730-02"></script>
+    <script defer src="{% static 'invitaciones/js/editor_invitacion.js' %}?v=20260804-r201b04"></script>
 </head>
 <body>
     {{ editor_config|json_script:"editor-config" }}
@@ -18,6 +18,8 @@
     {{ editor_guests|json_script:"editor-guests" }}
     {{ editor_versions|json_script:"editor-versions" }}
     <div class="editor-shell"
+        data-editor-mode="simple"
+        data-editor-panel="design"
         data-save-url="{{ guardar_editor_url }}"
         data-publish-url="{{ publicar_editor_url }}"
         data-apply-template-url="{{ aplicar_plantilla_url }}"
@@ -66,6 +68,19 @@
                     <button type="button" data-apply-template>Aplicar plantilla</button>
                 </section>
                 <div class="section-list" data-section-list></div>
+                <section class="component-tree-panel universal-element-tree-panel">
+                    <div class="panel-heading compact">
+                        <div>
+                            <h2>Elementos</h2>
+                            <small>Secciones, contenido real, capas y componentes</small>
+                        </div>
+                        <div class="element-tree-heading-actions">
+                            <button type="button" data-tree-expand-all title="Expandir todo">+</button>
+                            <button type="button" data-tree-collapse-all title="Contraer todo">−</button>
+                        </div>
+                    </div>
+                    <div class="component-tree" data-component-tree></div>
+                </section>
                 <section class="version-history">
                     <div class="panel-heading compact">
                         <h2>Historial</h2>
@@ -76,7 +91,7 @@
 
             <section class="canvas-stage">
                 <div class="canvas-toolbar">
-                    <button class="{% if not preview_borrador_url %}is-active{% endif %}" type="button" data-preview-mode="draft">Diseno rapido</button>
+                    <button type="button" data-preview-mode="draft" hidden aria-hidden="true">Diseño rápido</button>
                     {% if preview_borrador_url %}
                         <button class="is-active" type="button" data-preview-mode="real">Vista real</button>
                         <div class="live-mode-toggle" data-live-mode-toggle aria-label="Modo de interaccion de la vista real">
@@ -107,7 +122,421 @@
                     <h2>Propiedades</h2>
                 </div>
 
-                <section class="property-group">
+                <section class="editor-context-card" data-editor-context-card>
+                    <div>
+                        <span class="editor-context-kicker">Editando</span>
+                        <strong data-editor-context-title>Invitación</strong>
+                        <small data-editor-context-help>Selecciona una sección o un elemento visible.</small>
+                    </div>
+                    <button type="button" data-editor-context-open>Ver controles</button>
+                </section>
+
+                <section
+                    class="property-group native-element-inspector"
+                    data-native-element-inspector
+                    data-editor-group="design"
+                    hidden
+                >
+                    <div class="native-inspector-head">
+                        <div>
+                            <span class="native-inspector-kicker">Elemento real</span>
+                            <h3 data-native-inspector-title>Elemento</h3>
+                            <p class="muted" data-native-inspector-summary>
+                                Selecciona un elemento desde Vista Real.
+                            </p>
+                            <p class="native-resize-help" data-native-resize-help hidden>
+                                Arrastra los controles morados sobre Vista Real.
+                            </p>
+                        </div>
+                        <span class="inspector-pill" data-native-inspector-type>Elemento</span>
+                    </div>
+
+                    <label class="toggle native-visibility-control">
+                        <input type="checkbox" data-native-field="visible">
+                        Mostrar elemento
+                    </label>
+
+                    <div class="native-current-asset" data-native-current-asset hidden>
+                        <div class="native-current-asset-head">
+                            <div>
+                                <span>Recurso actual</span>
+                                <strong data-native-current-asset-title>Sin recurso</strong>
+                            </div>
+                            <button type="button" data-native-action="remove-asset">
+                                Quitar
+                            </button>
+                        </div>
+
+                        <div class="native-current-asset-preview" data-native-current-asset-preview>
+                            <span>Sin recurso asignado</span>
+                        </div>
+
+                        <div class="native-asset-picker">
+                            <div class="native-asset-picker-head">
+                                <strong>Elegir de la biblioteca</strong>
+                                <button type="button" data-native-action="open-assets">
+                                    Ver todos
+                                </button>
+                            </div>
+                            <div class="native-asset-choices" data-native-asset-choices></div>
+                        </div>
+                    </div>
+
+                    <div data-native-group="text" hidden>
+                        <label>
+                            Contenido
+                            <input type="text" data-native-field="text">
+                        </label>
+                    </div>
+
+                    <div data-native-group="datetime" hidden>
+                        <label>
+                            Valor
+                            <input type="datetime-local" data-native-field="datetime">
+                        </label>
+                    </div>
+
+                    <div data-native-group="button" hidden>
+                        <label>
+                            Texto del botón
+                            <input type="text" data-native-field="buttonLabel">
+                        </label>
+                        <label>
+                            Enlace
+                            <input type="url" data-native-field="url" placeholder="https://...">
+                        </label>
+                    </div>
+
+                    <div data-native-group="map" hidden>
+                        <label>
+                            Mostrar como
+                            <select data-native-field="mapDisplay">
+                                <option value="button-map">Botón y mapa</option>
+                                <option value="button-only">Solo botón</option>
+                                <option value="map-only">Solo mapa</option>
+                                <option value="hidden">Oculto</option>
+                            </select>
+                        </label>
+                        <label>
+                            Enlace del mapa
+                            <input type="url" data-native-field="url" placeholder="https://...">
+                        </label>
+                    </div>
+
+                    <div data-native-group="media" hidden>
+                        <label>
+                            Posición de la foto
+                            <select data-native-field="mediaPosition">
+                                <option value="top">Arriba</option>
+                                <option value="bottom">Abajo</option>
+                                <option value="hidden">Oculta</option>
+                            </select>
+                        </label>
+
+                        <label>
+                            Ajuste
+                            <select data-native-field="mediaFit">
+                                <option value="cover">Cubrir</option>
+                                <option value="contain">Mostrar completa</option>
+                            </select>
+                        </label>
+
+                        <label>
+                            Altura de la foto
+                            <div class="native-range-field">
+                                <input type="range" min="80" max="700" step="10" data-native-field="mediaHeight">
+                                <output data-native-output="mediaHeight">220 px</output>
+                            </div>
+                        </label>
+
+                        <label>
+                            Posición horizontal
+                            <div class="native-range-field">
+                                <input type="range" min="0" max="100" step="1" data-native-field="mediaX">
+                                <output data-native-output="mediaX">50%</output>
+                            </div>
+                        </label>
+
+                        <label>
+                            Posición vertical
+                            <div class="native-range-field">
+                                <input type="range" min="0" max="100" step="1" data-native-field="mediaY">
+                                <output data-native-output="mediaY">50%</output>
+                            </div>
+                        </label>
+                    </div>
+
+                    <div data-native-group="container" hidden>
+                        <div class="native-control-grid">
+                            <label>
+                                Ajuste del fondo
+                                <select data-native-field="cardBackgroundFit">
+                                    <option value="cover">Cubrir tarjeta</option>
+                                    <option value="contain">Mostrar completa</option>
+                                </select>
+                            </label>
+                            <label>
+                                Ancho
+                                <div class="native-range-field">
+                                    <input type="range" min="40" max="100" step="1" data-native-field="cardWidth">
+                                    <output data-native-output="cardWidth">100%</output>
+                                </div>
+                            </label>
+                            <label>
+                                Altura mínima
+                                <div class="native-range-field">
+                                    <input type="range" min="0" max="700" step="10" data-native-field="cardMinHeight">
+                                    <output data-native-output="cardMinHeight">0 px</output>
+                                </div>
+                            </label>
+                            <label>
+                                Espacio interior
+                                <div class="native-range-field">
+                                    <input type="range" min="0" max="80" step="1" data-native-field="cardPadding">
+                                    <output data-native-output="cardPadding">16 px</output>
+                                </div>
+                            </label>
+                            <label>
+                                Separación
+                                <div class="native-range-field">
+                                    <input type="range" min="0" max="60" step="1" data-native-field="cardGap">
+                                    <output data-native-output="cardGap">8 px</output>
+                                </div>
+                            </label>
+                            <label>
+                                Esquinas
+                                <div class="native-range-field">
+                                    <input type="range" min="0" max="80" step="1" data-native-field="cardRadius">
+                                    <output data-native-output="cardRadius">0 px</output>
+                                </div>
+                            </label>
+                            <label>
+                                Borde
+                                <div class="native-range-field">
+                                    <input type="range" min="0" max="10" step="1" data-native-field="cardBorderWidth">
+                                    <output data-native-output="cardBorderWidth">0 px</output>
+                                </div>
+                            </label>
+                        </div>
+
+                        <div class="native-control-grid native-control-grid-compact">
+                            <label>
+                                Fondo
+                                <input type="color" data-native-field="cardBg" value="#ffffff">
+                            </label>
+                            <label>
+                                Color del borde
+                                <input type="color" data-native-field="cardBorderColor" value="#e5e7eb">
+                            </label>
+                            <label>
+                                Alineación
+                                <select data-native-field="cardAlign">
+                                    <option value="left">Izquierda</option>
+                                    <option value="center">Centro</option>
+                                    <option value="right">Derecha</option>
+                                </select>
+                            </label>
+                            <label>
+                                Orden
+                                <input type="number" min="0" max="20" data-native-field="order">
+                            </label>
+                        </div>
+
+                        <label class="toggle">
+                            <input type="checkbox" data-native-field="cardShadow">
+                            Mostrar sombra
+                        </label>
+                        <div class="native-control-grid">
+                            <label>
+                                Opacidad de la imagen
+                                <div class="native-range-field">
+                                    <input type="range" min="0" max="1" step="0.05"
+                                        data-native-field="cardBackgroundOpacity">
+                                    <output data-native-output="cardBackgroundOpacity">35%</output>
+                                </div>
+                            </label>
+
+                            <label>
+                                Posición horizontal
+                                <div class="native-range-field">
+                                    <input type="range" min="0" max="100" step="1"
+                                        data-native-field="cardBackgroundX">
+                                    <output data-native-output="cardBackgroundX">50%</output>
+                                </div>
+                            </label>
+
+                            <label>
+                                Posición vertical
+                                <div class="native-range-field">
+                                    <input type="range" min="0" max="100" step="1"
+                                        data-native-field="cardBackgroundY">
+                                    <output data-native-output="cardBackgroundY">50%</output>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="native-inspector-actions">
+                        <button type="button" data-native-action="save-content">
+                            Guardar contenido
+                        </button>
+                        <button type="button" data-native-action="open-advanced">
+                            Más opciones
+                        </button>
+                    </div>
+                </section>
+
+                <div class="simple-editor-toolbar" data-simple-editor-toolbar>
+                    <div class="editor-mode-switch" aria-label="Nivel de edición">
+                        <button type="button" class="is-active" data-editor-mode="simple">Fácil</button>
+                        <button type="button" data-editor-mode="advanced">Avanzado</button>
+                    </div>
+
+                    <div class="editor-panel-switch" aria-label="Panel del editor">
+                        <button type="button" class="is-active" data-editor-panel-button="design">Diseño</button>
+                        <button type="button" data-editor-panel-button="content">Contenido</button>
+                        <button type="button" data-editor-panel-button="assets">Archivos</button>
+                    </div>
+
+                    <div class="easy-actions">
+                        <button type="button" data-easy-action="repair">Reparar distribución</button>
+                        <button type="button" data-easy-action="full-image">Usar imagen completa</button>
+                    </div>
+
+                    <div class="component-tools" data-component-tools>
+                        <span>Componentes</span>
+                        <button type="button" data-add-component="TEXTO">Texto</button>
+                        <button type="button" data-add-component="IMAGEN">Imagen</button>
+                        <button type="button" data-add-component="BOTON">Botón</button>
+                    </div>
+
+                    <p class="simple-editor-help">
+                        Selecciona una sección, ajusta su diseño y agrega componentes sin salir del editor.
+                    </p>
+                </div>
+
+                <section class="property-group universal-inspector" data-universal-inspector data-editor-group="design" data-editor-persistent="true" data-advanced-panel="true">
+                    <div class="universal-inspector-head">
+                        <div>
+                            <h3>Inspector</h3>
+                            <p class="muted" data-inspector-summary>Selecciona una seccion o componente.</p>
+                        </div>
+                        <span class="inspector-pill" data-inspector-kind>Sin seleccion</span>
+                    </div>
+
+                    <label>
+                        Editando
+                        <select data-inspector-target>
+                            <option value="section">Seccion</option>
+                            <option value="layer">Capa activa</option>
+                            <option value="real">Contenido real</option>
+                            <option value="component">Componente</option>
+                        </select>
+                    </label>
+
+                    <div class="inline-fields">
+                        <label>X<input type="range" min="-40" max="140" step="0.5" data-inspector-field="x"></label>
+                        <label>Y<input type="range" min="-40" max="140" step="0.5" data-inspector-field="y"></label>
+                    </div>
+
+                    <div class="inline-fields">
+                        <label>Ancho<input type="range" min="4" max="160" step="0.5" data-inspector-field="width"></label>
+                        <label>Alto / escala<input type="range" min="0" max="1400" step="1" data-inspector-field="height"></label>
+                    </div>
+
+                    <div class="inline-fields">
+                        <label>Rotacion<input type="range" min="-180" max="180" step="1" data-inspector-field="rotation"></label>
+                        <label>Opacidad<input type="range" min="0" max="1" step="0.05" data-inspector-field="opacity"></label>
+                    </div>
+
+                    <div class="inline-fields">
+                        <label>Z<input type="range" min="1" max="100" step="1" data-inspector-field="z"></label>
+                        <label class="toggle"><input type="checkbox" data-inspector-field="locked"> Bloquear</label>
+                    </div>
+
+                    <label class="toggle">
+                        <input type="checkbox" data-inspector-field="hidden">
+                        Ocultar
+                    </label>
+
+                    <div class="inspector-actions">
+                        <button type="button" data-inspector-panel="design">Diseno</button>
+                        <button type="button" data-inspector-panel="content">Contenido</button>
+                        <button type="button" data-inspector-panel="assets">Assets</button>
+                        <button type="button" class="danger-link" data-inspector-action="delete-component" hidden>Eliminar componente</button>
+                    </div>
+                </section>
+
+                <section
+                    class="property-group component-properties component-properties-persistent"
+                    data-component-properties
+                    data-editor-group="design"
+                    data-editor-persistent="true"
+                    hidden
+                >
+                        <div class="component-properties-head">
+                            <div>
+                                <h4>Componente seleccionado</h4>
+                                <p class="muted" data-component-summary>Selecciona un texto, imagen o boton.</p>
+                            </div>
+                            <button type="button" class="danger-link" data-component-action="delete">Eliminar</button>
+                        </div>
+
+                        <div class="inline-fields">
+                            <label>X<input type="range" min="-40" max="140" step="0.5" data-component-field="x"></label>
+                            <label>Y<input type="range" min="-40" max="140" step="0.5" data-component-field="y"></label>
+                        </div>
+                        <div class="inline-fields">
+                            <label>Ancho<input type="range" min="4" max="140" step="0.5" data-component-field="width"></label>
+                            <label>Alto<input type="range" min="2" max="140" step="0.5" data-component-field="height"></label>
+                        </div>
+                        <div class="inline-fields">
+                            <label>Rotacion<input type="range" min="-180" max="180" step="1" data-component-field="rotation"></label>
+                            <label>Opacidad<input type="range" min="0" max="1" step="0.05" data-component-field="opacity"></label>
+                        </div>
+                        <div class="inline-fields">
+                            <label>Z<input type="range" min="1" max="100" step="1" data-component-field="zIndex"></label>
+                            <label class="toggle"><input type="checkbox" data-component-field="locked"> Bloquear</label>
+                        </div>
+                        <label class="toggle"><input type="checkbox" data-component-field="hidden"> Ocultar componente</label>
+
+                        <div data-component-type-panel="TEXTO">
+                            <label>Texto<input type="text" data-component-property="text"></label>
+                            <div class="inline-fields">
+                                <label>Tamano<input type="number" min="8" max="96" step="1" data-component-property="fontSize"></label>
+                                <label>Color<input type="color" data-component-property="color" value="#263126"></label>
+                            </div>
+                            <label>Fuente<input type="text" data-component-property="fontFamily"></label>
+                        </div>
+
+                        <div data-component-type-panel="IMAGEN">
+                            <label>URL imagen<input type="text" data-component-property="src" placeholder="/media/..."></label>
+                            <label>Texto alternativo<input type="text" data-component-property="alt"></label>
+                            <label>
+                                Ajuste
+                                <select data-component-property="fit">
+                                    <option value="contain">Contener</option>
+                                    <option value="cover">Cubrir</option>
+                                </select>
+                            </label>
+                        </div>
+
+                        <div data-component-type-panel="BOTON">
+                            <label>Texto boton<input type="text" data-component-property="label"></label>
+                            <label>URL destino<input type="text" data-component-property="href" placeholder="https://..."></label>
+                            <label>
+                                Estilo
+                                <select data-component-property="style">
+                                    <option value="primary">Principal</option>
+                                    <option value="secondary">Secundario</option>
+                                </select>
+                            </label>
+                        </div>
+                    
+                </section>
+
+
+                <section class="property-group" data-editor-group="design" data-advanced-panel="true">
                     <h3>Tema</h3>
                     <label>
                         Paleta
@@ -141,168 +570,659 @@
                     </div>
                 </section>
 
-                <section class="property-group" data-section-properties>
-                    <div class="section-properties-heading">
+                
+                <section
+                    class="property-group section-builder-inspector"
+                    data-section-properties
+                    data-editor-group="design"
+                >
+                    <header class="builder-inspector-header">
                         <div>
-                            <h3>Sección seleccionada</h3>
-                            <p class="muted">Primero elige una sección del panel izquierdo. Después usa Diseño fácil.</p>
+                            <span class="builder-inspector-kicker">Sección</span>
+                            <h3>Diseño de la sección</h3>
+                            <p class="muted">
+                                Ajusta el lienzo, el contenido y el fondo sin mezclar controles.
+                            </p>
                         </div>
-                    </div>
-                    <label>
-                        Titulo
-                        <input type="text" data-section-field="title">
-                    </label>
-                    <label>
-                        Descripcion
-                        <textarea rows="4" data-section-field="description"></textarea>
-                    </label>
-                    <div class="inline-fields">
-                        <label>Orden<input type="number" min="0" data-section-field="order"></label>
-                        <label class="toggle"><input type="checkbox" data-section-field="visible"> Visible</label>
-                    </div>
-                    <label>
-                        Alineacion
-                        <select data-config-field="textAlign">
-                            <option value="center">Centrada</option>
-                            <option value="left">Izquierda</option>
-                            <option value="right">Derecha</option>
-                        </select>
-                    </label>
-                    <label>
-                        Tamano de titulo
-                        <select data-config-field="titleSize">
-                            <option value="small">Sutil</option>
-                            <option value="medium">Elegante</option>
-                            <option value="large">Protagonista</option>
-                        </select>
-                    </label>
-                    <label>
-                        Posicion de fondo
-                        <select data-config-field="backgroundPosition">
-                            {% for valor, texto in posiciones_fondo_seccion %}
-                                <option value="{{ valor }}">{{ texto }}</option>
-                            {% endfor %}
-                        </select>
-                    </label>
-                    <label>
-                        Opacidad de fondo
-                        <input type="range" min="0" max="1" step="0.05" data-config-field="backgroundOpacity">
-                    </label>
-                    <div class="layer-toolbar">
-                        <button type="button" class="is-active" data-layer-select="background">Fondo</button>
-                        <button type="button" data-layer-select="title">Titulo</button>
-                        <button type="button" data-layer-select="text">Texto</button>
-                        <button type="button" data-layer-select="decor">Decoracion</button>
-                    </div>
-                    <div class="free-layer-tools">
-                        <button type="button" data-add-text-layer>Texto libre</button>
-                        <p class="muted">Para imagen, GIF o video libre: arrastra un archivo al celular o elige "Capa libre".</p>
-                    </div>
-                    <div class="custom-layer-list" data-custom-layer-list></div>
-                    <div class="layer-controls">
-                        <label>
-                            Nombre capa
-                            <input type="text" data-custom-layer-name placeholder="Nombre interno">
-                        </label>
-                        <label>
-                            Texto libre
-                            <input type="text" data-custom-layer-text placeholder="Texto de la capa">
-                        </label>
-                        <label>
-                            Ajuste capa imagen/video
-                            <select data-custom-layer-fit>
-                                <option value="contain">Contener</option>
-                                <option value="cover">Cubrir</option>
-                            </select>
-                        </label>
-                        <label class="toggle"><input type="checkbox" data-layer-field="visible"> Mostrar capa</label>
-                        <div class="inline-fields">
-                            <label>X capa<input type="range" min="-40" max="140" step="1" data-layer-field="x"></label>
-                            <label>Y capa<input type="range" min="-40" max="140" step="1" data-layer-field="y"></label>
-                        </div>
-                        <div class="inline-fields">
-                            <label>Escala<input type="range" min="0.35" max="3" step="0.05" data-layer-field="scale"></label>
-                            <label>Opacidad<input type="range" min="0" max="1" step="0.05" data-layer-field="opacity"></label>
-                        </div>
-                        <div class="inline-fields">
-                            <label>Rotacion<input type="range" min="-180" max="180" step="1" data-layer-field="rotation"></label>
-                            <label class="toggle"><input type="checkbox" data-layer-field="locked"> Bloquear</label>
-                        </div>
-                        <div class="inline-fields">
-                            <label>Ancho<input type="range" min="8" max="120" step="1" data-layer-field="width"></label>
+                    </header>
+
+                    <nav class="builder-inspector-tabs" aria-label="Propiedades de sección">
+                        <button
+                            class="is-active"
+                            type="button"
+                            data-section-inspector-tab="canvas"
+                        >
+                            Lienzo
+                        </button>
+                        <button
+                            type="button"
+                            data-section-inspector-tab="content"
+                        >
+                            Contenido
+                        </button>
+                        <button
+                            type="button"
+                            data-section-inspector-tab="background"
+                        >
+                            Fondo
+                        </button>
+                    </nav>
+
+                    <div
+                        class="builder-inspector-pane is-active"
+                        data-section-inspector-pane="canvas"
+                    >
+                        <div class="builder-control-group">
+                            <div class="builder-control-heading">
+                                <div>
+                                    <strong>Identidad</strong>
+                                    <small>Nombre, descripción y estado.</small>
+                                </div>
+                            </div>
+
                             <label>
-                                Alinear
-                                <select data-layer-field="align">
+                                Título
+                                <input type="text" data-section-field="title">
+                            </label>
+
+                            <label>
+                                Descripción
+                                <textarea rows="3" data-section-field="description"></textarea>
+                            </label>
+
+                            <div class="builder-control-grid">
+                                <label>
+                                    Orden
+                                    <input type="number" min="0" data-section-field="order">
+                                </label>
+
+                                <label class="toggle builder-toggle">
+                                    <input type="checkbox" data-section-field="visible">
+                                    Mostrar sección
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="builder-control-group">
+                            <div class="builder-control-heading">
+                                <div>
+                                    <strong>Presets rápidos</strong>
+                                    <small>Aplica una distribución base y después afínala.</small>
+                                </div>
+                            </div>
+
+                            <div class="layout-preset-grid">
+                                <button type="button" data-layout-preset="compact">
+                                    Compacto
+                                </button>
+                                <button type="button" data-layout-preset="centered">
+                                    Centrado
+                                </button>
+                                <button type="button" data-layout-preset="fullscreen">
+                                    Pantalla completa
+                                </button>
+                                <button type="button" data-layout-preset="reset">
+                                    Restaurar
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="builder-control-group">
+                            <div class="builder-control-heading">
+                                <div>
+                                    <strong>Tamaño del lienzo</strong>
+                                    <small>Controla cuánto espacio ocupa la sección.</small>
+                                </div>
+                            </div>
+
+                            <label class="toggle builder-toggle">
+                                <input
+                                    type="checkbox"
+                                    data-config-field="layoutAutoHeight"
+                                >
+                                Adaptar alto al contenido
+                            </label>
+
+                            <label class="builder-number-control">
+                                <span>
+                                    Alto mínimo
+                                    <small>Altura base de la sección.</small>
+                                </span>
+                                <div>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        max="1400"
+                                        step="10"
+                                        data-config-field="layoutMinHeight"
+                                    >
+                                    <span>px</span>
+                                </div>
+                            </label>
+
+                            <label class="builder-number-control">
+                                <span>
+                                    Alto máximo
+                                    <small>0 significa sin límite.</small>
+                                </span>
+                                <div>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        max="2400"
+                                        step="10"
+                                        data-config-field="layoutMaxHeight"
+                                    >
+                                    <span>px</span>
+                                </div>
+                            </label>
+
+                            <label class="builder-number-control">
+                                <span>
+                                    Padding horizontal
+                                    <small>Espacio a izquierda y derecha.</small>
+                                </span>
+                                <div>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        max="160"
+                                        step="1"
+                                        data-config-field="layoutPaddingX"
+                                    >
+                                    <span>px</span>
+                                </div>
+                            </label>
+
+                            <label class="builder-number-control">
+                                <span>
+                                    Padding vertical
+                                    <small>Espacio arriba y abajo.</small>
+                                </span>
+                                <div>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        max="160"
+                                        step="1"
+                                        data-config-field="layoutPaddingY"
+                                    >
+                                    <span>px</span>
+                                </div>
+                            </label>
+
+                            <label>
+                                Desbordamiento
+                                <select data-config-field="layoutOverflow">
+                                    <option value="visible">Permitir contenido visible</option>
+                                    <option value="hidden">Recortar contenido</option>
+                                    <option value="auto">Scroll automático</option>
+                                </select>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div
+                        class="builder-inspector-pane"
+                        data-section-inspector-pane="content"
+                        hidden
+                    >
+                        <div class="builder-control-group">
+                            <div class="builder-control-heading">
+                                <div>
+                                    <strong>Distribución</strong>
+                                    <small>Organiza el contenido nativo en flujo.</small>
+                                </div>
+                            </div>
+
+                            <label>
+                                Dirección
+                                <select data-config-field="autoLayoutMode">
+                                    <option value="vertical">Vertical</option>
+                                    <option value="horizontal">Horizontal</option>
+                                    <option value="grid">Cuadrícula</option>
+                                </select>
+                            </label>
+
+                            <label>
+                                Alineación horizontal
+                                <select data-config-field="layoutAlignment">
+                                    <option value="start">Izquierda</option>
+                                    <option value="center">Centro</option>
+                                    <option value="end">Derecha</option>
+                                    <option value="stretch">Estirar</option>
+                                </select>
+                            </label>
+
+                            <label>
+                                Alineación vertical
+                                <select data-config-field="layoutJustify">
+                                    <option value="start">Arriba</option>
+                                    <option value="center">Centro</option>
+                                    <option value="end">Abajo</option>
+                                    <option value="space-between">Distribuir</option>
+                                </select>
+                            </label>
+
+                            <label class="builder-number-control">
+                                <span>
+                                    Separación
+                                    <small>Espacio entre elementos.</small>
+                                </span>
+                                <div>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        max="100"
+                                        step="1"
+                                        data-config-field="layoutSpacing"
+                                    >
+                                    <span>px</span>
+                                </div>
+                            </label>
+                        </div>
+
+                        <div class="builder-control-group">
+                            <div class="builder-control-heading">
+                                <div>
+                                    <strong>Ancho del contenido</strong>
+                                    <small>Define el área útil dentro del lienzo.</small>
+                                </div>
+                            </div>
+
+                            <label class="builder-number-control">
+                                <span>Ancho relativo</span>
+                                <div>
+                                    <input
+                                        type="number"
+                                        min="20"
+                                        max="100"
+                                        step="1"
+                                        data-config-field="layoutContentWidth"
+                                    >
+                                    <span>%</span>
+                                </div>
+                            </label>
+
+                            <label class="builder-number-control">
+                                <span>Ancho máximo</span>
+                                <div>
+                                    <input
+                                        type="number"
+                                        min="240"
+                                        max="1400"
+                                        step="10"
+                                        data-config-field="layoutContentMaxWidth"
+                                    >
+                                    <span>px</span>
+                                </div>
+                            </label>
+
+                            <label>
+                                Alineación del texto
+                                <select data-config-field="textAlign">
                                     <option value="left">Izquierda</option>
                                     <option value="center">Centro</option>
                                     <option value="right">Derecha</option>
                                 </select>
                             </label>
+
+                            <label>
+                                Tamaño del título
+                                <select data-config-field="titleSize">
+                                    <option value="small">Pequeño</option>
+                                    <option value="medium">Mediano</option>
+                                    <option value="large">Grande</option>
+                                </select>
+                            </label>
                         </div>
-                        <label>
-                            Preset
-                            <select data-layer-preset>
-                                <option value="">Seleccionar preset</option>
-                                <option value="centered">Centrado fino</option>
-                                <option value="upper">Arriba sutil</option>
-                                <option value="lower">Abajo elegante</option>
-                                <option value="diagonal">Diagonal suave</option>
-                            </select>
-                        </label>
-                        <div class="layer-actions">
-                            <button type="button" data-layer-action="back">Atras</button>
-                            <button type="button" data-layer-action="front">Frente</button>
-                            <button type="button" data-layer-action="reset">Reset capa</button>
-                            <button type="button" data-layer-action="duplicate">Duplicar</button>
-                            <button type="button" data-layer-action="delete">Eliminar</button>
+                    </div>
+
+                    
+                        <div
+                            class="builder-control-group countdown-layout-controls"
+                            data-countdown-layout-controls
+                            hidden
+                        >
+                            <div class="builder-control-heading">
+                                <div>
+                                    <strong>Bloque del contador</strong>
+                                    <small>
+                                        Muévelo directamente en Vista Real o escribe valores exactos.
+                                    </small>
+                                </div>
+                            </div>
+
+                            <div class="builder-control-grid">
+                                <label class="builder-number-control">
+                                    <span>Posición X</span>
+                                    <div>
+                                        <input type="number" min="-20" max="120" step="1"
+                                            data-config-field="counterX">
+                                        <span>%</span>
+                                    </div>
+                                </label>
+
+                                <label class="builder-number-control">
+                                    <span>Posición Y</span>
+                                    <div>
+                                        <input type="number" min="-20" max="120" step="1"
+                                            data-config-field="counterY">
+                                        <span>%</span>
+                                    </div>
+                                </label>
+                            </div>
+
+                            <label class="builder-number-control">
+                                <span>Ancho</span>
+                                <div>
+                                    <input type="number" min="20" max="140" step="1"
+                                        data-config-field="counterWidth">
+                                    <span>%</span>
+                                </div>
+                            </label>
+
+                            <label class="builder-number-control">
+                                <span>Escala</span>
+                                <div>
+                                    <input type="number" min="0.35" max="2.5" step="0.05"
+                                        data-config-field="counterScale">
+                                    <span>x</span>
+                                </div>
+                            </label>
+
+                            <label class="builder-number-control">
+                                <span>Nivel de capa</span>
+                                <div>
+                                    <input type="number" min="1" max="100" step="1"
+                                        data-config-field="counterZ">
+                                </div>
+                            </label>
+
+                            <p class="builder-drag-help">
+                                Arrastra el contador para moverlo. Usa el control morado inferior
+                                derecho para cambiar ancho y escala.
+                            </p>
                         </div>
-                        <label>
-                            Decoracion
-                            <select data-config-field="decorStyle">
-                                <option value="line">Linea fina</option>
-                                <option value="flourish">Trazo sutil</option>
-                                <option value="rings">Aros</option>
-                                <option value="dots">Puntos</option>
-                            </select>
-                        </label>
+
+<div
+                        class="builder-inspector-pane"
+                        data-section-inspector-pane="background"
+                        hidden
+                    >
+                        <div class="builder-control-group">
+                            <div class="builder-control-heading">
+                                <div>
+                                    <strong>Fondo de la sección</strong>
+                                    <small>La imagen o video crece con el lienzo.</small>
+                                </div>
+                            </div>
+
+                            <label class="toggle builder-toggle">
+                                <input
+                                    type="checkbox"
+                                    data-config-field="showBackgroundLayer"
+                                >
+                                Mostrar fondo
+                            </label>
+
+                            <label>
+                                Ajuste
+                                <select data-config-field="backgroundFit">
+                                    <option value="cover">Cubrir</option>
+                                    <option value="contain">Mostrar completa</option>
+                                    <option value="repeat">Repetir</option>
+                                </select>
+                            </label>
+
+                            <label>
+                                Repetición
+                                <select data-config-field="backgroundRepeat">
+                                    <option value="no-repeat">No repetir</option>
+                                    <option value="repeat">Repetir</option>
+                                    <option value="repeat-x">Horizontal</option>
+                                    <option value="repeat-y">Vertical</option>
+                                </select>
+                            </label>
+
+                            <div class="builder-control-grid">
+                                <label class="builder-number-control">
+                                    <span>Posición X</span>
+                                    <div>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            max="100"
+                                            step="1"
+                                            data-config-field="backgroundX"
+                                        >
+                                        <span>%</span>
+                                    </div>
+                                </label>
+
+                                <label class="builder-number-control">
+                                    <span>Posición Y</span>
+                                    <div>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            max="100"
+                                            step="1"
+                                            data-config-field="backgroundY"
+                                        >
+                                        <span>%</span>
+                                    </div>
+                                </label>
+                            </div>
+
+                            <label class="builder-number-control">
+                                <span>Escala</span>
+                                <div>
+                                    <input
+                                        type="number"
+                                        min="0.4"
+                                        max="3"
+                                        step="0.05"
+                                        data-config-field="backgroundScale"
+                                    >
+                                    <span>x</span>
+                                </div>
+                            </label>
+
+                            <label class="builder-number-control">
+                                <span>Opacidad</span>
+                                <div>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        max="1"
+                                        step="0.05"
+                                        data-config-field="backgroundOpacity"
+                                    >
+                                </div>
+                            </label>
+
+                            <label class="builder-number-control">
+                                <span>Brillo</span>
+                                <div>
+                                    <input
+                                        type="number"
+                                        min="0.35"
+                                        max="1.75"
+                                        step="0.05"
+                                        data-config-field="backgroundBrightness"
+                                    >
+                                </div>
+                            </label>
+
+                            <label class="builder-number-control">
+                                <span>Desenfoque</span>
+                                <div>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        max="12"
+                                        step="0.5"
+                                        data-config-field="backgroundBlur"
+                                    >
+                                    <span>px</span>
+                                </div>
+                            </label>
+
+                            <div class="background-position-actions">
+                                <button
+                                    class="btn ghost full"
+                                    type="button"
+                                    data-toggle-background-positioning
+                                    aria-pressed="false"
+                                >
+                                    Mover fondo en Vista Real
+                                </button>
+
+                                <button
+                                    class="btn ghost full"
+                                    type="button"
+                                    data-reset-image-controls
+                                >
+                                    Restaurar fondo
+                                </button>
+                            </div>
+                        </div>
+
+                        <details class="legacy-layer-disclosure">
+                            <summary>Capas decorativas avanzadas</summary>
+
+                            <div class="layer-toolbar">
+                                <button
+                                    type="button"
+                                    class="is-active"
+                                    data-layer-select="background"
+                                >
+                                    Fondo
+                                </button>
+                                <button type="button" data-layer-select="title">
+                                    Título
+                                </button>
+                                <button type="button" data-layer-select="text">
+                                    Texto
+                                </button>
+                                <button type="button" data-layer-select="decor">
+                                    Decoración
+                                </button>
+                            </div>
+
+                            <div class="free-layer-tools">
+                                <button type="button" data-add-text-layer>
+                                    Texto libre
+                                </button>
+                            </div>
+
+                            <div
+                                class="custom-layer-list"
+                                data-custom-layer-list
+                            ></div>
+
+                            <div class="layer-controls">
+                                <label>
+                                    Nombre
+                                    <input
+                                        type="text"
+                                        data-custom-layer-name
+                                        placeholder="Nombre interno"
+                                    >
+                                </label>
+
+                                <label>
+                                    Texto
+                                    <input
+                                        type="text"
+                                        data-custom-layer-text
+                                        placeholder="Texto de la capa"
+                                    >
+                                </label>
+
+                                <label>
+                                    Ajuste
+                                    <select data-custom-layer-fit>
+                                        <option value="contain">Contener</option>
+                                        <option value="cover">Cubrir</option>
+                                    </select>
+                                </label>
+
+                                <label class="toggle builder-toggle">
+                                    <input type="checkbox" data-layer-field="visible">
+                                    Mostrar capa
+                                </label>
+
+                                <div class="builder-control-grid">
+                                    <label>
+                                        X
+                                        <input
+                                            type="number"
+                                            min="-40"
+                                            max="140"
+                                            step="1"
+                                            data-layer-field="x"
+                                        >
+                                    </label>
+                                    <label>
+                                        Y
+                                        <input
+                                            type="number"
+                                            min="-40"
+                                            max="140"
+                                            step="1"
+                                            data-layer-field="y"
+                                        >
+                                    </label>
+                                </div>
+
+                                <div class="builder-control-grid">
+                                    <label>
+                                        Escala
+                                        <input
+                                            type="number"
+                                            min="0.35"
+                                            max="3"
+                                            step="0.05"
+                                            data-layer-field="scale"
+                                        >
+                                    </label>
+                                    <label>
+                                        Opacidad
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            max="1"
+                                            step="0.05"
+                                            data-layer-field="opacity"
+                                        >
+                                    </label>
+                                </div>
+
+                                <div class="layer-actions">
+                                    <button type="button" data-layer-action="back">
+                                        Atrás
+                                    </button>
+                                    <button type="button" data-layer-action="front">
+                                        Frente
+                                    </button>
+                                    <button type="button" data-layer-action="reset">
+                                        Restaurar
+                                    </button>
+                                    <button type="button" data-layer-action="duplicate">
+                                        Duplicar
+                                    </button>
+                                    <button type="button" data-layer-action="delete">
+                                        Eliminar
+                                    </button>
+                                </div>
+                            </div>
+                        </details>
                     </div>
-                    <label>
-                        Ajuste imagen
-                        <select data-config-field="backgroundFit">
-                            <option value="contain">Contener</option>
-                            <option value="cover">Cubrir</option>
-                            <option value="repeat">Repetir</option>
-                            <option value="free">Libre</option>
-                        </select>
-                    </label>
-                    <label>
-                        Zoom
-                        <input type="range" min="0.4" max="3" step="0.05" data-config-field="backgroundScale">
-                    </label>
-                    <p class="muted">X, Y y zoom se guardan segun el dispositivo activo: movil, tablet o desktop.</p>
-                    <div class="inline-fields">
-                        <label>X<input type="range" min="0" max="100" step="1" data-config-field="backgroundX"></label>
-                        <label>Y<input type="range" min="0" max="100" step="1" data-config-field="backgroundY"></label>
-                    </div>
-                    <div class="inline-fields">
-                        <label>Brillo<input type="range" min="0.35" max="1.75" step="0.05" data-config-field="backgroundBrightness"></label>
-                        <label>Blur<input type="range" min="0" max="12" step="0.5" data-config-field="backgroundBlur"></label>
-                    </div>
-                    <label>
-                        Alto de seccion
-                        <input type="range" min="120" max="900" step="10" data-config-field="sectionHeight">
-                    </label>
-                    <label class="toggle"><input type="checkbox" data-config-field="showBackgroundLayer"> Mostrar fondo</label>
-                    <label class="toggle"><input type="checkbox" data-config-field="showTitleAsset"> Mostrar imagen de titulo</label>
-                    <label>
-                        Color de texto
-                        <input type="color" data-config-field="textColor" value="#263126">
-                    </label>
-                    <label class="toggle"><input type="checkbox" data-config-field="showTextTitle"> Mostrar titulo como texto</label>
-                    <button class="btn ghost full" type="button" data-reset-image-controls>Reset imagen</button>
                 </section>
 
-                <section class="property-group quick-content-panel">
+<section class="property-group quick-content-panel" data-editor-group="content">
                     <h3>Contenido rapido</h3>
                     <form data-content-form>
                         <div class="content-subnav">
@@ -506,7 +1426,7 @@
                     </div>
                 </section>
 
-                <section class="property-group">
+                <section class="property-group" data-editor-group="assets">
                     <h3>Archivos del editor</h3>
                     <form class="asset-form" data-asset-form enctype="multipart/form-data">
                         {% csrf_token %}
@@ -545,7 +1465,14 @@
                                     <option value="TITULO_SECCION">Imagen completa</option>
                                     <option value="FONDO_SECCION">Fondo</option>
                                     <option value="CAPA_LIBRE">Capa</option>
+                                    <option value="CEREMONIA">Foto ceremonia</option>
+                                    <option value="RECEPCION">Foto recepcion</option>
+                                    <option value="MAPA_CEREMONIA">Imagen mapa ceremonia</option>
+                                    <option value="MAPA_RECEPCION">Imagen mapa recepcion</option>
                                     <option value="ALBUM">Álbum</option>
+                                    <option value="CARD_BACKGROUND">
+                                        Fondo de tarjeta seleccionada
+                                    </option>
                                 </select>
                                 <div class="asset-quick-targets">
                                     <button type="button" data-asset-quick-target="TITULO_SECCION">
@@ -563,8 +1490,30 @@
                                         Imagen componente
                                     </button>
 
+                                    <button type="button" data-asset-quick-target="CEREMONIA" data-asset-details-only>
+                                        Foto ceremonia
+                                    </button>
+
+                                    <button type="button" data-asset-quick-target="RECEPCION" data-asset-details-only>
+                                        Foto recepcion
+                                    </button>
+
+                                    <button type="button" data-asset-quick-target="MAPA_CEREMONIA" data-asset-details-only>
+                                        Mapa ceremonia
+                                    </button>
+
+                                    <button type="button" data-asset-quick-target="MAPA_RECEPCION" data-asset-details-only>
+                                        Mapa recepcion
+                                    </button>
+
                                     <button type="button" data-asset-quick-target="ALBUM">
                                         Álbum
+                                    </button>
+                                    <button
+                                        type="button"
+                                        data-asset-quick-target="CARD_BACKGROUND"
+                                    >
+                                        Fondo tarjeta
                                     </button>
                                 </div>
                                 <div class="asset-actions">

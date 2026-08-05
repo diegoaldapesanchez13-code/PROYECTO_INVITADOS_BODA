@@ -671,6 +671,18 @@ class ComponenteInvitacion(models.Model):
         ('IMAGEN', 'Imagen'),
         ('BOTON', 'Boton'),
     ]
+    LAYOUT_MODES = [
+        ('FLOW', 'Flujo'),
+        ('ABSOLUTE', 'Absoluto'),
+        ('LAYER', 'Capa permanente'),
+    ]
+
+    COORDINATE_SPACES = [
+        ('PAGE', 'Pagina'),
+        ('SECTION', 'Seccion'),
+        ('CONTAINER', 'Contenedor'),
+        ('COMPONENT', 'Componente'),
+    ]
 
     evento = models.ForeignKey(
         EventoBoda,
@@ -692,7 +704,34 @@ class ComponenteInvitacion(models.Model):
     z_index = models.PositiveIntegerField(default=20)
     locked = models.BooleanField(default=False)
     hidden = models.BooleanField(default=False)
-    properties = models.JSONField(default=dict, blank=True)
+
+    layout_mode = models.CharField(
+        max_length=20,
+        choices=LAYOUT_MODES,
+        default='ABSOLUTE',
+    )
+
+    coordinate_space = models.CharField(
+        max_length=20,
+        choices=COORDINATE_SPACES,
+        default='SECTION',
+    )
+
+    parent_key = models.CharField(
+        max_length=120,
+        blank=True,
+        default='',
+    )
+
+    constraints = models.JSONField(
+        default=dict,
+        blank=True,
+    )
+
+    properties = models.JSONField(
+        default=dict,
+        blank=True,
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -714,6 +753,10 @@ class ComponenteInvitacion(models.Model):
             raise ValidationError('La seccion no pertenece al evento seleccionado.')
         if not isinstance(self.properties, dict):
             raise ValidationError('Las propiedades del componente deben ser un objeto JSON.')
+        if not isinstance(self.constraints, dict):
+            raise ValidationError(
+                'Las restricciones del componente deben ser un objeto JSON.'
+            )
 
     def save(self, *args, **kwargs):
         if self.seccion_id:

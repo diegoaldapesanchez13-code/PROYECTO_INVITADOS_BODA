@@ -1856,6 +1856,15 @@ EDITOR_LAYER_TYPES = {'background', 'title', 'text', 'decor'}
 EDITOR_DECOR_STYLES = {'line', 'flourish', 'rings', 'dots'}
 EDITOR_CUSTOM_LAYER_TYPES = {'text', 'image', 'video'}
 EDITOR_MEDIA_FIT = {'contain', 'cover'}
+EDITOR_REAL_CONTENT_SECTIONS = {
+    'DETALLES',
+    'REGALOS',
+    'ALBUM',
+    'ALBUM_COMPARTIDO',
+}
+EDITOR_REAL_CONTENT_LAYOUTS = {'grid', 'stack'}
+EDITOR_REAL_MEDIA_POSITIONS = {'top', 'bottom', 'hidden'}
+EDITOR_REAL_MAP_DISPLAY = {'button-map', 'button-only', 'map-only', 'hidden'}
 HEX_COLOR_RE = re.compile(r'^#[0-9a-fA-F]{6}$')
 
 
@@ -1876,6 +1885,133 @@ def numero_rango(valor, default, minimo, maximo, decimales=False):
         numero = default
     numero = max(min(numero, maximo), minimo)
     return round(numero, 2) if decimales else numero
+
+
+def normalizar_real_content_editor(item_config, tipo='', evento=None):
+    raw = item_config.get('realContent') if isinstance(item_config.get('realContent'), dict) else {}
+    items_raw = raw.get('items') if isinstance(raw.get('items'), dict) else {}
+    ceremony_raw = items_raw.get('ceremony') if isinstance(items_raw.get('ceremony'), dict) else {}
+    reception_raw = items_raw.get('reception') if isinstance(items_raw.get('reception'), dict) else {}
+
+    def etiqueta_item(raw_item, default):
+        valor = str(raw_item.get('label') or default).strip()
+        return valor[:80] or default
+
+    def normalizar_asset_item(raw_item, key):
+        asset_data = raw_item.get(key) if isinstance(raw_item.get(key), dict) else {}
+        if evento:
+            return asset_ref_seguro(evento, asset_data.get('id'))
+        return asset_data if asset_data.get('url') else {}
+
+    def normalizar_item(raw_item, default_label, default_order):
+        boton = str(raw_item.get('buttonLabel') or 'Ver ubicacion').strip()
+        return {
+            'visible': raw_item.get('visible') is not False,
+            'label': etiqueta_item(raw_item, default_label),
+            'order': numero_rango(raw_item.get('order'), default_order, 0, 20),
+            'showTitle': raw_item.get('showTitle') is not False,
+            'showDate': raw_item.get('showDate') is not False,
+            'showTime': raw_item.get('showTime') is not False,
+            'showPlace': raw_item.get('showPlace') is not False,
+            'showMedia': raw_item.get('showMedia') is not False,
+            'showAddress': raw_item.get('showAddress') is not False,
+            'showButton': raw_item.get('showButton') is not False,
+            'showMaps': raw_item.get('showMaps') is not False,
+            'cardBg': color_seguro(raw_item.get('cardBg')) or '#ffffff',
+            'cardWidth': numero_rango(raw_item.get('cardWidth'), 100, 40, 100),
+            'cardMinHeight': numero_rango(raw_item.get('cardMinHeight'), 0, 0, 700),
+            'cardPadding': numero_rango(raw_item.get('cardPadding'), 16, 0, 80),
+            'cardGap': numero_rango(raw_item.get('cardGap'), 8, 0, 60),
+            'cardRadius': numero_rango(raw_item.get('cardRadius'), 0, 0, 80),
+            'cardBorderWidth': numero_rango(raw_item.get('cardBorderWidth'), 0, 0, 10),
+            'cardBorderColor': color_seguro(raw_item.get('cardBorderColor')) or '#e5e7eb',
+            'cardAlign': (
+                raw_item.get('cardAlign')
+                if raw_item.get('cardAlign') in {'left', 'center', 'right'}
+                else 'center'
+            ),
+            'cardShadow': bool(raw_item.get('cardShadow')),
+
+            'cardBackgroundAsset': normalizar_asset_item(
+                raw_item,
+                'cardBackgroundAsset',
+            ),
+
+            'cardBackgroundFit': (
+                raw_item.get('cardBackgroundFit')
+                if raw_item.get('cardBackgroundFit') in {'cover', 'contain'}
+                else 'cover'
+            ),
+
+            'cardBackgroundX': numero_rango(
+                raw_item.get('cardBackgroundX'),
+                50,
+                0,
+                100,
+            ),
+
+            'cardBackgroundY': numero_rango(
+                raw_item.get('cardBackgroundY'),
+                50,
+                0,
+                100,
+            ),
+
+            'cardBackgroundOpacity': numero_rango(
+                raw_item.get('cardBackgroundOpacity'),
+                0.35,
+                0,
+                1,
+                decimales=True,
+            ),
+
+            'mediaPosition': (
+                raw_item.get('mediaPosition')
+                if raw_item.get('mediaPosition') in EDITOR_REAL_MEDIA_POSITIONS
+                else 'top'
+            ),
+            'mapDisplay': (
+                raw_item.get('mapDisplay')
+                if raw_item.get('mapDisplay') in EDITOR_REAL_MAP_DISPLAY
+                else 'button-map'
+            ),
+            'mediaFit': (
+                raw_item.get('mediaFit')
+                if raw_item.get('mediaFit') in {'cover', 'contain'}
+                else 'cover'
+            ),
+            'mediaHeight': numero_rango(raw_item.get('mediaHeight'), 220, 80, 700),
+            'mediaX': numero_rango(raw_item.get('mediaX'), 50, 0, 100),
+            'mediaY': numero_rango(raw_item.get('mediaY'), 50, 0, 100),
+            'buttonLabel': boton[:80] or 'Ver ubicacion',
+            'mapAsset': normalizar_asset_item(raw_item, 'mapAsset'),
+        }
+
+    return {
+        'enabled': tipo in EDITOR_REAL_CONTENT_SECTIONS and raw.get('enabled') is not False,
+        'x': numero_rango(raw.get('x'), 50, 0, 100),
+        'y': numero_rango(raw.get('y'), 50, 0, 100),
+        'width': numero_rango(raw.get('width'), 100, 35, 120),
+        'scale': numero_rango(raw.get('scale'), 1, 0.5, 1.8, decimales=True),
+        'rotation': numero_rango(raw.get('rotation'), 0, -45, 45),
+        'opacity': numero_rango(raw.get('opacity'), 1, 0, 1, decimales=True),
+        'zIndex': numero_rango(raw.get('zIndex'), 5, 1, 30),
+        'layout': raw.get('layout') if raw.get('layout') in EDITOR_REAL_CONTENT_LAYOUTS else 'grid',
+        'align': raw.get('align') if raw.get('align') in EDITOR_ALINEACIONES else 'center',
+        'gap': numero_rango(raw.get('gap'), 14, 0, 42),
+        'cardBg': color_seguro(raw.get('cardBg')) or '#ffffff',
+        'cardRadius': numero_rango(raw.get('cardRadius'), 0, 0, 28),
+        'cardPadding': numero_rango(raw.get('cardPadding'), 16, 4, 36),
+        'cardShadow': bool(raw.get('cardShadow')),
+        'textSize': numero_rango(raw.get('textSize'), 15, 11, 22),
+        'showMedia': raw.get('showMedia') is not False,
+        'showAddress': raw.get('showAddress') is not False,
+        'showMaps': raw.get('showMaps') is not False,
+        'items': {
+            'ceremony': normalizar_item(ceremony_raw, 'Ceremonia', 1),
+            'reception': normalizar_item(reception_raw, 'Recepcion', 2),
+        },
+    }
 
 
 def ref_asset_editor(asset):
@@ -1999,7 +2135,30 @@ def serializar_seccion_editor(seccion):
             'backgroundScaleDesktop': 1,
             'backgroundBrightness': 1,
             'backgroundBlur': 0,
-            'sectionHeight': 190,
+            'sectionHeight': 420,
+            'layoutAutoHeight': False,
+            'autoLayoutMode': 'vertical',
+            'layoutAlignment': 'center',
+            'layoutJustify': 'center',
+            'layoutSpacing': 18,
+            'layoutContentWidth': 100,
+            'layoutContentMaxWidth': 1060,
+            'layoutOverflow': 'visible',
+            'counterX': 50,
+            'counterY': 68,
+            'counterWidth': 92,
+            'counterScale': 1,
+            'counterZ': 35,
+            'layoutWidth': 100,
+            'layoutScale': 1,
+            'layoutExpanded': True,
+            'layoutCollapsed': False,
+            'layoutPaddingX': 20,
+            'layoutPaddingY': 24,
+            'layoutMarginBottom': 12,
+            'layoutMinHeight': 150,
+            'layoutMaxHeight': 0,
+            'layoutAspectRatio': '',
             'activeLayer': 'background',
             'showBackgroundLayer': True,
             'showTitleAsset': True,
@@ -2186,7 +2345,30 @@ def normalizar_configuracion_editor(evento, payload):
                 'backgroundScaleDesktop': numero_rango(item_config.get('backgroundScaleDesktop'), numero_rango(item_config.get('backgroundScale'), 1, 0.4, 3, decimales=True), 0.4, 3, decimales=True),
                 'backgroundBrightness': numero_rango(item_config.get('backgroundBrightness'), 1, 0.35, 1.75, decimales=True),
                 'backgroundBlur': numero_rango(item_config.get('backgroundBlur'), 0, 0, 12, decimales=True),
-                'sectionHeight': numero_rango(item_config.get('sectionHeight'), 190, 120, 900),
+                'sectionHeight': numero_rango(item_config.get('sectionHeight'), 420, 80, 1400),
+                'layoutAutoHeight': bool(item_config.get('layoutAutoHeight', False)),
+                'autoLayoutMode': item_config.get('autoLayoutMode') if item_config.get('autoLayoutMode') in {'vertical', 'horizontal', 'grid'} else 'vertical',
+                'layoutAlignment': item_config.get('layoutAlignment') if item_config.get('layoutAlignment') in {'start', 'center', 'end', 'stretch'} else 'center',
+                'layoutJustify': item_config.get('layoutJustify') if item_config.get('layoutJustify') in {'start', 'center', 'end', 'space-between'} else 'center',
+                'layoutSpacing': numero_rango(item_config.get('layoutSpacing'), 18, 0, 100),
+                'layoutContentWidth': numero_rango(item_config.get('layoutContentWidth'), 100, 20, 100),
+                'layoutContentMaxWidth': numero_rango(item_config.get('layoutContentMaxWidth'), 1060, 240, 1400),
+                'layoutOverflow': item_config.get('layoutOverflow') if item_config.get('layoutOverflow') in {'visible', 'hidden', 'auto'} else 'visible',
+                'counterX': numero_rango(item_config.get('counterX'), 50, -20, 120, decimales=True),
+                'counterY': numero_rango(item_config.get('counterY'), 68, -20, 120, decimales=True),
+                'counterWidth': numero_rango(item_config.get('counterWidth'), 92, 20, 140, decimales=True),
+                'counterScale': numero_rango(item_config.get('counterScale'), 1, 0.35, 2.5, decimales=True),
+                'counterZ': numero_rango(item_config.get('counterZ'), 35, 1, 100),
+                'layoutWidth': numero_rango(item_config.get('layoutWidth'), 100, 20, 140),
+                'layoutScale': numero_rango(item_config.get('layoutScale'), 1, 0.25, 3, decimales=True),
+                'layoutExpanded': bool(item_config.get('layoutExpanded', True)),
+                'layoutCollapsed': bool(item_config.get('layoutCollapsed', False)),
+                'layoutPaddingX': numero_rango(item_config.get('layoutPaddingX'), 20, 0, 160),
+                'layoutPaddingY': numero_rango(item_config.get('layoutPaddingY'), 24, 0, 160),
+                'layoutMarginBottom': numero_rango(item_config.get('layoutMarginBottom'), 12, 0, 220),
+                'layoutMinHeight': numero_rango(item_config.get('layoutMinHeight'), 150, 0, 1400),
+                'layoutMaxHeight': numero_rango(item_config.get('layoutMaxHeight'), 0, 0, 2400),
+                'layoutAspectRatio': item_config.get('layoutAspectRatio') if item_config.get('layoutAspectRatio') in {'', '1 / 1', '2 / 3', '3 / 4', '4 / 5', '9 / 16', '16 / 9'} else '',
                 'activeLayer': active_layer,
                 'showBackgroundLayer': bool(item_config.get('showBackgroundLayer', True)),
                 'showTitleAsset': bool(item_config.get('showTitleAsset', True)),
@@ -2221,6 +2403,7 @@ def normalizar_configuracion_editor(evento, payload):
                 'decorWidth': numero_rango(item_config.get('decorWidth'), 36, 12, 100),
                 'decorAlign': item_config.get('decorAlign') if item_config.get('decorAlign') in EDITOR_ALINEACIONES else 'center',
                 'decorStyle': item_config.get('decorStyle') if item_config.get('decorStyle') in EDITOR_DECOR_STYLES else 'line',
+                'realContent': normalizar_real_content_editor(item_config, seccion.tipo, evento),
                 'customLayers': capas_personalizadas,
             },
         })
@@ -2241,6 +2424,35 @@ def aplicar_diseno_publicado(evento, config):
     evento.color_principal = color_seguro(theme.get('primary')) or evento.color_principal
     evento.color_secundario = color_seguro(theme.get('secondary')) or evento.color_secundario
     evento.color_acento = color_seguro(theme.get('accent')) or evento.color_acento
+    portada_config = next(
+        (
+            item.get('config') or {}
+            for item in config.get('sections', [])
+            if item.get('type') == 'PORTADA'
+        ),
+        {},
+    )
+
+    portada_asset_ref = {}
+
+    for candidate in (
+        portada_config.get('titleAsset'),
+        portada_config.get('backgroundAsset'),
+        theme.get('coverAsset'),
+    ):
+        if (
+            isinstance(candidate, dict)
+            and candidate.get('id')
+        ):
+            portada_asset_ref = candidate
+            break
+
+    if portada_asset_ref:
+        theme = {
+            **theme,
+            'coverAsset': portada_asset_ref,
+        }
+
     campos_media_evento = {
         'coverAsset': 'foto_portada',
         'ceremonyAsset': 'foto_ceremonia',
@@ -2298,7 +2510,17 @@ def aplicar_diseno_publicado(evento, config):
             seccion.fondo = background_asset.archivo.name
         if title_asset:
             seccion.imagen_titulo = title_asset.archivo.name
+
         seccion.save()
+
+        if seccion.tipo == 'PORTADA':
+            portada_asset = title_asset or background_asset
+
+            if portada_asset:
+                evento.foto_portada = portada_asset.archivo.name
+                evento.save(
+                    update_fields=['foto_portada']
+                )
 
 
 def fuentes_css_editor(estilo_letra):
@@ -2334,7 +2556,7 @@ def tema_preview_editor(config):
     }
 
 
-def estilo_editor_seccion(item_config):
+def estilo_editor_seccion(item_config, tipo=''):
     item_config = item_config or {}
     fit = item_config.get('backgroundFit') if item_config.get('backgroundFit') in EDITOR_BG_FIT else 'contain'
     repeat = 'repeat' if item_config.get('backgroundRepeat') == 'repeat' else 'no-repeat'
@@ -2361,8 +2583,11 @@ def estilo_editor_seccion(item_config):
             'repeat': f'{max(int(scale_value * 140), 40)}px auto',
             'free': f'{max(int(scale_value * 100), 40)}% auto',
         }.get(fit, 'contain')
+    real_content = normalizar_real_content_editor({'realContent': item_config.get('realContent')}, tipo)
+    real_offset_x = real_content['x'] - 50
+    real_offset_y = real_content['y'] - 50
     return (
-        f'--section-height:{numero_rango(item_config.get("sectionHeight"), 190, 120, 900)}px;'
+        f'--section-height:{numero_rango(item_config.get("sectionHeight"), 420, 80, 1400)}px;'
         f'--section-bg-opacity:{numero_rango(item_config.get("backgroundOpacity"), 0.18, 0, 1, decimales=True)};'
         f'--section-bg-size:{size};'
         f'--section-bg-position:{numero_rango(item_config.get("backgroundX"), 50, 0, 100)}% '
@@ -2379,6 +2604,23 @@ def estilo_editor_seccion(item_config):
         f'--section-bg-repeat:{repeat};'
         f'--section-bg-brightness:{numero_rango(item_config.get("backgroundBrightness"), 1, 0.35, 1.75, decimales=True)};'
         f'--section-bg-blur:{numero_rango(item_config.get("backgroundBlur"), 0, 0, 12, decimales=True)}px;'
+        f'--section-layout-min-height:{numero_rango(item_config.get("layoutMinHeight"), 150, 0, 1400)}px;'
+        f'--section-layout-max-height:{"none" if numero_rango(item_config.get("layoutMaxHeight"), 0, 0, 2400) == 0 else str(numero_rango(item_config.get("layoutMaxHeight"), 0, 0, 2400)) + "px"};'
+        f'--section-layout-padding-x:{numero_rango(item_config.get("layoutPaddingX"), 20, 0, 160)}px;'
+        f'--section-layout-padding-y:{numero_rango(item_config.get("layoutPaddingY"), 24, 0, 160)}px;'
+        f'--section-layout-gap:{numero_rango(item_config.get("layoutSpacing"), 18, 0, 100)}px;'
+        f'--section-layout-align:{item_config.get("layoutAlignment") if item_config.get("layoutAlignment") in {"start", "center", "end", "stretch"} else "center"};'
+        f'--section-layout-justify:{item_config.get("layoutJustify") if item_config.get("layoutJustify") in {"start", "center", "end", "space-between"} else "center"};'
+        f'--section-layout-content-width:{numero_rango(item_config.get("layoutContentWidth"), 100, 20, 100)}%;'
+        f'--section-layout-content-max-width:{numero_rango(item_config.get("layoutContentMaxWidth"), 1060, 240, 1400)}px;'
+        f'--section-layout-overflow:{item_config.get("layoutOverflow") if item_config.get("layoutOverflow") in {"visible", "hidden", "auto"} else "visible"};'
+        f'--section-layout-display:{"grid" if item_config.get("autoLayoutMode") == "grid" else "flex"};'
+        f'--section-layout-direction:{"row" if item_config.get("autoLayoutMode") == "horizontal" else "column"};'
+        f'--counter-x:{numero_rango(item_config.get("counterX"), 50, -20, 120, decimales=True)}%;'
+        f'--counter-y:{numero_rango(item_config.get("counterY"), 68, -20, 120, decimales=True)}%;'
+        f'--counter-width:{numero_rango(item_config.get("counterWidth"), 92, 20, 140, decimales=True)}%;'
+        f'--counter-scale:{numero_rango(item_config.get("counterScale"), 1, 0.35, 2.5, decimales=True)};'
+        f'--counter-z:{numero_rango(item_config.get("counterZ"), 35, 1, 100)};'
         f'--section-title-x:{numero_rango(item_config.get("titleX"), 50, -40, 140)}%;'
         f'--section-title-y:{numero_rango(item_config.get("titleY"), 50, -40, 140)}%;'
         f'--section-title-scale:{numero_rango(item_config.get("titleScale"), 1, 0.5, 2.2, decimales=True)};'
@@ -2407,6 +2649,19 @@ def estilo_editor_seccion(item_config):
         f'--section-decor-width:{numero_rango(item_config.get("decorWidth"), 36, 12, 100)}%;'
         f'--section-decor-align:{item_config.get("decorAlign") if item_config.get("decorAlign") in EDITOR_ALINEACIONES else "center"};'
         f'--section-decor-content:"{decor}";'
+        f'--real-content-offset-x:{real_offset_x}%;'
+        f'--real-content-offset-y:{real_offset_y}%;'
+        f'--real-content-width:{real_content["width"]}%;'
+        f'--real-content-scale:{real_content["scale"]};'
+        f'--real-content-rotation:{real_content["rotation"]}deg;'
+        f'--real-content-opacity:{real_content["opacity"]};'
+        f'--real-content-z:{real_content["zIndex"]};'
+        f'--real-content-gap:{real_content["gap"]}px;'
+        f'--real-card-bg:{real_content["cardBg"]};'
+        f'--real-card-radius:{real_content["cardRadius"]}px;'
+        f'--real-card-padding:{real_content["cardPadding"]}px;'
+        f'--real-card-text-size:{real_content["textSize"]}px;'
+        f'--real-card-shadow:{"0 14px 34px rgba(17, 24, 39, .12)" if real_content["cardShadow"] else "none"};'
     )
 
 
@@ -2430,7 +2685,7 @@ def aplicar_configuracion_preview_a_secciones(secciones, config):
             'opacidad_fondo': item_config.get('backgroundOpacity') or datos.get('opacidad_fondo'),
             'color_texto': color_seguro(item_config.get('textColor')) or datos.get('color_texto', ''),
             'editor_config': item_config,
-            'estilo_editor': estilo_editor_seccion(item_config),
+            'estilo_editor': estilo_editor_seccion(item_config, item.get('type') or ''),
             'capas_personalizadas': capas_personalizadas_publicas(item_config),
         })
         if item_config.get('showBackgroundLayer') is False:
@@ -2761,6 +3016,15 @@ def importar_invitados_desde_filas(evento, filas):
 
 
 def contenido_editor_payload(evento):
+    def media_url(campo):
+        archivo = getattr(evento, campo, None)
+        if not archivo:
+            return ''
+        try:
+            return archivo.url
+        except ValueError:
+            return ''
+
     return {
         'event': {
             'eventName': evento.nombre_evento or '',
@@ -2782,11 +3046,15 @@ def contenido_editor_payload(evento):
             'ceremonyAddress': evento.direccion_ceremonia or '',
             'ceremonyMapUrl': evento.link_mapa_misa or '',
             'ceremonyMapEmbed': evento.mapa_misa_embed or '',
+            'ceremonyMediaUrl': media_url('foto_ceremonia'),
+            'ceremonyMediaIsVideo': bool(evento.ceremonia_es_video),
             'receptionDate': evento.fecha_fiesta.strftime('%Y-%m-%dT%H:%M') if evento.fecha_fiesta else '',
             'receptionPlace': evento.lugar_fiesta or '',
             'receptionAddress': evento.direccion_recepcion or '',
             'receptionMapUrl': evento.link_mapa_fiesta or '',
             'receptionMapEmbed': evento.mapa_fiesta_embed or '',
+            'receptionMediaUrl': media_url('foto_recepcion'),
+            'receptionMediaIsVideo': bool(evento.recepcion_es_video),
             'dressCode': evento.dress_code or '',
             'dressCodeText': evento.dress_code_descripcion or '',
             'sharedAlbumTitle': evento.titulo_album_compartido or '',
@@ -5075,6 +5343,10 @@ def serializar_componente_invitacion(componente):
         'zIndex': componente.z_index,
         'locked': componente.locked,
         'hidden': componente.hidden,
+        'layoutMode': componente.layout_mode,
+        'coordinateSpace': componente.coordinate_space,
+        'parentKey': componente.parent_key,
+        'constraints': componente.constraints or {},
         'properties': componente.properties or {},
         'createdAt': componente.created_at.isoformat() if componente.created_at else None,
         'updatedAt': componente.updated_at.isoformat() if componente.updated_at else None,
@@ -5082,21 +5354,167 @@ def serializar_componente_invitacion(componente):
 
 
 def aplicar_payload_componente(componente, payload):
-    tipo = payload.get('tipo') or payload.get('type') or componente.tipo or 'TEXTO'
+    tipo = (
+        payload.get('tipo')
+        or payload.get('type')
+        or componente.tipo
+        or 'TEXTO'
+    )
     tipo = str(tipo).upper()
+
     if tipo not in COMPONENTE_INVITACION_TIPOS:
         tipo = 'TEXTO'
+
     componente.tipo = tipo
-    componente.x = numero_rango(payload.get('x'), componente.x if componente.pk else 50, -40, 140, decimales=True)
-    componente.y = numero_rango(payload.get('y'), componente.y if componente.pk else 50, -40, 140, decimales=True)
-    componente.width = numero_rango(payload.get('width'), componente.width if componente.pk else 44, 4, 140, decimales=True)
-    componente.height = numero_rango(payload.get('height'), componente.height if componente.pk else 12, 2, 140, decimales=True)
-    componente.rotation = numero_rango(payload.get('rotation'), componente.rotation if componente.pk else 0, -180, 180, decimales=True)
-    componente.opacity = numero_rango(payload.get('opacity'), componente.opacity if componente.pk else 1, 0, 1, decimales=True)
-    componente.z_index = numero_rango(payload.get('zIndex', payload.get('z_index')), componente.z_index if componente.pk else 20, 1, 100)
-    componente.locked = bool(payload.get('locked', componente.locked if componente.pk else False))
-    componente.hidden = bool(payload.get('hidden', componente.hidden if componente.pk else False))
-    componente.properties = normalizar_propiedades_componente(tipo, payload.get('properties'))
+
+    componente.x = numero_rango(
+        payload.get('x'),
+        componente.x if componente.pk else 50,
+        -40,
+        140,
+        decimales=True,
+    )
+
+    componente.y = numero_rango(
+        payload.get('y'),
+        componente.y if componente.pk else 50,
+        -40,
+        140,
+        decimales=True,
+    )
+
+    componente.width = numero_rango(
+        payload.get('width'),
+        componente.width if componente.pk else 44,
+        4,
+        140,
+        decimales=True,
+    )
+
+    componente.height = numero_rango(
+        payload.get('height'),
+        componente.height if componente.pk else 12,
+        2,
+        140,
+        decimales=True,
+    )
+
+    componente.rotation = numero_rango(
+        payload.get('rotation'),
+        componente.rotation if componente.pk else 0,
+        -180,
+        180,
+        decimales=True,
+    )
+
+    componente.opacity = numero_rango(
+        payload.get('opacity'),
+        componente.opacity if componente.pk else 1,
+        0,
+        1,
+        decimales=True,
+    )
+
+    componente.z_index = numero_rango(
+        payload.get(
+            'zIndex',
+            payload.get('z_index'),
+        ),
+        componente.z_index if componente.pk else 20,
+        1,
+        100,
+    )
+
+    componente.locked = bool(
+        payload.get(
+            'locked',
+            componente.locked if componente.pk else False,
+        )
+    )
+
+    componente.hidden = bool(
+        payload.get(
+            'hidden',
+            componente.hidden if componente.pk else False,
+        )
+    )
+
+    layout_mode = str(
+        payload.get('layoutMode')
+        or payload.get('layout_mode')
+        or getattr(
+            componente,
+            'layout_mode',
+            'ABSOLUTE',
+        )
+        or 'ABSOLUTE'
+    ).upper()
+
+    if layout_mode not in {
+        'FLOW',
+        'ABSOLUTE',
+        'LAYER',
+    }:
+        layout_mode = 'ABSOLUTE'
+
+    componente.layout_mode = layout_mode
+
+    coordinate_space = str(
+        payload.get('coordinateSpace')
+        or payload.get('coordinate_space')
+        or getattr(
+            componente,
+            'coordinate_space',
+            'SECTION',
+        )
+        or 'SECTION'
+    ).upper()
+
+    if coordinate_space not in {
+        'PAGE',
+        'SECTION',
+        'CONTAINER',
+        'COMPONENT',
+    }:
+        coordinate_space = 'SECTION'
+
+    componente.coordinate_space = coordinate_space
+
+    componente.parent_key = str(
+        payload.get('parentKey')
+        or payload.get('parent_key')
+        or getattr(
+            componente,
+            'parent_key',
+            '',
+        )
+        or ''
+    )[:120]
+
+    incoming_constraints = payload.get('constraints')
+    current_constraints = getattr(
+        componente,
+        'constraints',
+        {},
+    )
+
+    componente.constraints = (
+        incoming_constraints
+        if isinstance(incoming_constraints, dict)
+        else (
+            current_constraints
+            if isinstance(current_constraints, dict)
+            else {}
+        )
+    )
+
+    componente.properties = (
+        normalizar_propiedades_componente(
+            tipo,
+            payload.get('properties'),
+        )
+    )
+
     return componente
 
 
@@ -5267,6 +5685,8 @@ def publicar_diseno_invitacion_visual(request, evento_id):
     try:
         payload = json.loads(request.body.decode('utf-8') or '{}')
     except json.JSONDecodeError:
+        payload = diseno.configuracion_borrador or construir_configuracion_diseno(evento)
+    if not isinstance(payload, dict) or not payload.get('sections'):
         payload = diseno.configuracion_borrador or construir_configuracion_diseno(evento)
 
     config = normalizar_configuracion_editor(evento, payload)
@@ -5718,10 +6138,37 @@ def asignar_asset_invitacion_visual(request, evento_id):
     except json.JSONDecodeError:
         return JsonResponse({'ok': False, 'error': 'Solicitud invalida.'}, status=400)
 
-    asset = get_object_or_404(AssetInvitacion, evento=evento, id=payload.get('assetId'), visible=True)
     destino = payload.get('destino')
-    config = normalizar_configuracion_editor(evento, diseno.configuracion_borrador or construir_configuracion_diseno(evento))
-    asset_ref = ref_asset_editor(asset)
+    retirar = bool(payload.get('remove'))
+
+    destinos_retirables = {
+        'CEREMONIA',
+        'RECEPCION',
+        'MAPA_CEREMONIA',
+        'MAPA_RECEPCION',
+    }
+
+    if retirar and destino not in destinos_retirables:
+        return JsonResponse({
+            'ok': False,
+            'error': 'Este recurso no puede retirarse desde el inspector.',
+        }, status=400)
+
+    asset = None
+    if not retirar:
+        asset = get_object_or_404(
+            AssetInvitacion,
+            evento=evento,
+            id=payload.get('assetId'),
+            visible=True,
+        )
+
+    config = normalizar_configuracion_editor(
+        evento,
+        diseno.configuracion_borrador
+        or construir_configuracion_diseno(evento),
+    )
+    asset_ref = {} if retirar else ref_asset_editor(asset)
 
     theme_destinos = {
         'PORTADA': 'coverAsset',
@@ -5732,6 +6179,35 @@ def asignar_asset_invitacion_visual(request, evento_id):
     }
     if destino in theme_destinos:
         config['theme'][theme_destinos[destino]] = asset_ref
+        campo_evento = {
+            'PORTADA': 'foto_portada',
+            'CEREMONIA': 'foto_ceremonia',
+            'RECEPCION': 'foto_recepcion',
+            'DRESS_PERMITIDO': 'dress_code_permitido_imagen',
+            'DRESS_PROHIBIDO': 'dress_code_prohibido_imagen',
+        }.get(destino)
+        if campo_evento:
+            setattr(
+                evento,
+                campo_evento,
+                '' if retirar else asset.archivo.name,
+            )
+            evento.save(update_fields=[campo_evento])
+    elif destino in {'MAPA_CEREMONIA', 'MAPA_RECEPCION'}:
+        seccion_id = convertir_entero(payload.get('sectionId'), 0)
+        item_key = 'ceremony' if destino == 'MAPA_CEREMONIA' else 'reception'
+        for item in config.get('sections', []):
+            if item.get('sectionId') == seccion_id and item.get('type') == 'DETALLES':
+                item_config = item.setdefault('config', {})
+                real_content = item_config.setdefault('realContent', {})
+                items = real_content.setdefault('items', {})
+                detail_item = items.setdefault(item_key, {})
+                detail_item['mapAsset'] = asset_ref
+                if not retirar and detail_item.get('mapDisplay') == 'hidden':
+                    detail_item['mapDisplay'] = 'map-only'
+                break
+        else:
+            return JsonResponse({'ok': False, 'error': 'Selecciona la seccion Detalles.'}, status=400)
     elif destino == 'ALBUM':
         existentes = config['theme'].get('albumAssets') if isinstance(config['theme'].get('albumAssets'), list) else []
         if not any(item.get('id') == asset.id for item in existentes if isinstance(item, dict)):
@@ -5790,8 +6266,12 @@ def asignar_asset_invitacion_visual(request, evento_id):
         evento=evento,
         accion='ASIGNAR_ASSET_EDITOR_INVITACION',
         modelo='AssetInvitacion',
-        objeto_id=asset.id,
-        descripcion=f'Asigno asset {asset.titulo or asset.id} a {destino}.',
+        objeto_id=asset.id if asset else '',
+        descripcion=(
+            f'Retiro el recurso de {destino}.'
+            if retirar
+            else f'Asigno asset {asset.titulo or asset.id} a {destino}.'
+        ),
         request=request,
     )
     return JsonResponse({'ok': True, 'config': diseno.configuracion_borrador})

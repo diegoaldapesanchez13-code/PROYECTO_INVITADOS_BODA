@@ -30,16 +30,31 @@
     let versions = versionsNode ? JSON.parse(versionsNode.textContent || '[]') : [];
     let builderComponents = [];
     let selectedComponentId = null;
+    let selectedNativeElementId = null;
     let selectedId = config.sections?.[0]?.sectionId || null;
     let currentDeviceMode = 'iphone';
     let livePreviewMode = 'edit';
     let realPreviewDrag = null;
     let componentTreeDrag = null;
+    let realPreviewLoadCount = 0;
     let currentPreviewMode = root.querySelector('[data-real-preview-frame]')
         ? 'real'
         : 'draft';
     let nativeElementRegistry = [];
+    let nativePreviewTransform = null;
+    let countdownPreviewTransform = null;
+    let realBackgroundDrag = null;
+    const elementTreeExpanded = new Set();
+    const elementTreeStorageKey = 'dirtec-editor-element-tree-expanded';
     const layerBounds = { min: -40, max: 140 };
+    const componentSnapThreshold = 1.8;
+    const editorStabilityVersion = 'R2.01B-04';
+    root.dataset.editorStabilityVersion = editorStabilityVersion;
+
+    const componentSnapTargets = {
+        centerX: 50,
+        centerY: 50,
+    };
 
     const sectionList = root.querySelector('[data-section-list]');
     const componentTree = root.querySelector('[data-component-tree]');
@@ -93,7 +108,25 @@
                     showButton: true,
                     showMaps: true,
                     cardBg: '#ffffff',
+                    cardWidth: 100,
+                    cardMinHeight: 0,
+                    cardPadding: 16,
+                    cardGap: 8,
+                    cardRadius: 0,
+                    cardBorderWidth: 0,
+                    cardBorderColor: '#e5e7eb',
+                    cardAlign: 'center',
+                    cardShadow: false,
+                    cardBackgroundAsset: {},
+                    cardBackgroundFit: 'cover',
+                    cardBackgroundX: 50,
+                    cardBackgroundY: 50,
+                    cardBackgroundOpacity: 0.35,
                     mediaPosition: 'top',
+                    mediaFit: 'cover',
+                    mediaHeight: 220,
+                    mediaX: 50,
+                    mediaY: 50,
                     mapDisplay: 'button-map',
                     buttonLabel: 'Ver ubicacion',
                     mapAsset: {},
@@ -111,7 +144,25 @@
                     showButton: true,
                     showMaps: true,
                     cardBg: '#ffffff',
+                    cardWidth: 100,
+                    cardMinHeight: 0,
+                    cardPadding: 16,
+                    cardGap: 8,
+                    cardRadius: 0,
+                    cardBorderWidth: 0,
+                    cardBorderColor: '#e5e7eb',
+                    cardAlign: 'center',
+                    cardShadow: false,
+                    cardBackgroundAsset: {},
+                    cardBackgroundFit: 'cover',
+                    cardBackgroundX: 50,
+                    cardBackgroundY: 50,
+                    cardBackgroundOpacity: 0.35,
                     mediaPosition: 'top',
+                    mediaFit: 'cover',
+                    mediaHeight: 220,
+                    mediaX: 50,
+                    mediaY: 50,
                     mapDisplay: 'button-map',
                     buttonLabel: 'Ver ubicacion',
                     mapAsset: {},
@@ -162,7 +213,44 @@
                     showButton: items.ceremony?.showButton !== false,
                     showMaps: items.ceremony?.showMaps !== false,
                     cardBg: /^#[0-9a-f]{6}$/i.test(items.ceremony?.cardBg || '') ? items.ceremony.cardBg : defaults.items.ceremony.cardBg,
+                    cardWidth: clamp(items.ceremony?.cardWidth ?? defaults.items.ceremony.cardWidth, 40, 100),
+                    cardMinHeight: clamp(items.ceremony?.cardMinHeight ?? defaults.items.ceremony.cardMinHeight, 0, 700),
+                    cardPadding: clamp(items.ceremony?.cardPadding ?? defaults.items.ceremony.cardPadding, 0, 80),
+                    cardGap: clamp(items.ceremony?.cardGap ?? defaults.items.ceremony.cardGap, 0, 60),
+                    cardRadius: clamp(items.ceremony?.cardRadius ?? defaults.items.ceremony.cardRadius, 0, 80),
+                    cardBorderWidth: clamp(items.ceremony?.cardBorderWidth ?? defaults.items.ceremony.cardBorderWidth, 0, 10),
+                    cardBorderColor: /^#[0-9a-f]{6}$/i.test(items.ceremony?.cardBorderColor || '') ? items.ceremony.cardBorderColor : defaults.items.ceremony.cardBorderColor,
+                    cardAlign: ['left', 'center', 'right'].includes(items.ceremony?.cardAlign) ? items.ceremony.cardAlign : defaults.items.ceremony.cardAlign,
+                    cardShadow: Boolean(items.ceremony?.cardShadow),
+                    cardBackgroundAsset:
+                        items.ceremony?.cardBackgroundAsset
+                        && typeof items.ceremony.cardBackgroundAsset === 'object'
+                            ? items.ceremony.cardBackgroundAsset
+                            : {},
+                    cardBackgroundFit:
+                        ['cover', 'contain'].includes(items.ceremony?.cardBackgroundFit)
+                            ? items.ceremony.cardBackgroundFit
+                            : defaults.items.ceremony.cardBackgroundFit,
+                    cardBackgroundX: clamp(
+                        items.ceremony?.cardBackgroundX ?? defaults.items.ceremony.cardBackgroundX,
+                        0,
+                        100
+                    ),
+                    cardBackgroundY: clamp(
+                        items.ceremony?.cardBackgroundY ?? defaults.items.ceremony.cardBackgroundY,
+                        0,
+                        100
+                    ),
+                    cardBackgroundOpacity: clamp(
+                        items.ceremony?.cardBackgroundOpacity ?? defaults.items.ceremony.cardBackgroundOpacity,
+                        0,
+                        1
+                    ),
                     mediaPosition: ['top', 'bottom', 'hidden'].includes(items.ceremony?.mediaPosition) ? items.ceremony.mediaPosition : defaults.items.ceremony.mediaPosition,
+                    mediaFit: ['cover', 'contain'].includes(items.ceremony?.mediaFit) ? items.ceremony.mediaFit : defaults.items.ceremony.mediaFit,
+                    mediaHeight: clamp(items.ceremony?.mediaHeight ?? defaults.items.ceremony.mediaHeight, 80, 700),
+                    mediaX: clamp(items.ceremony?.mediaX ?? defaults.items.ceremony.mediaX, 0, 100),
+                    mediaY: clamp(items.ceremony?.mediaY ?? defaults.items.ceremony.mediaY, 0, 100),
                     mapDisplay: ['button-map', 'button-only', 'map-only', 'hidden'].includes(items.ceremony?.mapDisplay) ? items.ceremony.mapDisplay : defaults.items.ceremony.mapDisplay,
                     buttonLabel: String(items.ceremony?.buttonLabel || defaults.items.ceremony.buttonLabel).slice(0, 80),
                     mapAsset: items.ceremony?.mapAsset && typeof items.ceremony.mapAsset === 'object' ? items.ceremony.mapAsset : {},
@@ -182,7 +270,44 @@
                     showButton: items.reception?.showButton !== false,
                     showMaps: items.reception?.showMaps !== false,
                     cardBg: /^#[0-9a-f]{6}$/i.test(items.reception?.cardBg || '') ? items.reception.cardBg : defaults.items.reception.cardBg,
+                    cardWidth: clamp(items.reception?.cardWidth ?? defaults.items.reception.cardWidth, 40, 100),
+                    cardMinHeight: clamp(items.reception?.cardMinHeight ?? defaults.items.reception.cardMinHeight, 0, 700),
+                    cardPadding: clamp(items.reception?.cardPadding ?? defaults.items.reception.cardPadding, 0, 80),
+                    cardGap: clamp(items.reception?.cardGap ?? defaults.items.reception.cardGap, 0, 60),
+                    cardRadius: clamp(items.reception?.cardRadius ?? defaults.items.reception.cardRadius, 0, 80),
+                    cardBorderWidth: clamp(items.reception?.cardBorderWidth ?? defaults.items.reception.cardBorderWidth, 0, 10),
+                    cardBorderColor: /^#[0-9a-f]{6}$/i.test(items.reception?.cardBorderColor || '') ? items.reception.cardBorderColor : defaults.items.reception.cardBorderColor,
+                    cardAlign: ['left', 'center', 'right'].includes(items.reception?.cardAlign) ? items.reception.cardAlign : defaults.items.reception.cardAlign,
+                    cardShadow: Boolean(items.reception?.cardShadow),
+                    cardBackgroundAsset:
+                        items.reception?.cardBackgroundAsset
+                        && typeof items.reception.cardBackgroundAsset === 'object'
+                            ? items.reception.cardBackgroundAsset
+                            : {},
+                    cardBackgroundFit:
+                        ['cover', 'contain'].includes(items.reception?.cardBackgroundFit)
+                            ? items.reception.cardBackgroundFit
+                            : defaults.items.reception.cardBackgroundFit,
+                    cardBackgroundX: clamp(
+                        items.reception?.cardBackgroundX ?? defaults.items.reception.cardBackgroundX,
+                        0,
+                        100
+                    ),
+                    cardBackgroundY: clamp(
+                        items.reception?.cardBackgroundY ?? defaults.items.reception.cardBackgroundY,
+                        0,
+                        100
+                    ),
+                    cardBackgroundOpacity: clamp(
+                        items.reception?.cardBackgroundOpacity ?? defaults.items.reception.cardBackgroundOpacity,
+                        0,
+                        1
+                    ),
                     mediaPosition: ['top', 'bottom', 'hidden'].includes(items.reception?.mediaPosition) ? items.reception.mediaPosition : defaults.items.reception.mediaPosition,
+                    mediaFit: ['cover', 'contain'].includes(items.reception?.mediaFit) ? items.reception.mediaFit : defaults.items.reception.mediaFit,
+                    mediaHeight: clamp(items.reception?.mediaHeight ?? defaults.items.reception.mediaHeight, 80, 700),
+                    mediaX: clamp(items.reception?.mediaX ?? defaults.items.reception.mediaX, 0, 100),
+                    mediaY: clamp(items.reception?.mediaY ?? defaults.items.reception.mediaY, 0, 100),
                     mapDisplay: ['button-map', 'button-only', 'map-only', 'hidden'].includes(items.reception?.mapDisplay) ? items.reception.mapDisplay : defaults.items.reception.mapDisplay,
                     buttonLabel: String(items.reception?.buttonLabel || defaults.items.reception.buttonLabel).slice(0, 80),
                     mapAsset: items.reception?.mapAsset && typeof items.reception.mapAsset === 'object' ? items.reception.mapAsset : {},
@@ -221,6 +346,18 @@
             backgroundBlur: 0,
             sectionHeight: 420,
             layoutAutoHeight: false,
+            autoLayoutMode: 'vertical',
+            layoutAlignment: 'center',
+            layoutJustify: 'center',
+            layoutSpacing: 18,
+            layoutContentWidth: 100,
+            layoutContentMaxWidth: 1060,
+            layoutOverflow: 'visible',
+            counterX: 50,
+            counterY: 68,
+            counterWidth: 92,
+            counterScale: 1,
+            counterZ: 35,
             layoutWidth: 100,
             layoutScale: 1,
             layoutExpanded: true,
@@ -304,6 +441,26 @@
             zIndex: Number(component.zIndex ?? component.z_index ?? 20),
             locked: Boolean(component.locked),
             hidden: Boolean(component.hidden),
+            layoutMode:
+                component.layoutMode
+                || component.layout_mode
+                || 'ABSOLUTE',
+
+            coordinateSpace:
+                component.coordinateSpace
+                || component.coordinate_space
+                || 'SECTION',
+
+            parentKey:
+                component.parentKey
+                || component.parent_key
+                || '',
+
+            constraints:
+                component.constraints
+                && typeof component.constraints === 'object'
+                    ? component.constraints
+                    : {},
             properties,
         };
     }
@@ -333,6 +490,17 @@
             zIndex: component.zIndex,
             locked: component.locked,
             hidden: component.hidden,
+            layoutMode:
+                component.layoutMode || 'ABSOLUTE',
+
+            coordinateSpace:
+                component.coordinateSpace || 'SECTION',
+
+            parentKey:
+                component.parentKey || '',
+
+            constraints:
+                component.constraints || {},
             properties: component.properties || {},
         };
     }
@@ -394,13 +562,22 @@
         selectedComponentId = saved.id;
         selectedId = saved.sectionId;
         setState('Componente creado');
-        renderAll();
+
+        renderSectionList();
+        renderComponentTree();
+        fillProperties();
+        revealComponentProperties({
+            scroll: true,
+        });
+
         refreshRealPreview();
+
         return saved;
     }
 
     async function saveBuilderComponent(component, options = {}) {
         if (!component?.id || !root.dataset.componentsUrl) return;
+        console.debug('[A1.1] save request', componentPayload(component));
         const response = await fetch(componentDetailUrl(component), {
             method: 'POST',
             headers: {
@@ -410,6 +587,10 @@
             body: JSON.stringify(componentPayload(component)),
         });
         const data = await response.json();
+        console.debug('[A1.1] save response', {
+            status: response.status,
+            data
+        });
         if (!response.ok || !data.ok) throw new Error(data.error || 'No se pudo guardar el componente.');
         const saved = upsertBuilderComponent(data.component);
         Object.assign(component, saved);
@@ -479,25 +660,102 @@
         `;
     }
 
-    function resizeComponentByHandle(component, start, deltaX, deltaY, handle) {
-        if (!component || !start || !handle) return;
-        const horizontal = handle.includes('e') ? 1 : handle.includes('w') ? -1 : 0;
-        const vertical = handle.includes('s') ? 1 : handle.includes('n') ? -1 : 0;
-        let nextWidth = start.width + (deltaX * horizontal);
-        let nextHeight = start.height + (deltaY * vertical);
-        nextWidth = clamp(Math.round(nextWidth * 10) / 10, 4, 140);
-        nextHeight = clamp(Math.round(nextHeight * 10) / 10, 2, 140);
+    function resizeComponentByHandle(
+        component,
+        start,
+        deltaX,
+        deltaY,
+        handle
+    ) {
+        if (
+            !component
+            || !start
+            || !handle
+        ) {
+            return;
+        }
 
+        const affectsLeft =
+            handle.includes('w');
+
+        const affectsRight =
+            handle.includes('e');
+
+        const affectsTop =
+            handle.includes('n');
+
+        const affectsBottom =
+            handle.includes('s');
+
+        let nextWidth = start.width;
+        let nextHeight = start.height;
         let nextX = start.x;
         let nextY = start.y;
-        if (horizontal) nextX = start.x + (deltaX / 2);
-        if (vertical) nextY = start.y + (deltaY / 2);
 
-        component.x = Math.round(clamp(nextX, layerBounds.min, layerBounds.max) * 10) / 10;
-        component.y = Math.round(clamp(nextY, layerBounds.min, layerBounds.max) * 10) / 10;
+        if (affectsRight) {
+            nextWidth =
+                start.width + deltaX;
+
+            nextX =
+                start.x + (deltaX / 2);
+        }
+
+        if (affectsLeft) {
+            nextWidth =
+                start.width - deltaX;
+
+            nextX =
+                start.x + (deltaX / 2);
+        }
+
+        if (affectsBottom) {
+            nextHeight =
+                start.height + deltaY;
+
+            nextY =
+                start.y + (deltaY / 2);
+        }
+
+        if (affectsTop) {
+            nextHeight =
+                start.height - deltaY;
+
+            nextY =
+                start.y + (deltaY / 2);
+        }
+
+        nextWidth = clamp(
+            Math.round(nextWidth * 10) / 10,
+            4,
+            140
+        );
+
+        nextHeight = clamp(
+            Math.round(nextHeight * 10) / 10,
+            2,
+            140
+        );
+
+        component.x = Math.round(
+            clamp(
+                nextX,
+                layerBounds.min,
+                layerBounds.max
+            ) * 10
+        ) / 10;
+
+        component.y = Math.round(
+            clamp(
+                nextY,
+                layerBounds.min,
+                layerBounds.max
+            ) * 10
+        ) / 10;
+
         component.width = nextWidth;
         component.height = nextHeight;
     }
+
 
     function applyRealContentStyles(element, cfg, sectionType = '') {
         const real = normalizeRealContentConfig(cfg.realContent, sectionType);
@@ -527,15 +785,55 @@
         return builderComponents.find((component) => Number(component.id) === id) || null;
     }
 
-    function setRealComponentStyles(element, component) {
+    function setRealComponentStyles(
+        element,
+        component
+    ) {
         if (!element || !component) return;
-        element.style.setProperty('--component-x', `${component.x}%`);
-        element.style.setProperty('--component-y', `${component.y}%`);
-        element.style.setProperty('--component-width', `${component.width}%`);
-        element.style.setProperty('--component-height', `${component.height}%`);
-        element.style.setProperty('--component-rotation', `${component.rotation}deg`);
-        element.style.setProperty('--component-opacity', component.opacity);
-        element.style.setProperty('--component-z', component.zIndex);
+
+        element.dataset.layoutMode =
+            component.layoutMode || 'ABSOLUTE';
+
+        element.dataset.coordinateSpace =
+            component.coordinateSpace || 'SECTION';
+
+        element.dataset.componentLocked =
+            component.locked ? '1' : '0';
+
+        element.style.setProperty(
+            '--component-x',
+            `${component.x}%`
+        );
+
+        element.style.setProperty(
+            '--component-y',
+            `${component.y}%`
+        );
+
+        element.style.setProperty(
+            '--component-width',
+            `${component.width}%`
+        );
+
+        element.style.setProperty(
+            '--component-height',
+            `${component.height}%`
+        );
+
+        element.style.setProperty(
+            '--component-rotation',
+            `${component.rotation}deg`
+        );
+
+        element.style.setProperty(
+            '--component-opacity',
+            component.opacity
+        );
+
+        element.style.setProperty(
+            '--component-z',
+            component.zIndex
+        );
     }
 
     function activeRealPreviewDocument() {
@@ -544,6 +842,148 @@
         } catch (error) {
             return null;
         }
+    }
+    function selectedRealSectionNode() {
+        const section = selectedSection();
+        const doc = activeRealPreviewDocument();
+        if (!section || !doc) return null;
+        return doc.querySelector(
+            `[data-invitation-section="${section.type}"]`
+        );
+    }
+
+    function patchRealSectionBackground(section) {
+        if (!section) return false;
+
+        const cfg = ensureSectionConfig(section);
+        const sectionNode = selectedRealSectionNode();
+        const panel = sectionNode?.querySelector('.panel');
+        if (!panel) return false;
+
+        const x = effectiveBackgroundValue(cfg, 'backgroundX')
+            ?? cfg.backgroundX ?? 50;
+        const y = effectiveBackgroundValue(cfg, 'backgroundY')
+            ?? cfg.backgroundY ?? 50;
+        const scale = effectiveBackgroundValue(cfg, 'backgroundScale')
+            ?? cfg.backgroundScale ?? 1;
+
+        panel.dataset.layoutAutoHeight =
+            cfg.layoutAutoHeight ? '1' : '0';
+
+        panel.style.setProperty(
+            '--section-height',
+            cfg.layoutAutoHeight
+                ? 'auto'
+                : `${Number(cfg.sectionHeight || 420)}px`
+        );
+
+        panel.style.setProperty(
+            '--section-bg-position',
+            `${Number(x)}% ${Number(y)}%`
+        );
+
+        panel.style.setProperty(
+            '--section-bg-opacity',
+            String(cfg.backgroundOpacity ?? 1)
+        );
+
+        panel.style.setProperty(
+            '--section-bg-brightness',
+            String(cfg.backgroundBrightness ?? 1)
+        );
+
+        panel.style.setProperty(
+            '--section-bg-blur',
+            `${Number(cfg.backgroundBlur ?? 0)}px`
+        );
+
+        if (cfg.backgroundFit === 'contain') {
+            panel.style.setProperty('--section-bg-size', 'contain');
+            panel.style.setProperty('--section-bg-repeat', 'no-repeat');
+        } else {
+            panel.style.setProperty(
+                '--section-bg-size',
+                `${Math.max(Number(scale || 1), 0.4) * 100}% auto`
+            );
+            panel.style.setProperty(
+                '--section-bg-repeat',
+                cfg.backgroundFit === 'repeat'
+                    ? 'repeat'
+                    : (cfg.backgroundRepeat || 'no-repeat')
+            );
+        }
+
+        panel.dataset.autoLayoutMode =
+            cfg.autoLayoutMode || 'vertical';
+
+        panel.style.setProperty(
+            '--section-layout-min-height',
+            `${Number(cfg.layoutMinHeight ?? 150)}px`
+        );
+        panel.style.setProperty(
+            '--section-layout-max-height',
+            Number(cfg.layoutMaxHeight || 0) > 0
+                ? `${Number(cfg.layoutMaxHeight)}px`
+                : 'none'
+        );
+        panel.style.setProperty(
+            '--section-layout-padding-x',
+            `${Number(cfg.layoutPaddingX ?? 20)}px`
+        );
+        panel.style.setProperty(
+            '--section-layout-padding-y',
+            `${Number(cfg.layoutPaddingY ?? 24)}px`
+        );
+        panel.style.setProperty(
+            '--section-layout-gap',
+            `${Number(cfg.layoutSpacing ?? 18)}px`
+        );
+        panel.style.setProperty(
+            '--section-layout-align',
+            cfg.layoutAlignment || 'center'
+        );
+        panel.style.setProperty(
+            '--section-layout-justify',
+            cfg.layoutJustify || 'center'
+        );
+        panel.style.setProperty(
+            '--section-layout-content-width',
+            `${Number(cfg.layoutContentWidth ?? 100)}%`
+        );
+        panel.style.setProperty(
+            '--section-layout-content-max-width',
+            `${Number(cfg.layoutContentMaxWidth ?? 1060)}px`
+        );
+        panel.style.setProperty(
+            '--section-layout-overflow',
+            cfg.layoutOverflow || 'visible'
+        );
+
+        panel.style.setProperty(
+            '--section-layout-display',
+            cfg.autoLayoutMode === 'grid'
+                ? 'grid'
+                : 'flex'
+        );
+
+        panel.style.setProperty(
+            '--section-layout-direction',
+            cfg.autoLayoutMode === 'horizontal'
+                ? 'row'
+                : 'column'
+        );
+
+        panel.style.setProperty('--counter-x', `${Number(cfg.counterX ?? 50)}%`);
+        panel.style.setProperty('--counter-y', `${Number(cfg.counterY ?? 68)}%`);
+        panel.style.setProperty('--counter-width', `${Number(cfg.counterWidth ?? 92)}%`);
+        panel.style.setProperty('--counter-scale', Number(cfg.counterScale ?? 1));
+        panel.style.setProperty('--counter-z', Number(cfg.counterZ ?? 35));
+
+        if (cfg.showBackgroundLayer === false) {
+            panel.style.backgroundImage = 'none';
+        }
+
+        return true;
     }
 
     function emitRealPreviewComponentUpdate(component) {
@@ -567,6 +1007,12 @@
         const doc = activeRealPreviewDocument();
         if (!doc || !component) return;
         const element = doc.querySelector(`[data-component-id="${component.id}"]`);
+        console.debug('[A1.1] sync component', {
+            componentId: component?.id,
+            hasDocument: Boolean(doc),
+            elementFound: Boolean(element),
+            connected: Boolean(element?.isConnected)
+        });
         if (element) setRealComponentStyles(element, component);
         emitRealPreviewComponentUpdate(component);
         paintRealPreviewSelection(doc);
@@ -575,6 +1021,13 @@
     function selectedComponent() {
         return selectedComponentId ? builderComponentById(selectedComponentId) : null;
     }
+
+    function selectedNativeElement() {
+        return selectedNativeElementId
+            ? nativeElementById(selectedNativeElementId)
+            : null;
+    }
+
 
     function updateComponentPreview(component) {
         if (!component) return;
@@ -587,11 +1040,53 @@
         syncRealPreviewComponent(component);
     }
 
-    function fillComponentProperties() {
-        const panel = root.querySelector('[data-component-properties]');
-        if (!panel) return;
+
+    function revealComponentProperties({
+        scroll = false,
+    } = {}) {
+        const panel = root.querySelector(
+            '[data-component-properties]'
+        );
+
         const component = selectedComponent();
+
+        if (!panel) return;
+
         panel.hidden = !component;
+        panel.classList.toggle(
+            'is-active',
+            Boolean(component)
+        );
+
+        if (!component) return;
+
+        setEditorPanel('design');
+
+        if (scroll) {
+            requestAnimationFrame(() => {
+                panel.scrollIntoView({
+                    block: 'nearest',
+                    behavior: 'smooth',
+                });
+            });
+        }
+    }
+
+    function fillComponentProperties() {
+        const panel = root.querySelector(
+            '[data-component-properties]'
+        );
+
+        if (!panel) return;
+
+        const component = selectedComponent();
+
+        panel.hidden = !component;
+        panel.classList.toggle(
+            'is-active',
+            Boolean(component)
+        );
+
         if (!component) return;
 
         const props = component.properties || {};
@@ -900,14 +1395,42 @@
         });
     }
 
-    function selectBuilderComponent(componentId, options = {}) {
-        const component = builderComponentById(componentId);
+    function selectBuilderComponent(
+        componentId,
+        options = {}
+    ) {
+        const component = builderComponentById(
+            componentId
+        );
+
         if (!component) return null;
+
+        selectedNativeElementId = null;
         selectedComponentId = component.id;
         selectedId = component.sectionId;
-        if (!options.skipRender) renderAll();
+
+        if (!options.skipRender) {
+            renderSectionList();
+            renderComponentTree();
+        }
+
+        fillComponentProperties();
+        updateUniversalInspector();
+        updateEditorContextCard();
         paintRealPreviewSelection();
-        if (!options.silent) setState(`Componente ${component.tipo.toLowerCase()} seleccionado`);
+
+        revealComponentProperties({
+            scroll: options.scrollInspector === true,
+        });
+
+        if (!options.silent) {
+            setState(
+                `Componente ${
+                    component.tipo.toLowerCase()
+                } seleccionado`
+            );
+        }
+
         return component;
     }
 
@@ -1237,6 +1760,9 @@
     function selectSectionByType(type, layer = null) {
         const section = sortedSections().find((item) => item.type === type);
         if (!section) return;
+
+        selectedNativeElementId = null;
+        selectedComponentId = null;
         selectedId = section.sectionId;
         if (layer) {
             const cfg = ensureSectionConfig(section);
@@ -1268,121 +1794,977 @@
     }
 
     function ensureRealPreviewStyle(doc) {
-        if (!doc || doc.getElementById('editor-real-preview-style')) return;
+        if (
+            !doc
+            || doc.getElementById(
+                'editor-real-preview-style'
+            )
+        ) {
+            return;
+        }
+
         const style = doc.createElement('style');
         style.id = 'editor-real-preview-style';
+
         style.textContent = `
-            html[data-editor-live-mode="edit"] [data-invitation-section] { position: relative; cursor: crosshair; }
+            :root {
+                --editor-selection-color: #2563eb;
+                --editor-selection-soft:
+                    rgba(37, 99, 235, .14);
+                --editor-selection-label:
+                    rgba(15, 23, 42, .94);
+                --editor-selection-section:
+                    rgba(124, 58, 237, .82);
+            }
+
+            html[data-editor-live-mode="edit"]
+            [data-invitation-section] {
+                position: relative;
+                cursor: crosshair;
+            }
+
             html[data-editor-live-mode="edit"] iframe,
             html[data-editor-live-mode="edit"] embed,
-            html[data-editor-live-mode="edit"] object { pointer-events: none !important; }
-            html[data-editor-live-mode="edit"] .invitation-component { cursor: grab; touch-action: none; }
-            html[data-editor-live-mode="edit"] .invitation-component:active { cursor: grabbing; }
+            html[data-editor-live-mode="edit"] object {
+                pointer-events: none !important;
+            }
+
+            html[data-editor-live-mode="edit"]
+            .invitation-component {
+                cursor: grab;
+                touch-action: none;
+            }
+
+            html[data-editor-live-mode="edit"]
+            .invitation-component:active {
+                cursor: grabbing;
+            }
+
+            html[data-editor-live-mode="edit"]
+            [data-native-element] {
+                cursor: pointer;
+                touch-action: none;
+            }
+
             .editor-real-selected {
-                outline: 2px solid rgba(199, 125, 146, .76) !important;
+                outline:
+                    2px dashed
+                    var(--editor-selection-section)
+                    !important;
                 outline-offset: -4px !important;
             }
+
             .editor-real-layer {
-                outline: 2px dashed rgba(38, 49, 38, .72) !important;
+                outline:
+                    2px dashed
+                    rgba(38, 49, 38, .72)
+                    !important;
                 outline-offset: 5px !important;
             }
-            .editor-real-component-selected {
-                outline: 2px solid #2563eb !important;
-                outline-offset: 4px !important;
-                box-shadow: 0 0 0 7px rgba(37, 99, 235, .12) !important;
+
+            .editor-real-component-selected,
+            .editor-native-element-selected {
+                position: relative !important;
+                outline:
+                    2px solid
+                    var(--editor-selection-color)
+                    !important;
+                outline-offset: 3px !important;
+                box-shadow:
+                    0 0 0 1px rgba(255, 255, 255, .92),
+                    0 0 0 5px
+                        var(--editor-selection-soft)
+                    !important;
             }
-            .editor-live-selection-label {
+
+            .editor-live-selection-label,
+            .editor-native-element-label,
+            .editor-live-section-label {
                 position: absolute;
-                left: 50%;
-                top: -26px;
-                z-index: 9999;
-                transform: translateX(-50%);
-                border-radius: 999px;
-                background: #2563eb;
+                z-index: 10001;
+                display: inline-flex;
+                align-items: center;
+                min-height: 24px;
+                max-width: min(260px, 86vw);
+                border:
+                    1px solid
+                    rgba(255, 255, 255, .18);
+                border-radius: 7px;
+                background:
+                    var(--editor-selection-label);
                 color: #fff;
-                font-family: Inter, Arial, sans-serif;
-                font-size: 11px;
+                box-shadow:
+                    0 7px 18px
+                    rgba(15, 23, 42, .24);
+                font-family:
+                    Inter, Arial, sans-serif;
+                font-size: 10px;
+                font-weight: 800;
+                line-height: 1;
+                letter-spacing: .02em;
+                padding: 6px 8px;
+                pointer-events: none;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .editor-live-selection-label,
+            .editor-native-element-label {
+                left: -3px;
+                top: -34px;
+            }
+
+            .editor-live-section-label {
+                left: 12px;
+                top: 12px;
+                background:
+                    rgba(88, 28, 135, .92);
+            }
+
+            .editor-live-selection-handle,
+            .editor-native-resize-handle {
+                position: absolute;
+                z-index: 10002;
+                display: block;
+                width: 12px;
+                height: 12px;
+                border:
+                    2px solid #fff;
+                border-radius: 3px;
+                background:
+                    var(--editor-selection-color);
+                box-shadow:
+                    0 1px 5px
+                    rgba(15, 23, 42, .34);
+                pointer-events: auto;
+                touch-action: none;
+            }
+
+            .editor-live-selection-handle[
+                data-handle="nw"
+            ] {
+                left: -8px;
+                top: -8px;
+                cursor: nwse-resize;
+            }
+            .editor-live-selection-handle[
+                data-handle="n"
+            ] {
+                left: 50%;
+                top: -8px;
+                transform: translateX(-50%);
+                cursor: ns-resize;
+            }
+
+
+            .editor-live-selection-handle[
+                data-handle="ne"
+            ] {
+                right: -8px;
+                top: -8px;
+                cursor: nesw-resize;
+            }
+
+            .editor-live-selection-handle[
+                data-handle="e"
+            ] {
+                right: -8px;
+                top: 50%;
+                transform: translateY(-50%);
+                cursor: ew-resize;
+            }
+
+            .editor-live-selection-handle[
+                data-handle="se"
+            ] {
+                right: -8px;
+                bottom: -8px;
+                cursor: nwse-resize;
+            }
+
+            .editor-live-selection-handle[
+                data-handle="s"
+            ] {
+                left: 50%;
+                bottom: -8px;
+                transform: translateX(-50%);
+                cursor: ns-resize;
+            }
+
+            .editor-live-selection-handle[
+                data-handle="sw"
+            ] {
+                left: -8px;
+                bottom: -8px;
+                cursor: nesw-resize;
+            }
+
+            .editor-live-selection-handle[
+                data-handle="w"
+            ] {
+                left: -8px;
+                top: 50%;
+                transform: translateY(-50%);
+                cursor: ew-resize;
+            }
+
+            .editor-native-resize-handle[
+                data-native-handle="width"
+            ] {
+                right: -8px;
+                top: 50%;
+                transform: translateY(-50%);
+                cursor: ew-resize;
+            }
+
+            .editor-native-resize-handle[
+                data-native-handle="height"
+            ] {
+                left: 50%;
+                bottom: -8px;
+                transform: translateX(-50%);
+                cursor: ns-resize;
+            }
+
+            .editor-native-resize-handle[
+                data-native-handle="both"
+            ] {
+                right: -8px;
+                bottom: -8px;
+                cursor: nwse-resize;
+            }
+
+            .editor-native-resize-value {
+                position: absolute;
+                right: 0;
+                bottom: -33px;
+                z-index: 10001;
+                border-radius: 6px;
+                background:
+                    rgba(37, 99, 235, .94);
+                color: #fff;
+                font-family:
+                    Inter, Arial, sans-serif;
+                font-size: 10px;
                 font-weight: 800;
                 line-height: 1;
                 padding: 6px 8px;
                 pointer-events: none;
                 white-space: nowrap;
             }
-            .editor-live-selection-handle {
+
+            .editor-selection-edge {
                 position: absolute;
-                z-index: 9999;
-                width: 13px;
-                height: 13px;
-                border: 2px solid #fff;
-                border-radius: 50%;
-                background: #2563eb;
-                box-shadow: 0 1px 4px rgba(15, 23, 42, .28);
-                cursor: nwse-resize;
-                pointer-events: auto;
-                touch-action: none;
-            }
-            .editor-live-selection-handle[data-handle="nw"] { left: -7px; top: -7px; }
-            .editor-live-selection-handle[data-handle="ne"] { right: -7px; top: -7px; cursor: nesw-resize; }
-            .editor-live-selection-handle[data-handle="sw"] { left: -7px; bottom: -7px; cursor: nesw-resize; }
-            .editor-live-selection-handle[data-handle="se"] { right: -7px; bottom: -7px; }
-            .editor-live-section-label {
-                position: absolute;
-                left: 12px;
-                top: 12px;
-                z-index: 9999;
-                border-radius: 999px;
-                background: rgba(38, 49, 38, .88);
-                color: #fff;
-                font-family: Inter, Arial, sans-serif;
-                font-size: 11px;
-                font-weight: 800;
-                padding: 6px 9px;
+                z-index: 10000;
+                background:
+                    var(--editor-selection-color);
                 pointer-events: none;
             }
-            .custom-public-layer { pointer-events: auto !important; }
+
+            .editor-selection-edge.is-top,
+            .editor-selection-edge.is-bottom {
+                left: 0;
+                width: 100%;
+                height: 1px;
+            }
+
+            .editor-selection-edge.is-left,
+            .editor-selection-edge.is-right {
+                top: 0;
+                width: 1px;
+                height: 100%;
+            }
+
+            .editor-selection-edge.is-top {
+                top: -1px;
+            }
+
+            .editor-selection-edge.is-right {
+                right: -1px;
+            }
+
+            .editor-selection-edge.is-bottom {
+                bottom: -1px;
+            }
+
+            .editor-selection-edge.is-left {
+                left: -1px;
+            }
+
+            .editor-component-snap-guide {
+                position: absolute;
+                z-index: 10020;
+                display: block;
+                background: #ec4899;
+                box-shadow:
+                    0 0 0 1px rgba(255, 255, 255, .85);
+                pointer-events: none;
+            }
+
+            .editor-component-snap-guide.is-vertical {
+                left: 50%;
+                top: 0;
+                bottom: 0;
+                width: 1px;
+                transform: translateX(-50%);
+            }
+
+            .editor-component-snap-guide.is-horizontal {
+                left: 0;
+                right: 0;
+                top: 50%;
+                height: 1px;
+                transform: translateY(-50%);
+            }
+
+            html[data-editor-live-mode="test"]
+            .editor-component-snap-guide {
+                display: none !important;
+            }
+
+            html[data-editor-live-mode="edit"]
+            .invitation-components {
+                z-index: 900 !important;
+                pointer-events: none !important;
+            }
+
+            html[data-editor-live-mode="edit"]
+            .invitation-component {
+                pointer-events: auto !important;
+                touch-action: none !important;
+                cursor: grab !important;
+            }
+
+            html[data-editor-live-mode="edit"]
+            .invitation-component:active {
+                cursor: grabbing !important;
+            }
+
+            html[data-editor-live-mode="edit"]
+            .editor-real-component-selected {
+                z-index: 10000 !important;
+                pointer-events: auto !important;
+            }
+
+            html[data-editor-live-mode="edit"]
+            .editor-real-component-selected
+            .editor-live-selection-handle {
+                pointer-events: auto !important;
+            }
+
+            .custom-public-layer {
+                pointer-events: auto !important;
+            }
+
+            html[data-editor-live-mode="test"]
+            .editor-real-selected,
+            html[data-editor-live-mode="test"]
+            .editor-real-component-selected,
+            html[data-editor-live-mode="test"]
+            .editor-native-element-selected,
+            html[data-editor-live-mode="test"]
+            .editor-selection-edge,
+            html[data-editor-live-mode="test"]
+            .editor-live-selection-label,
+            html[data-editor-live-mode="test"]
+            .editor-native-element-label,
+            html[data-editor-live-mode="test"]
+            .editor-live-section-label,
+            html[data-editor-live-mode="test"]
+            .editor-live-selection-handle,
+            html[data-editor-live-mode="test"]
+            .editor-native-resize-handle,
+            html[data-editor-live-mode="test"]
+            .editor-native-resize-value {
+                display: none !important;
+            }
         `;
+
         doc.head.appendChild(style);
     }
+    function clearComponentSnapGuides(
+        doc = activeRealPreviewDocument()
+    ) {
+        if (!doc) return;
+
+        doc.querySelectorAll(
+            '.editor-component-snap-guide'
+        ).forEach((guide) => guide.remove());
+    }
+
+    function showComponentSnapGuides(
+        {
+            vertical = false,
+            horizontal = false,
+        } = {},
+        doc = activeRealPreviewDocument()
+    ) {
+        if (!doc) return;
+
+        clearComponentSnapGuides(doc);
+
+        const section = selectedSection();
+
+        if (!section) return;
+
+        const sectionEl = doc.querySelector(
+            `[data-invitation-section="${section.type}"]`
+        );
+
+        if (!sectionEl) return;
+
+        if (vertical) {
+            const guide = doc.createElement('span');
+
+            guide.className =
+                'editor-component-snap-guide '
+                + 'is-vertical';
+
+            sectionEl.appendChild(guide);
+        }
+
+        if (horizontal) {
+            const guide = doc.createElement('span');
+
+            guide.className =
+                'editor-component-snap-guide '
+                + 'is-horizontal';
+
+            sectionEl.appendChild(guide);
+        }
+    }
+
+    function snapComponentPosition(x, y) {
+        const result = {
+            x,
+            y,
+            vertical: false,
+            horizontal: false,
+        };
+
+        if (
+            Math.abs(
+                x - componentSnapTargets.centerX
+            ) <= componentSnapThreshold
+        ) {
+            result.x = componentSnapTargets.centerX;
+            result.vertical = true;
+        }
+
+        if (
+            Math.abs(
+                y - componentSnapTargets.centerY
+            ) <= componentSnapThreshold
+        ) {
+            result.y = componentSnapTargets.centerY;
+            result.horizontal = true;
+        }
+
+        return result;
+    }
+    function addSelectionEdges(element, doc) {
+        if (!element || !doc) return;
+
+        [
+            ['is-top', 'top'],
+            ['is-right', 'right'],
+            ['is-bottom', 'bottom'],
+            ['is-left', 'left'],
+        ].forEach(([className, edgeName]) => {
+            const edge = doc.createElement('span');
+
+            edge.className =
+                `editor-selection-edge ${className}`;
+
+            edge.dataset.selectionEdge = edgeName;
+
+            element.appendChild(edge);
+        });
+    }
+
 
     function clearRealPreviewSelection(doc) {
         if (!doc) return;
-        doc.querySelectorAll('.editor-real-selected').forEach((item) => item.classList.remove('editor-real-selected'));
-        doc.querySelectorAll('.editor-real-layer').forEach((item) => item.classList.remove('editor-real-layer'));
-        doc.querySelectorAll('.editor-real-component-selected').forEach((item) => item.classList.remove('editor-real-component-selected'));
-        doc.querySelectorAll('.editor-live-selection-label, .editor-live-selection-handle, .editor-live-section-label').forEach((item) => item.remove());
+
+        doc.querySelectorAll(
+            '.editor-real-selected'
+        ).forEach((item) => {
+            item.classList.remove(
+                'editor-real-selected'
+            );
+        });
+
+        doc.querySelectorAll(
+            '.editor-real-layer'
+        ).forEach((item) => {
+            item.classList.remove(
+                'editor-real-layer'
+            );
+        });
+
+        doc.querySelectorAll(
+            '.editor-real-component-selected'
+        ).forEach((item) => {
+            item.classList.remove(
+                'editor-real-component-selected'
+            );
+        });
+
+        doc.querySelectorAll(
+            '.editor-native-element-selected'
+        ).forEach((item) => {
+            item.classList.remove(
+                'editor-native-element-selected'
+            );
+        });
+
+        doc.querySelectorAll(
+            '.editor-live-selection-label, '
+            + '.editor-live-selection-handle, '
+            + '.editor-live-section-label, '
+            + '.editor-native-element-label, '
+            + '.editor-native-resize-handle, '
+            + '.editor-native-resize-value, '
+            + '.editor-selection-edge,'
+            + '.editor-component-snap-guide'
+        ).forEach((item) => item.remove());
     }
 
-    function paintRealPreviewSelection(doc = activeRealPreviewDocument()) {
-        if (!doc) return;
-        clearRealPreviewSelection(doc);
-        const component = selectedComponent();
-        if (component) {
-            const componentEl = doc.querySelector(`[data-component-id="${component.id}"]`);
-            if (componentEl) {
-                componentEl.classList.add('editor-real-component-selected');
-                const label = doc.createElement('span');
-                label.className = 'editor-live-selection-label';
-                label.textContent = `${component.tipo} #${component.id}`;
-                componentEl.appendChild(label);
-                ['nw', 'ne', 'sw', 'se'].forEach((handleName) => {
-                    const handle = doc.createElement('span');
-                    handle.className = 'editor-live-selection-handle';
-                    handle.dataset.handle = handleName;
-                    componentEl.appendChild(handle);
+    function nativeResizeCapabilities(element) {
+        if (!element) return [];
+
+        if (element.type === 'form') {
+            return [];
+        }
+
+        if (element.role === 'event-place-card') {
+            return ['width', 'height', 'both'];
+        }
+
+        if (element.role === 'event-place-media') {
+            return ['height'];
+        }
+
+        return [];
+    }
+
+    function nativeTransformField(element, handle) {
+        if (element.role === 'event-place-media') {
+            return handle === 'height'
+                ? ['mediaHeight']
+                : [];
+        }
+
+        if (element.role === 'event-place-card') {
+            if (handle === 'width') return ['cardWidth'];
+            if (handle === 'height') return ['cardMinHeight'];
+            if (handle === 'both') {
+                return ['cardWidth', 'cardMinHeight'];
+            }
+        }
+
+        return [];
+    }
+
+    function nativeTransformSnapshot(element) {
+        const item = nativeItemConfig(element) || {};
+
+        return {
+            cardWidth: Number(item.cardWidth ?? 100),
+            cardMinHeight: Number(item.cardMinHeight ?? 0),
+            mediaHeight: Number(item.mediaHeight ?? 220),
+        };
+    }
+
+    function nativeTransformLimits(field) {
+        const limits = {
+            cardWidth: [40, 100],
+            cardMinHeight: [0, 700],
+            mediaHeight: [80, 700],
+        };
+
+        return limits[field] || [0, 1000];
+    }
+
+    function clampNativeTransform(field, value) {
+        const [min, max] = nativeTransformLimits(field);
+        return clamp(value, min, max);
+    }
+
+    function applyNativeTransformPreview(element, values) {
+        const node = element?.node;
+
+        if (!node?.isConnected) return;
+
+        if (Number.isFinite(values.cardWidth)) {
+            node.style.setProperty(
+                '--native-card-width',
+                `${values.cardWidth}%`
+            );
+        }
+
+        if (Number.isFinite(values.cardMinHeight)) {
+            node.style.setProperty(
+                '--native-card-min-height',
+                `${values.cardMinHeight}px`
+            );
+        }
+
+        if (Number.isFinite(values.mediaHeight)) {
+            const card = node.closest('[data-real-card]') || node;
+
+            card.style.setProperty(
+                '--native-media-height',
+                `${values.mediaHeight}px`
+            );
+        }
+
+        const badge = node.querySelector(
+            ':scope > .editor-native-resize-value'
+        );
+
+        if (badge) {
+            if (element.role === 'event-place-media') {
+                badge.textContent =
+                    `${Math.round(values.mediaHeight)} px`;
+            } else {
+                badge.textContent =
+                    `${Math.round(values.cardWidth)}% × `
+                    + `${Math.round(values.cardMinHeight)} px`;
+            }
+        }
+    }
+
+    function startNativePreviewTransform(
+        event,
+        handle,
+        element
+    ) {
+        const node = element?.node;
+        const item = nativeItemConfig(element);
+
+        if (!node?.isConnected || !item) return;
+
+        const parentRect =
+            node.parentElement?.getBoundingClientRect()
+            || node.getBoundingClientRect();
+
+        nativePreviewTransform = {
+            pointerId: event.pointerId,
+            handle,
+            elementId: element.id,
+            startX: event.clientX,
+            startY: event.clientY,
+            parentWidth: Math.max(parentRect.width, 1),
+            start: nativeTransformSnapshot(element),
+            current: nativeTransformSnapshot(element),
+        };
+
+        handle.setPointerCapture?.(event.pointerId);
+
+        root.dataset.nativeTransforming = 'true';
+        setState('Redimensionando elemento');
+    }
+
+    function updateNativePreviewTransform(event) {
+        const transform = nativePreviewTransform;
+
+        if (!transform) return;
+
+        const element = nativeElementById(transform.elementId);
+        if (!element) return;
+
+        const deltaX = event.clientX - transform.startX;
+        const deltaY = event.clientY - transform.startY;
+        const values = {
+            ...transform.start,
+        };
+
+        nativeTransformField(element, transform.handle)
+            .forEach((field) => {
+                if (field === 'cardWidth') {
+                    values.cardWidth = clampNativeTransform(
+                        field,
+                        transform.start.cardWidth
+                        + (deltaX / transform.parentWidth) * 100
+                    );
+                }
+
+                if (field === 'cardMinHeight') {
+                    values.cardMinHeight = clampNativeTransform(
+                        field,
+                        transform.start.cardMinHeight + deltaY
+                    );
+                }
+
+                if (field === 'mediaHeight') {
+                    values.mediaHeight = clampNativeTransform(
+                        field,
+                        transform.start.mediaHeight + deltaY
+                    );
+                }
+            });
+
+        transform.current = values;
+        applyNativeTransformPreview(element, values);
+    }
+
+    function finishNativePreviewTransform() {
+        const transform = nativePreviewTransform;
+
+        if (!transform) return;
+
+        const element = nativeElementById(transform.elementId);
+        const item = nativeItemConfig(element);
+
+        if (element && item) {
+            nativeTransformField(element, transform.handle)
+                .forEach((field) => {
+                    item[field] = Math.round(
+                        transform.current[field]
+                    );
                 });
+
+            const section = selectedSection();
+
+            if (section) {
+                section.config.realContent =
+                    normalizeRealContentConfig(
+                        ensureSectionConfig(section).realContent,
+                        section.type
+                    );
+            }
+        }
+
+        nativePreviewTransform = null;
+        delete root.dataset.nativeTransforming;
+
+        fillNativeElementInspector();
+        renderComponentTree();
+        updateEditorContextCard();
+        paintRealPreviewSelection();
+
+        setState('Tamaño actualizado sin guardar');
+    }
+
+    function cancelNativePreviewTransform() {
+        const transform = nativePreviewTransform;
+
+        if (!transform) return;
+
+        const element = nativeElementById(transform.elementId);
+
+        if (element) {
+            applyNativeTransformPreview(
+                element,
+                transform.start
+            );
+        }
+
+        nativePreviewTransform = null;
+        delete root.dataset.nativeTransforming;
+
+        fillNativeElementInspector();
+        paintRealPreviewSelection();
+
+        setState('Cambio de tamaño cancelado');
+    }
+
+    function paintRealPreviewSelection(
+        doc = activeRealPreviewDocument()
+    ) {
+        if (!doc) return;
+
+        clearRealPreviewSelection(doc);
+
+        const component = selectedComponent();
+
+        if (component) {
+            const componentEl = doc.querySelector(
+                `[data-component-id="${component.id}"]`
+            );
+
+            if (componentEl) {
+                componentEl.classList.add(
+                    'editor-real-component-selected'
+                );
+
+                addSelectionEdges(
+                    componentEl,
+                    doc
+                );
+
+                const label =
+                    doc.createElement('span');
+
+                label.className =
+                    'editor-live-selection-label';
+
+                label.textContent =
+                    `${component.tipo} #${component.id}`;
+
+                componentEl.appendChild(label);
+
+                if (!component.locked) {
+                    [
+                        'nw',
+                        'n',
+                        'ne',
+                        'e',
+                        'se',
+                        's',
+                        'sw',
+                        'w',
+                    ].forEach((handleName) => {
+                        const handle =
+                            doc.createElement('span');
+
+                        handle.className =
+                            'editor-live-selection-handle';
+
+                        handle.dataset.handle =
+                            handleName;
+
+                        handle.setAttribute(
+                            'aria-label',
+                            `Redimensionar ${handleName}`
+                        );
+
+                        componentEl.appendChild(handle);
+                    });
+                }
+
                 return;
             }
         }
+
+        const nativeElement =
+            selectedNativeElement();
+
+        if (
+            nativeElement?.node?.isConnected
+        ) {
+            const node = nativeElement.node;
+
+            node.classList.add(
+                'editor-native-element-selected'
+            );
+
+            addSelectionEdges(
+                node,
+                doc
+            );
+
+            node.scrollIntoView({
+                block: 'center',
+                inline: 'center',
+                behavior: 'smooth',
+            });
+
+            const label =
+                doc.createElement('span');
+
+            label.className =
+                'editor-native-element-label';
+
+            label.textContent =
+                `${nativeElementRoleLabel(
+                    nativeElement
+                )} · ${nativeElementTypeLabel(
+                    nativeElement.type
+                )}`;
+
+            node.appendChild(label);
+
+            const capabilities =
+                nativeResizeCapabilities(
+                    nativeElement
+                );
+
+            capabilities.forEach(
+                (handleName) => {
+                    const handle =
+                        doc.createElement('span');
+
+                    handle.className =
+                        'editor-native-resize-handle';
+
+                    handle.dataset.nativeHandle =
+                        handleName;
+
+                    handle.dataset.nativeElementId =
+                        nativeElement.id;
+
+                    handle.setAttribute(
+                        'aria-label',
+                        `Redimensionar ${
+                            nativeElementRoleLabel(
+                                nativeElement
+                            )
+                        }`
+                    );
+
+                    node.appendChild(handle);
+                }
+            );
+
+            if (capabilities.length) {
+                const values =
+                    nativeTransformSnapshot(
+                        nativeElement
+                    );
+
+                const badge =
+                    doc.createElement('span');
+
+                badge.className =
+                    'editor-native-resize-value';
+
+                badge.textContent =
+                    nativeElement.role
+                    === 'event-place-media'
+                        ? `${Math.round(
+                            values.mediaHeight
+                        )} px`
+                        : `${Math.round(
+                            values.cardWidth
+                        )}% × ${Math.round(
+                            values.cardMinHeight
+                        )} px`;
+
+                node.appendChild(badge);
+            }
+
+            return;
+        }
+
         const section = selectedSection();
+
         if (!section) return;
-        const sectionEl = doc.querySelector(`[data-invitation-section="${section.type}"]`);
+
+        const sectionEl = doc.querySelector(
+            `[data-invitation-section="${section.type}"]`
+        );
+
         if (!sectionEl) return;
-        sectionEl.classList.add('editor-real-selected');
-        const label = doc.createElement('span');
-        label.className = 'editor-live-section-label';
-        label.textContent = section.type.replaceAll('_', ' ');
+
+        sectionEl.classList.add(
+            'editor-real-selected'
+        );
+
+        const label =
+            doc.createElement('span');
+
+        label.className =
+            'editor-live-section-label';
+
+        label.textContent =
+            section.type.replaceAll('_', ' ');
+
         sectionEl.appendChild(label);
     }
+
 
     function applyRealPreviewMode(doc = activeRealPreviewDocument()) {
         if (!doc) return;
@@ -1403,10 +2785,18 @@
     }
 
     function startRealComponentDrag(event, componentEl, component) {
-        if (!component || component.locked) return;
+        if (!component || component.locked || !componentEl?.isConnected) {
+            return;
+        }
+
         const stage = componentEl.parentElement;
         const rect = stage?.getBoundingClientRect();
-        if (!rect || rect.width <= 0 || rect.height <= 0) return;
+
+        if (!rect || rect.width <= 0 || rect.height <= 0) {
+            setState('No fue posible iniciar el movimiento del componente.');
+            return;
+        }
+
         realPreviewDrag = {
             mode: 'move',
             pointerId: event.pointerId,
@@ -1416,18 +2806,49 @@
             startClientY: event.clientY,
             startX: component.x,
             startY: component.y,
-            width: rect.width,
-            height: rect.height,
+            width: Math.max(rect.width, 1),
+            height: Math.max(rect.height, 1),
         };
-        componentEl.setPointerCapture?.(event.pointerId);
-        setState('Moviendo componente sobre vista real...');
+
+        try {
+            componentEl.setPointerCapture?.(event.pointerId);
+        } catch (error) {
+            // El drag puede continuar con los listeners del documento del iframe.
+        }
+
+        root.dataset.componentDragging = 'true';
+        setState('Moviendo componente sobre Vista Real...');
     }
 
-    function startRealComponentResize(event, handleEl, componentEl, component) {
-        if (!component || component.locked) return;
+    function startRealComponentResize(
+        event,
+        handleEl,
+        componentEl,
+        component
+    ) {
+        if (
+            !component
+            || component.locked
+            || !componentEl?.isConnected
+            || !handleEl?.isConnected
+        ) {
+            return;
+        }
+
         const stage = componentEl.parentElement;
         const rect = stage?.getBoundingClientRect();
-        if (!rect || rect.width <= 0 || rect.height <= 0) return;
+
+        if (
+            !rect
+            || rect.width <= 0
+            || rect.height <= 0
+        ) {
+            setState(
+                'No fue posible iniciar el redimensionamiento.'
+            );
+            return;
+        }
+
         realPreviewDrag = {
             mode: 'resize',
             pointerId: event.pointerId,
@@ -1442,44 +2863,552 @@
                 width: component.width,
                 height: component.height,
             },
-            width: rect.width,
-            height: rect.height,
+            width: Math.max(rect.width, 1),
+            height: Math.max(rect.height, 1),
         };
-        handleEl.setPointerCapture?.(event.pointerId);
-        setState('Redimensionando componente sobre vista real...');
+
+        try {
+            handleEl.setPointerCapture?.(
+                event.pointerId
+            );
+        } catch (error) {
+            /*
+            Los listeners del document del iframe mantienen
+            el resize aunque pointer capture no esté disponible.
+            */
+        }
+
+        root.dataset.componentDragging = 'true';
+
+        setState(
+            'Redimensionando componente sobre Vista Real...'
+        );
     }
 
     function updateRealComponentDrag(event) {
-        if (!realPreviewDrag) return;
         const drag = realPreviewDrag;
-        const deltaX = ((event.clientX - drag.startClientX) / drag.width) * 100;
-        const deltaY = ((event.clientY - drag.startClientY) / drag.height) * 100;
-        if (drag.mode === 'resize') {
-            resizeComponentByHandle(drag.component, drag.start, deltaX, deltaY, drag.handle);
-        } else {
-            drag.component.x = Math.round(clamp(drag.startX + deltaX, layerBounds.min, layerBounds.max) * 10) / 10;
-            drag.component.y = Math.round(clamp(drag.startY + deltaY, layerBounds.min, layerBounds.max) * 10) / 10;
+
+        if (!drag) return;
+
+        if (
+            Number.isFinite(drag.pointerId)
+            && Number.isFinite(event.pointerId)
+            && event.pointerId !== drag.pointerId
+        ) {
+            return;
         }
-        setRealComponentStyles(drag.componentEl, drag.component);
-        emitRealPreviewComponentUpdate(drag.component);
+
+        if (!drag.componentEl?.isConnected) {
+            cancelRealComponentDrag();
+            return;
+        }
+
+        const deltaX =
+            ((event.clientX - drag.startClientX) / drag.width) * 100;
+
+        const deltaY =
+            ((event.clientY - drag.startClientY) / drag.height) * 100;
+
+        if (drag.mode === 'resize') {
+            resizeComponentByHandle(
+                drag.component,
+                drag.start,
+                deltaX,
+                deltaY,
+                drag.handle
+            );
+        } else {
+            const rawX = Math.round(
+                clamp(
+                    drag.startX + deltaX,
+                    layerBounds.min,
+                    layerBounds.max
+                ) * 10
+            ) / 10;
+
+            const rawY = Math.round(
+                clamp(
+                    drag.startY + deltaY,
+                    layerBounds.min,
+                    layerBounds.max
+                ) * 10
+            ) / 10;
+
+            const snapped = snapComponentPosition(
+                rawX,
+                rawY
+            );
+
+            drag.component.x = snapped.x;
+            drag.component.y = snapped.y;
+
+            showComponentSnapGuides({
+                vertical: snapped.vertical,
+                horizontal: snapped.horizontal,
+            });
+        }
+
+
+        setRealComponentStyles(
+            drag.componentEl,
+            drag.component
+        );
+
+        emitRealPreviewComponentUpdate(
+            drag.component
+        );
+
+        const componentSection = sortedSections().find(
+            (section) =>
+                Number(section.sectionId)
+                === Number(drag.component.sectionId)
+        );
+
+        if (componentSection) {
+            autoFitRealSection(
+                componentSection,
+                {
+                    allowShrink: false,
+                    extraBottom: 34,
+                }
+            );
+        }
+
+        if (drag.mode === 'resize') {
+            setState(
+                `Tamaño: ${
+                    drag.component.width
+                }% × ${
+                    drag.component.height
+                }%`
+            );
+        } else {
+            setState(
+                `Posición: ${
+                    drag.component.x
+                }% / ${
+                    drag.component.y
+                }%`
+            );
+        }
     }
 
     function finishRealComponentDrag() {
-        if (!realPreviewDrag) return;
-        const component = realPreviewDrag.component;
+        const drag = realPreviewDrag;
+
+        if (!drag) return;
+
+        const component = drag.component;
+
         realPreviewDrag = null;
-        renderAll();
-        saveBuilderComponent(component, { skipRealRefresh: true }).catch((error) => setState(error.message));
+        delete root.dataset.componentDragging;
+        clearComponentSnapGuides();
+
+        setRealComponentStyles(
+            drag.componentEl,
+            component
+        );
+
+        setState('Guardando posición del componente...');
+
+        saveBuilderComponent(component, {
+            skipRealRefresh: true,
+        })
+            .then(() => {
+                syncRealPreviewComponent(component);
+
+                renderComponentTree();
+                fillProperties();
+                updateEditorContextCard();
+                paintRealPreviewSelection();
+
+                const componentSection = sortedSections().find(
+                    (section) =>
+                        Number(section.sectionId)
+                        === Number(component.sectionId)
+                );
+
+                if (componentSection) {
+                    scheduleAutoFitRealSection(
+                        componentSection,
+                        {
+                            allowShrink: true,
+                            extraBottom: 28,
+                        }
+                    );
+                }
+
+                setState('Componente guardado');
+            })
+            .catch((error) => {
+                setState(
+                    error?.message
+                    || 'No se pudo guardar el componente.'
+                );
+            });
     }
 
+    function cancelRealComponentDrag() {
+        const drag = realPreviewDrag;
+
+        if (!drag) return;
+
+        if (drag.mode === 'resize' && drag.start) {
+            drag.component.x = drag.start.x;
+            drag.component.y = drag.start.y;
+            drag.component.width = drag.start.width;
+            drag.component.height = drag.start.height;
+        } else {
+            drag.component.x = drag.startX;
+            drag.component.y = drag.startY;
+        }
+
+        if (drag.componentEl?.isConnected) {
+            setRealComponentStyles(
+                drag.componentEl,
+                drag.component
+            );
+        }
+
+        realPreviewDrag = null;
+        delete root.dataset.componentDragging;
+        clearComponentSnapGuides();
+
+        syncRealPreviewComponent(drag.component);
+        paintRealPreviewSelection();
+
+        setState('Movimiento cancelado');
+    }
+
+    function loadElementTreeState() {
+        try {
+            const saved = JSON.parse(
+                window.localStorage.getItem(elementTreeStorageKey) || '[]'
+            );
+
+            saved.forEach((key) => elementTreeExpanded.add(String(key)));
+        } catch (error) {
+            console.warn('DIRTEC Editor: no fue posible leer el estado del árbol.');
+        }
+    }
+
+    function saveElementTreeState() {
+        try {
+            window.localStorage.setItem(
+                elementTreeStorageKey,
+                JSON.stringify([...elementTreeExpanded])
+            );
+        } catch (error) {
+            console.warn('DIRTEC Editor: no fue posible guardar el estado del árbol.');
+        }
+    }
+
+    function treeSectionKey(sectionId) {
+        return `section:${sectionId}`;
+    }
+
+    function treeGroupKey(sectionId, group) {
+        return `section:${sectionId}:${group}`;
+    }
+
+    function treeIsExpanded(key, fallback = true) {
+        if (!elementTreeExpanded.size && fallback) return true;
+        return elementTreeExpanded.has(String(key));
+    }
+
+    function toggleTreeExpanded(key) {
+        const normalized = String(key);
+
+        if (elementTreeExpanded.has(normalized)) {
+            elementTreeExpanded.delete(normalized);
+        } else {
+            elementTreeExpanded.add(normalized);
+        }
+
+        saveElementTreeState();
+        renderComponentTree();
+    }
+
+    function nativeElementCatalog() {
+        const catalog = [];
+
+        sortedSections().forEach((section) => {
+            if (section.type === 'CUENTA_REGRESIVA') {
+                const base = {
+                    section: 'CUENTA_REGRESIVA',
+                    sectionId: section.sectionId,
+                    item: '',
+                };
+
+                catalog.push(
+                    { ...base, id: 'countdown-content', type: 'container', role: 'countdown-content', label: 'Contenido de cuenta regresiva' },
+                    { ...base, id: 'countdown-grid', type: 'container', role: 'countdown-grid', label: 'Contenedor del reloj' },
+                    { ...base, id: 'countdown-days', type: 'counter', role: 'countdown-days', label: 'Días' },
+                    { ...base, id: 'countdown-hours', type: 'counter', role: 'countdown-hours', label: 'Horas' },
+                    { ...base, id: 'countdown-minutes', type: 'counter', role: 'countdown-minutes', label: 'Minutos' },
+                    { ...base, id: 'countdown-seconds', type: 'counter', role: 'countdown-seconds', label: 'Segundos' },
+                );
+
+                return;
+            }
+
+            if (section.type === 'DRESS_CODE') {
+                const base = {
+                    section: 'DRESS_CODE',
+                    sectionId: section.sectionId,
+                    item: '',
+                };
+
+                catalog.push(
+                    { ...base, id: 'dress-code-content', type: 'container', role: 'dress-code-content', label: 'Contenido Dress Code' },
+                    { ...base, id: 'dress-code-grid', type: 'container', role: 'dress-code-grid', label: 'Contenedor Dress Code' },
+                    { ...base, id: 'dress-code-card', type: 'container', role: 'dress-code-card', label: 'Tarjeta Dress Code' },
+                    { ...base, id: 'dress-code-value', type: 'text', role: 'dress-code-value', label: 'Texto Dress Code' },
+                    { ...base, id: 'dress-code-allowed-card', type: 'container', role: 'dress-code-allowed-card', label: 'Tarjeta Permitido' },
+                    { ...base, id: 'dress-code-allowed-label', type: 'text', role: 'dress-code-allowed-label', label: 'Etiqueta Permitido' },
+                    { ...base, id: 'dress-code-allowed-image', type: 'media', role: 'dress-code-allowed-image', label: 'Imagen Permitido' },
+                    { ...base, id: 'dress-code-prohibited-card', type: 'container', role: 'dress-code-prohibited-card', label: 'Tarjeta No permitido' },
+                    { ...base, id: 'dress-code-prohibited-label', type: 'text', role: 'dress-code-prohibited-label', label: 'Etiqueta No permitido' },
+                    { ...base, id: 'dress-code-prohibited-image', type: 'media', role: 'dress-code-prohibited-image', label: 'Imagen No permitido' },
+                );
+
+                return;
+            }
+
+            if (section.type === 'ITINERARIO') {
+                const base = {
+                    section: 'ITINERARIO',
+                    sectionId: section.sectionId,
+                    item: '',
+                };
+
+                catalog.push(
+                    { ...base, id: 'itinerary-content', type: 'container', role: 'itinerary-content', label: 'Contenido del itinerario' },
+                    { ...base, id: 'itinerary-list', type: 'container', role: 'itinerary-list', label: 'Lista del itinerario' },
+                );
+
+                return;
+            }
+
+            if (section.type === 'ALBUM') {
+                const base = {
+                    section: 'ALBUM',
+                    sectionId: section.sectionId,
+                    item: '',
+                };
+
+                catalog.push(
+                    { ...base, id: 'album-content', type: 'container', role: 'album-content', label: 'Contenido del álbum' },
+                    { ...base, id: 'album-grid', type: 'container', role: 'album-grid', label: 'Galería del álbum' },
+                );
+
+                return;
+            }
+
+            if (section.type === 'MENU') {
+                const base = {
+                    section: 'MENU',
+                    sectionId: section.sectionId,
+                    item: '',
+                };
+
+                catalog.push(
+                    { ...base, id: 'menu-content', type: 'container', role: 'menu-content', label: 'Contenido del menú' },
+                    { ...base, id: 'menu-grid', type: 'container', role: 'menu-grid', label: 'Contenedor del menú' },
+                );
+
+                return;
+            }
+
+            if (section.type === 'REGALOS') {
+                const base = {
+                    section: 'REGALOS',
+                    sectionId: section.sectionId,
+                    item: '',
+                };
+
+                catalog.push(
+                    { ...base, id: 'gifts-content', type: 'container', role: 'gifts-content', label: 'Contenido de regalos' },
+                    { ...base, id: 'gifts-grid', type: 'container', role: 'gifts-grid', label: 'Contenedor de regalos' },
+                    { ...base, id: 'gifts-main-link', type: 'button', role: 'gifts-main-link', label: 'Mesa principal' },
+                );
+
+                return;
+            }
+
+            if (section.type === 'ALBUM_COMPARTIDO') {
+                const base = {
+                    section: 'ALBUM_COMPARTIDO',
+                    sectionId: section.sectionId,
+                    item: '',
+                };
+
+                catalog.push(
+                    { ...base, id: 'shared-album-content', type: 'container', role: 'shared-album-content', label: 'Contenido del álbum compartido' },
+                    { ...base, id: 'shared-album-card', type: 'container', role: 'shared-album-card', label: 'Tarjeta del álbum compartido' },
+                    { ...base, id: 'shared-album-message', type: 'text', role: 'shared-album-message', label: 'Mensaje del álbum compartido' },
+                    { ...base, id: 'shared-album-actions', type: 'container', role: 'shared-album-actions', label: 'Acciones del álbum compartido' },
+                    { ...base, id: 'shared-album-button', type: 'button', role: 'shared-album-button', label: 'Botón para subir fotos' },
+                );
+
+                return;
+            }
+
+            if (section.type === 'RSVP') {
+                const base = {
+                    section: 'RSVP',
+                    sectionId: section.sectionId,
+                    item: '',
+                };
+
+                catalog.push(
+                    { ...base, id: 'rsvp-content', type: 'container', role: 'rsvp-content', label: 'Contenido RSVP' },
+                    { ...base, id: 'rsvp-summary', type: 'container', role: 'rsvp-summary', label: 'Resumen de invitación' },
+                    { ...base, id: 'rsvp-event-title', type: 'text', role: 'rsvp-event-title', label: 'Título de invitación' },
+                    { ...base, id: 'rsvp-event-copy', type: 'text', role: 'rsvp-event-copy', label: 'Texto de invitación' },
+                    { ...base, id: 'rsvp-summary-grid', type: 'container', role: 'rsvp-summary-grid', label: 'Resumen del grupo' },
+                    { ...base, id: 'rsvp-status', type: 'container', role: 'rsvp-status', label: 'Estado de confirmación' },
+                    { ...base, id: 'rsvp-form', type: 'form', role: 'rsvp-form', label: 'Formulario RSVP' },
+                    { ...base, id: 'rsvp-submit-button', type: 'button', role: 'rsvp-submit-button', label: 'Guardar confirmación' },
+                    { ...base, id: 'rsvp-whatsapp-button', type: 'button', role: 'rsvp-whatsapp-button', label: 'Botón de WhatsApp' },
+                );
+
+                return;
+            }
+
+            if (section.type === 'PORTADA') {
+                const base = {
+                    section: 'PORTADA',
+                    sectionId: section.sectionId,
+                    item: '',
+                };
+
+                catalog.push(
+                    { ...base, id: 'cover-card', type: 'container', role: 'cover-card', label: 'Contenedor de portada' },
+                    { ...base, id: 'cover-media', type: 'media', role: 'cover-media', label: 'Imagen o video de portada' },
+                    { ...base, id: 'cover-topline', type: 'text', role: 'cover-topline', label: 'Frase de portada' },
+                    { ...base, id: 'cover-names', type: 'container', role: 'cover-names', label: 'Nombres de portada' },
+                    { ...base, id: 'cover-primary-name', type: 'text', role: 'cover-primary-name', label: 'Nombre principal' },
+                    { ...base, id: 'cover-secondary-name', type: 'text', role: 'cover-secondary-name', label: 'Nombre secundario' },
+                    { ...base, id: 'cover-date', type: 'date', role: 'cover-date', label: 'Fecha de portada' },
+                );
+
+                return;
+            }
+
+            if (section.type !== 'DETALLES') return;
+
+            const base = {
+                section: 'DETALLES',
+                sectionId: section.sectionId,
+            };
+
+            [
+                ['ceremony', 'Ceremonia'],
+                ['reception', 'Recepción'],
+            ].forEach(([item, itemLabel]) => {
+                const prefix = `details-${item}`;
+
+                catalog.push(
+                    {
+                        ...base,
+                        id: `${prefix}-card`,
+                        type: 'container',
+                        role: 'event-place-card',
+                        item,
+                        label: `Tarjeta ${itemLabel}`,
+                    },
+                    {
+                        ...base,
+                        id: `${prefix}-media`,
+                        type: 'media',
+                        role: 'event-place-media',
+                        item,
+                        label: `Foto ${itemLabel}`,
+                    },
+                    {
+                        ...base,
+                        id: `${prefix}-title`,
+                        type: 'text',
+                        role: 'event-place-title',
+                        item,
+                        label: `Título ${itemLabel}`,
+                    },
+                    {
+                        ...base,
+                        id: `${prefix}-date`,
+                        type: 'date',
+                        role: 'event-place-date',
+                        item,
+                        label: `Fecha ${itemLabel}`,
+                    },
+                    {
+                        ...base,
+                        id: `${prefix}-time`,
+                        type: 'time',
+                        role: 'event-place-time',
+                        item,
+                        label: `Hora ${itemLabel}`,
+                    },
+                    {
+                        ...base,
+                        id: `${prefix}-place`,
+                        type: 'text',
+                        role: 'event-place-name',
+                        item,
+                        label: `Lugar ${itemLabel}`,
+                    },
+                    {
+                        ...base,
+                        id: `${prefix}-address`,
+                        type: 'text',
+                        role: 'event-place-address',
+                        item,
+                        label: `Dirección ${itemLabel}`,
+                    },
+                    {
+                        ...base,
+                        id: `${prefix}-button`,
+                        type: 'button',
+                        role: 'event-place-button',
+                        item,
+                        label: `Botón ${itemLabel}`,
+                    },
+                    {
+                        ...base,
+                        id: `${prefix}-map`,
+                        type: 'map',
+                        role: 'event-place-map',
+                        item,
+                        label: `Mapa ${itemLabel}`,
+                    },
+                );
+            });
+        });
+
+        return catalog;
+    }
 
     function normalizeNativeElement(node) {
+        const sectionType =
+            node.dataset.elementSection
+            || node.closest('[data-invitation-section]')
+                ?.dataset
+                ?.invitationSection
+            || '';
+
+        const section = sortedSections().find(
+            (item) => item.type === sectionType
+        );
+
         return {
             id: node.dataset.elementId || '',
             type: node.dataset.elementType || 'unknown',
             role: node.dataset.elementRole || '',
-            section: node.dataset.elementSection || '',
+            section: sectionType,
+            sectionId: section?.sectionId || '',
             item: node.dataset.elementItem || '',
+            label: '',
             node,
         };
     }
@@ -1490,17 +3419,39 @@
             return nativeElementRegistry;
         }
 
-        const seen = new Set();
-        nativeElementRegistry = [...frameDocument.querySelectorAll('[data-native-element]')]
+        const catalog = nativeElementCatalog();
+        const byId = new Map(
+            catalog.map((element) => [
+                element.id,
+                {
+                    ...element,
+                    node: null,
+                },
+            ])
+        );
+
+        [...frameDocument.querySelectorAll('[data-native-element]')]
             .map(normalizeNativeElement)
-            .filter((element) => {
-                if (!element.id || seen.has(element.id)) return false;
-                seen.add(element.id);
-                return true;
+            .forEach((element) => {
+                if (!element.id) return;
+
+                const existing = byId.get(element.id) || {};
+                byId.set(element.id, {
+                    ...existing,
+                    ...element,
+                    label: existing.label || nativeElementRoleLabel(element),
+                });
             });
+
+        nativeElementRegistry = [...byId.values()];
 
         root.dataset.nativeElementCount = String(nativeElementRegistry.length);
         console.info(`DIRTEC Element Registry: ${nativeElementRegistry.length} elementos nativos registrados.`);
+
+        if (componentTree) {
+            renderComponentTree();
+        }
+
         return nativeElementRegistry;
     }
 
@@ -1508,88 +3459,2205 @@
         return nativeElementRegistry.find((element) => element.id === elementId) || null;
     }
 
+    function nativeElementTypeLabel(type) {
+        const labels = {
+            container: 'Contenedor',
+            media: 'Imagen o video',
+            text: 'Texto',
+            date: 'Fecha',
+            time: 'Hora',
+            button: 'Botón',
+            map: 'Mapa',
+            counter: 'Contador',
+            form: 'Formulario',
+        };
+
+        return labels[type] || 'Elemento';
+    }
+
+    function nativeElementRoleLabel(element) {
+        const labels = {
+            'event-place-card': 'Tarjeta',
+            'event-place-media': 'Foto',
+            'event-place-title': 'Título',
+            'event-place-date': 'Fecha',
+            'event-place-time': 'Hora',
+            'event-place-name': 'Lugar',
+            'event-place-address': 'Dirección',
+            'event-place-button': 'Botón de ubicación',
+            'event-place-map': 'Mapa',
+            'section-header-media': 'Imagen de encabezado',
+            'section-heading': 'Encabezado',
+            'section-title': 'Título de sección',
+            'section-description': 'Descripción',
+            'countdown-content': 'Contenido de cuenta regresiva',
+            'countdown-grid': 'Contenedor del reloj',
+            'countdown-days': 'Días',
+            'countdown-hours': 'Horas',
+            'countdown-minutes': 'Minutos',
+            'countdown-seconds': 'Segundos',
+            'dress-code-content': 'Contenido Dress Code',
+            'dress-code-grid': 'Contenedor Dress Code',
+            'dress-code-card': 'Tarjeta Dress Code',
+            'dress-code-value': 'Texto Dress Code',
+            'dress-code-allowed-card': 'Tarjeta Permitido',
+            'dress-code-allowed-label': 'Etiqueta Permitido',
+            'dress-code-allowed-image': 'Imagen Permitido',
+            'dress-code-prohibited-card': 'Tarjeta No permitido',
+            'dress-code-prohibited-label': 'Etiqueta No permitido',
+            'dress-code-prohibited-image': 'Imagen No permitido',
+            'itinerary-content': 'Contenido del itinerario',
+            'itinerary-list': 'Lista del itinerario',
+            'itinerary-item': 'Actividad',
+            'itinerary-time': 'Hora de actividad',
+            'itinerary-text': 'Contenido de actividad',
+            'itinerary-title': 'Título de actividad',
+            'itinerary-description': 'Descripción de actividad',
+            'album-content': 'Contenido del álbum',
+            'album-grid': 'Galería del álbum',
+            'album-item': 'Elemento del álbum',
+            'album-media': 'Foto o video del álbum',
+            'album-caption': 'Título de foto',
+            'menu-content': 'Contenido del menú',
+            'menu-grid': 'Contenedor del menú',
+            'menu-item': 'Platillo',
+            'menu-type': 'Tipo de platillo',
+            'menu-title': 'Nombre del platillo',
+            'menu-description': 'Descripción del platillo',
+            'gifts-content': 'Contenido de regalos',
+            'gifts-grid': 'Contenedor de regalos',
+            'gifts-main-link': 'Mesa principal',
+            'gifts-kind': 'Tipo de regalo',
+            'gifts-title': 'Título de regalo',
+            'gift-item': 'Opción de regalo',
+            'gifts-empty-message': 'Mensaje sin regalos',
+            'shared-album-content': 'Contenido del álbum compartido',
+            'shared-album-card': 'Tarjeta del álbum compartido',
+            'shared-album-message': 'Mensaje del álbum compartido',
+            'shared-album-actions': 'Acciones del álbum compartido',
+            'shared-album-button': 'Botón para subir fotos',
+            'rsvp-content': 'Contenido RSVP',
+            'rsvp-summary': 'Resumen de invitación',
+            'rsvp-event-title': 'Título de invitación',
+            'rsvp-event-copy': 'Texto de invitación',
+            'rsvp-summary-grid': 'Resumen del grupo',
+            'rsvp-status': 'Estado de confirmación',
+            'rsvp-form': 'Formulario RSVP',
+            'rsvp-submit-row': 'Acción de confirmación',
+            'rsvp-submit-button': 'Guardar confirmación',
+            'rsvp-contact-row': 'Acción de contacto',
+            'rsvp-whatsapp-button': 'Botón de WhatsApp',
+            'cover-card': 'Contenedor de portada',
+            'cover-media': 'Imagen o video de portada',
+            'cover-topline': 'Frase de portada',
+            'cover-names': 'Nombres de portada',
+            'cover-primary-name': 'Nombre principal',
+            'cover-secondary-name': 'Nombre secundario',
+            'cover-date': 'Fecha de portada',
+        };
+
+        return labels[element?.role]
+            || nativeElementTypeLabel(element?.type);
+    }
+
+    function nativeElementSectionType(element) {
+        if (element?.section) return element.section;
+
+        return element?.node
+            ?.closest('[data-invitation-section]')
+            ?.dataset
+            ?.invitationSection || '';
+    }
+
+    function nativeVisibilityField(element) {
+        const fields = {
+            'event-place-card': 'visible',
+            'event-place-media': 'showMedia',
+            'event-place-title': 'showTitle',
+            'event-place-date': 'showDate',
+            'event-place-time': 'showTime',
+            'event-place-name': 'showPlace',
+            'event-place-address': 'showAddress',
+            'event-place-button': 'showButton',
+            'event-place-map': 'showMaps',
+        };
+
+        return fields[element?.role] || '';
+    }
+
+    function nativeContentField(element) {
+        const prefix =
+            element?.item === 'reception'
+                ? 'reception'
+                : 'ceremony';
+
+        const fields = {
+            'event-place-date': `${prefix}Date`,
+            'event-place-time': `${prefix}Date`,
+            'event-place-name': `${prefix}Place`,
+            'event-place-address': `${prefix}Address`,
+            'event-place-button': `${prefix}MapUrl`,
+            'event-place-map': `${prefix}MapUrl`,
+        };
+
+        return fields[element?.role] || '';
+    }
+
+    function nativeAssetDestination(element) {
+        if (!element) return '';
+
+        if (element.role === 'event-place-card') {
+            return 'CARD_BACKGROUND';
+        }
+
+        if (element.role === 'event-place-media') {
+            return element.item === 'reception'
+                ? 'RECEPCION'
+                : 'CEREMONIA';
+        }
+
+        if (element.role === 'event-place-map') {
+            return element.item === 'reception'
+                ? 'MAPA_RECEPCION'
+                : 'MAPA_CEREMONIA';
+        }
+
+        return '';
+    }
+
+
+    function nativeCurrentAsset(element) {
+        if (!element) return {};
+
+        if (element.role === 'event-place-card') {
+            return nativeItemConfig(element)?.cardBackgroundAsset || {};
+        }
+
+        if (element.role === 'event-place-media') {
+            const key =
+                element.item === 'reception'
+                    ? 'receptionAsset'
+                    : 'ceremonyAsset';
+
+            return config.theme?.[key] || {};
+        }
+
+        if (element.role === 'event-place-map') {
+            return nativeItemConfig(element)?.mapAsset || {};
+        }
+
+        return {};
+    }
+
+    function cardBackgroundCssUrl(asset) {
+        if (!asset?.url || asset.isVideo) {
+            return 'none';
+        }
+
+        const escapedUrl = String(asset.url)
+            .replaceAll('\\', '\\\\')
+            .replaceAll('"', '\\"');
+
+        return `url("${escapedUrl}")`;
+    }
+
+    function patchNativeCardBackground(element) {
+        const node = resolveNativeElementNode(element);
+        const item = nativeItemConfig(element);
+
+        if (!node || !item) return;
+
+        node.style.setProperty(
+            '--native-card-background-image',
+            cardBackgroundCssUrl(item.cardBackgroundAsset)
+        );
+
+        node.style.setProperty(
+            '--native-card-background-fit',
+            item.cardBackgroundFit || 'cover'
+        );
+
+        node.style.setProperty(
+            '--native-card-background-position',
+            `${Number(item.cardBackgroundX ?? 50)}% ${Number(item.cardBackgroundY ?? 50)}%`
+        );
+
+        node.style.setProperty(
+            '--native-card-background-opacity',
+            String(item.cardBackgroundOpacity ?? 0.35)
+        );
+    }
+
+    function assignNativeCardBackground(element, asset) {
+        const section = selectedSection();
+        const item = nativeItemConfig(element);
+
+        if (!section || !item || element?.role !== 'event-place-card') {
+            return false;
+        }
+
+        if (asset?.isVideo) {
+            setState('El fondo de tarjeta admite imágenes, no video.');
+            return true;
+        }
+
+        item.cardBackgroundAsset = asset || {};
+
+        section.config.realContent = normalizeRealContentConfig(
+            ensureSectionConfig(section).realContent,
+            section.type
+        );
+
+        patchNativeCardBackground(element);
+        fillNativeElementInspector();
+        renderComponentTree();
+        updateEditorContextCard();
+        paintRealPreviewSelection();
+
+        setState('Fondo de tarjeta modificado sin guardar');
+        return true;
+    }
+
+    function removeNativeCardBackground(element) {
+        const section = selectedSection();
+        const item = nativeItemConfig(element);
+
+        if (!section || !item || element?.role !== 'event-place-card') {
+            return false;
+        }
+
+        item.cardBackgroundAsset = {};
+
+        section.config.realContent = normalizeRealContentConfig(
+            ensureSectionConfig(section).realContent,
+            section.type
+        );
+
+        patchNativeCardBackground(element);
+        fillNativeElementInspector();
+        renderComponentTree();
+        updateEditorContextCard();
+        paintRealPreviewSelection();
+
+        setState('Fondo de tarjeta retirado sin guardar');
+        return true;
+    }
+
+
+    function assetReferenceById(assetId) {
+        const item = root.querySelector(
+            `[data-asset-id="${Number(assetId)}"]`
+        );
+
+        return item ? assetReferenceFromItem(item) : null;
+    }
+
+    function renderNativeAssetChoices(panel, element) {
+        const choices = panel.querySelector(
+            '[data-native-asset-choices]'
+        );
+
+        if (!choices) return;
+
+        const destination = nativeAssetDestination(element);
+
+        if (!destination) {
+            choices.innerHTML = '';
+            return;
+        }
+
+        const assets = [
+            ...root.querySelectorAll('[data-asset-id]'),
+        ].slice(0, 10);
+
+        choices.innerHTML = assets.length
+            ? assets.map((item) => {
+                const asset = assetReferenceFromItem(item);
+                const media = asset.isVideo
+                    ? `<video src="${escapeHtml(asset.url)}" muted playsinline preload="metadata"></video>`
+                    : `<img src="${escapeHtml(asset.url)}" alt="">`;
+
+                return `
+                    <button
+                        type="button"
+                        class="native-asset-choice"
+                        data-native-asset-choice="${Number(asset.id)}"
+                        title="${escapeHtml(asset.title || 'Archivo')}"
+                    >
+                        ${media}
+                        <span>${escapeHtml(asset.title || 'Archivo')}</span>
+                    </button>
+                `;
+            }).join('')
+            : '<p class="muted">Sube un archivo para poder elegirlo aquí.</p>';
+    }
+
+    function renderNativeCurrentAsset(panel, element) {
+        const container = panel.querySelector(
+            '[data-native-current-asset]'
+        );
+
+        if (!container) return;
+
+        const destination = nativeAssetDestination(element);
+        container.hidden = !destination;
+
+        if (!destination) return;
+
+        const asset = nativeCurrentAsset(element);
+        const title = container.querySelector(
+            '[data-native-current-asset-title]'
+        );
+        const preview = container.querySelector(
+            '[data-native-current-asset-preview]'
+        );
+        const removeButton = container.querySelector(
+            '[data-native-action="remove-asset"]'
+        );
+
+        const hasAsset = Boolean(asset?.url);
+
+        if (title) {
+            title.textContent = hasAsset
+                ? asset.title || 'Recurso asignado'
+                : 'Sin recurso';
+        }
+
+        if (removeButton) {
+            removeButton.disabled = !hasAsset;
+        }
+
+        if (preview) {
+            preview.innerHTML = hasAsset
+                ? (
+                    asset.isVideo
+                        ? `<video src="${escapeHtml(asset.url)}" muted controls playsinline preload="metadata"></video>`
+                        : `<img src="${escapeHtml(asset.url)}" alt="">`
+                )
+                : '<span>Sin recurso asignado</span>';
+        }
+
+        renderNativeAssetChoices(panel, element);
+    }
+
+    async function removeNativeAsset(element) {
+        const destination = nativeAssetDestination(element);
+        const section = selectedSection();
+
+        if (!destination || !section) return;
+
+        setState('Quitando recurso...');
+
+        const response = await fetch(root.dataset.assignAssetUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken(),
+            },
+            body: JSON.stringify({
+                remove: true,
+                destino: destination,
+                sectionId: section.sectionId,
+            }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.ok) {
+            throw new Error(
+                data.error || 'No se pudo quitar el recurso.'
+            );
+        }
+
+        config = data.config || config;
+        renderAll();
+        refreshRealPreview();
+        setState('Recurso retirado');
+    }
+
+    function nativeInspectorGroup(element) {
+        if (!element) return '';
+
+        if (element.role === 'event-place-card') return 'container';
+        if (element.role === 'event-place-media') return 'media';
+        if (element.role === 'event-place-button') return 'button';
+        if (element.role === 'event-place-map') return 'map';
+        if (
+            element.role === 'event-place-date'
+            || element.role === 'event-place-time'
+        ) {
+            return 'datetime';
+        }
+
+        if (element.type === 'text') return 'text';
+        return '';
+    }
+
+    function nativeItemConfig(element) {
+        const section = selectedSection();
+        if (!section || !element?.item) return null;
+
+        const real = ensureSectionConfig(section).realContent;
+        real.items = real.items || {};
+        real.items[element.item] = real.items[element.item] || {};
+
+        return real.items[element.item];
+    }
+
+    function nativeTextValue(element) {
+        const item = nativeItemConfig(element);
+        const event = content.event || {};
+
+        if (element.role === 'event-place-title') {
+            return item?.label || '';
+        }
+
+        const contentField = nativeContentField(element);
+        return contentField ? event[contentField] || '' : '';
+    }
+
+    function resolveNativeElementNode(element) {
+        if (!element) return null;
+
+        if (element.node?.isConnected) {
+            return element.node;
+        }
+
+        const doc = activeRealPreviewDocument();
+
+        if (!doc || !element.id) {
+            return null;
+        }
+
+        const node = doc.querySelector(
+            `[data-native-element][data-element-id="${element.id}"]`
+        );
+
+        if (node) {
+            element.node = node;
+        }
+
+        return node;
+    }
+
+    let nativePreviewRefreshTimer = null;
+
+    function scheduleNativePreviewRefresh(delay = 180) {
+        window.clearTimeout(nativePreviewRefreshTimer);
+
+        nativePreviewRefreshTimer = window.setTimeout(() => {
+            nativePreviewRefreshTimer = null;
+            refreshRealPreview();
+        }, delay);
+    }
+
+    function nativeDisplayValue(element) {
+        if (!element) return '';
+
+        if (element.role === 'event-place-card') return 'flex';
+        if (element.role === 'event-place-media') return 'block';
+        if (element.role === 'event-place-title') return 'block';
+        if (element.role === 'event-place-date') return 'block';
+        if (element.role === 'event-place-time') return 'block';
+        if (element.role === 'event-place-name') return 'block';
+        if (element.role === 'event-place-address') return 'block';
+        if (element.role === 'event-place-button') return 'inline-flex';
+        if (element.role === 'event-place-map') return 'block';
+
+        return '';
+    }
+
+    function setNativeElementVisibility(element, visible) {
+        const node = resolveNativeElementNode(element);
+
+        if (!node) return;
+
+        node.hidden = visible === false;
+        node.style.display = visible === false
+            ? 'none'
+            : nativeDisplayValue(element);
+    }
+
+    function formatNativeDateTimeValue(element, value) {
+        if (!value) return '';
+
+        const date = new Date(value);
+
+        if (Number.isNaN(date.getTime())) {
+            return value;
+        }
+
+        if (element?.role === 'event-place-time') {
+            return new Intl.DateTimeFormat('es-MX', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true,
+            }).format(date);
+        }
+
+        return new Intl.DateTimeFormat('es-MX', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+        }).format(date);
+    }
+
+    function patchNativeContentPreview(element, fieldName, value) {
+        const node = resolveNativeElementNode(element);
+
+        if (!node) return false;
+
+        if (
+            element.role === 'event-place-date'
+            || element.role === 'event-place-time'
+        ) {
+            node.textContent = formatNativeDateTimeValue(
+                element,
+                value
+            );
+
+            return true;
+        }
+
+        if (
+            element.role === 'event-place-name'
+            || element.role === 'event-place-address'
+            || element.role === 'event-place-title'
+        ) {
+            node.textContent = value || '';
+
+            return true;
+        }
+
+        if (element.role === 'event-place-button') {
+            if (fieldName?.endsWith('MapUrl')) {
+                node.setAttribute('href', value || '#');
+            } else {
+                node.textContent = value || '';
+            }
+
+            return true;
+        }
+
+        if (element.role === 'event-place-map') {
+            const iframe = node.matches('iframe')
+                ? node
+                : node.querySelector('iframe');
+
+            if (iframe && value) {
+                iframe.setAttribute('src', value);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    function patchNativeItemPreview(element, field, value) {
+        const node = resolveNativeElementNode(element);
+
+        if (!node) return false;
+
+        const card = node.matches('[data-real-card]')
+            ? node
+            : node.closest('[data-real-card]');
+
+        if (field === 'visible') {
+            setNativeElementVisibility(element, value !== false);
+            return true;
+        }
+
+        const visibilityFields = {
+            showMedia: 'event-place-media',
+            showTitle: 'event-place-title',
+            showDate: 'event-place-date',
+            showTime: 'event-place-time',
+            showPlace: 'event-place-name',
+            showAddress: 'event-place-address',
+            showButton: 'event-place-button',
+            showMaps: 'event-place-map',
+        };
+
+        if (visibilityFields[field]) {
+            const target = card?.querySelector(
+                `[data-element-role="${visibilityFields[field]}"]`
+            );
+
+            if (target) {
+                target.hidden = value === false;
+                target.style.display = value === false ? 'none' : '';
+            }
+
+            return true;
+        }
+
+        if (field === 'label') {
+            node.textContent = value || '';
+            return true;
+        }
+
+        if (field === 'buttonLabel') {
+            node.textContent = value || '';
+            return true;
+        }
+
+        if (!card) return false;
+
+        const cssVariables = {
+            cardBg: '--real-card-bg',
+            cardWidth: '--native-card-width',
+            cardMinHeight: '--native-card-min-height',
+            cardPadding: '--native-card-padding',
+            cardGap: '--native-card-gap',
+            cardRadius: '--native-card-radius',
+            cardBorderWidth: '--native-card-border-width',
+            cardBorderColor: '--native-card-border-color',
+            cardAlign: '--native-card-align',
+            cardShadow: '--native-card-shadow',
+            mediaHeight: '--native-media-height',
+            mediaFit: '--native-media-fit',
+            mediaX: '--native-media-x',
+            mediaY: '--native-media-y',
+            cardBackgroundFit: '--native-card-background-fit',
+            cardBackgroundOpacity: '--native-card-background-opacity',
+        };
+
+        const units = {
+            cardWidth: '%',
+            cardMinHeight: 'px',
+            cardPadding: 'px',
+            cardGap: 'px',
+            cardRadius: 'px',
+            cardBorderWidth: 'px',
+            mediaHeight: 'px',
+            mediaX: '%',
+            mediaY: '%',
+        };
+
+        if (field === 'cardShadow') {
+            card.style.setProperty(
+                '--native-card-shadow',
+                value
+                    ? '0 14px 34px rgba(17, 24, 39, .16)'
+                    : 'none'
+            );
+
+            return true;
+        }
+        if (
+            field === 'cardBackgroundX'
+            || field === 'cardBackgroundY'
+        ) {
+            const item = nativeItemConfig(element) || {};
+
+            card.style.setProperty(
+                '--native-card-background-position',
+                `${Number(item.cardBackgroundX ?? 50)}% ${Number(item.cardBackgroundY ?? 50)}%`
+            );
+
+            return true;
+        }
+
+        const cssVariable = cssVariables[field];
+
+        if (cssVariable) {
+            const finalValue = `${value}${units[field] || ''}`;
+
+            card.style.setProperty(
+                cssVariable,
+                finalValue
+            );
+
+            if (field === 'cardBg') {
+                card.style.backgroundColor = String(value || '#ffffff');
+            }
+
+            if (field === 'cardBorderColor') {
+                card.style.borderColor = String(value || '#e5e7eb');
+            }
+
+            if (field === 'cardAlign') {
+                card.style.textAlign = String(value || 'center');
+            }
+
+            return true;
+        }
+
+
+        if (field === 'mapDisplay') {
+            card.dataset.realCardMapDisplay = value;
+            return false;
+        }
+
+        if (field === 'mediaPosition') {
+            card.dataset.realCardMediaPosition = value;
+            return false;
+        }
+
+        if (field === 'order') {
+            card.style.order = String(value);
+            return false;
+        }
+
+        return false;
+    }
+    
+
+
+    function setNativeItemValue(element, field, value) {
+        const section = selectedSection();
+        const item = nativeItemConfig(element);
+
+        if (!section || !item || !field) return;
+
+        item[field] = value;
+
+        section.config.realContent = normalizeRealContentConfig(
+            ensureSectionConfig(section).realContent,
+            section.type
+        );
+
+        const patched = patchNativeItemPreview(
+            element,
+            field,
+            value
+        );
+
+        const structuralFields = new Set([
+            'visible',
+            'mapDisplay',
+            'mediaPosition',
+            'order',
+        ]);
+
+        if (structuralFields.has(field)) {
+            scheduleNativePreviewRefresh();
+        } else if (!patched) {
+            paintRealPreviewSelection();
+        }
+
+        renderComponentTree();
+        updateEditorContextCard();
+
+        setState('Cambios sin guardar');
+    }
+
+
+    function syncNativeContentField(fieldName, value) {
+        if (!fieldName || !content.event) return;
+
+        content.event[fieldName] = value;
+
+        const form = root.querySelector('[data-content-form]');
+        const field = form?.elements?.[fieldName];
+
+        if (field) {
+            field.value = value;
+        }
+
+        const element = selectedNativeElement();
+
+        if (element) {
+            patchNativeContentPreview(
+                element,
+                fieldName,
+                value
+            );
+        }
+
+        updateEditorContextCard();
+        setState('Contenido modificado sin guardar');
+    }
+
+    function updateNativeInspectorOutputs(panel, item = {}) {
+        const suffixes = {
+            cardWidth: '%',
+            cardMinHeight: ' px',
+            cardPadding: ' px',
+            cardGap: ' px',
+            cardRadius: ' px',
+            cardBorderWidth: ' px',
+            mediaHeight: ' px',
+            mediaX: '%',
+            mediaY: '%',
+            cardBackgroundX: '%',
+            cardBackgroundY: '%',
+        };
+
+        Object.entries(suffixes).forEach(([key, suffix]) => {
+            const output = panel.querySelector(
+                `[data-native-output="${key}"]`
+            );
+
+            const input = panel.querySelector(
+                `[data-native-field="${key}"]`
+            );
+
+            if (output && input) {
+                output.textContent = `${input.value}${suffix}`;
+            }
+        });
+
+        const opacityInput = panel.querySelector(
+            '[data-native-field="cardBackgroundOpacity"]'
+        );
+
+        const opacityOutput = panel.querySelector(
+            '[data-native-output="cardBackgroundOpacity"]'
+        );
+
+        if (opacityInput && opacityOutput) {
+            opacityOutput.textContent =
+                `${Math.round(
+                    Number(opacityInput.value || 0) * 100
+                )}%`;
+        }
+    }
+
+    function fillNativeElementInspector() {
+        const panel = root.querySelector(
+            '[data-native-element-inspector]'
+        );
+
+        if (!panel) return;
+
+        const element = selectedNativeElement();
+        panel.hidden = !element;
+
+        if (!element) return;
+
+        const item = nativeItemConfig(element) || {};
+        const groupName = nativeInspectorGroup(element);
+        const resizeHelp = panel.querySelector(
+            '[data-native-resize-help]'
+        );
+
+        if (resizeHelp) {
+            resizeHelp.hidden =
+                nativeResizeCapabilities(element).length === 0;
+        }
+        const visibilityField = nativeVisibilityField(element);
+        const contentField = nativeContentField(element);
+
+        const title = panel.querySelector(
+            '[data-native-inspector-title]'
+        );
+        const summary = panel.querySelector(
+            '[data-native-inspector-summary]'
+        );
+        const type = panel.querySelector(
+            '[data-native-inspector-type]'
+        );
+
+        if (title) {
+            title.textContent = nativeElementRoleLabel(element);
+        }
+
+        if (summary) {
+            summary.textContent =
+                `${element.item === 'reception' ? 'Recepción' : 'Ceremonia'}`
+                + ` · ${element.id}`;
+        }
+
+        if (type) {
+            type.textContent = nativeElementTypeLabel(element.type);
+        }
+
+        panel.querySelectorAll('[data-native-group]').forEach((group) => {
+            group.hidden =
+                group.dataset.nativeGroup !== groupName;
+        });
+
+        const visible = panel.querySelector(
+            '[data-native-field="visible"]'
+        );
+
+        if (visible) {
+            visible.disabled = !visibilityField;
+            visible.checked = visibilityField
+                ? item[visibilityField] !== false
+                : true;
+        }
+
+        const textField = panel.querySelector(
+            '[data-native-field="text"]'
+        );
+
+        if (textField) {
+            textField.value = nativeTextValue(element);
+        }
+
+        const datetimeField = panel.querySelector(
+            '[data-native-field="datetime"]'
+        );
+
+        if (datetimeField) {
+            datetimeField.value =
+                contentField && content.event
+                    ? content.event[contentField] || ''
+                    : '';
+        }
+
+        panel.querySelectorAll(
+            '[data-native-field="buttonLabel"]'
+        ).forEach((field) => {
+            field.value = item.buttonLabel || '';
+        });
+
+        panel.querySelectorAll(
+            '[data-native-field="url"]'
+        ).forEach((field) => {
+            field.value =
+                contentField && content.event
+                    ? content.event[contentField] || ''
+                    : '';
+        });
+
+        panel.querySelectorAll(
+            '[data-native-field="mapDisplay"]'
+        ).forEach((field) => {
+            field.value = item.mapDisplay || 'button-map';
+        });
+
+        panel.querySelectorAll(
+            '[data-native-field="mediaPosition"]'
+        ).forEach((field) => {
+            field.value = item.mediaPosition || 'top';
+        });
+
+        const itemFieldDefaults = {
+            cardWidth: 100,
+            cardMinHeight: 0,
+            cardPadding: 16,
+            cardGap: 8,
+            cardRadius: 0,
+            cardBorderWidth: 0,
+            cardBorderColor: '#e5e7eb',
+            cardAlign: 'center',
+            cardShadow: false,
+            mediaFit: 'cover',
+            mediaHeight: 220,
+            mediaX: 50,
+            mediaY: 50,
+            cardBackgroundFit: 'cover',
+            cardBackgroundOpacity: 0.35,
+            cardBackgroundX: 50,
+            cardBackgroundY: 50,
+
+        };
+
+        Object.entries(itemFieldDefaults).forEach(([key, fallback]) => {
+            panel.querySelectorAll(
+                `[data-native-field="${key}"]`
+            ).forEach((field) => {
+                if (field.type === 'checkbox') {
+                    field.checked = Boolean(item[key] ?? fallback);
+                } else {
+                    field.value = item[key] ?? fallback;
+                }
+            });
+        });
+
+        panel.querySelectorAll(
+            '[data-native-field="cardBg"]'
+        ).forEach((field) => {
+            field.value = item.cardBg || '#ffffff';
+        });
+
+        updateNativeInspectorOutputs(panel, item);
+
+        panel.querySelectorAll(
+            '[data-native-field="order"]'
+        ).forEach((field) => {
+            field.value = item.order ?? 1;
+        });
+
+        const saveButton = panel.querySelector(
+            '[data-native-action="save-content"]'
+        );
+
+        if (saveButton) {
+            saveButton.hidden = !contentField;
+        }
+
+        renderNativeCurrentAsset(panel, element);
+    }
+
+    function selectNativeElement(elementId, options = {}) {
+        const element = nativeElementById(elementId);
+        if (!element) return null;
+
+        const sectionType = nativeElementSectionType(element);
+        const section = sortedSections().find(
+            (item) =>
+                Number(item.sectionId) === Number(element.sectionId)
+                || item.type === sectionType
+        );
+
+        selectedComponentId = null;
+        selectedNativeElementId = element.id;
+
+        if (section) {
+            selectedId = section.sectionId;
+
+            const inspectorTarget = root.querySelector(
+                '[data-inspector-target]'
+            );
+
+            if (
+                inspectorTarget &&
+                realContentSections.has(section.type)
+            ) {
+                inspectorTarget.value = 'real';
+            }
+        }
+
+        setEditorPanel('design');
+
+        if (!options.skipRender) {
+            renderAll();
+        } else {
+            updateEditorContextCard();
+        }
+
+        paintRealPreviewSelection();
+
+        if (!options.silent) {
+            setState(
+                `Elemento seleccionado: ${nativeElementRoleLabel(element)}`
+            );
+        }
+
+        return element;
+    }
+
+
+
+    function visualSectionNodes(panel) {
+        if (!panel) return [];
+
+        return [
+            ...panel.querySelectorAll(
+                [
+                    '.section-full-media',
+                    '.section-heading-text',
+                    '.section-main-content',
+                    '[data-component-id]',
+                    '.custom-public-layer',
+                ].join(', ')
+            ),
+        ].filter((node) => {
+            if (!node?.isConnected) return false;
+
+            const style = node.ownerDocument
+                .defaultView
+                .getComputedStyle(node);
+
+            return (
+                style.display !== 'none'
+                && style.visibility !== 'hidden'
+                && Number(style.opacity || 1) > 0
+            );
+        });
+    }
+
+    function autoFitRealSection(
+        section,
+        {
+            allowShrink = false,
+            extraBottom = 28,
+        } = {}
+    ) {
+        if (!section) return false;
+
+        const cfg = ensureSectionConfig(section);
+
+        if (cfg.layoutAutoHeight !== true) {
+            return false;
+        }
+
+        const sectionNode = selectedRealSectionNode();
+        const panel = sectionNode?.querySelector('.panel');
+
+        if (!panel) return false;
+
+        const panelRect = panel.getBoundingClientRect();
+        const nodes = visualSectionNodes(panel);
+
+        if (!nodes.length) return false;
+
+        let maxBottom = 0;
+        let minTop = panelRect.height;
+
+        nodes.forEach((node) => {
+            const rect = node.getBoundingClientRect();
+
+            maxBottom = Math.max(
+                maxBottom,
+                rect.bottom - panelRect.top
+            );
+
+            minTop = Math.min(
+                minTop,
+                rect.top - panelRect.top
+            );
+        });
+
+        const paddingY = Number(
+            cfg.layoutPaddingY ?? 24
+        );
+
+        const minimumBase = Math.max(
+            180,
+            Number(cfg.layoutMinHeight || 0)
+        );
+
+        let desired = Math.ceil(
+            maxBottom
+            + paddingY
+            + extraBottom
+        );
+
+        if (minTop < paddingY) {
+            desired += Math.ceil(
+                paddingY - minTop
+            );
+        }
+
+        desired = clamp(
+            desired,
+            180,
+            Number(cfg.layoutMaxHeight || 0) > 0
+                ? Number(cfg.layoutMaxHeight)
+                : 2400
+        );
+
+        const current = Math.max(
+            panelRect.height,
+            Number(cfg.layoutMinHeight || 0)
+        );
+
+        const shouldGrow = desired > current + 4;
+        const shouldShrink =
+            allowShrink
+            && desired < current - 36;
+
+        if (!shouldGrow && !shouldShrink) {
+            return false;
+        }
+
+        cfg.layoutMinHeight = Math.round(desired);
+
+        panel.style.setProperty(
+            '--section-layout-min-height',
+            `${cfg.layoutMinHeight}px`
+        );
+
+        const minHeightField = root.querySelector(
+            '[data-config-field="layoutMinHeight"]'
+        );
+
+        if (
+            minHeightField
+            && selectedSection()?.type === section.type
+        ) {
+            minHeightField.value =
+                cfg.layoutMinHeight;
+        }
+
+        return true;
+    }
+
+    function scheduleAutoFitRealSection(
+        section,
+        options = {}
+    ) {
+        requestAnimationFrame(() => {
+            autoFitRealSection(section, options);
+
+            requestAnimationFrame(() => {
+                autoFitRealSection(
+                    section,
+                    {
+                        ...options,
+                        allowShrink: false,
+                    }
+                );
+            });
+        });
+    }
+
+    function backgroundPositioningEnabled() {
+        return root.dataset.backgroundPositioning === 'true';
+    }
+
+    function updateBackgroundPositionButton() {
+        const button = root.querySelector(
+            '[data-toggle-background-positioning]'
+        );
+
+        if (!button) return;
+
+        const active = backgroundPositioningEnabled();
+
+        button.classList.toggle('is-active', active);
+        button.setAttribute(
+            'aria-pressed',
+            active ? 'true' : 'false'
+        );
+
+        button.textContent = active
+            ? 'Terminar de mover fondo'
+            : 'Mover fondo en Vista Real';
+    }
+
+    function startRealBackgroundDrag(
+        event,
+        panel,
+        section
+    ) {
+        if (
+            !backgroundPositioningEnabled()
+            || !panel
+            || !section
+        ) {
+            return false;
+        }
+
+        if (
+            event.pointerType === 'mouse'
+            && event.button !== 0
+        ) {
+            return false;
+        }
+
+        const cfg = ensureSectionConfig(section);
+        const rect = panel.getBoundingClientRect();
+
+        realBackgroundDrag = {
+            pointerId: event.pointerId,
+            pointerType: event.pointerType,
+            panel,
+            section,
+            rect,
+            startClientX: event.clientX,
+            startClientY: event.clientY,
+            startX: Number(
+                effectiveBackgroundValue(
+                    cfg,
+                    'backgroundX'
+                ) ?? 50
+            ),
+            startY: Number(
+                effectiveBackgroundValue(
+                    cfg,
+                    'backgroundY'
+                ) ?? 50
+            ),
+            activated: false,
+            threshold:
+                event.pointerType === 'touch'
+                    ? 10
+                    : 4,
+        };
+
+        panel.setPointerCapture?.(
+            event.pointerId
+        );
+
+        setState('Arrastra para mover el fondo');
+        return true;
+    }
+
+    function updateRealBackgroundDrag(event) {
+        const drag = realBackgroundDrag;
+
+        if (!drag) return;
+
+        if (
+            Number.isFinite(drag.pointerId)
+            && event.pointerId !== drag.pointerId
+        ) {
+            return;
+        }
+
+        const pixelDeltaX =
+            event.clientX - drag.startClientX;
+
+        const pixelDeltaY =
+            event.clientY - drag.startClientY;
+
+        if (!drag.activated) {
+            if (
+                Math.hypot(
+                    pixelDeltaX,
+                    pixelDeltaY
+                ) < drag.threshold
+            ) {
+                return;
+            }
+
+            drag.activated = true;
+        }
+
+        const cfg = ensureSectionConfig(
+            drag.section
+        );
+
+        const nextX = Math.round(
+            clamp(
+                drag.startX
+                + (
+                    pixelDeltaX
+                    / Math.max(drag.rect.width, 1)
+                ) * 100,
+                0,
+                100
+            )
+        );
+
+        const nextY = Math.round(
+            clamp(
+                drag.startY
+                + (
+                    pixelDeltaY
+                    / Math.max(drag.rect.height, 1)
+                ) * 100,
+                0,
+                100
+            )
+        );
+
+        setBackgroundValue(
+            cfg,
+            'backgroundX',
+            nextX
+        );
+
+        setBackgroundValue(
+            cfg,
+            'backgroundY',
+            nextY
+        );
+
+        patchRealSectionBackground(
+            drag.section
+        );
+
+        const xField = root.querySelector(
+            '[data-config-field="backgroundX"]'
+        );
+
+        const yField = root.querySelector(
+            '[data-config-field="backgroundY"]'
+        );
+
+        if (xField) xField.value = nextX;
+        if (yField) yField.value = nextY;
+
+        setState('Fondo ajustado sin guardar');
+    }
+
+    function finishRealBackgroundDrag() {
+        if (!realBackgroundDrag) return;
+
+        const drag = realBackgroundDrag;
+        realBackgroundDrag = null;
+
+        if (!drag.activated) {
+            setState('Modo mover fondo activo');
+            return;
+        }
+
+        setState('Posición del fondo actualizada');
+    }
+
+    function cancelRealBackgroundDrag() {
+        realBackgroundDrag = null;
+    }
+
+    function selectedCountdownSection() {
+        const section = selectedSection();
+
+        return section?.type === 'CUENTA_REGRESIVA'
+            ? section
+            : null;
+    }
+
+    function applyCountdownPreview(section, node) {
+        if (!section || !node) return;
+
+        const cfg = ensureSectionConfig(section);
+        const panel = node.closest('.countdown-panel');
+
+        if (!panel) return;
+
+        panel.style.setProperty('--counter-x', `${Number(cfg.counterX ?? 50)}%`);
+        panel.style.setProperty('--counter-y', `${Number(cfg.counterY ?? 68)}%`);
+        panel.style.setProperty('--counter-width', `${Number(cfg.counterWidth ?? 92)}%`);
+        panel.style.setProperty('--counter-scale', Number(cfg.counterScale ?? 1));
+        panel.style.setProperty('--counter-z', Number(cfg.counterZ ?? 35));
+    }
+
+    function patchCountdownFromConfig(section) {
+        if (!section || section.type !== 'CUENTA_REGRESIVA') {
+            return false;
+        }
+
+        const doc = activeRealPreviewDocument();
+        const node = doc?.querySelector(
+            '[data-invitation-section="CUENTA_REGRESIVA"] '
+            + '[data-element-role="countdown-content"]'
+        );
+
+        if (!node) return false;
+
+        applyCountdownPreview(section, node);
+        return true;
+    }
+
+    function startCountdownPreviewTransform(event, node, mode = 'move') {
+        const section = selectedCountdownSection();
+        const panel = node?.closest('.countdown-panel');
+
+        if (!section || !node || !panel) return;
+
+        const cfg = ensureSectionConfig(section);
+        const rect = panel.getBoundingClientRect();
+
+        countdownPreviewTransform = {
+            pointerId: event.pointerId,
+            mode,
+            node,
+            section,
+            rect,
+            startClientX: event.clientX,
+            startClientY: event.clientY,
+            startX: Number(cfg.counterX ?? 50),
+            startY: Number(cfg.counterY ?? 68),
+            startWidth: Number(cfg.counterWidth ?? 92),
+            startScale: Number(cfg.counterScale ?? 1),
+            activated: false,
+            threshold:
+                event.pointerType === 'touch'
+                    ? 12
+                    : (
+                        event.pointerType === 'pen'
+                            ? 8
+                            : 5
+                    ),
+        };
+
+        event.target.setPointerCapture?.(event.pointerId);
+
+        setState(
+            mode === 'resize'
+                ? 'Escalando contador...'
+                : 'Moviendo contador...'
+        );
+    }
+
+    function updateCountdownPreviewTransform(event) {
+        const transform = countdownPreviewTransform;
+        if (!transform) return;
+
+        const cfg = ensureSectionConfig(transform.section);
+
+        const pixelDeltaX =
+            event.clientX - transform.startClientX;
+
+        const pixelDeltaY =
+            event.clientY - transform.startClientY;
+
+        if (!transform.activated) {
+            const distance = Math.hypot(
+                pixelDeltaX,
+                pixelDeltaY
+            );
+
+            if (distance < transform.threshold) {
+                return;
+            }
+
+            transform.activated = true;
+        }
+
+        const deltaX =
+            (pixelDeltaX / Math.max(transform.rect.width, 1)) * 100;
+
+        const deltaY =
+            (pixelDeltaY / Math.max(transform.rect.height, 1)) * 100;
+
+        if (transform.mode === 'resize') {
+            cfg.counterWidth = Math.round(
+                clamp(transform.startWidth + deltaX, 20, 140) * 10
+            ) / 10;
+
+            cfg.counterScale = Math.round(
+                clamp(transform.startScale + (deltaY / 100), 0.35, 2.5) * 100
+            ) / 100;
+        } else {
+            cfg.counterX = Math.round(
+                clamp(transform.startX + deltaX, -20, 120) * 10
+            ) / 10;
+
+            cfg.counterY = Math.round(
+                clamp(transform.startY + deltaY, -20, 120) * 10
+            ) / 10;
+        }
+
+        applyCountdownPreview(transform.section, transform.node);
+
+        autoFitRealSection(
+            transform.section,
+            {
+                allowShrink: false,
+                extraBottom: 34,
+            }
+        );
+    }
+
+    function finishCountdownPreviewTransform() {
+        if (!countdownPreviewTransform) return;
+
+        const transform = countdownPreviewTransform;
+        countdownPreviewTransform = null;
+
+        if (!transform.activated) {
+            paintRealPreviewSelection();
+            setState('Contador seleccionado');
+            return;
+        }
+
+        scheduleAutoFitRealSection(
+            transform.section,
+            {
+                allowShrink: true,
+                extraBottom: 28,
+            }
+        );
+
+        fillProperties();
+        renderComponentTree();
+        setState('Posición del contador actualizada sin guardar');
+    }
+
+    function cancelCountdownPreviewTransform() {
+        countdownPreviewTransform = null;
+    }
+
     function bindRealPreviewInteractions() {
         const frame = realPreviewFrame;
+
         if (!frame) return;
+
         try {
             const doc = frame.contentDocument;
+
             if (!doc) return;
 
+            console.debug('[A1.1] bind iframe', {
+                readyState: doc.readyState,
+                alreadyBound: Boolean(doc.__invitationLiveEditorBound),
+                mode: livePreviewMode,
+                url: frame.contentWindow?.location?.href,
+                components: doc.querySelectorAll('[data-component-id]').length,
+            });
+
             /*
-             * S03-P01
-             * Registrar siempre antes de comprobar si los listeners
-             * del iframe ya fueron conectados.
-             */
+            * Listener temporal de diagnóstico.
+            * No crea una ruta funcional adicional.
+            */
+            if (!frame.contentWindow.__a11ReadyListenerBound) {
+                frame.contentWindow.__a11ReadyListenerBound = true;
+
+                frame.contentWindow.addEventListener('message', (event) => {
+                    const data = event.data;
+
+                    if (
+                        data
+                        && typeof data === 'object'
+                        && data.type === 'READY'
+                    ) {
+                        console.debug('[A1.1] renderer READY', data);
+                    }
+                });
+            }
+
+            /*
+            * Registrar elementos nativos antes de comprobar si los
+            * listeners generales del iframe ya fueron conectados.
+            */
             registerNativeElements(doc);
 
             ensureRealPreviewStyle(doc);
             applyRealPreviewMode(doc);
 
-            if (doc.__invitationLiveEditorBound) return;
+            /*
+            * Evita registrar los mismos listeners más de una vez
+            * sobre el mismo documento del iframe.
+            */
+            if (doc.__invitationLiveEditorBound) {
+                return;
+            }
+
             doc.__invitationLiveEditorBound = true;
 
+            /*
+            * POINTER DOWN
+            */
             doc.addEventListener('pointerdown', (event) => {
-                if (livePreviewMode !== 'edit') return;
-                const resizeHandle = event.target.closest('.editor-live-selection-handle[data-handle]');
-                if (resizeHandle) {
-                    const componentEl = resizeHandle.closest('[data-component-id]');
-                    const component = selectBuilderComponent(componentEl?.dataset.componentId, { skipRender: true, silent: true });
-                    if (!componentEl || !component) return;
+                if (livePreviewMode !== 'edit') {
+                    console.debug('[A1.1] pointerdown early return', {
+                        reason: 'not-edit-mode',
+                        mode: livePreviewMode,
+                        target: event.target?.tagName,
+                    });
+
+                    return;
+                }
+
+                const activeSection = selectedSection();
+                const backgroundPanel = event.target.closest(
+                    '[data-invitation-section] .panel'
+                );
+
+                const blockedBackgroundTarget = event.target.closest(
+                    [
+                        '[data-component-id]',
+                        '[data-native-element]',
+                        '.custom-public-layer',
+                        'a',
+                        'button',
+                        'input',
+                        'textarea',
+                        'select',
+                        'iframe',
+                    ].join(', ')
+                );
+
+                if (
+                    backgroundPositioningEnabled()
+                    && backgroundPanel
+                    && !blockedBackgroundTarget
+                    && startRealBackgroundDrag(
+                        event,
+                        backgroundPanel,
+                        activeSection
+                    )
+                ) {
                     event.preventDefault();
                     event.stopPropagation();
-                    paintRealPreviewSelection(doc);
-                    startRealComponentResize(event, resizeHandle, componentEl, component);
                     return;
                 }
-                const componentEl = event.target.closest('[data-component-id]');
-                const sectionEl = event.target.closest('[data-invitation-section]');
-                if (!componentEl && !sectionEl) return;
+
+                const countdownResizeHandle = event.target.closest(
+                    '.editor-countdown-resize-handle'
+                );
+
+                const countdownNode = event.target.closest(
+                    '[data-element-role="countdown-content"]'
+                );
+
+                const nativeResizeHandle = event.target.closest(
+                    '.editor-native-resize-handle[data-native-handle]'
+                );
+
+                const componentResizeHandle = event.target.closest(
+                    '.editor-live-selection-handle[data-handle]'
+                );
+
+                const componentEl = event.target.closest(
+                    '[data-component-id]'
+                );
+
+                const nativeElementEl = event.target.closest(
+                    '[data-native-element]'
+                );
+
+                const sectionEl = event.target.closest(
+                    '[data-invitation-section]'
+                );
+
+                console.debug('[A1.1] pointerdown', {
+                    target: event.target?.tagName,
+                    componentId:
+                        componentEl?.dataset?.componentId
+                        || null,
+                    native: Boolean(nativeElementEl),
+                    section:
+                        sectionEl?.dataset?.invitationSection
+                        || null,
+                    mode: livePreviewMode,
+                    pointerId: event.pointerId,
+                });
+
+                /*
+                * Movimiento o escala del contador.
+                */
+                if (countdownNode && selectedCountdownSection()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+
+                    selectedComponentId = null;
+                    selectedNativeElementId =
+                        countdownNode.dataset.elementId;
+
+                    startCountdownPreviewTransform(
+                        event,
+                        countdownNode,
+                        countdownResizeHandle ? 'resize' : 'move'
+                    );
+
+                    paintRealPreviewSelection(doc);
+                    return;
+                }
+
+                /*
+                * Resize de un elemento nativo.
+                */
+                if (nativeResizeHandle) {
+                    const element = nativeElementById(
+                        nativeResizeHandle.dataset.nativeElementId
+                    );
+
+                    if (!element) {
+                        console.debug(
+                            '[A1.1] native resize early return',
+                            {
+                                reason: 'native-element-not-found',
+                                elementId:
+                                    nativeResizeHandle
+                                        .dataset
+                                        .nativeElementId,
+                            }
+                        );
+
+                        return;
+                    }
+
+                    event.preventDefault();
+                    event.stopPropagation();
+
+                    selectNativeElement(element.id, {
+                        skipRender: true,
+                        silent: true,
+                    });
+
+                    startNativePreviewTransform(
+                        event,
+                        nativeResizeHandle,
+                        element
+                    );
+
+                    return;
+                }
+
+                /*
+                * Resize de componente persistente.
+                */
+                if (componentResizeHandle) {
+                    const resizeComponentEl =
+                        componentResizeHandle.closest(
+                            '[data-component-id]'
+                        );
+
+                    const component = selectBuilderComponent(
+                        resizeComponentEl?.dataset.componentId,
+                        {
+                            skipRender: true,
+                            silent: true,
+                        }
+                    );
+
+                    console.debug('[A1.1] component resolved', {
+                        requestedId:
+                            resizeComponentEl?.dataset.componentId
+                            || null,
+                        found: Boolean(component),
+                        component,
+                    });
+
+                    if (!resizeComponentEl || !component) {
+                        return;
+                    }
+
+                    event.preventDefault();
+                    event.stopPropagation();
+
+                    /*
+                    No repintar aquí.
+                    El repintado eliminaría el handle que recibió pointerdown
+                    antes de que setPointerCapture pueda conservar el gesto.
+                    */
+
+                    startRealComponentResize(
+                        event,
+                        componentResizeHandle,
+                        resizeComponentEl,
+                        component
+                    );
+
+                    return;
+                }
+
+                /*
+                * No se encontró ningún objetivo editable.
+                */
+                if (
+                    !componentEl
+                    && !nativeElementEl
+                    && !sectionEl
+                ) {
+                    return;
+                }
+
                 event.preventDefault();
                 event.stopPropagation();
+
+                /*
+                * Movimiento de componente persistente.
+                */
                 if (componentEl) {
-                    const component = selectBuilderComponent(componentEl.dataset.componentId, { skipRender: true, silent: true });
+                    const component = selectBuilderComponent(
+                        componentEl.dataset.componentId,
+                        {
+                            skipRender: true,
+                            silent: true,
+                        }
+                    );
+
+                    console.debug('[A1.1] component resolved', {
+                        requestedId:
+                            componentEl.dataset.componentId,
+                        found: Boolean(component),
+                        component,
+                    });
+
+                    if (!component) {
+                        setState(
+                            'No se encontró el componente seleccionado.'
+                        );
+
+                        return;
+                    }
+
+                    startRealComponentDrag(
+                        event,
+                        componentEl,
+                        component
+                    );
                     paintRealPreviewSelection(doc);
-                    startRealComponentDrag(event, componentEl, component);
+
                     return;
                 }
+
+                /*
+                * Selección de elemento nativo.
+                */
+                if (nativeElementEl) {
+                    selectNativeElement(
+                        nativeElementEl.dataset.elementId,
+                        {
+                            skipRender: false,
+                            silent: false,
+                        }
+                    );
+
+                    paintRealPreviewSelection(doc);
+
+                    return;
+                }
+
+                /*
+                * Selección de sección o capa.
+                */
+                selectedNativeElementId = null;
                 selectedComponentId = null;
-                const selected = layerFromRealPreviewTarget(event.target);
-                selectSectionByType(sectionEl.dataset.invitationSection, selected.layer);
+
+                const selected = layerFromRealPreviewTarget(
+                    event.target
+                );
+
+                selectSectionByType(
+                    sectionEl.dataset.invitationSection,
+                    selected.layer
+                );
+
                 paintRealPreviewSelection(doc);
-                setState(`Vista real: ${sectionEl.dataset.invitationSection.replaceAll('_', ' ')} / ${selected.layer.replace('custom:', 'capa ')}`);
+
+                setState(
+                    `Vista real: ${
+                        sectionEl.dataset.invitationSection
+                            .replaceAll('_', ' ')
+                    } / ${
+                        selected.layer.replace(
+                            'custom:',
+                            'capa '
+                        )
+                    }`
+                );
             }, true);
 
+            /*
+            * POINTER MOVE
+            */
             doc.addEventListener('pointermove', (event) => {
-                if (livePreviewMode !== 'edit' || !realPreviewDrag) return;
+                if (livePreviewMode !== 'edit') {
+                    return;
+                }
+
+                /*
+                * No procesar ni llenar la consola cuando no existe
+                * ninguna transformación activa.
+                */
+                if (
+                    !nativePreviewTransform
+                    && !realPreviewDrag
+                    && !countdownPreviewTransform
+                ) {
+                    return;
+                }
+
+                console.debug('[A1.1] pointermove', {
+                    hasDrag: Boolean(realPreviewDrag),
+                    hasNativeTransform:
+                        Boolean(nativePreviewTransform),
+                    pointerId: event.pointerId,
+                    dragPointerId:
+                        realPreviewDrag?.pointerId,
+                    clientX: event.clientX,
+                    clientY: event.clientY,
+                });
+
+                if (realBackgroundDrag) {
+                    event.preventDefault();
+                    event.stopPropagation();
+
+                    updateRealBackgroundDrag(event);
+                    return;
+                }
+
+                if (countdownPreviewTransform) {
+                    event.preventDefault();
+                    event.stopPropagation();
+
+                    updateCountdownPreviewTransform(event);
+                    return;
+                }
+
+                if (nativePreviewTransform) {
+                    event.preventDefault();
+                    event.stopPropagation();
+
+                    updateNativePreviewTransform(event);
+
+                    return;
+                }
+
+                if (!realPreviewDrag) {
+                    return;
+                }
+
+                /*
+                * Ignorar eventos pertenecientes a otro puntero.
+                */
+                if (
+                    Number.isFinite(realPreviewDrag.pointerId)
+                    && Number.isFinite(event.pointerId)
+                    && event.pointerId
+                        !== realPreviewDrag.pointerId
+                ) {
+                    return;
+                }
+
                 event.preventDefault();
                 event.stopPropagation();
+
                 updateRealComponentDrag(event);
             }, true);
 
+            /*
+            * POINTER UP
+            */
             doc.addEventListener('pointerup', (event) => {
-                if (livePreviewMode !== 'edit' || !realPreviewDrag) return;
+                if (livePreviewMode !== 'edit') {
+                    return;
+                }
+
+                console.debug('[A1.1] pointerup', {
+                    hasDrag: Boolean(realPreviewDrag),
+                    hasNativeTransform:
+                        Boolean(nativePreviewTransform),
+                    componentId:
+                        realPreviewDrag?.component?.id,
+                    pointerId: event.pointerId,
+                });
+
+                if (realBackgroundDrag) {
+                    event.preventDefault();
+                    event.stopPropagation();
+
+                    finishRealBackgroundDrag();
+                    return;
+                }
+
+                if (countdownPreviewTransform) {
+                    event.preventDefault();
+                    event.stopPropagation();
+
+                    finishCountdownPreviewTransform();
+                    return;
+                }
+
+                if (nativePreviewTransform) {
+                    event.preventDefault();
+                    event.stopPropagation();
+
+                    finishNativePreviewTransform();
+
+                    return;
+                }
+
+                if (!realPreviewDrag) {
+                    return;
+                }
+
+                /*
+                * Ignorar pointerup perteneciente a otro puntero.
+                */
+                if (
+                    Number.isFinite(realPreviewDrag.pointerId)
+                    && Number.isFinite(event.pointerId)
+                    && event.pointerId
+                        !== realPreviewDrag.pointerId
+                ) {
+                    return;
+                }
+
                 event.preventDefault();
                 event.stopPropagation();
+
                 finishRealComponentDrag();
             }, true);
 
-            doc.addEventListener('pointercancel', () => { realPreviewDrag = null; }, true);
+            /*
+            * POINTER CANCEL
+            *
+            * Cancela por separado:
+            * - transformación de componente persistente;
+            * - transformación de elemento nativo.
+            */
+            doc.addEventListener('pointercancel', (event) => {
+                const hadRealDrag = Boolean(realPreviewDrag);
+                const hadNativeTransform =
+                    Boolean(nativePreviewTransform);
 
-            doc.addEventListener('click', (event) => {
-                if (livePreviewMode !== 'edit') return;
-                if (event.target.closest('[data-invitation-section], [data-component-id], a, button, input, textarea, select, iframe')) {
-                    event.preventDefault();
-                    event.stopPropagation();
+                const hadCountdownTransform =
+                    Boolean(countdownPreviewTransform);
+
+                const hadBackgroundDrag =
+                    Boolean(realBackgroundDrag);
+
+                console.warn('[A1.1] pointercancel', {
+                    componentId:
+                        realPreviewDrag?.component?.id,
+                    hadRealDrag,
+                    hadNativeTransform,
+                    pointerId: event.pointerId,
+                });
+
+                if (
+                    !hadRealDrag
+                    && !hadNativeTransform
+                    && !hadCountdownTransform
+                    && !hadBackgroundDrag
+                ) {
+                    return;
+                }
+
+                event.preventDefault();
+                event.stopPropagation();
+
+                if (hadRealDrag) {
+                    cancelRealComponentDrag();
+                }
+
+                if (hadNativeTransform) {
+                    cancelNativePreviewTransform();
+                }
+
+                if (hadCountdownTransform) {
+                    cancelCountdownPreviewTransform();
+                }
+
+                if (hadBackgroundDrag) {
+                    cancelRealBackgroundDrag();
                 }
             }, true);
 
+            /*
+            * BLOQUEO DE CLICS EN MODO EDITAR
+            */
+            doc.addEventListener('click', (event) => {
+                if (livePreviewMode !== 'edit') {
+                    return;
+                }
+
+                if (
+                    event.target.closest(
+                        '[data-element-role="countdown-content"]'
+                    )
+                ) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    return;
+                }
+
+                const interactiveTarget = event.target.closest(
+                    [
+                        '.editor-native-resize-handle',
+                        '.editor-live-selection-handle',
+                        '[data-native-element]',
+                        '[data-invitation-section]',
+                        '[data-component-id]',
+                        'a',
+                        'button',
+                        'input',
+                        'textarea',
+                        'select',
+                        'iframe',
+                    ].join(', ')
+                );
+
+                if (!interactiveTarget) {
+                    return;
+                }
+
+                event.preventDefault();
+                event.stopPropagation();
+            }, true);
+
+            /*
+            * BLOQUEO DE FORMULARIOS EN MODO EDITAR
+            */
             doc.addEventListener('submit', (event) => {
-                if (livePreviewMode !== 'edit') return;
+                if (livePreviewMode !== 'edit') {
+                    return;
+                }
+
                 event.preventDefault();
                 event.stopPropagation();
             }, true);
         } catch (error) {
-            setState('La vista real esta protegida por el navegador, usa el diseno rapido para editar.');
+            console.error(
+                '[A1.1] Error al conectar Vista Real',
+                error
+            );
+
+            setState(
+                'No fue posible conectar las herramientas de Vista Real.'
+            );
         }
     }
 
@@ -1680,6 +5748,10 @@
         sectionId = '',
         layerId = '',
         componentId = '',
+        nativeElementId = '',
+        treeKey = '',
+        expandable = false,
+        expanded = true,
         canHide = false,
         canLock = false,
         canMove = false,
@@ -1711,6 +5783,9 @@
                 data-tree-section-id="${escapeHtml(sectionId)}"
                 data-tree-layer-id="${escapeHtml(layerId)}"
                 data-tree-component-id="${escapeHtml(componentId)}"
+                data-tree-native-element-id="${escapeHtml(nativeElementId)}"
+                data-tree-key="${escapeHtml(treeKey)}"
+                data-tree-expandable="${expandable ? 'true' : 'false'}"
             >
                 <button
                     type="button"
@@ -1719,7 +5794,11 @@
                     data-tree-section-id="${escapeHtml(sectionId)}"
                     data-tree-layer-id="${escapeHtml(layerId)}"
                     data-tree-component-id="${escapeHtml(componentId)}"
+                    data-tree-native-element-id="${escapeHtml(nativeElementId)}"
+                    data-tree-key="${escapeHtml(treeKey)}"
+                    data-tree-expandable="${expandable ? 'true' : 'false'}"
                 >
+                    ${expandable ? `<span class="tree-chevron">${expanded ? '▾' : '▸'}</span>` : '<span class="tree-chevron tree-chevron-placeholder"></span>'}
                     <span class="tree-kind">${escapeHtml(kind)}</span>
                     <span class="tree-label">${escapeHtml(label)}</span>
                     ${meta ? `<small>${escapeHtml(meta)}</small>` : ''}
@@ -1729,8 +5808,35 @@
         `;
     }
 
+    function nativeTreeVisibility(element) {
+        const section = sortedSections().find(
+            (item) =>
+                Number(item.sectionId) === Number(element.sectionId)
+                || item.type === element.section
+        );
+
+        if (!section || !element.item) return true;
+
+        const item = ensureSectionConfig(section)
+            .realContent
+            ?.items
+            ?.[element.item] || {};
+
+        const field = nativeVisibilityField(element);
+        return field ? item[field] !== false : true;
+    }
+
+    function nativeTreeMeta(element) {
+        const nodeState = element.node?.isConnected
+            ? 'Visible en lienzo'
+            : 'No renderizado';
+
+        return `${nativeElementTypeLabel(element.type)} · ${nodeState}`;
+    }
+
     function renderComponentTree() {
         if (!componentTree) return;
+
         const sections = sortedSections();
         const selected = selectedSection();
         const selectedCfg = selected ? ensureSectionConfig(selected) : {};
@@ -1738,8 +5844,8 @@
         const rows = [
             componentTreeRow({
                 level: 0,
-                kind: 'Pagina',
-                label: 'Invitacion',
+                kind: 'Página',
+                label: 'Invitación',
                 meta: `${sections.length} secciones`,
                 action: 'page',
                 active: !selected,
@@ -1748,76 +5854,238 @@
 
         sections.forEach((section) => {
             const cfg = ensureSectionConfig(section);
-            const sectionActive = Number(section.sectionId) === Number(selectedId) && !selectedComponentId;
+            const sectionKey = treeSectionKey(section.sectionId);
+            const sectionExpanded = treeIsExpanded(sectionKey, true);
+            const sectionActive =
+                Number(section.sectionId) === Number(selectedId)
+                && !selectedComponentId
+                && !selectedNativeElementId;
+
             rows.push(componentTreeRow({
                 level: 1,
-                kind: 'Seccion',
+                kind: 'Sección',
                 label: section.title || section.type,
                 meta: section.type.replaceAll('_', ' '),
                 action: 'section',
                 sectionId: section.sectionId,
+                treeKey: sectionKey,
+                expandable: true,
+                expanded: sectionExpanded,
                 active: sectionActive && !activeLayer,
                 muted: section.visible === false,
                 canHide: true,
                 visible: section.visible !== false,
             }));
 
-            layerListItems(cfg).forEach((layer) => {
+            if (!sectionExpanded) return;
+
+            const nativeElements = nativeElementRegistry.filter(
+                (element) =>
+                    Number(element.sectionId) === Number(section.sectionId)
+                    || element.section === section.type
+            );
+
+            if (nativeElements.length) {
+                const nativeKey = treeGroupKey(
+                    section.sectionId,
+                    'native'
+                );
+                const nativeExpanded = treeIsExpanded(nativeKey, true);
+
                 rows.push(componentTreeRow({
                     level: 2,
-                    kind: layer.type,
-                    label: layer.label,
-                    meta: layer.locked ? 'Bloqueada' : `z ${layer.z || 0}`,
-                    action: 'layer',
+                    kind: 'Grupo',
+                    label: 'Contenido real',
+                    meta: `${nativeElements.length} elementos`,
+                    action: 'tree-group',
                     sectionId: section.sectionId,
-                    layerId: layer.id,
-                    active: Number(section.sectionId) === Number(selectedId) && !selectedComponentId && activeLayer === layer.id,
-                    muted: layer.visible === false,
-                    canHide: true,
-                    canLock: layer.canLock,
-                    canMove: layer.canMove,
-                    canDelete: isCustomLayer(layer.id),
-                    locked: layer.locked,
-                    visible: layer.visible !== false,
-                    canReorder: layer.canMove,
+                    treeKey: nativeKey,
+                    expandable: true,
+                    expanded: nativeExpanded,
+                    active: false,
                 }));
-            });
 
-            if (realContentSections.has(section.type)) {
+                if (nativeExpanded) {
+                    const itemOrder = {
+                        ceremony: 1,
+                        reception: 2,
+                    };
+                    const roleOrder = {
+                        'event-place-card': 1,
+                        'event-place-media': 2,
+                        'event-place-title': 3,
+                        'event-place-date': 4,
+                        'event-place-time': 5,
+                        'event-place-name': 6,
+                        'event-place-address': 7,
+                        'event-place-button': 8,
+                        'event-place-map': 9,
+                    };
+
+                    nativeElements
+                        .sort((a, b) => {
+                            const itemDiff =
+                                (itemOrder[a.item] || 99)
+                                - (itemOrder[b.item] || 99);
+
+                            if (itemDiff) return itemDiff;
+
+                            return (roleOrder[a.role] || 99)
+                                - (roleOrder[b.role] || 99);
+                        })
+                        .forEach((element) => {
+                            const visible = nativeTreeVisibility(element);
+
+                            rows.push(componentTreeRow({
+                                level: 3,
+                                kind: nativeElementTypeLabel(element.type),
+                                label:
+                                    element.label
+                                    || nativeElementRoleLabel(element),
+                                meta: nativeTreeMeta(element),
+                                action: 'native',
+                                sectionId: section.sectionId,
+                                nativeElementId: element.id,
+                                active:
+                                    element.id === selectedNativeElementId,
+                                muted: !visible,
+                                canHide: Boolean(
+                                    nativeVisibilityField(element)
+                                ),
+                                visible,
+                            }));
+                        });
+                }
+            } else if (realContentSections.has(section.type)) {
                 rows.push(componentTreeRow({
                     level: 2,
                     kind: 'Datos',
                     label: 'Contenido real',
-                    meta: section.type === 'DETALLES' ? 'Ceremonia / Recepcion' : 'Dinamico',
+                    meta: section.type === 'DETALLES'
+                        ? 'Ceremonia / Recepción'
+                        : 'Dinámico',
                     action: 'real',
                     sectionId: section.sectionId,
-                    active: Number(section.sectionId) === Number(selectedId) && root.querySelector('[data-inspector-target]')?.value === 'real',
+                    active:
+                        Number(section.sectionId) === Number(selectedId)
+                        && root.querySelector(
+                            '[data-inspector-target]'
+                        )?.value === 'real',
                 }));
             }
 
-            builderComponents
-                .filter((component) => Number(component.sectionId) === Number(section.sectionId))
-                .sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0))
-                .forEach((component) => {
-                    rows.push(componentTreeRow({
-                        level: 2,
-                        kind: component.tipo,
-                        label: component.properties?.label || component.properties?.text || component.properties?.alt || `Componente #${component.id}`,
-                        meta: `z ${component.zIndex || 0}`,
-                        action: 'component',
-                        sectionId: section.sectionId,
-                        componentId: component.id,
-                        active: Number(component.id) === Number(selectedComponentId),
-                        muted: component.hidden,
-                        canHide: true,
-                        canLock: true,
-                        canMove: true,
-                        canDelete: true,
-                        locked: component.locked,
-                        visible: component.hidden !== true,
-                        canReorder: true,
-                    }));
-                });
+            const layers = layerListItems(cfg);
+            if (layers.length) {
+                const layerKey = treeGroupKey(
+                    section.sectionId,
+                    'layers'
+                );
+                const layersExpanded = treeIsExpanded(layerKey, false);
+
+                rows.push(componentTreeRow({
+                    level: 2,
+                    kind: 'Grupo',
+                    label: 'Capas',
+                    meta: `${layers.length} capas`,
+                    action: 'tree-group',
+                    sectionId: section.sectionId,
+                    treeKey: layerKey,
+                    expandable: true,
+                    expanded: layersExpanded,
+                }));
+
+                if (layersExpanded) {
+                    layers.forEach((layer) => {
+                        rows.push(componentTreeRow({
+                            level: 3,
+                            kind: layer.type,
+                            label: layer.label,
+                            meta: layer.locked
+                                ? 'Bloqueada'
+                                : `z ${layer.z || 0}`,
+                            action: 'layer',
+                            sectionId: section.sectionId,
+                            layerId: layer.id,
+                            active:
+                                Number(section.sectionId) === Number(selectedId)
+                                && !selectedComponentId
+                                && !selectedNativeElementId
+                                && activeLayer === layer.id,
+                            muted: layer.visible === false,
+                            canHide: true,
+                            canLock: layer.canLock,
+                            canMove: layer.canMove,
+                            canDelete: isCustomLayer(layer.id),
+                            locked: layer.locked,
+                            visible: layer.visible !== false,
+                            canReorder: layer.canMove,
+                        }));
+                    });
+                }
+            }
+
+            const components = builderComponents
+                .filter(
+                    (component) =>
+                        Number(component.sectionId)
+                        === Number(section.sectionId)
+                )
+                .sort(
+                    (a, b) =>
+                        (a.zIndex || 0) - (b.zIndex || 0)
+                );
+
+            if (components.length) {
+                const componentKey = treeGroupKey(
+                    section.sectionId,
+                    'components'
+                );
+                const componentsExpanded = treeIsExpanded(
+                    componentKey,
+                    true
+                );
+
+                rows.push(componentTreeRow({
+                    level: 2,
+                    kind: 'Grupo',
+                    label: 'Componentes',
+                    meta: `${components.length} componentes`,
+                    action: 'tree-group',
+                    sectionId: section.sectionId,
+                    treeKey: componentKey,
+                    expandable: true,
+                    expanded: componentsExpanded,
+                }));
+
+                if (componentsExpanded) {
+                    components.forEach((component) => {
+                        rows.push(componentTreeRow({
+                            level: 3,
+                            kind: component.tipo,
+                            label:
+                                component.properties?.label
+                                || component.properties?.text
+                                || component.properties?.alt
+                                || `Componente #${component.id}`,
+                            meta: `z ${component.zIndex || 0}`,
+                            action: 'component',
+                            sectionId: section.sectionId,
+                            componentId: component.id,
+                            active:
+                                Number(component.id)
+                                === Number(selectedComponentId),
+                            muted: component.hidden,
+                            canHide: true,
+                            canLock: true,
+                            canMove: true,
+                            canDelete: true,
+                            locked: component.locked,
+                            visible: component.hidden !== true,
+                            canReorder: true,
+                        }));
+                    });
+                }
+            }
         });
 
         componentTree.innerHTML = rows.join('');
@@ -2711,6 +6979,16 @@
         sectionProps.classList.toggle('is-empty', !section);
         updateAssetDetailButtons();
         if (!section) return;
+
+        const countdownControls = root.querySelector(
+            '[data-countdown-layout-controls]'
+        );
+
+        if (countdownControls) {
+            countdownControls.hidden =
+                section.type !== 'CUENTA_REGRESIVA';
+        }
+
         root.querySelectorAll('[data-section-field]').forEach((field) => {
             const key = field.dataset.sectionField;
             if (field.type === 'checkbox') {
@@ -2721,6 +6999,35 @@
         });
         root.querySelectorAll('[data-config-field]').forEach((field) => {
             const cfg = ensureSectionConfig(section);
+            const realBackgroundFields = new Set([
+                'backgroundFit',
+                'backgroundRepeat',
+                'backgroundX',
+                'backgroundY',
+                'backgroundScale',
+                'backgroundOpacity',
+                'backgroundBrightness',
+                'backgroundBlur',
+                'sectionHeight',
+                'layoutAutoHeight',
+                'autoLayoutMode',
+                'layoutAlignment',
+                'layoutJustify',
+                'layoutSpacing',
+                'layoutContentWidth',
+                'layoutContentMaxWidth',
+                'layoutOverflow',
+                'layoutPaddingX',
+                'layoutPaddingY',
+                'layoutMinHeight',
+                'layoutMaxHeight',
+                'counterX',
+                'counterY',
+                'counterWidth',
+                'counterScale',
+                'counterZ',
+                'showBackgroundLayer',
+            ]);
             const key = field.dataset.configField;
             if (field.type === 'checkbox') {
                 field.checked = cfg[key] !== false;
@@ -2876,6 +7183,10 @@
             layoutMinHeight: fullImage ? preset.height : 150,
             layoutMaxHeight: 0,
             layoutAspectRatio: fullImage ? '' : '',
+            layoutAutoHeight:
+                section.type === 'DETALLES'
+                    ? true
+                    : cfg.layoutAutoHeight,
             backgroundOpacity: 1,
             backgroundFit: 'contain',
             backgroundRepeat: 'no-repeat',
@@ -2953,6 +7264,27 @@
     }
 
     function editorContextLabel() {
+        const nativeElement = selectedNativeElement();
+
+        if (nativeElement) {
+            const itemLabel =
+                nativeElement.item === 'ceremony'
+                    ? 'Ceremonia'
+                    : nativeElement.item === 'reception'
+                        ? 'Recepción'
+                        : '';
+
+            return {
+                title:
+                    `${nativeElementRoleLabel(nativeElement)}`
+                    + `${itemLabel ? ` · ${itemLabel}` : ''}`,
+                help:
+                    `Elemento ${nativeElementTypeLabel(nativeElement.type).toLowerCase()} `
+                    + `seleccionado directamente en Vista Real.`,
+                panel: 'design',
+            };
+        }
+
         const component = selectedComponent();
         if (component) {
             const labels = {
@@ -3010,6 +7342,15 @@
         const help = root.querySelector('[data-editor-context-help]');
         const openButton = root.querySelector('[data-editor-context-open]');
 
+        const contextCard = root.querySelector(
+            '[data-editor-context-card]'
+        );
+
+        if (contextCard) {
+            contextCard.dataset.nativeSelected =
+                selectedNativeElement() ? 'true' : 'false';
+        }
+
         if (title) title.textContent = context.title;
         if (help) help.textContent = context.help;
         if (openButton) {
@@ -3047,60 +7388,174 @@
     }
 
     function installSimplifiedEditorUi() {
+        const propertiesPanel =
+            root.querySelector('.properties-panel');
+
+        const panelHeading =
+            propertiesPanel?.querySelector(
+                ':scope > .panel-heading'
+            );
+
+        let toolbar = root.querySelector(
+            '[data-simple-editor-toolbar]'
+        );
+
         /*
-         * S02-P02
-         * La barra principal ahora viene renderizada desde Django.
-         * Se conserva este fallback para templates anteriores, pero
-         * la función SIEMPRE continúa para conectar sus listeners.
-         */
-        let toolbar = root.querySelector('[data-simple-editor-toolbar]');
+        Compatibilidad:
+        si el template todavía no trae la barra,
+        JavaScript la crea.
+        */
+        if (!toolbar && propertiesPanel && panelHeading) {
+            toolbar = document.createElement('div');
+            toolbar.className =
+                'simple-editor-toolbar';
 
-        if (!toolbar) {
-            const propertiesPanel = root.querySelector('.properties-panel');
-            const panelHeading = propertiesPanel?.querySelector(':scope > .panel-heading');
+            toolbar.dataset.simpleEditorToolbar = '';
 
-            if (propertiesPanel && panelHeading) {
-                toolbar = document.createElement('div');
-                toolbar.className = 'simple-editor-toolbar';
-                toolbar.dataset.simpleEditorToolbar = '';
-                toolbar.innerHTML = `
-                    <div class="editor-mode-switch" aria-label="Nivel de edición">
-                        <button type="button" class="is-active" data-editor-mode="simple">Fácil</button>
-                        <button type="button" data-editor-mode="advanced">Avanzado</button>
-                    </div>
-                    <div class="editor-panel-switch" aria-label="Panel del editor">
-                        <button type="button" class="is-active" data-editor-panel-button="design">Diseño</button>
-                        <button type="button" data-editor-panel-button="content">Contenido</button>
-                        <button type="button" data-editor-panel-button="assets">Archivos</button>
-                    </div>
-                    <div class="easy-actions">
-                        <button type="button" data-easy-action="repair">Reparar distribución</button>
-                        <button type="button" data-easy-action="full-image">Usar imagen completa</button>
-                    </div>
-                    <div class="component-tools" data-component-tools>
-                        <span>Componentes</span>
-                        <button type="button" data-add-component="TEXTO">Texto</button>
-                        <button type="button" data-add-component="IMAGEN">Imagen</button>
-                        <button type="button" data-add-component="BOTON">Botón</button>
-                    </div>
-                    <p class="simple-editor-help">
-                        Selecciona una sección, ajusta su diseño y agrega componentes sin salir del editor.
-                    </p>
-                `;
-                panelHeading.insertAdjacentElement('afterend', toolbar);
-            }
+            toolbar.innerHTML = `
+                <div
+                    class="editor-mode-switch"
+                    aria-label="Nivel de edición"
+                >
+                    <button
+                        type="button"
+                        class="is-active"
+                        data-editor-mode="simple"
+                    >
+                        Fácil
+                    </button>
+
+                    <button
+                        type="button"
+                        data-editor-mode="advanced"
+                    >
+                        Avanzado
+                    </button>
+                </div>
+
+                <div
+                    class="editor-panel-switch"
+                    aria-label="Panel del editor"
+                >
+                    <button
+                        type="button"
+                        class="is-active"
+                        data-editor-panel-button="design"
+                    >
+                        Diseño
+                    </button>
+
+                    <button
+                        type="button"
+                        data-editor-panel-button="content"
+                    >
+                        Contenido
+                    </button>
+
+                    <button
+                        type="button"
+                        data-editor-panel-button="assets"
+                    >
+                        Archivos
+                    </button>
+                </div>
+
+                <div class="easy-actions">
+                    <button
+                        type="button"
+                        data-easy-action="repair"
+                    >
+                        Reparar distribución
+                    </button>
+
+                    <button
+                        type="button"
+                        data-easy-action="full-image"
+                    >
+                        Usar imagen completa
+                    </button>
+                </div>
+
+                <div
+                    class="component-tools"
+                    data-component-tools
+                >
+                    <span>Componentes</span>
+
+                    <button
+                        type="button"
+                        data-add-component="TEXTO"
+                    >
+                        Texto
+                    </button>
+
+                    <button
+                        type="button"
+                        data-add-component="IMAGEN"
+                    >
+                        Imagen
+                    </button>
+
+                    <button
+                        type="button"
+                        data-add-component="BOTON"
+                    >
+                        Botón
+                    </button>
+                </div>
+
+                <p class="simple-editor-help">
+                    Selecciona una sección, ajusta su diseño
+                    y agrega componentes sin salir del editor.
+                </p>
+            `;
+
+            panelHeading.insertAdjacentElement(
+                'afterend',
+                toolbar
+            );
         }
 
-        const propertyGroups = [...root.querySelectorAll('.properties-panel > .property-group')];
+        const propertyGroups = [
+            ...root.querySelectorAll(
+                '.properties-panel > .property-group'
+            ),
+        ];
+
         propertyGroups.forEach((group, index) => {
-            if (group.hasAttribute('data-universal-inspector') || group.hasAttribute('data-section-properties') || index <= 1) {
-                group.dataset.editorGroup = 'design';
-            } else if (group.classList.contains('quick-content-panel') || group.querySelector('[data-content-form], [data-guest-form]')) {
-                group.dataset.editorGroup = 'content';
-            } else if (group.querySelector('[data-asset-form], [data-asset-list]')) {
-                group.dataset.editorGroup = 'assets';
+            if (
+                group.hasAttribute(
+                    'data-universal-inspector'
+                )
+                || group.hasAttribute(
+                    'data-section-properties'
+                )
+                || index <= 1
+            ) {
+                group.dataset.editorGroup =
+                    'design';
+            } else if (
+                group.classList.contains(
+                    'quick-content-panel'
+                )
+                || group.querySelector(
+                    '[data-content-form], '
+                    + '[data-guest-form]'
+                )
+            ) {
+                group.dataset.editorGroup =
+                    'content';
+            } else if (
+                group.querySelector(
+                    '[data-asset-form], '
+                    + '[data-asset-list]'
+                )
+            ) {
+                group.dataset.editorGroup =
+                    'assets';
             } else {
-                group.dataset.editorGroup = 'content';
+                group.dataset.editorGroup =
+                    'content';
             }
         });
 
@@ -3116,250 +7571,203 @@
             '[data-layer-action="duplicate"]',
             '[data-layer-action="delete"]',
         ];
+
         advancedSelectors.forEach((selector) => {
-            root.querySelectorAll(selector).forEach((element) => {
-                const wrapper = element.closest('label, .layer-actions') || element;
-                wrapper.classList.add('advanced-only');
-            });
+            root.querySelectorAll(selector)
+                .forEach((element) => {
+                    const wrapper =
+                        element.closest(
+                            'label, .layer-actions'
+                        )
+                        || element;
+
+                    wrapper.classList.add(
+                        'advanced-only'
+                    );
+                });
         });
 
-        root.querySelectorAll('[data-editor-mode]').forEach((button) => {
-            button.addEventListener('click', () => setEditorMode(button.dataset.editorMode));
+        root.querySelectorAll(
+            '[data-editor-mode]'
+        ).forEach((button) => {
+            if (button.dataset.listenerBound === '1') {
+                return;
+            }
+
+            button.dataset.listenerBound = '1';
+
+            button.addEventListener(
+                'click',
+                () => setEditorMode(
+                    button.dataset.editorMode
+                )
+            );
         });
-        root.querySelectorAll('[data-editor-panel-button]').forEach((button) => {
-            button.addEventListener('click', () => setEditorPanel(button.dataset.editorPanelButton));
+
+        root.querySelectorAll(
+            '[data-editor-panel-button]'
+        ).forEach((button) => {
+            if (button.dataset.listenerBound === '1') {
+                return;
+            }
+
+            button.dataset.listenerBound = '1';
+
+            button.addEventListener(
+                'click',
+                () => setEditorPanel(
+                    button.dataset.editorPanelButton
+                )
+            );
         });
-        root.querySelector('[data-editor-context-open]')?.addEventListener('click', (event) => {
-            const panel = event.currentTarget.dataset.targetPanel || 'design';
-            setEditorPanel(panel);
+
+        const repairButton = root.querySelector(
+            '[data-easy-action="repair"]'
+        );
+
+        if (
+            repairButton
+            && repairButton.dataset.listenerBound !== '1'
+        ) {
+            repairButton.dataset.listenerBound = '1';
+
+            repairButton.addEventListener(
+                'click',
+                () => applyEasyLayout()
+            );
+        }
+
+        const fullImageButton =
             root.querySelector(
-                `[data-editor-group="${panel}"]:not([hidden])`
-            )?.scrollIntoView({
-                block: 'start',
-                behavior: 'smooth',
-            });
-        });
-        root.querySelector('[data-inspector-target]')?.addEventListener('change', () => {
-            if (selectedComponent() && root.querySelector('[data-inspector-target]')?.value !== 'component') {
-                selectedComponentId = null;
-            }
-            updateUniversalInspector();
-            renderAll();
-        });
-        root.querySelectorAll('[data-inspector-panel]').forEach((button) => {
-            button.addEventListener('click', () => setEditorPanel(button.dataset.inspectorPanel));
-        });
-        root.querySelectorAll('[data-inspector-field]').forEach((field) => {
-            field.addEventListener('input', () => {
-                const target = inspectorTargetType();
-                const value = field.type === 'checkbox' ? field.checked : field.value;
-                setInspectorValue(target, field.dataset.inspectorField, value);
-                setState(target === 'component' ? 'Cambios sin guardar en componente' : 'Cambios sin guardar');
-                renderAll();
-            });
-            field.addEventListener('change', () => {
-                const component = selectedComponent();
-                if (component) {
-                    saveBuilderComponent(component, { skipRealRefresh: true }).catch((error) => setState(error.message));
-                }
-            });
-        });
-        root.querySelector('[data-inspector-action="delete-component"]')?.addEventListener('click', () => {
-            const component = selectedComponent();
-            if (!component) return;
-            deleteBuilderComponent(component).catch((error) => setState(error.message));
-        });
-        root.querySelector('[data-component-tree]')?.addEventListener('dragstart', (event) => {
-            const row = event.target.closest('.component-tree-row[draggable="true"]');
-            if (!row || event.target.closest('[data-tree-tool]')) {
-                event.preventDefault();
-                return;
-            }
-            componentTreeDrag = treePayloadFromRow(row);
-            if (!componentTreeDrag) {
-                event.preventDefault();
-                return;
-            }
-            row.classList.add('is-dragging');
-            event.dataTransfer.effectAllowed = 'move';
-            event.dataTransfer.setData('application/x-component-tree', JSON.stringify(componentTreeDrag));
-            event.dataTransfer.setData('text/plain', JSON.stringify(componentTreeDrag));
-        });
-        root.querySelector('[data-component-tree]')?.addEventListener('dragover', (event) => {
-            const row = event.target.closest('.component-tree-row[draggable="true"]');
-            if (!row || !componentTreeDrag) return;
-            const target = treePayloadFromRow(row);
-            if (!compatibleTreeDrop(componentTreeDrag, target)) return;
-            event.preventDefault();
-            event.dataTransfer.dropEffect = 'move';
-            root.querySelectorAll('.component-tree-row.is-drop-target').forEach((item) => item.classList.remove('is-drop-target'));
-            row.classList.add('is-drop-target');
-        });
-        root.querySelector('[data-component-tree]')?.addEventListener('dragleave', (event) => {
-            const row = event.target.closest('.component-tree-row');
-            if (row && !row.contains(event.relatedTarget)) {
-                row.classList.remove('is-drop-target');
-            }
-        });
-        root.querySelector('[data-component-tree]')?.addEventListener('drop', (event) => {
-            const row = event.target.closest('.component-tree-row[draggable="true"]');
-            if (!row) return;
-            const target = treePayloadFromRow(row);
-            const source = componentTreeDrag || (() => {
-                try {
-                    return JSON.parse(event.dataTransfer.getData('application/x-component-tree') || event.dataTransfer.getData('text/plain') || 'null');
-                } catch (error) {
-                    return null;
-                }
-            })();
-            if (!compatibleTreeDrop(source, target)) return;
-            event.preventDefault();
-            root.querySelectorAll('.component-tree-row.is-drop-target, .component-tree-row.is-dragging').forEach((item) => {
-                item.classList.remove('is-drop-target', 'is-dragging');
-            });
-            componentTreeDrag = null;
-            applyComponentTreeDrop(source, target);
-        });
-        root.querySelector('[data-component-tree]')?.addEventListener('dragend', () => {
-            componentTreeDrag = null;
-            root.querySelectorAll('.component-tree-row.is-drop-target, .component-tree-row.is-dragging').forEach((item) => {
-                item.classList.remove('is-drop-target', 'is-dragging');
-            });
-        });
-        root.querySelector('[data-component-tree]')?.addEventListener('click', (event) => {
-            const tool = event.target.closest('[data-tree-tool]');
-            if (tool) {
-                const row = tool.closest('.component-tree-row');
-                if (!row) return;
-                event.stopPropagation();
-                const sectionId = Number(row.dataset.treeSectionId || 0);
-                if (sectionId) selectedId = sectionId;
-                const section = selectedSection();
-                const cfg = section ? ensureSectionConfig(section) : null;
-                const layerId = row.dataset.treeLayerId || '';
-                const componentId = Number(row.dataset.treeComponentId || 0);
-                const component = componentId ? builderComponentById(componentId) : null;
-                const action = tool.dataset.treeTool;
+                '[data-easy-action="full-image"]'
+            );
 
-                if (component) {
-                    selectedComponentId = component.id;
-                    if (action === 'toggle-visible') component.hidden = !component.hidden;
-                    if (action === 'toggle-lock') component.locked = !component.locked;
-                    if (action === 'z-back') component.zIndex = clamp((Number(component.zIndex) || 20) - 1, 1, 100);
-                    if (action === 'z-front') component.zIndex = clamp((Number(component.zIndex) || 20) + 1, 1, 100);
-                    if (action === 'delete') {
-                        deleteBuilderComponent(component).catch((error) => setState(error.message));
-                        return;
-                    }
-                    saveBuilderComponent(component, { skipRealRefresh: action !== 'toggle-visible' }).catch((error) => setState(error.message));
-                    renderAll();
+        if (
+            fullImageButton
+            && fullImageButton.dataset.listenerBound !== '1'
+        ) {
+            fullImageButton.dataset.listenerBound = '1';
+
+            fullImageButton.addEventListener(
+                'click',
+                () => applyEasyLayout({
+                    fullImage: true,
+                })
+            );
+        }
+
+        root.querySelectorAll(
+            '[data-add-component]'
+        ).forEach((button) => {
+            if (button.dataset.listenerBound === '1') {
+                return;
+            }
+
+            button.dataset.listenerBound = '1';
+
+            button.addEventListener(
+                'click',
+                () => {
+                    const tipo =
+                        button.dataset.addComponent;
+
+                    setState(
+                        `Creando componente ${tipo}...`
+                    );
+
+                    createBuilderComponent(tipo)
+                        .catch((error) => {
+                            console.error(
+                                '[ComponentCreate]',
+                                error
+                            );
+
+                            setState(
+                                error?.message
+                                || 'No se pudo crear el componente.'
+                            );
+                        });
+                }
+            );
+        });
+
+        const deleteButton = root.querySelector(
+            '[data-component-action="delete"]'
+        );
+
+        if (
+            deleteButton
+            && deleteButton.dataset.listenerBound !== '1'
+        ) {
+            deleteButton.dataset.listenerBound = '1';
+
+            deleteButton.addEventListener(
+                'click',
+                () => {
+                    deleteBuilderComponent(
+                        selectedComponent()
+                    ).catch(
+                        (error) => setState(
+                            error.message
+                        )
+                    );
+                }
+            );
+        }
+
+        document.addEventListener(
+            'keydown',
+            (event) => {
+                if (
+                    !selectedComponentId
+                    || ![
+                        'Delete',
+                        'Backspace',
+                    ].includes(event.key)
+                ) {
                     return;
                 }
 
-                selectedComponentId = null;
-                if (layerId && cfg) {
-                    cfg.activeLayer = layerId;
-                    if (action === 'toggle-visible') setLayerVisibility(cfg, layerId);
-                    if (action === 'toggle-lock') setLayerLocked(cfg, layerId);
-                    if (action === 'z-back') moveLayerFromList(cfg, layerId, -1);
-                    if (action === 'z-front') moveLayerFromList(cfg, layerId, 1);
-                    if (action === 'delete' && isCustomLayer(layerId)) {
-                        cfg.activeLayer = layerId;
-                        deleteActiveCustomLayer(cfg);
-                    }
-                    setState('Cambios sin guardar');
-                    renderAll();
+                if (
+                    event.target.closest(
+                        'input, textarea, select, '
+                        + '[contenteditable="true"]'
+                    )
+                ) {
                     return;
                 }
 
-                if (section) {
-                    if (action === 'toggle-visible') {
-                        section.visible = !section.visible;
-                        setState('Cambios sin guardar');
-                        renderAll();
-                    }
+                event.preventDefault();
+
+                deleteBuilderComponent(
+                    selectedComponent()
+                ).catch(
+                    (error) => setState(
+                        error.message
+                    )
+                );
+            },
+            {
+                once: false,
+            }
+        );
+
+        root.addEventListener(
+            'input',
+            (event) => {
+                if (
+                    event.target.matches(
+                        'input[type="range"]'
+                    )
+                ) {
+                    updateRangeReadouts();
                 }
-                return;
             }
-            const row = event.target.closest('[data-tree-action]');
-            if (!row) return;
-            const action = row.dataset.treeAction;
-            const sectionId = Number(row.dataset.treeSectionId || 0);
-            const inspectorSelect = root.querySelector('[data-inspector-target]');
-
-            if (action === 'page') {
-                selectedComponentId = null;
-                if (inspectorSelect) inspectorSelect.value = 'section';
-                renderAll();
-                return;
-            }
-
-            if (sectionId) selectedId = sectionId;
-            const section = selectedSection();
-            const cfg = section ? ensureSectionConfig(section) : null;
-
-            if (action === 'section') {
-                selectedComponentId = null;
-                if (inspectorSelect) inspectorSelect.value = 'section';
-            } else if (action === 'layer' && cfg) {
-                selectedComponentId = null;
-                cfg.activeLayer = row.dataset.treeLayerId || 'background';
-                if (inspectorSelect) inspectorSelect.value = 'layer';
-            } else if (action === 'real') {
-                selectedComponentId = null;
-                if (inspectorSelect) inspectorSelect.value = 'real';
-            } else if (action === 'component') {
-                const componentId = Number(row.dataset.treeComponentId || 0);
-                if (componentId) selectedComponentId = componentId;
-                if (inspectorSelect) inspectorSelect.value = 'component';
-            }
-
-            setEditorPanel('design');
-            renderAll();
-        });
-        root.querySelector('[data-easy-action="repair"]')?.addEventListener('click', () => applyEasyLayout());
-        root.querySelector('[data-easy-action="full-image"]')?.addEventListener('click', () => applyEasyLayout({ fullImage: true }));
-        root.querySelectorAll('[data-add-component]').forEach((button) => {
-            button.addEventListener('click', () => {
-                createBuilderComponent(button.dataset.addComponent).catch((error) => setState(error.message));
-            });
-        });
-
-        root.addEventListener('input', (event) => {
-            if (event.target.matches('input[type="range"]')) updateRangeReadouts();
-        });
+        );
 
         setEditorMode('simple');
         setEditorPanel('design');
         updateRangeReadouts();
-
-        const requiredControls = [
-            '[data-editor-mode="simple"]',
-            '[data-editor-mode="advanced"]',
-            '[data-editor-panel-button="design"]',
-            '[data-editor-panel-button="content"]',
-            '[data-editor-panel-button="assets"]',
-            '[data-easy-action="repair"]',
-            '[data-easy-action="full-image"]',
-            '[data-add-component="TEXTO"]',
-            '[data-add-component="IMAGEN"]',
-            '[data-add-component="BOTON"]',
-        ];
-
-        const missingControls = requiredControls.filter(
-            (selector) => !root.querySelector(selector)
-        );
-
-        root.dataset.editorToolsReady =
-            missingControls.length ? 'false' : 'true';
-
-        if (missingControls.length) {
-            console.warn(
-                'DIRTEC Editor: herramientas faltantes:',
-                missingControls
-            );
-            setState('Editor cargado con herramientas incompletas');
-        }
     }
 
     function renderAll() {
@@ -3368,6 +7776,7 @@
         renderComponentTree();
         renderPreview();
         fillProperties();
+        fillNativeElementInspector();
         updateEditorContextCard();
     }
 
@@ -3537,7 +7946,23 @@
                 class="info-box event-place-card"
                 data-detail-kind="${escapeHtml(kind)}"
                 data-real-card-media-position="${escapeHtml(itemConfig.mediaPosition || 'top')}"
-                style="--real-card-bg:${escapeHtml(itemConfig.cardBg || '#ffffff')};order:${Number(itemConfig.order || 0)};"
+                style="
+                    --real-card-bg:${escapeHtml(itemConfig.cardBg || '#ffffff')};
+                    --native-card-width:${Number(itemConfig.cardWidth ?? 100)}%;
+                    --native-card-min-height:${Number(itemConfig.cardMinHeight ?? 0)}px;
+                    --native-card-padding:${Number(itemConfig.cardPadding ?? 16)}px;
+                    --native-card-gap:${Number(itemConfig.cardGap ?? 8)}px;
+                    --native-card-radius:${Number(itemConfig.cardRadius ?? 0)}px;
+                    --native-card-border-width:${Number(itemConfig.cardBorderWidth ?? 0)}px;
+                    --native-card-border-color:${escapeHtml(itemConfig.cardBorderColor || '#e5e7eb')};
+                    --native-card-align:${escapeHtml(itemConfig.cardAlign || 'center')};
+                    --native-card-shadow:${itemConfig.cardShadow ? '0 14px 34px rgba(17,24,39,.16)' : 'none'};
+                    --native-media-height:${Number(itemConfig.mediaHeight ?? 220)}px;
+                    --native-media-fit:${escapeHtml(itemConfig.mediaFit || 'cover')};
+                    --native-media-x:${Number(itemConfig.mediaX ?? 50)}%;
+                    --native-media-y:${Number(itemConfig.mediaY ?? 50)}%;
+                    order:${Number(itemConfig.order || 0)};
+                "
             >
                 ${showMedia ? `
                     <div class="place-media">
@@ -4159,13 +8584,107 @@
             if (!section) return;
             section.config = ensureSectionConfig(section);
             const key = field.dataset.configField;
-            if (['backgroundX', 'backgroundY', 'backgroundScale'].includes(key)) {
-                setBackgroundValue(section.config, key, field.value);
+            const numericField =
+                field.type === 'number'
+                || field.type === 'range';
+
+            const nextValue =
+                field.type === 'checkbox'
+                    ? field.checked
+                    : (
+                        numericField
+                            ? Number(field.value)
+                            : field.value
+                    );
+
+            if (
+                ['backgroundX', 'backgroundY', 'backgroundScale']
+                    .includes(key)
+            ) {
+                setBackgroundValue(
+                    section.config,
+                    key,
+                    nextValue
+                );
             } else {
-                section.config[key] = field.type === 'checkbox' ? field.checked : field.value;
+                section.config[key] = nextValue;
             }
+
             setState('Cambios sin guardar');
-            renderAll();
+
+            const liveSectionFields = new Set([
+                'backgroundFit',
+                'backgroundRepeat',
+                'backgroundX',
+                'backgroundY',
+                'backgroundScale',
+                'backgroundOpacity',
+                'backgroundBrightness',
+                'backgroundBlur',
+                'sectionHeight',
+                'layoutAutoHeight',
+                'autoLayoutMode',
+                'layoutAlignment',
+                'layoutJustify',
+                'layoutSpacing',
+                'layoutContentWidth',
+                'layoutContentMaxWidth',
+                'layoutOverflow',
+                'layoutPaddingX',
+                'layoutPaddingY',
+                'layoutMinHeight',
+                'layoutMaxHeight',
+                'counterX',
+                'counterY',
+                'counterWidth',
+                'counterScale',
+                'counterZ',
+                'showBackgroundLayer',
+            ]);
+
+            if (liveSectionFields.has(key)) {
+                patchRealSectionBackground(section);
+
+                if (
+                    section.type === 'CUENTA_REGRESIVA'
+                    && [
+                        'counterX',
+                        'counterY',
+                        'counterWidth',
+                        'counterScale',
+                        'counterZ',
+                    ].includes(key)
+                ) {
+                    patchCountdownFromConfig(section);
+                }
+
+                if (
+                    section.config.layoutAutoHeight === true
+                    && [
+                        'layoutPaddingX',
+                        'layoutPaddingY',
+                        'layoutContentWidth',
+                        'layoutContentMaxWidth',
+                        'counterX',
+                        'counterY',
+                        'counterWidth',
+                        'counterScale',
+                    ].includes(key)
+                ) {
+                    scheduleAutoFitRealSection(
+                        section,
+                        {
+                            allowShrink: true,
+                            extraBottom: 28,
+                        }
+                    );
+                }
+
+                renderSectionList();
+                renderComponentTree();
+            } else {
+                renderAll();
+            }
         });
     });
 
@@ -4302,10 +8821,19 @@
             const component = setSelectedComponentField(field);
             if (!component) return;
             setState('Cambios sin guardar en componente');
-            if (field.dataset.componentField === 'hidden') {
-                renderAll();
+            if (
+                field.dataset.componentField === 'hidden'
+            ) {
+                renderSectionList();
+                renderComponentTree();
+                updateComponentPreview(component);
+                fillComponentProperties();
+                updateUniversalInspector();
             } else {
                 updateComponentPreview(component);
+                renderComponentTree();
+                fillComponentProperties();
+                updateUniversalInspector();
             }
         });
         field.addEventListener('change', () => {
@@ -4321,8 +8849,14 @@
         field.addEventListener('input', () => {
             const component = setSelectedComponentProperty(field);
             if (!component) return;
-            setState('Cambios sin guardar en componente');
+            setState(
+                'Cambios sin guardar en componente'
+            );
+
             updateComponentPreview(component);
+            renderComponentTree();
+            fillComponentProperties();
+            updateUniversalInspector();
         });
         field.addEventListener('change', () => {
             const component = selectedComponent();
@@ -4516,6 +9050,7 @@
         assetList.prepend(item);
         bindAssetItem(item);
         updateAssetDetailButtons();
+        fillNativeElementInspector();
         form.reset();
         setState('Archivo subido');
     });
@@ -4531,6 +9066,7 @@
                 <option value="MAPA_CEREMONIA">Imagen mapa ceremonia</option>
                 <option value="MAPA_RECEPCION">Imagen mapa recepcion</option>
                 <option value="ALBUM">Álbum</option>
+                <option value="CARD_BACKGROUND">Fondo de tarjeta seleccionada</option>
             </select>
         `;
     }
@@ -4603,6 +9139,9 @@
                 >
                     Álbum
                 </button>
+                <button type="button" data-asset-quick-target="CARD_BACKGROUND">
+                    Fondo tarjeta
+                </button>
             </div>
         `;
     }
@@ -4626,6 +9165,17 @@
     }
 
     async function assignAssetRef(assetRef, destino, section) {
+        if (destino === 'CARD_BACKGROUND') {
+            const element = selectedNativeElement();
+
+            if (!element || element.role !== 'event-place-card') {
+                setState('Selecciona primero Ceremonia o Recepción.');
+                return;
+            }
+
+            assignNativeCardBackground(element, assetRef);
+            return;
+        }
         const sectionDestinations = new Set([
             'FONDO_SECCION',
             'TITULO_SECCION',
@@ -4763,6 +9313,914 @@
         setState('Archivo eliminado');
     }
 
+
+    function refreshEditorSelectionUi({
+        renderSections = true,
+        scrollTree = true,
+    } = {}) {
+        if (renderSections) {
+            renderSectionList();
+        }
+
+        renderComponentTree();
+        fillProperties();
+        fillNativeElementInspector();
+        updateEditorContextCard();
+        paintRealPreviewSelection();
+
+        if (scrollTree) {
+            requestAnimationFrame(() => {
+                componentTree
+                    ?.querySelector('.component-tree-row.is-active')
+                    ?.scrollIntoView({
+                        block: 'nearest',
+                        behavior: 'smooth',
+                    });
+            });
+        }
+    }
+
+    function selectTreeSection(sectionId) {
+        const section = config.sections.find(
+            (item) =>
+                Number(item.sectionId) === Number(sectionId)
+        );
+
+        if (!section) {
+            setState('No se encontró la sección.');
+            return null;
+        }
+
+        selectedId = section.sectionId;
+        selectedComponentId = null;
+        selectedNativeElementId = null;
+
+        const inspector = root.querySelector(
+            '[data-inspector-target]'
+        );
+
+        if (inspector) {
+            inspector.value = realContentSections.has(section.type)
+                ? 'real'
+                : 'section';
+        }
+
+        setEditorPanel('design');
+        refreshEditorSelectionUi();
+
+        setState(
+            `Sección seleccionada: ${
+                section.title || section.type
+            }`
+        );
+
+        return section;
+    }
+
+    function selectTreeLayer(sectionId, layerId) {
+        const section = config.sections.find(
+            (item) =>
+                Number(item.sectionId) === Number(sectionId)
+        );
+
+        if (!section || !layerId) {
+            setState('No se encontró la capa.');
+            return null;
+        }
+
+        const cfg = ensureSectionConfig(section);
+
+        selectedId = section.sectionId;
+        selectedComponentId = null;
+        selectedNativeElementId = null;
+        cfg.activeLayer = layerId;
+
+        const inspector = root.querySelector(
+            '[data-inspector-target]'
+        );
+
+        if (inspector) {
+            inspector.value = 'layer';
+        }
+
+        setEditorPanel('design');
+        refreshEditorSelectionUi();
+
+        setState(`Capa seleccionada: ${layerId}`);
+
+        return {
+            section,
+            cfg,
+        };
+    }
+
+    function selectTreeRealContent(sectionId) {
+        const section = config.sections.find(
+            (item) =>
+                Number(item.sectionId) === Number(sectionId)
+        );
+
+        if (!section) {
+            setState('No se encontró la sección.');
+            return null;
+        }
+
+        selectedId = section.sectionId;
+        selectedComponentId = null;
+        selectedNativeElementId = null;
+
+        const inspector = root.querySelector(
+            '[data-inspector-target]'
+        );
+
+        if (inspector) {
+            inspector.value = 'real';
+        }
+
+        setEditorPanel('design');
+        refreshEditorSelectionUi();
+
+        setState(
+            `Contenido real seleccionado: ${
+                section.title || section.type
+            }`
+        );
+
+        return section;
+    }
+
+    function selectTreeComponent(componentId) {
+        const component = selectBuilderComponent(
+            componentId,
+            {
+                skipRender: true,
+                silent: true,
+                scrollInspector: true,
+            }
+        );
+
+        if (!component) {
+            setState(
+                `No se encontró el componente #${componentId}.`
+            );
+            return null;
+        }
+
+        const inspector = root.querySelector(
+            '[data-inspector-target]'
+        );
+
+        if (inspector) {
+            inspector.value = 'component';
+        }
+
+        setEditorPanel('design');
+        refreshEditorSelectionUi();
+
+        setState(
+            `Componente ${
+                component.tipo.toLowerCase()
+            } seleccionado`
+        );
+
+        return component;
+    }
+
+    function selectTreeNativeElement(nativeElementId) {
+        const element = selectNativeElement(
+            nativeElementId,
+            {
+                skipRender: true,
+                silent: true,
+            }
+        );
+
+        if (!element) {
+            setState(
+                `No se encontró el elemento ${nativeElementId}.`
+            );
+            return null;
+        }
+
+        const inspector = root.querySelector(
+            '[data-inspector-target]'
+        );
+
+        if (inspector) {
+            inspector.value = 'real';
+        }
+
+        setEditorPanel('design');
+        refreshEditorSelectionUi();
+
+        setState(
+            `Elemento seleccionado: ${
+                nativeElementRoleLabel(element)
+            }`
+        );
+
+        return element;
+    }
+
+    async function handleComponentTreeTool(tool, row) {
+        if (!tool || !row) return;
+
+        const action = row.dataset.treeAction || '';
+        const sectionId = Number(
+            row.dataset.treeSectionId || 0
+        );
+        const componentId = Number(
+            row.dataset.treeComponentId || 0
+        );
+        const nativeElementId =
+            row.dataset.treeNativeElementId || '';
+        const layerId = row.dataset.treeLayerId || '';
+
+        if (action === 'section' && sectionId) {
+            const section = config.sections.find(
+                (item) =>
+                    Number(item.sectionId)
+                    === Number(sectionId)
+            );
+
+            if (!section) return;
+
+            if (tool === 'toggle-visible') {
+                section.visible = section.visible === false;
+                selectedId = section.sectionId;
+                selectedComponentId = null;
+                selectedNativeElementId = null;
+                setState('Visibilidad de sección modificada');
+                renderAll();
+            }
+
+            return;
+        }
+
+        if (action === 'native' && nativeElementId) {
+            const element = nativeElementById(
+                nativeElementId
+            );
+
+            if (!element) return;
+
+            if (tool === 'toggle-visible') {
+                const field = nativeVisibilityField(element);
+
+                if (field) {
+                    const currentlyVisible =
+                        nativeTreeVisibility(element);
+
+                    setNativeItemValue(
+                        element,
+                        field,
+                        !currentlyVisible
+                    );
+                }
+            }
+
+            return;
+        }
+
+        if (
+            action === 'layer'
+            && sectionId
+            && layerId
+        ) {
+            const section = config.sections.find(
+                (item) =>
+                    Number(item.sectionId)
+                    === Number(sectionId)
+            );
+
+            if (!section) return;
+
+            const cfg = ensureSectionConfig(section);
+
+            selectedId = section.sectionId;
+            selectedComponentId = null;
+            selectedNativeElementId = null;
+            cfg.activeLayer = layerId;
+
+            if (tool === 'toggle-visible') {
+                setLayerVisibility(cfg, layerId);
+            } else if (tool === 'toggle-lock') {
+                setLayerLocked(cfg, layerId);
+            } else if (tool === 'z-back') {
+                moveLayerFromList(cfg, layerId, -1);
+            } else if (tool === 'z-front') {
+                moveLayerFromList(cfg, layerId, 1);
+            } else if (
+                tool === 'delete'
+                && isCustomLayer(layerId)
+            ) {
+                const id = String(layerId).replace(
+                    'custom:',
+                    ''
+                );
+
+                cfg.customLayers = ensureCustomLayers(cfg)
+                    .filter((layer) => layer.id !== id);
+
+                cfg.activeLayer = 'title';
+            }
+
+            setState('Capa modificada sin guardar');
+            renderAll();
+
+            return;
+        }
+
+        if (action === 'component' && componentId) {
+            const component = builderComponentById(
+                componentId
+            );
+
+            if (!component) return;
+
+            selectedId = component.sectionId;
+            selectedComponentId = component.id;
+            selectedNativeElementId = null;
+
+            if (tool === 'delete') {
+                await deleteBuilderComponent(component);
+                return;
+            }
+
+            if (tool === 'toggle-visible') {
+                component.hidden = !component.hidden;
+            } else if (tool === 'toggle-lock') {
+                component.locked = !component.locked;
+            } else if (tool === 'z-back') {
+                component.zIndex = clamp(
+                    Number(component.zIndex || 20) - 5,
+                    1,
+                    100
+                );
+            } else if (tool === 'z-front') {
+                component.zIndex = clamp(
+                    Number(component.zIndex || 20) + 5,
+                    1,
+                    100
+                );
+            } else {
+                return;
+            }
+
+            updateComponentPreview(component);
+            refreshEditorSelectionUi({
+                renderSections: false,
+            });
+
+            await saveBuilderComponent(
+                component,
+                {
+                    skipRealRefresh: true,
+                }
+            );
+
+            refreshEditorSelectionUi({
+                renderSections: false,
+            });
+        }
+    }
+
+    function expandEntireComponentTree() {
+        sortedSections().forEach((section) => {
+            elementTreeExpanded.add(
+                treeSectionKey(section.sectionId)
+            );
+
+            [
+                'native',
+                'layers',
+                'components',
+            ].forEach((group) => {
+                elementTreeExpanded.add(
+                    treeGroupKey(
+                        section.sectionId,
+                        group
+                    )
+                );
+            });
+        });
+
+        saveElementTreeState();
+        renderComponentTree();
+    }
+
+    function collapseEntireComponentTree() {
+        elementTreeExpanded.clear();
+        saveElementTreeState();
+        renderComponentTree();
+    }
+
+    function bindComponentTreeController() {
+        if (
+            !componentTree
+            || componentTree.dataset.controllerBound === '1'
+        ) {
+            return;
+        }
+
+        componentTree.dataset.controllerBound = '1';
+
+        componentTree.addEventListener(
+            'click',
+            (event) => {
+                const toolButton = event.target.closest(
+                    '[data-tree-tool]'
+                );
+
+                if (toolButton) {
+                    const row = toolButton.closest(
+                        '.component-tree-row'
+                    );
+
+                    event.preventDefault();
+                    event.stopPropagation();
+
+                    handleComponentTreeTool(
+                        toolButton.dataset.treeTool,
+                        row
+                    ).catch((error) => {
+                        console.error(
+                            '[ComponentTreeTool]',
+                            error
+                        );
+
+                        setState(
+                            error?.message
+                            || 'No se pudo modificar el elemento.'
+                        );
+                    });
+
+                    return;
+                }
+
+                const target = event.target.closest(
+                    '[data-tree-action]'
+                );
+
+                if (
+                    !target
+                    || !componentTree.contains(target)
+                ) {
+                    return;
+                }
+
+                const row = target.closest(
+                    '.component-tree-row'
+                ) || target;
+
+                const action =
+                    target.dataset.treeAction
+                    || row.dataset.treeAction
+                    || '';
+
+                const sectionId = Number(
+                    target.dataset.treeSectionId
+                    || row.dataset.treeSectionId
+                    || 0
+                );
+
+                const componentId = Number(
+                    target.dataset.treeComponentId
+                    || row.dataset.treeComponentId
+                    || 0
+                );
+
+                const nativeElementId =
+                    target.dataset.treeNativeElementId
+                    || row.dataset.treeNativeElementId
+                    || '';
+
+                const layerId =
+                    target.dataset.treeLayerId
+                    || row.dataset.treeLayerId
+                    || '';
+
+                const treeKey =
+                    target.dataset.treeKey
+                    || row.dataset.treeKey
+                    || '';
+
+                const expandable =
+                    (
+                        target.dataset.treeExpandable
+                        || row.dataset.treeExpandable
+                    ) === 'true';
+
+                event.preventDefault();
+                event.stopPropagation();
+
+                if (
+                    expandable
+                    && treeKey
+                    && (
+                        event.target.closest(
+                            '.tree-chevron'
+                        )
+                        || action === 'tree-group'
+                    )
+                ) {
+                    toggleTreeExpanded(treeKey);
+                    return;
+                }
+
+                if (
+                    action === 'component'
+                    && componentId
+                ) {
+                    selectTreeComponent(componentId);
+                    return;
+                }
+
+                if (
+                    action === 'native'
+                    && nativeElementId
+                ) {
+                    selectTreeNativeElement(
+                        nativeElementId
+                    );
+                    return;
+                }
+
+                if (
+                    action === 'layer'
+                    && sectionId
+                    && layerId
+                ) {
+                    selectTreeLayer(
+                        sectionId,
+                        layerId
+                    );
+                    return;
+                }
+
+                if (
+                    action === 'real'
+                    && sectionId
+                ) {
+                    selectTreeRealContent(sectionId);
+                    return;
+                }
+
+                if (
+                    action === 'section'
+                    && sectionId
+                ) {
+                    selectTreeSection(sectionId);
+                    return;
+                }
+
+                if (action === 'page') {
+                    selectedId = null;
+                    selectedComponentId = null;
+                    selectedNativeElementId = null;
+
+                    const inspector = root.querySelector(
+                        '[data-inspector-target]'
+                    );
+
+                    if (inspector) {
+                        inspector.value = 'section';
+                    }
+
+                    refreshEditorSelectionUi();
+                    setState('Invitación seleccionada');
+                }
+            }
+        );
+
+        componentTree.addEventListener(
+            'dragstart',
+            (event) => {
+                const row = event.target.closest(
+                    '.component-tree-row[draggable="true"]'
+                );
+
+                if (!row) return;
+
+                const payload = treePayloadFromRow(row);
+
+                if (
+                    !payload
+                    || ![
+                        'layer',
+                        'component',
+                    ].includes(payload.action)
+                ) {
+                    event.preventDefault();
+                    return;
+                }
+
+                componentTreeDrag = payload;
+
+                row.classList.add('is-dragging');
+
+                event.dataTransfer.effectAllowed = 'move';
+                event.dataTransfer.setData(
+                    'application/x-dirtec-tree',
+                    JSON.stringify(payload)
+                );
+            }
+        );
+
+        componentTree.addEventListener(
+            'dragover',
+            (event) => {
+                const row = event.target.closest(
+                    '.component-tree-row'
+                );
+
+                const target = treePayloadFromRow(row);
+
+                if (
+                    !componentTreeDrag
+                    || !compatibleTreeDrop(
+                        componentTreeDrag,
+                        target
+                    )
+                ) {
+                    return;
+                }
+
+                event.preventDefault();
+                event.dataTransfer.dropEffect = 'move';
+
+                componentTree
+                    .querySelectorAll('.is-drop-target')
+                    .forEach((item) => {
+                        item.classList.remove(
+                            'is-drop-target'
+                        );
+                    });
+
+                row.classList.add('is-drop-target');
+            }
+        );
+
+        componentTree.addEventListener(
+            'drop',
+            (event) => {
+                const row = event.target.closest(
+                    '.component-tree-row'
+                );
+
+                const target = treePayloadFromRow(row);
+
+                componentTree
+                    .querySelectorAll('.is-drop-target')
+                    .forEach((item) => {
+                        item.classList.remove(
+                            'is-drop-target'
+                        );
+                    });
+
+                if (
+                    !componentTreeDrag
+                    || !compatibleTreeDrop(
+                        componentTreeDrag,
+                        target
+                    )
+                ) {
+                    componentTreeDrag = null;
+                    return;
+                }
+
+                event.preventDefault();
+
+                applyComponentTreeDrop(
+                    componentTreeDrag,
+                    target
+                );
+
+                componentTreeDrag = null;
+            }
+        );
+
+        componentTree.addEventListener(
+            'dragend',
+            () => {
+                componentTreeDrag = null;
+
+                componentTree
+                    .querySelectorAll(
+                        '.is-dragging, .is-drop-target'
+                    )
+                    .forEach((item) => {
+                        item.classList.remove(
+                            'is-dragging',
+                            'is-drop-target'
+                        );
+                    });
+            }
+        );
+
+        const expandAll = root.querySelector(
+            '[data-tree-expand-all]'
+        );
+
+        if (
+            expandAll
+            && expandAll.dataset.listenerBound !== '1'
+        ) {
+            expandAll.dataset.listenerBound = '1';
+            expandAll.addEventListener(
+                'click',
+                expandEntireComponentTree
+            );
+        }
+
+        const collapseAll = root.querySelector(
+            '[data-tree-collapse-all]'
+        );
+
+        if (
+            collapseAll
+            && collapseAll.dataset.listenerBound !== '1'
+        ) {
+            collapseAll.dataset.listenerBound = '1';
+            collapseAll.addEventListener(
+                'click',
+                collapseEntireComponentTree
+            );
+        }
+    }
+
+
+    const universalLayoutPresets = {
+        compact: {
+            layoutAutoHeight: true,
+            layoutMinHeight: 260,
+            layoutMaxHeight: 0,
+            layoutPaddingX: 16,
+            layoutPaddingY: 18,
+            layoutContentWidth: 100,
+            layoutContentMaxWidth: 760,
+            autoLayoutMode: 'vertical',
+            layoutAlignment: 'center',
+            layoutJustify: 'center',
+            layoutSpacing: 12,
+            layoutOverflow: 'visible',
+        },
+        centered: {
+            layoutAutoHeight: false,
+            sectionHeight: 520,
+            layoutMinHeight: 520,
+            layoutMaxHeight: 0,
+            layoutPaddingX: 20,
+            layoutPaddingY: 32,
+            layoutContentWidth: 92,
+            layoutContentMaxWidth: 760,
+            autoLayoutMode: 'vertical',
+            layoutAlignment: 'center',
+            layoutJustify: 'center',
+            layoutSpacing: 18,
+            layoutOverflow: 'visible',
+        },
+        fullscreen: {
+            layoutAutoHeight: false,
+            sectionHeight: 760,
+            layoutMinHeight: 760,
+            layoutMaxHeight: 0,
+            layoutPaddingX: 24,
+            layoutPaddingY: 40,
+            layoutContentWidth: 100,
+            layoutContentMaxWidth: 1060,
+            autoLayoutMode: 'vertical',
+            layoutAlignment: 'center',
+            layoutJustify: 'center',
+            layoutSpacing: 24,
+            layoutOverflow: 'visible',
+        },
+    };
+
+    function activateSectionInspectorTab(tabName) {
+        root.querySelectorAll(
+            '[data-section-inspector-tab]'
+        ).forEach((button) => {
+            button.classList.toggle(
+                'is-active',
+                button.dataset.sectionInspectorTab === tabName
+            );
+        });
+
+        root.querySelectorAll(
+            '[data-section-inspector-pane]'
+        ).forEach((pane) => {
+            const active =
+                pane.dataset.sectionInspectorPane === tabName;
+
+            pane.hidden = !active;
+            pane.classList.toggle('is-active', active);
+        });
+    }
+
+    function applyUniversalLayoutPreset(presetName) {
+        const section = selectedSection();
+        if (!section) {
+            setState('Selecciona una sección.');
+            return;
+        }
+
+        const cfg = ensureSectionConfig(section);
+
+        if (presetName === 'reset') {
+            const defaults = defaultSectionConfig();
+
+            [
+                'layoutAutoHeight',
+                'sectionHeight',
+                'layoutMinHeight',
+                'layoutMaxHeight',
+                'layoutPaddingX',
+                'layoutPaddingY',
+                'layoutContentWidth',
+                'layoutContentMaxWidth',
+                'autoLayoutMode',
+                'layoutAlignment',
+                'layoutJustify',
+                'layoutSpacing',
+                'layoutOverflow',
+            ].forEach((key) => {
+                cfg[key] = defaults[key];
+            });
+        } else {
+            Object.assign(
+                cfg,
+                universalLayoutPresets[presetName] || {}
+            );
+        }
+
+        patchRealSectionBackground(section);
+        fillProperties();
+        renderSectionList();
+        renderComponentTree();
+        setState('Preset aplicado. Falta guardar.');
+    }
+
+    function bindUniversalSectionInspector() {
+        root.querySelectorAll(
+            '[data-section-inspector-tab]'
+        ).forEach((button) => {
+            if (button.dataset.bound === '1') return;
+            button.dataset.bound = '1';
+
+            button.addEventListener('click', () => {
+                activateSectionInspectorTab(
+                    button.dataset.sectionInspectorTab
+                );
+            });
+        });
+
+        root.querySelectorAll(
+            '[data-layout-preset]'
+        ).forEach((button) => {
+            if (button.dataset.bound === '1') return;
+            button.dataset.bound = '1';
+
+            button.addEventListener('click', () => {
+                applyUniversalLayoutPreset(
+                    button.dataset.layoutPreset
+                );
+            });
+        });
+
+        const backgroundButton = root.querySelector(
+            '[data-toggle-background-positioning]'
+        );
+
+        if (
+            backgroundButton
+            && backgroundButton.dataset.bound !== '1'
+        ) {
+            backgroundButton.dataset.bound = '1';
+
+            backgroundButton.addEventListener(
+                'click',
+                () => {
+                    root.dataset.backgroundPositioning =
+                        backgroundPositioningEnabled()
+                            ? 'false'
+                            : 'true';
+
+                    updateBackgroundPositionButton();
+
+                    setState(
+                        backgroundPositioningEnabled()
+                            ? 'Modo mover fondo activo'
+                            : 'Modo mover fondo desactivado'
+                    );
+                }
+            );
+        }
+
+        updateBackgroundPositionButton();
+        activateSectionInspectorTab('canvas');
+    }
+
     function bindAssetItem(item) {
         item.draggable = true;
         item.addEventListener('dragstart', (event) => {
@@ -4785,20 +10243,29 @@
 
     root.querySelectorAll('[data-asset-id]').forEach(bindAssetItem);
 
+    bindComponentTreeController();
+
     root.querySelectorAll('[data-preview-mode]').forEach((button) => {
         button.addEventListener('click', () => {
             const mode = button.dataset.previewMode;
-            currentPreviewMode = mode;
+            const isRealPreviewAvailable = Boolean(realPreviewFrame);
+            const effectiveMode = isRealPreviewAvailable && mode === 'draft' ? 'real' : mode;
+            currentPreviewMode = effectiveMode;
 
             root.querySelectorAll('[data-preview-mode]').forEach((item) => {
-                item.classList.toggle('is-active', item === button);
+                const isActive = item.dataset.previewMode === effectiveMode;
+                item.classList.toggle('is-active', isActive);
+                if (isRealPreviewAvailable && item.dataset.previewMode === 'draft') {
+                    item.hidden = true;
+                    item.setAttribute('aria-hidden', 'true');
+                }
             });
 
             root.querySelectorAll('[data-preview-panel]').forEach((panel) => {
-                panel.hidden = panel.dataset.previewPanel !== mode;
+                panel.hidden = panel.dataset.previewPanel !== effectiveMode;
             });
 
-            if (mode === 'real') {
+            if (effectiveMode === 'real') {
                 refreshRealPreview();
                 setLivePreviewMode(livePreviewMode);
             }
@@ -4826,7 +10293,15 @@
 
     realPreviewFrame?.addEventListener(
         'load',
-        bindRealPreviewInteractions
+        () => {
+            realPreviewLoadCount += 1;
+            console.warn('[A1.1] iframe load count', realPreviewLoadCount);
+            console.debug('[A1.1] iframe LOAD', {
+                src: realPreviewFrame?.src,
+                time: performance.now()
+            });
+            bindRealPreviewInteractions();
+        }
     );
 
     /*
@@ -4844,18 +10319,235 @@
 
     if (realPreviewFrame) {
         currentPreviewMode = 'real';
+        bindComponentTreeController();
 
         root.querySelectorAll('[data-preview-mode]').forEach((button) => {
-            button.classList.toggle(
-                'is-active',
-                button.dataset.previewMode === 'real'
-            );
+            const isRealButton = button.dataset.previewMode === 'real';
+            button.classList.toggle('is-active', isRealButton);
+            if (button.dataset.previewMode === 'draft') {
+                button.hidden = true;
+                button.setAttribute('aria-hidden', 'true');
+            }
         });
 
         root.querySelectorAll('[data-preview-panel]').forEach((panel) => {
             panel.hidden = panel.dataset.previewPanel !== 'real';
         });
     }
+
+    root.querySelector(
+        '[data-native-element-inspector]'
+    )?.addEventListener('input', (event) => {
+        const field = event.target.closest('[data-native-field]');
+        const element = selectedNativeElement();
+
+        if (!field || !element) return;
+
+        const key = field.dataset.nativeField;
+        const visibilityField = nativeVisibilityField(element);
+        const contentField = nativeContentField(element);
+
+        if (key === 'visible' && visibilityField) {
+            setNativeItemValue(
+                element,
+                visibilityField,
+                field.checked
+            );
+            return;
+        }
+
+        if (key === 'text') {
+            if (element.role === 'event-place-title') {
+                setNativeItemValue(
+                    element,
+                    'label',
+                    field.value
+                );
+            } else if (contentField) {
+                syncNativeContentField(
+                    contentField,
+                    field.value
+                );
+            }
+            return;
+        }
+
+        if (key === 'datetime' && contentField) {
+            syncNativeContentField(
+                contentField,
+                field.value
+            );
+            return;
+        }
+
+        if (key === 'buttonLabel') {
+            setNativeItemValue(
+                element,
+                'buttonLabel',
+                field.value
+            );
+            return;
+        }
+
+        if (key === 'url' && contentField) {
+            syncNativeContentField(
+                contentField,
+                field.value
+            );
+            return;
+        }
+
+        if ([
+            'mapDisplay',
+            'mediaPosition',
+            'mediaFit',
+            'mediaHeight',
+            'mediaX',
+            'mediaY',
+            'cardBg',
+            'cardWidth',
+            'cardMinHeight',
+            'cardPadding',
+            'cardGap',
+            'cardRadius',
+            'cardBorderWidth',
+            'cardBorderColor',
+            'cardAlign',
+            'cardShadow',
+            'cardBackgroundFit',
+            'cardBackgroundOpacity',
+            'cardBackgroundX',
+            'cardBackgroundY',
+            'order',
+        ].includes(key)) {
+            const numericFields = new Set([
+                'mediaHeight',
+                'mediaX',
+                'mediaY',
+                'cardWidth',
+                'cardMinHeight',
+                'cardPadding',
+                'cardGap',
+                'cardRadius',
+                'cardBorderWidth',
+                'order',
+                'cardBackgroundOpacity',
+                'cardBackgroundX',
+                'cardBackgroundY',
+            ]);
+
+            const value =
+                field.type === 'checkbox'
+                    ? field.checked
+                    : numericFields.has(key)
+                        ? Number(field.value)
+                        : field.value;
+
+            setNativeItemValue(
+                element,
+                key,
+                value
+            );
+
+            const panel = root.querySelector(
+                '[data-native-element-inspector]'
+            );
+
+            if (panel) {
+                updateNativeInspectorOutputs(panel);
+            }
+        }
+    });
+
+    root.querySelector(
+        '[data-native-element-inspector]'
+    )?.addEventListener('click', (event) => {
+        const element = selectedNativeElement();
+        const choice = event.target.closest(
+            '[data-native-asset-choice]'
+        );
+
+        if (choice && element) {
+            const asset = assetReferenceById(
+                choice.dataset.nativeAssetChoice
+            );
+            const destination = nativeAssetDestination(element);
+            const section = selectedSection();
+
+            if (asset && destination && section) {
+                assignAssetRef(
+                    asset,
+                    destination,
+                    section
+                ).catch(
+                    (error) => setState(error.message)
+                );
+            }
+
+            return;
+        }
+
+        const button = event.target.closest('[data-native-action]');
+
+        if (!button || !element) return;
+
+        const action = button.dataset.nativeAction;
+
+        if (action === 'save-content') {
+            const form = root.querySelector('[data-content-form]');
+
+            if (!form) return;
+
+            saveContent(formToObject(form)).catch(
+                (error) => setState(error.message)
+            );
+            return;
+        }
+
+        if (action === 'open-assets') {
+            const destination = nativeAssetDestination(element);
+
+            setEditorPanel('assets');
+            updateAssetDetailButtons();
+
+            root.querySelectorAll('[data-asset-target]').forEach((select) => {
+                if (
+                    destination
+                    && [...select.options].some(
+                        (option) => option.value === destination
+                    )
+                ) {
+                    select.value = destination;
+                }
+            });
+
+            root.querySelector('[data-asset-list]')?.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start',
+            });
+            return;
+        }
+
+        if (action === 'remove-asset') {
+            if (
+                element.role === 'event-place-card'
+                && removeNativeCardBackground(element)
+            ) {
+                return;
+            }
+
+            removeNativeAsset(element).catch(
+                (error) => setState(error.message)
+            );
+
+            return;
+        }
+
+        if (action === 'open-advanced') {
+            setEditorMode('advanced');
+            setEditorPanel('design');
+        }
+    });
 
     root.querySelectorAll('[data-content-tab]').forEach((button) => {
         button.addEventListener('click', () => {
@@ -4904,6 +10596,7 @@
             .catch((error) => setState(error.message));
     });
 
+    loadElementTreeState();
     renderContent();
     renderGuests();
     renderVersions();
@@ -4935,7 +10628,21 @@
             };
         },
         count: () => nativeElementRegistry.length,
+        selected: () => selectedNativeElementId,
+        select: (elementId) => {
+            const element = selectNativeElement(elementId);
+            return element
+                ? {
+                    id: element.id,
+                    type: element.type,
+                    role: element.role,
+                    section: element.section,
+                    item: element.item,
+                }
+                : null;
+        },
     });
 
+    bindUniversalSectionInspector();
     loadBuilderComponents().catch((error) => setState(error.message));
 }());

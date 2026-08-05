@@ -22,7 +22,13 @@
     >
         {% include "invitaciones/partials/_section_base.html" with seccion=secciones.ALBUM titulo_default="Álbum" texto_alt="Álbum del evento" media_class="album-full-image" %}
 
-        <div class="section-main-content">
+        {% with real_content=secciones.ALBUM.editor_config.realContent %}
+        <div
+            class="section-main-content real-content-layer"
+            data-real-content-layout="{{ real_content.layout|default:'grid' }}"
+            data-real-content-align="{{ real_content.align|default:'center' }}"
+            data-real-content-shadow="{% if real_content.cardShadow %}1{% else %}0{% endif %}"
+        >
             <div class="album-grid">
                 {% for foto in fotos_album %}
                     <figure>
@@ -49,6 +55,7 @@
                 {% endfor %}
             </div>
         </div>
+        {% endwith %}
     </div>
 </section>
 {% endif %}

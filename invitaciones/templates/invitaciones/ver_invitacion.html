@@ -8,7 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Allura&family=Cormorant+Garamond:wght@500;600;700&family=Great+Vibes&family=Inter:wght@300;400;500;600;700&family=Lato:wght@300;400;700&family=Montserrat:wght@300;400;500;600&family=Parisienne&family=Playfair+Display:wght@500;600;700&family=Poppins:wght@300;400;500;600;700&family=Quicksand:wght@400;500;600;700&family=Tangerine:wght@400;700&display=swap" rel="stylesheet">
     <link
         rel="stylesheet"
-        href="{% static 'invitaciones/css/invitacion.css' %}?v=20260729-23"
+        href="{% static 'invitaciones/css/invitacion.css' %}?v=20260804-r201b04"
     >
     <style>
         :root {
@@ -38,11 +38,11 @@
             --font-body: {{ tema_editor_preview.font_body }};
         }
         {% endif %}
-        {% if not evento.portada_es_video %}
+        {% if not secciones.PORTADA.fondo_es_video and not evento.portada_es_video %}
             .cover-photo {
                 background-image:
                     linear-gradient(rgba(25, 34, 25, .45), rgba(25, 34, 25, .48)),
-                    url('{% if evento.foto_portada %}{{ evento.foto_portada.url }}{% elif evento.imagen_portada %}{{ evento.imagen_portada }}{% else %}https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1600&q=80{% endif %}');
+                    url('{% if secciones.PORTADA.fondo %}{{ secciones.PORTADA.fondo.url }}{% elif evento.foto_portada %}{{ evento.foto_portada.url }}{% elif evento.imagen_portada %}{{ evento.imagen_portada }}{% else %}https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1600&q=80{% endif %}');
             }
         {% endif %}
         .media-bg-fallback {
@@ -53,6 +53,7 @@
     </style>
 </head>
 <body
+    {% if modo_preview %}data-editor-preview="1"{% endif %}
     {% if evento.fecha_fiesta %}
         data-event-date="{{ evento.fecha_fiesta|date:'Y-m-d\\TH:i:s' }}"
     {% endif %}
@@ -116,13 +117,55 @@
         id="inicio"
         data-invitation-section="PORTADA"
     >
-        {% if secciones.PORTADA.mostrar_titulo_texto == False and evento.foto_portada %}
+        {% if secciones.PORTADA.mostrar_titulo_texto == False and secciones.PORTADA.imagen_titulo or secciones.PORTADA.mostrar_titulo_texto == False and evento.foto_portada %}
 
-            <div class="cover-card cover-card-full-image">
-                {% if evento.portada_es_video %}
+            <div
+                class="cover-card cover-card-full-image"
+                data-native-element
+                data-element-id="cover-card"
+                data-element-type="container"
+                data-element-role="cover-card"
+                data-element-section="PORTADA"
+            >
+                {% if secciones.PORTADA.imagen_titulo %}
+                    {% if secciones.PORTADA.imagen_titulo_es_video %}
+                        <video
+                            class="cover-full-media"
+                            src="{{ secciones.PORTADA.imagen_titulo.url }}"
+                            data-native-element
+                            data-element-id="cover-media"
+                            data-element-type="media"
+                            data-element-role="cover-media"
+                            data-element-section="PORTADA"
+                            autoplay
+                            muted
+                            loop
+                            playsinline
+                            preload="metadata"
+                        ></video>
+                    {% else %}
+                        <img
+                            class="cover-full-media"
+                            src="{{ secciones.PORTADA.imagen_titulo.url }}"
+                            data-native-element
+                            data-element-id="cover-media"
+                            data-element-type="media"
+                            data-element-role="cover-media"
+                            data-element-section="PORTADA"
+                            alt="Portada de {{ evento.titulo_portada }}"
+                            loading="eager"
+                            decoding="async"
+                        >
+                    {% endif %}
+                {% elif evento.portada_es_video %}
                     <video
                         class="cover-full-media"
                         src="{{ evento.foto_portada.url }}"
+                        data-native-element
+                        data-element-id="cover-media"
+                        data-element-type="media"
+                        data-element-role="cover-media"
+                        data-element-section="PORTADA"
                         autoplay
                         muted
                         loop
@@ -133,6 +176,11 @@
                     <img
                         class="cover-full-media"
                         src="{{ evento.foto_portada.url }}"
+                        data-native-element
+                        data-element-id="cover-media"
+                        data-element-type="media"
+                        data-element-role="cover-media"
+                        data-element-section="PORTADA"
                         alt="Portada de {{ evento.titulo_portada }}"
                         loading="eager"
                         decoding="async"
@@ -140,19 +188,44 @@
                 {% endif %}
 
                 {% include "invitaciones/partials/_capas_personalizadas.html" with seccion=secciones.PORTADA %}
+                {% include "invitaciones/partials/_componentes_invitacion.html" with seccion=secciones.PORTADA %}
             </div>
 
         {% else %}
 
-            <div class="cover-card">
+            <div
+                class="cover-card"
+                data-native-element
+                data-element-id="cover-card"
+                data-element-type="container"
+                data-element-role="cover-card"
+                data-element-section="PORTADA"
+            >
                 <div
                     class="cover-photo
                     {% if evento.portada_es_video %}media-bg-fallback{% endif %}"
-                    {% if evento.foto_portada and not evento.portada_es_video %}
+                    {% if secciones.PORTADA.fondo and not secciones.PORTADA.fondo_es_video %}
+                        style="background-image: url('{{ secciones.PORTADA.fondo.url }}');"
+                    {% elif evento.foto_portada and not evento.portada_es_video %}
                         style="background-image: url('{{ evento.foto_portada.url }}');"
                     {% endif %}
+                    data-native-element
+                    data-element-id="cover-media"
+                    data-element-type="media"
+                    data-element-role="cover-media"
+                    data-element-section="PORTADA"
                 >
-                    {% if evento.portada_es_video and evento.foto_portada %}
+                    {% if secciones.PORTADA.fondo_es_video and secciones.PORTADA.fondo %}
+                        <video
+                            class="cover-video"
+                            src="{{ secciones.PORTADA.fondo.url }}"
+                            autoplay
+                            muted
+                            loop
+                            playsinline
+                            preload="metadata"
+                        ></video>
+                    {% elif evento.portada_es_video and evento.foto_portada %}
                         <video
                             class="cover-video"
                             src="{{ evento.foto_portada.url }}"
@@ -165,21 +238,55 @@
                     {% endif %}
 
                     {% include "invitaciones/partials/_capas_personalizadas.html" with seccion=secciones.PORTADA %}
+                    {% include "invitaciones/partials/_componentes_invitacion.html" with seccion=secciones.PORTADA %}
 
-                    <div class="cover-topline">
+                    <div
+                        class="cover-topline"
+                        data-native-element
+                        data-element-id="cover-topline"
+                        data-element-type="text"
+                        data-element-role="cover-topline"
+                        data-element-section="PORTADA"
+                    >
                         {{ evento.frase_portada|default:"Nuestra Boda" }}
                     </div>
 
-                    <div class="cover-names {% if not evento.mostrar_nombre_secundario %}single-name{% endif %}">
-                        <h1>{{ evento.participante_principal }}</h1>
+                    <div
+                        class="cover-names {% if not evento.mostrar_nombre_secundario %}single-name{% endif %}"
+                        data-native-element
+                        data-element-id="cover-names"
+                        data-element-type="container"
+                        data-element-role="cover-names"
+                        data-element-section="PORTADA"
+                    >
+                        <h1
+                            data-native-element
+                            data-element-id="cover-primary-name"
+                            data-element-type="text"
+                            data-element-role="cover-primary-name"
+                            data-element-section="PORTADA"
+                        >{{ evento.participante_principal }}</h1>
 
                         {% if evento.mostrar_nombre_secundario %}
-                            <h1>{{ evento.participante_secundario }}</h1>
+                            <h1
+                                data-native-element
+                                data-element-id="cover-secondary-name"
+                                data-element-type="text"
+                                data-element-role="cover-secondary-name"
+                                data-element-section="PORTADA"
+                            >{{ evento.participante_secundario }}</h1>
                         {% endif %}
                     </div>
 
                     {% if evento.fecha_fiesta %}
-                        <div class="cover-date">
+                        <div
+                            class="cover-date"
+                            data-native-element
+                            data-element-id="cover-date"
+                            data-element-type="date"
+                            data-element-role="cover-date"
+                            data-element-section="PORTADA"
+                        >
                             {{ evento.fecha_fiesta|date:"d F Y" }}
                             ·
                             {{ evento.fecha_fiesta|date:"h:i A" }}

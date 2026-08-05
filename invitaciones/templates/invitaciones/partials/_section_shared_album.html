@@ -22,16 +22,49 @@
     >
         {% include "invitaciones/partials/_section_base.html" with seccion=secciones.ALBUM_COMPARTIDO titulo_default="Álbum compartido" texto_alt="Álbum compartido" media_class="shared-album-full-image" %}
 
-        <div class="section-main-content">
-            <div class="shared-album-content">
-                <p class="shared-album-message">
+        <div
+            class="section-main-content"
+            data-native-element
+            data-element-id="shared-album-content"
+            data-element-type="container"
+            data-element-role="shared-album-content"
+            data-element-section="ALBUM_COMPARTIDO"
+        >
+            <div
+                class="shared-album-content"
+                data-native-element
+                data-element-id="shared-album-card"
+                data-element-type="container"
+                data-element-role="shared-album-card"
+                data-element-section="ALBUM_COMPARTIDO"
+            >
+                <p
+                    class="shared-album-message"
+                    data-native-element
+                    data-element-id="shared-album-message"
+                    data-element-type="text"
+                    data-element-role="shared-album-message"
+                    data-element-section="ALBUM_COMPARTIDO"
+                >
                     Comparte con nosotros las fotos y videos que captures durante el evento.
                 </p>
 
-                <div class="btn-row">
+                <div
+                    class="btn-row"
+                    data-native-element
+                    data-element-id="shared-album-actions"
+                    data-element-type="container"
+                    data-element-role="shared-album-actions"
+                    data-element-section="ALBUM_COMPARTIDO"
+                >
                     <a
                         class="btn"
                         href="{{ evento.link_album_compartido }}"
+                        data-native-element
+                        data-element-id="shared-album-button"
+                        data-element-type="button"
+                        data-element-role="shared-album-button"
+                        data-element-section="ALBUM_COMPARTIDO"
                         target="_blank"
                         rel="noopener"
                     >

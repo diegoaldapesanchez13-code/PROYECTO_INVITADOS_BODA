@@ -1,0 +1,267 @@
+.r3-page {
+    --r3-page-background: #f4f1ea;
+    --r3-selection: #7c3aed;
+
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    min-height: 100%;
+    margin: 0;
+    background: var(--r3-page-background);
+}
+
+.r3-node {
+    box-sizing: border-box;
+}
+
+.r3-node[hidden] {
+    display: none !important;
+}
+
+/* =========================================================
+   LAYOUT MODES
+   These rules own position. Node-type rules must not
+   overwrite position.
+   ========================================================= */
+
+.r3-layout-flow {
+    position: relative;
+    width: var(--r3-width, auto);
+    min-height: var(--r3-min-height, 0);
+    height: var(--r3-height, auto);
+    max-height: var(--r3-max-height, none);
+    z-index: var(--r3-z, 1);
+    opacity: var(--r3-opacity, 1);
+}
+
+.r3-layout-absolute,
+.r3-layout-layer {
+    position: absolute;
+    left: var(--r3-x, 50%);
+    top: var(--r3-y, 50%);
+    width: var(--r3-width, auto);
+    min-height: var(--r3-min-height, 0);
+    height: var(--r3-height, auto);
+    max-height: var(--r3-max-height, none);
+    z-index: var(--r3-z, 1);
+    opacity: var(--r3-opacity, 1);
+    transform:
+        translate(-50%, -50%)
+        rotate(var(--r3-rotation, 0deg))
+        scale(
+            calc(
+                var(--r3-scale, 1)
+                * var(--r3-flip-x, 1)
+            ),
+            calc(
+                var(--r3-scale, 1)
+                * var(--r3-flip-y, 1)
+            )
+        );
+    transform-origin: center;
+}
+
+/* =========================================================
+   STRUCTURAL NODES
+   ========================================================= */
+
+.r3-node--section {
+    position: relative;
+    isolation: isolate;
+    width: 100%;
+    min-height: var(--r3-min-height, 0);
+    height: var(--r3-height, auto);
+    max-height: var(--r3-max-height, none);
+    padding:
+        var(--r3-padding-y, 0)
+        var(--r3-padding-x, 0);
+    overflow: visible;
+}
+
+/*
+ * SECTION is structural and always rendered as FLOW by
+ * effectiveLayoutMode(). This selector only establishes its
+ * coordinate system; it does not compete with Card layout.
+ */
+.r3-node--section.r3-layout-flow {
+    position: relative;
+    left: auto;
+    top: auto;
+    transform: none;
+}
+
+.r3-node--container,
+.r3-node--card,
+.r3-node--gallery,
+.r3-node--rsvp {
+    isolation: isolate;
+    display: flex;
+    flex-direction: var(--r3-direction, column);
+    align-items: var(--r3-align, stretch);
+    justify-content: var(--r3-justify, flex-start);
+    gap: var(--r3-gap, 0);
+    max-width: var(--r3-content-max-width, none);
+    padding:
+        var(--r3-padding-y, 0)
+        var(--r3-padding-x, 0);
+}
+
+/*
+ * Important: no position declaration exists in the Card,
+ * Container, Gallery or RSVP type rules. Their position is
+ * controlled exclusively by the layout-mode classes.
+ */
+
+/* =========================================================
+   BACKGROUND / OVERLAY
+   ========================================================= */
+
+.r3-node--section > .r3-node--background,
+.r3-node--card > .r3-node--background,
+.r3-node--container > .r3-node--background,
+.r3-node--gallery > .r3-node--background,
+.r3-node--section > .r3-node--overlay,
+.r3-node--card > .r3-node--overlay,
+.r3-node--container > .r3-node--overlay,
+.r3-node--gallery > .r3-node--overlay {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    border-radius: inherit;
+    transform: none;
+}
+
+.r3-node--background {
+    z-index: var(--r3-z, 0);
+    pointer-events: none;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.r3-node--overlay {
+    pointer-events: none;
+}
+
+.r3-node--card
+> .r3-node:not(.r3-node--background):not(.r3-node--overlay),
+.r3-node--container
+> .r3-node:not(.r3-node--background):not(.r3-node--overlay) {
+    z-index: max(var(--r3-z, 1), 2);
+}
+
+/* =========================================================
+   CONTENT NODES
+   ========================================================= */
+
+.r3-node--image,
+.r3-node--decoration {
+    display: block;
+    object-fit: cover;
+    user-select: none;
+    -webkit-user-drag: none;
+}
+
+.r3-node--decoration {
+    object-fit: contain;
+}
+
+.r3-node--button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+}
+
+.r3-node--separator {
+    border: 0;
+    border-top: 1px solid currentColor;
+}
+
+/* =========================================================
+   COUNTDOWN
+   ========================================================= */
+
+.r3-countdown {
+    display: grid;
+    grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+    gap: var(--r3-gap, 12px);
+    width: 100%;
+}
+
+.r3-countdown__item {
+    display: grid;
+    place-items: center;
+    min-width: 0;
+}
+
+.r3-countdown__value,
+.r3-countdown__label {
+    display: block;
+}
+
+.r3-countdown__value {
+    font-size:
+        var(
+            --r3-countdown-value-size,
+            2rem
+        );
+}
+
+.r3-countdown__label {
+    font-size:
+        var(
+            --r3-countdown-label-size,
+            .75rem
+        );
+}
+
+/* =========================================================
+   EDITOR STATE
+   ========================================================= */
+
+.r3-page[data-r3-editable="1"]
+.r3-node:not(.r3-node--background) {
+    cursor: pointer;
+}
+
+.r3-page[data-r3-editable="1"]
+.r3-node:hover {
+    outline:
+        1px dashed
+        color-mix(
+            in srgb,
+            var(--r3-selection),
+            transparent 24%
+        );
+    outline-offset: 2px;
+}
+
+.r3-selection-overlay.is-background-pan {
+    cursor: grab;
+    border-style: dotted;
+}
+
+.r3-selection-overlay.is-background-pan:active {
+    cursor: grabbing;
+}
+
+/* =========================================================
+   RESPONSIVE PREVIEW
+   ========================================================= */
+
+.r3-page[data-r3-device="mobile"]
+.r3-countdown {
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 600px) {
+    .r3-countdown {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+    }
+}
