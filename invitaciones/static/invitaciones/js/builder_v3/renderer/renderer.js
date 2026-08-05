@@ -52,6 +52,11 @@ export class UniversalRenderer {
         }
 
         this.root = root;
+
+        this.options.interactionEngine
+            ?.runtime
+            ?.setDocumentRoot?.(root);
+
         this.document = normalized;
         this.nodeMap = new Map(
             [

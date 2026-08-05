@@ -416,7 +416,7 @@ export class UniversalInspector {
         const control =
             this.#createControl(
                 definition,
-                context.node
+                context
             );
 
         wrapper.append(control);
@@ -450,7 +450,8 @@ export class UniversalInspector {
         return wrapper;
     }
 
-    #createControl(definition, node) {
+    #createControl(definition, context) {
+        const node = context.node;
         let control;
 
         if (
@@ -471,11 +472,17 @@ export class UniversalInspector {
                     "select"
                 );
 
+            const options =
+                typeof definition.options
+                    === "function"
+                    ? definition.options(context)
+                    : definition.options;
+
             for (
                 const [
                     value,
                     label,
-                ] of definition.options
+                ] of options || []
             ) {
                 const option =
                     document.createElement(

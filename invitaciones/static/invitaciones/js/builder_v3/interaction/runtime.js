@@ -1,9 +1,26 @@
+import {
+    NavigationEngine,
+} from "../navigation/index.js";
+
 export class BrowserInteractionRuntime {
     constructor(options = {}) {
         this.windowRef =
             options.windowRef
             ?? globalThis.window
             ?? null;
+
+        this.navigationEngine =
+            options.navigationEngine
+            || new NavigationEngine({
+                root: options.documentRoot || null,
+            });
+    }
+
+    setDocumentRoot(root) {
+        this.navigationEngine
+            ?.setRoot?.(root);
+
+        return this;
     }
 
     openUrl(url, options = {}) {
@@ -68,5 +85,27 @@ export class BrowserInteractionRuntime {
             url,
             openInNewTab: false,
         };
+    }
+
+    navigateSection(sectionId, options = {}) {
+        if (
+            !this.navigationEngine
+            || typeof this.navigationEngine
+                .navigateToSection
+                !== "function"
+        ) {
+            return {
+                executed: false,
+                reason: "navigation-engine-unavailable",
+                sectionId:
+                    String(sectionId || ""),
+            };
+        }
+
+        return this.navigationEngine
+            .navigateToSection(
+                sectionId,
+                options
+            );
     }
 }

@@ -46,6 +46,19 @@ export function interactionPanel() {
                     visibleWhen: interactionEnabled,
                 }),
                 field({
+                    key: "interactionSection",
+                    label: "Lienzo de destino",
+                    type: "select",
+                    path: "interaction.action.value",
+                    options: sectionOptions,
+                    visibleWhen: ({ node }) =>
+                        interactionEnabled({ node })
+                        && interactionType(node)
+                            === INTERACTION_TYPES.SECTION,
+                    help:
+                        "Se guarda el ID estable del lienzo; renombrarlo o reordenarlo no rompe la navegación.",
+                }),
+                field({
                     key: "interactionValue",
                     label: "Valor / número",
                     type: "text",
@@ -56,9 +69,15 @@ export function interactionPanel() {
                             return false;
                         }
 
-                        return interactionDefinition(node)
+                        const definition =
+                            interactionDefinition(node);
+
+                        return definition
                             ?.valueControl
-                            !== "hidden";
+                            !== "hidden"
+                            && definition
+                                ?.valueControl
+                                !== "section";
                     },
                 }),
                 field({
@@ -106,7 +125,32 @@ function interactionEnabled({ node }) {
 
 function interactionDefinition(node) {
     return getInteractionDefinition(
-        node?.interaction?.action?.type
-        || INTERACTION_TYPES.NONE
+        interactionType(node)
     );
+}
+
+function interactionType(node) {
+    return node?.interaction?.action?.type
+        || INTERACTION_TYPES.NONE;
+}
+
+function sectionOptions({ state }) {
+    const sections = [
+        ...(state?.document?.sections || []),
+    ].sort(
+        (a, b) =>
+            Number(a.order || 0)
+            - Number(b.order || 0)
+    );
+
+    return [
+        ["", "Selecciona un lienzo"],
+        ...sections.map(
+            (section, index) => [
+                section.id,
+                section.name
+                    || `Lienzo ${index + 1}`,
+            ]
+        ),
+    ];
 }
