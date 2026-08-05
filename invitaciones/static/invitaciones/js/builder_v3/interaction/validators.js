@@ -12,6 +12,7 @@ const GOOGLE_MAP_HOSTS = new Set([
 ]);
 
 const COORDINATE_PATTERN = /^\s*(-?\d{1,3}(?:\.\d+)?)\s*[,;]\s*(-?\d{1,3}(?:\.\d+)?)\s*$/;
+const WHATSAPP_PHONE_PATTERN = /^\d{8,15}$/;
 
 export function validateWebUrl(value) {
     const input = String(value || "").trim();
@@ -128,6 +129,50 @@ export function validateGoogleMapsValue(value) {
         code: null,
         message: "",
     };
+}
+
+export function validateWhatsAppRecipient(value) {
+    const input = String(value || "").trim();
+
+    if (!input) {
+        return invalid(
+            "whatsapp-recipient-required",
+            "Ingresa un número de WhatsApp con código de país."
+        );
+    }
+
+    let normalized = input
+        .replace(/^https?:\/\/(?:api\.)?whatsapp\.com\/send\?phone=/i, "")
+        .replace(/^https?:\/\/wa\.me\//i, "")
+        .split(/[?&#]/, 1)[0]
+        .replace(/^00/, "")
+        .replace(/[^\d]/g, "");
+
+    if (!WHATSAPP_PHONE_PATTERN.test(normalized)) {
+        return invalid(
+            "whatsapp-recipient-invalid",
+            "Usa entre 8 y 15 dígitos e incluye el código de país."
+        );
+    }
+
+    return {
+        valid: true,
+        value: normalized,
+        code: null,
+        message: "",
+    };
+}
+
+export function whatsappUrl(recipient, message = "") {
+    const number = String(recipient || "").trim();
+    const text = String(message || "").trim();
+    const base = `https://wa.me/${number}`;
+
+    if (!text) {
+        return base;
+    }
+
+    return `${base}?text=${encodeURIComponent(text)}`;
 }
 
 export function googleMapsSearchUrl(

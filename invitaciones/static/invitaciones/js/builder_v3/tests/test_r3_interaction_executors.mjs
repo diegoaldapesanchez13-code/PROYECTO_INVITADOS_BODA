@@ -69,8 +69,13 @@ for (const [type, intent, handled] of cases) {
                     ? "https://example.com"
                     : type === INTERACTION_TYPES.GOOGLE_MAPS
                         ? "https://maps.app.goo.gl/AbCdEf"
-                        : "valor",
-            target: "destino",
+                        : type === INTERACTION_TYPES.WHATSAPP
+                            ? "5214771234567"
+                            : "valor",
+            target:
+                type === INTERACTION_TYPES.WHATSAPP
+                    ? "Hola"
+                    : "destino",
         })
     );
 

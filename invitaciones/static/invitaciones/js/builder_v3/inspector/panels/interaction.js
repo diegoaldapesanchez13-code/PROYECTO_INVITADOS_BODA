@@ -47,7 +47,7 @@ export function interactionPanel() {
                 }),
                 field({
                     key: "interactionValue",
-                    label: "Valor",
+                    label: "Valor / número",
                     type: "text",
                     path: "interaction.action.value",
                     placeholder: "Destino de la interacción",
@@ -56,9 +56,25 @@ export function interactionPanel() {
                             return false;
                         }
 
-                        return node.interaction
-                            ?.action?.type
-                            !== INTERACTION_TYPES.NONE;
+                        return interactionDefinition(node)
+                            ?.valueControl
+                            !== "hidden";
+                    },
+                }),
+                field({
+                    key: "interactionTarget",
+                    label: "Mensaje opcional",
+                    type: "textarea",
+                    path: "interaction.action.target",
+                    placeholder: "Hola, confirmo mi asistencia.",
+                    visibleWhen: ({ node }) => {
+                        if (!interactionEnabled({ node })) {
+                            return false;
+                        }
+
+                        return interactionDefinition(node)
+                            ?.targetControl
+                            !== "hidden";
                     },
                 }),
                 field({
@@ -72,10 +88,8 @@ export function interactionPanel() {
                         }
 
                         return Boolean(
-                            getInteractionDefinition(
-                                node.interaction
-                                    ?.action?.type
-                            )?.supportsNewTab
+                            interactionDefinition(node)
+                                ?.supportsNewTab
                         );
                     },
                 }),
@@ -87,5 +101,12 @@ export function interactionPanel() {
 function interactionEnabled({ node }) {
     return Boolean(
         node?.interaction?.enabled
+    );
+}
+
+function interactionDefinition(node) {
+    return getInteractionDefinition(
+        node?.interaction?.action?.type
+        || INTERACTION_TYPES.NONE
     );
 }

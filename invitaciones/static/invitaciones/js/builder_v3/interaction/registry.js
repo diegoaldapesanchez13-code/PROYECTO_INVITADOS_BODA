@@ -27,7 +27,11 @@ const DEFINITIONS = Object.freeze([
     definition(INTERACTION_TYPES.WHATSAPP, {
         label: "WhatsApp",
         valueControl: "text",
+        valueLabel: "Número",
         placeholder: "5214771234567",
+        targetControl: "textarea",
+        targetLabel: "Mensaje opcional",
+        targetPlaceholder: "Hola, confirmo mi asistencia.",
         supportsNewTab: true,
         executor: INTERACTION_TYPES.WHATSAPP,
     }),
@@ -78,8 +82,16 @@ function definition(type, values) {
         label: String(values.label || type),
         valueControl:
             values.valueControl || "text",
+        valueLabel:
+            String(values.valueLabel || "Valor"),
         placeholder:
             String(values.placeholder || ""),
+        targetControl:
+            values.targetControl || "hidden",
+        targetLabel:
+            String(values.targetLabel || "Destino"),
+        targetPlaceholder:
+            String(values.targetPlaceholder || ""),
         supportsNewTab:
             Boolean(values.supportsNewTab),
         executor:

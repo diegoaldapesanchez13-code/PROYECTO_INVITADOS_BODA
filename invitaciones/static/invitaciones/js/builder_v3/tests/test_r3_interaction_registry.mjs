@@ -82,6 +82,18 @@ assert.equal(
     true
 );
 
+const whatsappDefinition = getInteractionDefinition(
+    INTERACTION_TYPES.WHATSAPP
+);
+assert.equal(
+    whatsappDefinition.targetControl,
+    "textarea"
+);
+assert.equal(
+    whatsappDefinition.targetLabel,
+    "Mensaje opcional"
+);
+
 const panels = interactionPanel();
 assert.equal(panels.length, 1);
 assert.equal(panels[0].id, "interaction");
