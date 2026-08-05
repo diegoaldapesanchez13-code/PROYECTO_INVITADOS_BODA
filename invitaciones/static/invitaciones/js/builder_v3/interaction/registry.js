@@ -8,30 +8,35 @@ const DEFINITIONS = Object.freeze([
         valueControl: "hidden",
         placeholder: "",
         supportsNewTab: false,
+        executor: INTERACTION_TYPES.NONE,
     }),
     definition(INTERACTION_TYPES.URL, {
         label: "Abrir URL",
         valueControl: "text",
         placeholder: "https://...",
         supportsNewTab: true,
+        executor: INTERACTION_TYPES.URL,
     }),
     definition(INTERACTION_TYPES.GOOGLE_MAPS, {
         label: "Google Maps",
         valueControl: "text",
         placeholder: "https://maps.app.goo.gl/...",
         supportsNewTab: true,
+        executor: INTERACTION_TYPES.GOOGLE_MAPS,
     }),
     definition(INTERACTION_TYPES.WHATSAPP, {
         label: "WhatsApp",
         valueControl: "text",
         placeholder: "5214771234567",
         supportsNewTab: true,
+        executor: INTERACTION_TYPES.WHATSAPP,
     }),
     definition(INTERACTION_TYPES.SECTION, {
         label: "Ir a lienzo",
         valueControl: "section",
         placeholder: "ID del lienzo",
         supportsNewTab: false,
+        executor: INTERACTION_TYPES.SECTION,
     }),
 ]);
 
@@ -77,6 +82,8 @@ function definition(type, values) {
             String(values.placeholder || ""),
         supportsNewTab:
             Boolean(values.supportsNewTab),
+        executor:
+            String(values.executor || type),
     });
 }
 
