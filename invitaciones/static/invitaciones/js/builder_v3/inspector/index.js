@@ -42,6 +42,10 @@ import {
 } from "./panels/image.js";
 
 import {
+    buttonPanel,
+} from "./panels/button.js";
+
+import {
     countdownPanel,
 } from "./panels/countdown.js";
 
@@ -256,6 +260,7 @@ export class UniversalInspector {
             card: cardPanel,
             text: textPanel,
             image: imagePanel,
+            button: buttonPanel,
             countdown: countdownPanel,
             background: backgroundPanel,
             decoration: decorationPanel,

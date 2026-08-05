@@ -59,6 +59,10 @@ import {
     LayerTree,
 } from "./layers/layer_tree.js";
 
+import {
+    ComponentLibrary,
+} from "./components/index.js";
+
 const assetStorage =
     new AssetStorage({
         key:
@@ -473,6 +477,11 @@ const layersRoot =
         "[data-r3-layers]"
     );
 
+const componentsRoot =
+    document.querySelector(
+        "[data-r3-components]"
+    );
+
 const canvasesRoot =
     document.querySelector(
         "[data-r3-canvases]"
@@ -500,6 +509,7 @@ renderer.mount(
 let inspector;
 let layers;
 let canvases;
+let components;
 
 const canvas =
     new CanvasSelectionEngine({
@@ -600,6 +610,19 @@ canvases =
         },
     });
 
+components =
+    new ComponentLibrary({
+        root: componentsRoot,
+        state,
+        renderer,
+        canvas,
+        inspector,
+
+        onStatus(message) {
+            status.textContent = message;
+        },
+    });
+
 const library =
     new AssetLibrary({
         root: libraryRoot,
@@ -675,7 +698,7 @@ surface.addEventListener(
             state,
             asset,
             selectedNodeId:
-                section.id,
+                state.selection.nodeId,
             position,
         });
 
@@ -815,4 +838,5 @@ globalThis.r3Demo = {
     documentStorage,
     stopDocumentPersistence,
     canvases,
+    components,
 };

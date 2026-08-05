@@ -98,7 +98,7 @@ const DEFINITIONS = Object.freeze([
         label: "Botón",
         icon: "BT",
         element: "a",
-        inspectorPanel: null,
+        inspectorPanel: "button",
         capabilities: [
             COMPONENT_CAPABILITIES.CONSTRAINTS,
             COMPONENT_CAPABILITIES.TRANSFORM,

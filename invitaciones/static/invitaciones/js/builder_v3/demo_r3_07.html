@@ -38,6 +38,11 @@
         href="./layers/layer_tree.css"
     >
 
+    <link
+        rel="stylesheet"
+        href="./components/library.css"
+    >
+
     <style>
         body {
             margin: 0;
@@ -79,7 +84,7 @@
         .demo-left-tabs {
             display: grid;
             grid-template-columns:
-                repeat(3, minmax(0, 1fr));
+                repeat(2, minmax(0, 1fr));
             gap: 6px;
         }
 
@@ -243,6 +248,13 @@
 
                     <button
                         type="button"
+                        data-r3-left-tab="components"
+                    >
+                        Componentes
+                    </button>
+
+                    <button
+                        type="button"
                         data-r3-left-tab="layers"
                     >
                         Capas
@@ -260,6 +272,13 @@
                     class="demo-left-panel"
                     data-r3-left-panel="assets"
                     data-r3-library
+                ></div>
+
+                <div
+                    class="demo-left-panel"
+                    data-r3-left-panel="components"
+                    data-r3-components
+                    hidden
                 ></div>
 
                 <div
