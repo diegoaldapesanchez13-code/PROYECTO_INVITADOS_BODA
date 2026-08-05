@@ -11,13 +11,22 @@ import {
     effectiveLayoutMode,
 } from "../canvas/transform_policy.js";
 
+import {
+    INTERACTION_TRIGGERS,
+    InteractionEngine,
+} from "../interaction/index.js";
+
 export class UniversalRenderer {
     constructor(options = {}) {
         this.options = {
             editable: false,
             device: "desktop",
             onNodeClick: null,
+            onInteractionResult: null,
+            onInteractionError: null,
             assetResolver: null,
+            interactionEngine:
+                new InteractionEngine(),
             ...options,
         };
 
@@ -141,10 +150,20 @@ export class UniversalRenderer {
             );
         }
 
-        if (
-            this.options.editable
-            && node.type !== NODE_TYPES.BACKGROUND
-        ) {
+        this.bindNodeEvents(
+            element,
+            node
+        );
+
+        return element;
+    }
+
+    bindNodeEvents(element, node) {
+        if (node.type === NODE_TYPES.BACKGROUND) {
+            return;
+        }
+
+        if (this.options.editable) {
             element.addEventListener(
                 "click",
                 (event) => {
@@ -157,9 +176,91 @@ export class UniversalRenderer {
                     );
                 }
             );
+
+            return;
         }
 
-        return element;
+        if (!node.interaction?.enabled) {
+            return;
+        }
+
+        element.dataset.r3Interactive = "1";
+
+        element.addEventListener(
+            "click",
+            (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+
+                this.executeInteraction(
+                    node,
+                    event
+                );
+            }
+        );
+    }
+
+    executeInteraction(node, event = null) {
+        const engine =
+            this.options.interactionEngine;
+
+        if (
+            !engine
+            || typeof engine.execute
+                !== "function"
+        ) {
+            throw new Error(
+                "UniversalRenderer requiere un InteractionEngine válido."
+            );
+        }
+
+        try {
+            const result = engine.execute(
+                node,
+                {
+                    trigger:
+                        INTERACTION_TRIGGERS.CLICK,
+                    event,
+                    document: this.document,
+                    metadata: {
+                        device:
+                            this.options.device,
+                        editable:
+                            this.options.editable,
+                    },
+                }
+            );
+
+            this.options
+                .onInteractionResult?.(
+                    result,
+                    {
+                        node,
+                        event,
+                        renderer: this,
+                    }
+                );
+
+            return result;
+        } catch (error) {
+            this.options
+                .onInteractionError?.(
+                    error,
+                    {
+                        node,
+                        event,
+                        renderer: this,
+                    }
+                );
+
+            return {
+                handled: false,
+                status: "error",
+                reason: "interaction-error",
+                nodeId: node?.id || null,
+                error,
+            };
+        }
     }
 
     createElementForNode(node) {

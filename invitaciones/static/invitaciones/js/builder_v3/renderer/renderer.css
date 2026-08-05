@@ -265,3 +265,13 @@
             repeat(2, minmax(0, 1fr));
     }
 }
+
+/* =========================================================
+   INTERACTION STATE
+   ========================================================= */
+
+.r3-page[data-r3-editable="0"]
+.r3-node[data-r3-interactive="1"] {
+    cursor: pointer;
+    touch-action: manipulation;
+}
