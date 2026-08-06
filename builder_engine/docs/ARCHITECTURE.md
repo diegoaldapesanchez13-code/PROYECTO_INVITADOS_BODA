@@ -14,3 +14,6 @@ El módulo `frontend/canvas` administra el contrato estructural de los lienzos.
 Opera sobre `document.canvases` mediante `BuilderApp.updateDocument()` y no depende del DOM, del renderer ni de Django. La representación visual se conectará posteriormente mediante adaptadores de UI.
 
 La compatibilidad temporal con Builder R3 se mantiene mediante `adapters/r3_canvas_adapter.js`, que traduce `sections` a `canvases` sin alterar el editor activo.
+
+## Renderer Module
+El Renderer es un módulo registrado en el Kernel. Consume el Documento y genera un árbol headless común para EDIT, PREVIEW y PUBLIC. La materialización en DOM se realiza mediante adaptadores.

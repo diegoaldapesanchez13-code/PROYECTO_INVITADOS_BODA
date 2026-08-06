@@ -20,3 +20,9 @@
 - Conserva acordeones y scroll por nodo.
 - Agrega adaptador de contratos del Inspector R3.
 
+
+## 0.9.0 — Renderer Module
+- Universal Renderer headless.
+- Modos EDIT, PREVIEW y PUBLIC.
+- Registry de renderers por tipo.
+- Adaptador DOM y compatibilidad con R3.

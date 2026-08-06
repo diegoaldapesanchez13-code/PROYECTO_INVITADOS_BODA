@@ -11,3 +11,6 @@
 
 - [x] Sprint 3: Inspector Module
 - [ ] Sprint 4: Renderer Module
+
+- [x] Sprint 4: Renderer Module
+- [ ] Sprint 5: Assets Module

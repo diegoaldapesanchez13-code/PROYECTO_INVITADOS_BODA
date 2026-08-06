@@ -1,5 +1,5 @@
 export const DOCUMENT_SCHEMA_VERSION = 1;
-export const BUILDER_ENGINE_VERSION = "0.8.0";
+export const BUILDER_ENGINE_VERSION = "0.9.0";
 
 export function createDocument(overrides = {}) {
     const now = new Date().toISOString();
