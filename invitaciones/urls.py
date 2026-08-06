@@ -2,6 +2,7 @@ from django.urls import path
 from . import views
 from . import builder_engine_views
 from . import builder_engine_editor_views
+from . import builder_asset_views
 
 urlpatterns = [
     path('', views.inicio, name='inicio'),
@@ -27,8 +28,19 @@ urlpatterns = [
 
     path('dashboard/editor-invitacion/<int:evento_id>/', views.editor_invitacion_visual, name='editor_invitacion_visual'),
     path('dashboard/editor-invitacion/<int:evento_id>/engine/', builder_engine_editor_views.editor_builder_engine, name='builder_engine_editor',),
+    path(
+        'dashboard/editor-invitacion/<int:evento_id>/engine/renderer-lab/',
+        builder_engine_editor_views.renderer_lab,
+        name='builder_engine_renderer_lab',
+    ),
     path('dashboard/editor-invitacion/<int:evento_id>/guardar/', views.guardar_diseno_invitacion_visual, name='guardar_diseno_invitacion_visual'),
     path('dashboard/editor-invitacion/<int:evento_id>/publicar/', views.publicar_diseno_invitacion_visual, name='publicar_diseno_invitacion_visual'),
+
+    path(
+        'dashboard/editor-invitacion/<int:evento_id>/engine/assets/',
+        builder_asset_views.listar_assets_builder,
+        name='builder_engine_assets_list',
+    ),
 
     # DIRTEC Builder Engine — Persistence Contract v1.
     path(

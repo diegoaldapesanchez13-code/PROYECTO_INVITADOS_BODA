@@ -16,6 +16,10 @@ def editor_builder_engine(request, evento_id):
         "eventId": evento.id,
         "engineVersion": "0.14.0",
         "endpoints": {
+            "assets": reverse(
+                "builder_engine_assets_list",
+                args=[evento.id],
+            ),
             "load": reverse(
                 "builder_engine_document_load",
                 args=[evento.id],
@@ -46,3 +50,29 @@ def editor_builder_engine(request, evento_id):
             "dashboard_url": bootstrap["dashboardUrl"],
         },
     )
+
+@login_required
+def renderer_lab(request, evento_id):
+    evento = get_object_or_404(
+        eventos_visibles_usuario(request.user),
+        id=evento_id,
+    )
+    bootstrap = {
+        "eventId": evento.id,
+        "engineVersion": "0.31.1",
+        "readOnly": True,
+        "endpoints": {
+            "load": reverse("builder_engine_document_load", args=[evento.id]),
+        },
+    }
+    return render(
+        request,
+        "invitaciones/renderer_lab.html",
+        {
+            "evento": evento,
+            "renderer_lab_bootstrap": bootstrap,
+            "renderer_modes": ("EDIT", "PREVIEW", "PUBLIC"),
+            "editor_url": reverse("builder_engine_editor", args=[evento.id]),
+        },
+    )
+

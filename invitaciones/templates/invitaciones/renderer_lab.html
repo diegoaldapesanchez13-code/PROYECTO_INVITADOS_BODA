@@ -1,0 +1,57 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Renderer Lab · {{ evento }}</title>
+    <link rel="stylesheet" href="{% static 'invitaciones/css/renderer_lab.css' %}?v=0.31.1">
+</head>
+<body>
+    {{ renderer_lab_bootstrap|json_script:"dirtec-renderer-lab-bootstrap" }}
+    <main class="renderer-lab" data-renderer-lab-root data-bootstrap-id="dirtec-renderer-lab-bootstrap" data-device="mobile">
+        <header class="renderer-lab-topbar">
+            <div>
+                <a href="{{ editor_url }}">← Builder Engine</a>
+                <span>Laboratorio aislado</span>
+                <h1>Universal Renderer</h1>
+                <p>{{ evento }}</p>
+            </div>
+            <div class="renderer-lab-controls">
+                <div class="renderer-lab-device" aria-label="Dispositivo">
+                    <button class="active" type="button" data-renderer-device="mobile" aria-pressed="true">Celular</button>
+                    <button type="button" data-renderer-device="tablet" aria-pressed="false">Tablet</button>
+                    <button type="button" data-renderer-device="desktop" aria-pressed="false">Desktop</button>
+                </div>
+                <button type="button" data-renderer-reload>Recargar documento</button>
+            </div>
+        </header>
+
+        <section class="renderer-lab-notice">
+            <strong>Solo lectura</strong>
+            <span>Esta ruta no guarda, no publica y no sustituye al editor ni a la invitación pública.</span>
+            <output data-renderer-lab-status data-type="loading">Preparando Renderer Lab…</output>
+        </section>
+
+        <section class="renderer-lab-comparison">
+            {% for mode in renderer_modes %}
+                <article class="renderer-lab-card" data-mode="{{ mode }}">
+                    <header>
+                        <div><span>Modo</span><h2>{{ mode }}</h2></div>
+                        <small data-renderer-meta="{{ mode }}">Esperando documento…</small>
+                    </header>
+                    <div class="renderer-lab-viewport" data-renderer-viewport>
+                        <div class="renderer-lab-target" data-renderer-target="{{ mode }}"></div>
+                    </div>
+                    <footer>
+                        {% if mode == "EDIT" %}Las acciones se conservan, pero no se ejecutan.
+                        {% elif mode == "PREVIEW" %}Las acciones se prueban mediante mensajes del laboratorio.
+                        {% else %}Simula la salida pública sin cambiar la URL oficial.{% endif %}
+                    </footer>
+                </article>
+            {% endfor %}
+        </section>
+    </main>
+    <script type="module" src="{% static 'invitaciones/builder_engine/integrations/django/renderer_lab_mount.js' %}?v=0.31.1"></script>
+</body>
+</html>
