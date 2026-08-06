@@ -1,4 +1,4 @@
-# PROYECTO_INVITADOS_BODA
+# dirtec-event-studio
 
 Dashboard para gestión de invitados e invitaciones personales y familiares.
 
