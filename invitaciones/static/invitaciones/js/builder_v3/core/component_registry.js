@@ -123,11 +123,11 @@ const DEFINITIONS = Object.freeze([
         element: "div",
         inspectorPanel: "countdown",
         capabilities: [
+            COMPONENT_CAPABILITIES.CONTAINER,
             COMPONENT_CAPABILITIES.CONSTRAINTS,
             COMPONENT_CAPABILITIES.TRANSFORM,
             COMPONENT_CAPABILITIES.DYNAMIC_DATA,
         ],
-        customRenderer: "countdown",
     }),
     definition(NODE_TYPES.GALLERY, {
         label: "Galería",

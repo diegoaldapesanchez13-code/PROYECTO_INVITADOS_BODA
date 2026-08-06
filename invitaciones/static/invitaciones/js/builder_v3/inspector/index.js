@@ -50,6 +50,14 @@ import {
 } from "./panels/countdown.js";
 
 import {
+    separatorPanel,
+} from "./panels/separator.js";
+
+import {
+    iconPanel,
+} from "./panels/icon.js";
+
+import {
     backgroundPanel,
 } from "./panels/background.js";
 
@@ -91,18 +99,20 @@ export class UniversalInspector {
         this.onStatus = onStatus;
         this.onNodeUpdated = onNodeUpdated;
         this.selectedNodeId = null;
+        this.groupOpenState = new Map();
+        this.scrollStateByNode = new Map();
 
         this.renderEmpty();
     }
 
     setSelection(nodeId) {
-        this.selectedNodeId =
-            nodeId || null;
-
+        this.#rememberViewState();
+        this.selectedNodeId = nodeId || null;
         this.render();
     }
 
     refresh() {
+        this.#rememberViewState();
         this.render();
     }
 
@@ -210,25 +220,19 @@ export class UniversalInspector {
 
             if (panel.kind === "group") {
                 this.root.append(
-                    this.#renderGroup(
-                        panel,
-                        context
-                    )
+                    this.#renderGroup(panel, context)
                 );
             }
 
-            if (
-                panel.kind
-                === "action-group"
-            ) {
+            if (panel.kind === "action-group") {
                 this.root.append(
-                    this.#renderActionGroup(
-                        panel,
-                        context
-                    )
+                    this.#renderActionGroup(panel, context)
                 );
             }
         }
+
+        const savedScroll = this.scrollStateByNode.get(node.id) || 0;
+        this.root.scrollTop = savedScroll;
     }
 
     renderEmpty() {
@@ -262,6 +266,8 @@ export class UniversalInspector {
             image: imagePanel,
             button: buttonPanel,
             countdown: countdownPanel,
+            separator: separatorPanel,
+            icon: iconPanel,
             background: backgroundPanel,
             decoration: decorationPanel,
         };
@@ -341,8 +347,14 @@ export class UniversalInspector {
         details.className =
             "r3-inspector-group";
 
-        details.open =
-            definition.open !== false;
+        details.dataset.groupId = definition.id;
+        const stateKey = this.#groupStateKey(definition.id);
+        details.open = this.groupOpenState.has(stateKey)
+            ? this.groupOpenState.get(stateKey)
+            : definition.open !== false;
+        details.addEventListener("toggle", () => {
+            this.groupOpenState.set(stateKey, details.open);
+        });
 
         const summary =
             document.createElement("summary");
@@ -627,7 +639,8 @@ export class UniversalInspector {
             this.selectedNodeId
         );
 
-        this.render();
+        // No reconstruir todo el inspector en cada tecla/click.
+        // Esto conserva acordeones, foco y posición de scroll.
 
         this.onNodeUpdated?.({
             type: "field",
@@ -639,6 +652,24 @@ export class UniversalInspector {
         this.onStatus?.(
             `${current.name}: ${definition.label} actualizado`
         );
+    }
+
+    #rememberViewState() {
+        if (!this.selectedNodeId || !this.root) return;
+        this.scrollStateByNode.set(
+            this.selectedNodeId,
+            this.root.scrollTop
+        );
+        for (const details of this.root.querySelectorAll("details[data-group-id]")) {
+            this.groupOpenState.set(
+                this.#groupStateKey(details.dataset.groupId),
+                details.open
+            );
+        }
+    }
+
+    #groupStateKey(groupId) {
+        return `${this.selectedNodeId || "none"}:${groupId}`;
     }
 
     #renderActionGroup(

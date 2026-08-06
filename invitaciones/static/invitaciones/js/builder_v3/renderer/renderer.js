@@ -275,15 +275,6 @@ export class UniversalRenderer {
         const definition =
             getComponentDefinition(node.type);
 
-        if (
-            definition?.customRenderer
-            === "countdown"
-        ) {
-            return this.createCountdownElement(
-                document,
-                node
-            );
-        }
 
         if (node.type === NODE_TYPES.TEXT) {
             return document.createElement(
@@ -580,6 +571,21 @@ export class UniversalRenderer {
                 `${Number(style.letterSpacing)}px`;
         }
 
+        if (node.type === NODE_TYPES.SEPARATOR) {
+            const orientation = style.orientation === "vertical"
+                ? "vertical"
+                : "horizontal";
+            const thickness = Math.max(Number(style.borderWidth ?? 1), 1);
+            element.dataset.r3Orientation = orientation;
+            element.style.backgroundColor = style.color || "currentColor";
+            element.style.borderRadius = `${Number(style.borderRadius ?? 0)}px`;
+            if (orientation === "vertical") {
+                element.style.width = `${thickness}px`;
+            } else {
+                element.style.height = `${thickness}px`;
+            }
+        }
+
         if (node.type === NODE_TYPES.BACKGROUND) {
             this.applyBackground(
                 element,
@@ -593,7 +599,10 @@ export class UniversalRenderer {
         switch (node.type) {
             case NODE_TYPES.TEXT:
                 element.textContent =
-                    node.content?.text || "";
+                    this.resolveTextContent(node);
+                if (node.style?.textTransform) {
+                    element.style.textTransform = node.style.textTransform;
+                }
                 break;
 
             case NODE_TYPES.IMAGE:
@@ -648,6 +657,10 @@ export class UniversalRenderer {
                 element.textContent =
                     node.content?.placeholder
                     || "RSVP";
+                break;
+
+            case NODE_TYPES.SEPARATOR:
+                element.setAttribute("aria-hidden", "true");
                 break;
 
             default:
@@ -745,66 +758,53 @@ export class UniversalRenderer {
         );
     }
 
-    createCountdownElement(document, node) {
-        const wrapper =
-            document.createElement("div");
+    resolveTextContent(node) {
+        const binding = node.content?.binding;
 
-        const labels =
-            node.content?.labels
-            || [
-                "Días",
-                "Horas",
-                "Minutos",
-                "Segundos",
-            ];
+        if (binding?.source !== "COUNTDOWN") {
+            return node.content?.text || "";
+        }
 
-        const values =
-            node.content?.values
-            || [0, 0, 0, 0];
-
-        wrapper.classList.add(
-            "r3-countdown"
+        const countdown = this.findAncestorByType(
+            node,
+            NODE_TYPES.COUNTDOWN
         );
 
-        const style = node.style || {};
+        if (!countdown) {
+            return node.content?.text || "";
+        }
 
-        wrapper.style.setProperty(
-            "--r3-countdown-value-size",
-            `${Number(style.valueSize ?? 32)}px`
+        const unitIndex = {
+            days: 0,
+            hours: 1,
+            minutes: 2,
+            seconds: 3,
+        }[binding.unit];
+
+        if (unitIndex === undefined) {
+            return node.content?.text || "";
+        }
+
+        if (binding.role === "label") {
+            return String(node.content?.text ?? "");
+        }
+
+        return String(
+            countdown.content?.values?.[unitIndex]
+            ?? node.content?.text
+            ?? 0
         );
+    }
 
-        wrapper.style.setProperty(
-            "--r3-countdown-label-size",
-            `${Number(style.labelSize ?? 12)}px`
-        );
+    findAncestorByType(node, type) {
+        let current = node;
 
-        labels.forEach((label, index) => {
-            const item =
-                document.createElement("div");
+        while (current?.parentId) {
+            current = this.nodeMap.get(current.parentId);
+            if (current?.type === type) return current;
+        }
 
-            item.className =
-                "r3-countdown__item";
-
-            const value =
-                document.createElement("strong");
-
-            value.className =
-                "r3-countdown__value";
-            value.textContent =
-                String(values[index] ?? 0);
-
-            const caption =
-                document.createElement("span");
-
-            caption.className =
-                "r3-countdown__label";
-            caption.textContent = label;
-
-            item.append(value, caption);
-            wrapper.append(item);
-        });
-
-        return wrapper;
+        return null;
     }
 
     childrenOf(node) {

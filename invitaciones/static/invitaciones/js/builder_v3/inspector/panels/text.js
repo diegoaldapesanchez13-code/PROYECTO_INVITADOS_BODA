@@ -3,6 +3,10 @@ import {
     group,
 } from "../controls.js";
 
+import {
+    FONT_OPTIONS,
+} from "../../typography/fonts.js";
+
 export function textPanel() {
     return [
         group({
@@ -38,10 +42,9 @@ export function textPanel() {
                 field({
                     key: "fontFamily",
                     label: "Fuente",
-                    type: "text",
+                    type: "select",
                     path: "style.fontFamily",
-                    placeholder:
-                        "Georgia, serif",
+                    options: FONT_OPTIONS,
                 }),
                 field({
                     key: "fontSize",

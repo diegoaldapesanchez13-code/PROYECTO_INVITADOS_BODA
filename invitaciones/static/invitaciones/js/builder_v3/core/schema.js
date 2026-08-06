@@ -187,6 +187,8 @@ export function normalizeDocument(rawDocument = {}) {
         ? rawDocument.nodes.map(normalizeNode)
         : [];
 
+    expandCompositeCountdowns(document);
+
     document.assets = Array.isArray(rawDocument.assets)
         ? structuredCloneSafe(rawDocument.assets)
         : [];
@@ -194,6 +196,97 @@ export function normalizeDocument(rawDocument = {}) {
     document.meta.updatedAt = new Date().toISOString();
 
     return document;
+}
+
+function expandCompositeCountdowns(document) {
+    const existingIds = new Set([
+        ...document.sections.map((node) => node.id),
+        ...document.nodes.map((node) => node.id),
+    ]);
+
+    for (const countdown of document.nodes.filter(
+        (node) => node.type === NODE_TYPES.COUNTDOWN
+    )) {
+        const actualChildren = (countdown.children || [])
+            .filter((id) => existingIds.has(id));
+
+        if (actualChildren.length > 0) {
+            countdown.children = actualChildren;
+            countdown.content = {
+                values: [120, 12, 34, 56],
+                labels: ["Días", "Horas", "Minutos", "Segundos"],
+                ...countdown.content,
+                compositeVersion: 1,
+            };
+            continue;
+        }
+
+        const units = [
+            ["days", "Días", 0, 12.5],
+            ["hours", "Horas", 1, 37.5],
+            ["minutes", "Minutos", 2, 62.5],
+            ["seconds", "Segundos", 3, 87.5],
+        ];
+
+        countdown.children = [];
+        countdown.content = {
+            values: [120, 12, 34, 56],
+            labels: ["Días", "Horas", "Minutos", "Segundos"],
+            ...countdown.content,
+            compositeVersion: 1,
+        };
+        countdown.style = {
+            ...countdown.style,
+            overflow: "visible",
+        };
+
+        for (const [unit, fallbackLabel, index, x] of units) {
+            const label = String(
+                countdown.content.labels?.[index] ?? fallbackLabel
+            );
+            const item = createNode(NODE_TYPES.CARD, {
+                name: label,
+                parentId: countdown.id,
+                sectionId: countdown.sectionId,
+                order: countdown.children.length,
+                layoutMode: LAYOUT_MODES.ABSOLUTE,
+                coordinateSpace: COORDINATE_SPACES.PARENT,
+                x, y: 50, width: 23, height: 88, zIndex: 1,
+                style: {
+                    paddingX: 4, paddingY: 4,
+                    backgroundColor: countdown.style?.itemBackgroundColor || "#ffffff",
+                    borderColor: countdown.style?.itemBorderColor || "#dfe5db",
+                    borderWidth: Number(countdown.style?.itemBorderWidth ?? 1),
+                    borderRadius: Number(countdown.style?.itemBorderRadius ?? 16),
+                    boxShadow: "none", overflow: "visible",
+                },
+                content: { countdownUnit: unit },
+            });
+            const value = createNode(NODE_TYPES.TEXT, {
+                name: `${label} · Número`, parentId: item.id,
+                sectionId: countdown.sectionId, order: 0,
+                layoutMode: LAYOUT_MODES.ABSOLUTE,
+                coordinateSpace: COORDINATE_SPACES.PARENT,
+                x: 50, y: 38, width: 92, height: 34, zIndex: 2,
+                content: { text: String(countdown.content.values?.[index] ?? 0), tag: "span", binding: { source: "COUNTDOWN", unit, role: "value" } },
+                style: { color: countdown.style?.valueColor || "#2f342d", fontFamily: countdown.style?.valueFontFamily || "'Playfair Display', serif", fontSize: Number(countdown.style?.valueSize ?? 30), fontWeight: Number(countdown.style?.valueWeight ?? 700), textAlign: "center", lineHeight: 1, letterSpacing: Number(countdown.style?.valueLetterSpacing ?? 0) },
+            });
+            const caption = createNode(NODE_TYPES.TEXT, {
+                name: `${label} · Etiqueta`, parentId: item.id,
+                sectionId: countdown.sectionId, order: 1,
+                layoutMode: LAYOUT_MODES.ABSOLUTE,
+                coordinateSpace: COORDINATE_SPACES.PARENT,
+                x: 50, y: 72, width: 94, height: 22, zIndex: 3,
+                content: { text: label, tag: "span", binding: { source: "COUNTDOWN", unit, role: "label" } },
+                style: { color: countdown.style?.labelColor || "#777971", fontFamily: countdown.style?.labelFontFamily || "Montserrat, sans-serif", fontSize: Number(countdown.style?.labelSize ?? 10), fontWeight: Number(countdown.style?.labelWeight ?? 600), textAlign: "center", lineHeight: 1.15, letterSpacing: Number(countdown.style?.labelLetterSpacing ?? 1), textTransform: countdown.style?.labelTransform || "uppercase" },
+            });
+            item.children = [value.id, caption.id];
+            countdown.children.push(item.id);
+            document.nodes.push(item, value, caption);
+            existingIds.update?.([item.id, value.id, caption.id]);
+            existingIds.add(item.id); existingIds.add(value.id); existingIds.add(caption.id);
+        }
+    }
 }
 
 export function validateDocument(document) {

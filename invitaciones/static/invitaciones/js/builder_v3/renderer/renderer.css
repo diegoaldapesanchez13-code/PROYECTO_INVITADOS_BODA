@@ -94,7 +94,8 @@
 .r3-node--container,
 .r3-node--card,
 .r3-node--gallery,
-.r3-node--rsvp {
+.r3-node--rsvp,
+.r3-node--countdown {
     isolation: isolate;
     display: flex;
     flex-direction: var(--r3-direction, column);
@@ -172,7 +173,11 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    padding:
+        var(--r3-padding-y, 0)
+        var(--r3-padding-x, 0);
     text-decoration: none;
+    white-space: nowrap;
 }
 
 .r3-node--separator {
@@ -274,4 +279,76 @@
 .r3-node[data-r3-interactive="1"] {
     cursor: pointer;
     touch-action: manipulation;
+}
+
+/* =========================================================
+   BASE COMPONENTS — PHASE 4.2
+   ========================================================= */
+
+.r3-countdown__item {
+    gap: 3px;
+    padding:
+        var(--r3-countdown-item-padding-y, 0)
+        var(--r3-countdown-item-padding-x, 0);
+    border:
+        var(--r3-countdown-item-border-width, 0)
+        solid
+        var(--r3-countdown-item-border-color, transparent);
+    border-radius: var(--r3-countdown-item-radius, 0);
+    background: var(--r3-countdown-item-bg, transparent);
+}
+
+.r3-countdown__value {
+    color: var(--r3-countdown-value-color, currentColor);
+    font-family: var(--r3-countdown-value-font, inherit);
+    font-weight: var(--r3-countdown-value-weight, 700);
+    font-style: var(--r3-countdown-value-style, normal);
+    letter-spacing: var(--r3-countdown-value-spacing, 0);
+    line-height: 1;
+}
+
+.r3-countdown__label {
+    color: var(--r3-countdown-label-color, currentColor);
+    font-family: var(--r3-countdown-label-font, inherit);
+    font-weight: var(--r3-countdown-label-weight, 600);
+    font-style: var(--r3-countdown-label-style, normal);
+    letter-spacing: var(--r3-countdown-label-spacing, 0);
+    line-height: 1.2;
+    text-transform: var(--r3-countdown-label-transform, none);
+}
+
+.r3-node--icon {
+    display: grid;
+    place-items: center;
+    overflow: visible;
+    white-space: nowrap;
+}
+
+.r3-node--separator {
+    display: block;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: currentColor;
+}
+
+.r3-node--separator[data-r3-orientation="vertical"] {
+    width: var(--r3-width, 2%);
+    height: var(--r3-height, 30%);
+}
+
+
+/* =========================================================
+   COMPOSITE COUNTDOWN V1
+   COUNTDOWN is a free container. Its units are real Card
+   layers and each number/label is a real Text layer.
+   ========================================================= */
+.r3-node--countdown {
+    isolation: isolate;
+    display: block;
+    overflow: visible;
+}
+
+.r3-node--countdown > .r3-node--card {
+    overflow: visible;
 }

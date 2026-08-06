@@ -4,7 +4,10 @@
     gap: 12px;
     min-width: 0;
     height: 100%;
-    overflow: auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
     padding: 14px;
     border: 1px solid #d5d0c6;
     border-radius: 16px;
@@ -40,7 +43,7 @@
 
 .r3-inspector-header__type {
     color: #7c3aed;
-    font-size: .68rem;
+    font-size: .76rem;
     font-weight: 900;
     letter-spacing: .11em;
 }
@@ -78,12 +81,12 @@
 }
 
 .r3-inspector-group > summary strong {
-    font-size: .82rem;
+    font-size: .9rem;
 }
 
 .r3-inspector-group > summary small {
     color: #777971;
-    font-size: .68rem;
+    font-size: .76rem;
     line-height: 1.35;
 }
 
@@ -109,13 +112,13 @@
 
 .r3-inspector-field__label {
     min-width: 0;
-    font-size: .74rem;
+    font-size: .82rem;
     font-weight: 750;
 }
 
 .r3-inspector-field__unit {
     color: #7a7b75;
-    font-size: .68rem;
+    font-size: .76rem;
     font-weight: 700;
 }
 
@@ -136,7 +139,7 @@
     color: #282d27;
     padding: 8px 9px;
     font: inherit;
-    font-size: .74rem;
+    font-size: .82rem;
 }
 
 textarea.r3-inspector-control {

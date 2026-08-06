@@ -3,22 +3,13 @@ import {
 } from "../core/index.js";
 
 const COMPONENT_CATALOG = Object.freeze([
-    Object.freeze({
-        id: "text",
-        type: NODE_TYPES.TEXT,
-        label: "Texto",
-        description: "Agrega una capa de texto editable.",
-        icon: "T",
-        category: "Básicos",
-    }),
-    Object.freeze({
-        id: "button",
-        type: NODE_TYPES.BUTTON,
-        label: "Botón",
-        description: "Agrega un botón editable con interacción.",
-        icon: "BT",
-        category: "Básicos",
-    }),
+    item("text", NODE_TYPES.TEXT, "Texto", "Agrega una capa de texto editable.", "T", "Básicos"),
+    item("button", NODE_TYPES.BUTTON, "Botón", "Agrega un botón editable con interacción.", "BT", "Básicos"),
+    item("card", NODE_TYPES.CARD, "Card", "Contenedor visual con fondo, borde y capas hijas.", "CD", "Estructura"),
+    item("container", NODE_TYPES.CONTAINER, "Contenedor", "Agrupa capas sin imponer apariencia visual.", "CT", "Estructura"),
+    item("countdown", NODE_TYPES.COUNTDOWN, "Cuenta regresiva", "Agrega días, horas, minutos y segundos personalizables.", "CDN", "Contenido"),
+    item("separator", NODE_TYPES.SEPARATOR, "Separador", "Agrega una línea horizontal o vertical editable.", "—", "Estructura"),
+    item("icon", NODE_TYPES.ICON, "Icono", "Agrega un símbolo o carácter editable como capa.", "IC", "Contenido"),
 ]);
 
 export function listInsertableComponents() {
@@ -27,11 +18,22 @@ export function listInsertableComponents() {
 
 export function getInsertableComponent(idOrType) {
     const value = String(idOrType || "");
-    const item = COMPONENT_CATALOG.find(
+    const found = COMPONENT_CATALOG.find(
         (entry) => entry.id === value || entry.type === value
     );
 
-    return item ? clone(item) : null;
+    return found ? clone(found) : null;
+}
+
+function item(id, type, label, description, icon, category) {
+    return Object.freeze({
+        id,
+        type,
+        label,
+        description,
+        icon,
+        category,
+    });
 }
 
 function clone(value) {
