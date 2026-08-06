@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from . import builder_engine_views
 
 urlpatterns = [
     path('', views.inicio, name='inicio'),
@@ -22,9 +23,28 @@ urlpatterns = [
     path('dashboard/calendario/', views.calendario_operativo, name='calendario_operativo'),
     path('dashboard/mesas/', views.mesas_visual, name='mesas_visual'),
     path('dashboard/mesas/guardar-posiciones/', views.guardar_posiciones_mesas, name='guardar_posiciones_mesas'),
+
     path('dashboard/editor-invitacion/<int:evento_id>/', views.editor_invitacion_visual, name='editor_invitacion_visual'),
     path('dashboard/editor-invitacion/<int:evento_id>/guardar/', views.guardar_diseno_invitacion_visual, name='guardar_diseno_invitacion_visual'),
     path('dashboard/editor-invitacion/<int:evento_id>/publicar/', views.publicar_diseno_invitacion_visual, name='publicar_diseno_invitacion_visual'),
+
+    # DIRTEC Builder Engine — Persistence Contract v1.
+    path(
+        'dashboard/editor-invitacion/<int:evento_id>/engine/document/',
+        builder_engine_views.cargar_documento_builder,
+        name='builder_engine_document_load',
+    ),
+    path(
+        'dashboard/editor-invitacion/<int:evento_id>/engine/document/save/',
+        builder_engine_views.guardar_documento_builder,
+        name='builder_engine_document_save',
+    ),
+    path(
+        'dashboard/editor-invitacion/<int:evento_id>/engine/document/publish/',
+        builder_engine_views.publicar_documento_builder,
+        name='builder_engine_document_publish',
+    ),
+
     path('dashboard/editor-invitacion/<int:evento_id>/plantilla/aplicar/', views.aplicar_plantilla_invitacion_visual, name='aplicar_plantilla_invitacion_visual'),
     path('dashboard/editor-invitacion/<int:evento_id>/versiones/restaurar/', views.restaurar_version_diseno_invitacion_visual, name='restaurar_version_diseno_invitacion_visual'),
     path('dashboard/editor-invitacion/<int:evento_id>/contenido/guardar/', views.guardar_contenido_invitacion_visual, name='guardar_contenido_invitacion_visual'),
@@ -45,11 +65,3 @@ urlpatterns = [
     path('dashboard/marcar-recordatorio/<int:grupo_id>/', views.marcar_recordatorio, name='marcar_recordatorio'),
     path('invitacion/<uuid:codigo>/', views.ver_invitacion, name='ver_invitacion'),
 ]
-
-# Rutas de la aplicación invitaciones:
-# - inicio: página principal.
-# - dashboard: panel de control.
-# - exportar-excel: descarga de confirmaciones en Excel.
-# - marcar-envio: actualiza el estado de invitación preparada.
-# - marcar-recordatorio: actualiza el estado de recordatorio preparado.
-# - invitacion/<uuid>: visualiza la invitación individual del grupo.
