@@ -14,3 +14,9 @@
 - Se agregó CanvasModule registrable en el Kernel.
 - Se agregó adaptador de compatibilidad con documentos Builder R3.
 - El módulo permanece desacoplado de DOM, Django y Renderer.
+## 0.8.0 — Inspector Module
+- Extrae InspectorRegistry, InspectorService e InspectorModule.
+- Agrega edición por rutas anidadas y soporte de nodos compuestos.
+- Conserva acordeones y scroll por nodo.
+- Agrega adaptador de contratos del Inspector R3.
+

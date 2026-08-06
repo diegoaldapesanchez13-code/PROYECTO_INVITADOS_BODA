@@ -8,3 +8,6 @@
 - [ ] Sprint 6: migrar History/Persistence.
 - [ ] Sprint 7: migrar Components y SDK real.
 - [ ] Sprint 8: conectar Django.
+
+- [x] Sprint 3: Inspector Module
+- [ ] Sprint 4: Renderer Module
