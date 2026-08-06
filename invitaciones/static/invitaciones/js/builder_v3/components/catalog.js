@@ -9,6 +9,7 @@ const COMPONENT_CATALOG = Object.freeze([
     item("container", NODE_TYPES.CONTAINER, "Contenedor", "Agrupa capas sin imponer apariencia visual.", "CT", "Estructura"),
     item("map", NODE_TYPES.MAP, "Google Maps", "Agrega un mapa interactivo, redimensionable y editable.", "MP", "Contenido"),
     item("video", NODE_TYPES.VIDEO, "Video / YouTube", "Agrega video directo o un reproductor de YouTube.", "VD", "Contenido"),
+    item("rsvp", NODE_TYPES.RSVP, "RSVP", "Agrega la confirmación conectada al UUID de la invitación.", "RS", "Contenido"),
     item("countdown", NODE_TYPES.COUNTDOWN, "Cuenta regresiva", "Agrega días, horas, minutos y segundos personalizables.", "CDN", "Contenido"),
     item("separator", NODE_TYPES.SEPARATOR, "Separador", "Agrega una línea horizontal o vertical editable.", "—", "Estructura"),
     item("icon", NODE_TYPES.ICON, "Icono", "Agrega un símbolo o carácter editable como capa.", "IC", "Contenido"),

@@ -20,6 +20,13 @@ import {
 } from "../components/video.js";
 
 import {
+    buildRsvpSubmission,
+    createRsvpPreviewData,
+    normalizeRsvpData,
+    resolveInvitationId,
+} from "../components/rsvp.js";
+
+import {
     INTERACTION_TRIGGERS,
     InteractionEngine,
 } from "../interaction/index.js";
@@ -33,6 +40,10 @@ export class UniversalRenderer {
             onInteractionResult: null,
             onInteractionError: null,
             assetResolver: null,
+            rsvpProvider: null,
+            invitationContext: {},
+            onRsvpResult: null,
+            onRsvpError: null,
             interactionEngine:
                 new InteractionEngine(),
             ...options,
@@ -650,9 +661,7 @@ export class UniversalRenderer {
                 break;
 
             case NODE_TYPES.RSVP:
-                element.textContent =
-                    node.content?.placeholder
-                    || "RSVP";
+                this.applyRsvpContent(element, node);
                 break;
 
             case NODE_TYPES.SEPARATOR:
@@ -661,6 +670,134 @@ export class UniversalRenderer {
 
             default:
                 break;
+        }
+    }
+
+    applyRsvpContent(element, node) {
+        const content = node.content || {};
+        const preview = normalizeRsvpData(createRsvpPreviewData(content.preview || {}));
+        const invitationId = resolveInvitationId(this.options.invitationContext || {});
+        const provider = this.options.rsvpProvider;
+
+        element.replaceChildren();
+        element.classList.add("r3-rsvp");
+        element.style.setProperty("--r3-rsvp-accent", node.style?.accentColor || "#526043");
+
+        const renderForm = (rawData) => {
+            const data = normalizeRsvpData({ ...rawData, invitationId: rawData?.invitationId || invitationId });
+            element.replaceChildren();
+
+            const title = element.ownerDocument.createElement("h3");
+            title.className = "r3-rsvp__title";
+            title.textContent = content.title || "Confirma tu asistencia";
+
+            const description = element.ownerDocument.createElement("p");
+            description.className = "r3-rsvp__description";
+            description.textContent = content.description || "Tu respuesta nos ayuda a preparar cada detalle.";
+
+            const form = element.ownerDocument.createElement("form");
+            form.className = "r3-rsvp__form";
+
+            if (content.showGroupName !== false) {
+                const group = element.ownerDocument.createElement("strong");
+                group.className = "r3-rsvp__group";
+                group.textContent = data.groupName;
+                form.append(group);
+            }
+
+            if (content.showGuestLimit !== false) {
+                const limit = element.ownerDocument.createElement("small");
+                limit.className = "r3-rsvp__limit";
+                limit.textContent = `Invitación válida para ${data.maxGuests} ${data.maxGuests === 1 ? "persona" : "personas"}`;
+                form.append(limit);
+            }
+
+            const choices = element.ownerDocument.createElement("div");
+            choices.className = "r3-rsvp__choices";
+            for (const [value, label] of [["yes", content.acceptLabel || "Sí asistiré"], ["no", content.declineLabel || "No podré asistir"]]) {
+                const choice = element.ownerDocument.createElement("label");
+                choice.className = "r3-rsvp__choice";
+                const input = element.ownerDocument.createElement("input");
+                input.type = "radio";
+                input.name = `rsvp-attending-${node.id}`;
+                input.value = value;
+                input.checked = value === "yes" ? data.attending === true : data.attending === false;
+                const text = element.ownerDocument.createElement("span");
+                text.textContent = label;
+                choice.append(input, text);
+                choices.append(choice);
+            }
+            form.append(choices);
+
+            const count = element.ownerDocument.createElement("input");
+            count.className = "r3-rsvp__count";
+            count.type = "number";
+            count.min = "1";
+            count.max = String(data.maxGuests);
+            count.value = String(Math.max(1, data.confirmedGuests || 1));
+            count.setAttribute("aria-label", "Cantidad de asistentes");
+            form.append(count);
+
+            let comment = null;
+            if (content.showComment !== false) {
+                comment = element.ownerDocument.createElement("textarea");
+                comment.className = "r3-rsvp__comment";
+                comment.rows = 3;
+                comment.placeholder = "Comentario opcional";
+                comment.value = data.comment || "";
+                form.append(comment);
+            }
+
+            const submit = element.ownerDocument.createElement("button");
+            submit.className = "r3-rsvp__submit";
+            submit.type = "submit";
+            submit.textContent = content.submitLabel || "Enviar confirmación";
+            form.append(submit);
+
+            const status = element.ownerDocument.createElement("div");
+            status.className = "r3-rsvp__status";
+            status.setAttribute("aria-live", "polite");
+            form.append(status);
+
+            form.addEventListener("submit", async (event) => {
+                event.preventDefault();
+                if (this.options.editable) return;
+                const selected = form.querySelector(`input[name="rsvp-attending-${node.id}"]:checked`);
+                const payload = buildRsvpSubmission({
+                    attending: selected?.value || null,
+                    confirmedGuests: count.value,
+                    comment: comment?.value || "",
+                }, data);
+
+                if (!provider?.submit) {
+                    status.textContent = "Vista previa: la confirmación se enviará al publicar la invitación.";
+                    this.options.onRsvpResult?.({ node, payload, preview: true });
+                    return;
+                }
+
+                submit.disabled = true;
+                status.textContent = "Enviando…";
+                try {
+                    const result = await provider.submit(payload, { node, document: this.document, invitationId });
+                    status.textContent = result?.message || "Confirmación guardada.";
+                    this.options.onRsvpResult?.({ node, payload, result });
+                } catch (error) {
+                    status.textContent = "No se pudo guardar la confirmación.";
+                    this.options.onRsvpError?.(error, { node, payload });
+                } finally {
+                    submit.disabled = false;
+                }
+            });
+
+            element.append(title, description, form);
+        };
+
+        renderForm(preview);
+
+        if (!this.options.editable && provider?.load && invitationId) {
+            Promise.resolve(provider.load(invitationId, { node, document: this.document }))
+                .then((data) => renderForm(data || preview))
+                .catch((error) => this.options.onRsvpError?.(error, { node, invitationId }));
         }
     }
 

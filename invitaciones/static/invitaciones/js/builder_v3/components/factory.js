@@ -218,6 +218,39 @@ function createDefinition(type, common) {
                 },
             };
 
+        case NODE_TYPES.RSVP:
+            return {
+                ...common,
+                name: "RSVP",
+                width: 84,
+                height: 42,
+                content: {
+                    title: "Confirma tu asistencia",
+                    description: "Tu respuesta nos ayuda a preparar cada detalle.",
+                    acceptLabel: "Sí asistiré",
+                    declineLabel: "No podré asistir",
+                    submitLabel: "Enviar confirmación",
+                    showGroupName: true,
+                    showGuestLimit: true,
+                    showComment: true,
+                    preview: {
+                        groupName: "Familia Aldape Sánchez",
+                        maxGuests: 4,
+                        confirmedGuests: 2,
+                    },
+                },
+                style: {
+                    color: "#2f342d",
+                    accentColor: "#526043",
+                    backgroundColor: "#ffffff",
+                    borderColor: "#ded8cd",
+                    borderWidth: 1,
+                    borderRadius: 24,
+                    boxShadow: "0 18px 45px rgba(31, 39, 29, .14)",
+                    overflow: "hidden",
+                },
+            };
+
         case NODE_TYPES.COUNTDOWN:
             return countdownParentDefinition(common);
 

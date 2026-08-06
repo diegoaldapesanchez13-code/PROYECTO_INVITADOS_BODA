@@ -146,10 +146,8 @@ const DEFINITIONS = Object.freeze([
         label: "RSVP",
         icon: "RS",
         element: "div",
-        inspectorPanel: null,
+        inspectorPanel: "rsvp",
         capabilities: [
-            COMPONENT_CAPABILITIES.CONTAINER,
-            COMPONENT_CAPABILITIES.AUTO_LAYOUT,
             COMPONENT_CAPABILITIES.CONSTRAINTS,
             COMPONENT_CAPABILITIES.TRANSFORM,
             COMPONENT_CAPABILITIES.DYNAMIC_DATA,

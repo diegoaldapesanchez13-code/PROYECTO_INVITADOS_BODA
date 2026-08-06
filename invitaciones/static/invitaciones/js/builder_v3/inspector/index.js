@@ -58,6 +58,10 @@ import {
 } from "./panels/video.js";
 
 import {
+    rsvpPanel,
+} from "./panels/rsvp.js";
+
+import {
     separatorPanel,
 } from "./panels/separator.js";
 
@@ -275,6 +279,7 @@ export class UniversalInspector {
             button: buttonPanel,
             map: mapPanel,
             video: videoPanel,
+            rsvp: rsvpPanel,
             countdown: countdownPanel,
             separator: separatorPanel,
             icon: iconPanel,
