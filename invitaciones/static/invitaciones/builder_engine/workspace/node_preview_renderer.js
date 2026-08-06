@@ -1,34 +1,36 @@
+import { resolveResponsiveStyle } from "./transform_math.js";
+
 export function renderCanvasPreview(canvas, options = {}) {
     const assets = new Map(
         (options.assets || []).map((asset) => [String(asset.id), asset]),
     );
+    const device = options.device || "mobile";
 
     const root = document.createElement("div");
     root.className = "engine-live-canvas";
     root.dataset.canvasId = canvas.id;
+    root.dataset.previewDevice = device;
     root.style.minHeight = `${Number(canvas.height || 700)}px`;
-
     if (canvas.background?.color) root.style.backgroundColor = canvas.background.color;
 
-    for (const node of orderedNodes(canvas.nodes || [])) {
-        const element = renderNode(node, assets, options.selectedNodeId);
+    for (const node of orderedNodes(canvas.nodes || [], device)) {
+        const element = renderNode(node, assets, options.selectedNodeId, device);
         if (element) root.appendChild(element);
     }
 
     if (!root.children.length) {
         const empty = document.createElement("div");
         empty.className = "engine-live-empty";
-        empty.innerHTML = "<strong>Lienzo vacío</strong><span>Agrega componentes en el siguiente sprint.</span>";
+        empty.innerHTML = "<strong>Lienzo vacío</strong><span>Agrega componentes desde el menú.</span>";
         root.appendChild(empty);
     }
-
     return root;
 }
 
-function renderNode(node, assets, selectedNodeId) {
+function renderNode(node, assets, selectedNodeId, device) {
     if (!node || node.visible === false) return null;
-
     let element;
+
     switch (String(node.type || "").toUpperCase()) {
         case "TEXT":
             element = document.createElement(node.content?.tag || "div");
@@ -56,7 +58,7 @@ function renderNode(node, assets, selectedNodeId) {
         case "GROUP":
             element = document.createElement("div");
             for (const child of node.children || []) {
-                const childElement = renderNode(child, assets, selectedNodeId);
+                const childElement = renderNode(child, assets, selectedNodeId, device);
                 if (childElement) element.appendChild(childElement);
             }
             break;
@@ -70,7 +72,7 @@ function renderNode(node, assets, selectedNodeId) {
     element.dataset.engineNodeAction = "select";
     element.dataset.nodeId = node.id || "";
     element.dataset.nodeType = node.type || "";
-    applyStyle(element, node.style || {}, node.type);
+    applyStyle(element, resolveResponsiveStyle(node.style || {}, device), node.type);
     return element;
 }
 
@@ -87,7 +89,8 @@ function applyStyle(element, style, type) {
         `rotate(${number(style.rotation, 0)}deg)`,
     ].join(" ");
     element.style.textAlign = style.textAlign || "center";
-    element.style.cursor = "pointer";
+    element.style.cursor = "move";
+    element.style.touchAction = "none";
 
     if (element.tagName === "IMG" || element.tagName === "VIDEO") {
         element.style.height = "auto";
@@ -104,13 +107,13 @@ function applyStyle(element, style, type) {
 
 function resolveUrl(node, assets) {
     if (node.content?.url) return node.content.url;
-    const asset = assets.get(String(node.content?.assetId || ""));
-    return asset?.url || "";
+    return assets.get(String(node.content?.assetId || ""))?.url || "";
 }
 
-function orderedNodes(nodes) {
+function orderedNodes(nodes, device) {
     return [...nodes].sort(
-        (a, b) => number(a.style?.zIndex, 0) - number(b.style?.zIndex, 0),
+        (a, b) => number(resolveResponsiveStyle(a.style || {}, device).zIndex, 0)
+            - number(resolveResponsiveStyle(b.style || {}, device).zIndex, 0),
     );
 }
 

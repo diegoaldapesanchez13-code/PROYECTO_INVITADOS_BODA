@@ -1,6 +1,6 @@
 {
   "name": "DIRTEC Builder Engine",
-  "version": "0.17.0",
+  "version": "0.18.0",
   "schemaVersion": 1,
   "rendererVersion": 2,
   "themeVersion": 1,
@@ -23,5 +23,6 @@
   "interactionContractVersion": 1,
   "persistenceContractVersion": 1,
   "legacyMigratorVersion": 1,
-  "workspaceVersion": 2
+  "workspaceVersion": 3,
+  "responsiveTransformVersion": 1
 }

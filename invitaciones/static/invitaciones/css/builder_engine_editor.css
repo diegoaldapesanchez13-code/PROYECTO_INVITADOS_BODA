@@ -442,3 +442,75 @@ button { color: inherit; }
     color: #8e98a8;
 }
 .engine-inspector-empty span { font-size: 12px; line-height: 1.5; }
+
+.engine-active-canvas {
+    width: min(var(--preview-width, 390px), calc(100% - 60px));
+    transition: width .2s ease;
+}
+.engine-transform-overlay {
+    position: absolute;
+    z-index: 10000;
+    pointer-events: none;
+    border: 1px solid #8f5cff;
+}
+.engine-transform-overlay[hidden] { display: none; }
+.engine-transform-box { position: absolute; inset: 0; }
+.engine-transform-handle {
+    position: absolute;
+    width: 13px;
+    height: 13px;
+    padding: 0;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    background: #8f5cff;
+    box-shadow: 0 1px 5px rgba(0,0,0,.35);
+    pointer-events: auto;
+    touch-action: none;
+    cursor: nwse-resize;
+}
+.engine-transform-handle.nw { left: -7px; top: -7px; }
+.engine-transform-handle.ne { right: -7px; top: -7px; cursor: nesw-resize; }
+.engine-transform-handle.sw { left: -7px; bottom: -7px; cursor: nesw-resize; }
+.engine-transform-handle.se { right: -7px; bottom: -7px; }
+.engine-transform-handle.rotate {
+    left: 50%;
+    top: -36px;
+    width: 24px;
+    height: 24px;
+    transform: translateX(-50%);
+    color: #fff;
+    font-size: 13px;
+    cursor: grab;
+}
+.engine-transform-handle.rotate::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 22px;
+    width: 1px;
+    height: 13px;
+    background: #8f5cff;
+}
+.engine-shell[data-transforming="true"] {
+    user-select: none;
+    cursor: grabbing;
+}
+.engine-live-canvas[data-preview-device="mobile"] { border-radius: 24px; }
+.engine-live-canvas[data-preview-device="tablet"] { border-radius: 18px; }
+.engine-live-canvas[data-preview-device="desktop"] { border-radius: 12px; }
+
+/* Hotfix 10.6.1 — overlay sincronizado */
+.engine-live-canvas {
+    position: relative;
+}
+
+.engine-transform-overlay {
+    margin: 0;
+    transform: none;
+    box-sizing: border-box;
+}
+
+.engine-transform-overlay,
+.engine-transform-overlay * {
+    box-sizing: border-box;
+}
