@@ -8,3 +8,4 @@ export * from "./inspector/index.js";
 export * from "./renderer/index.js";
 export * from "./assets/index.js";
 export * from "./history/index.js";
+export * from "./persistence/index.js";

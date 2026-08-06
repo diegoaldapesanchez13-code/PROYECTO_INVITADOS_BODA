@@ -1,0 +1,13 @@
+export const PERSISTENCE_MODULE_NAME = "persistence";
+export const PERSISTENCE_CONTRACT_VERSION = 1;
+export const DEFAULT_AUTOSAVE_DELAY_MS = 3000;
+
+export const PERSISTENCE_STATUS = Object.freeze({
+    IDLE: "IDLE",
+    LOADING: "LOADING",
+    SAVING: "SAVING",
+    SAVED: "SAVED",
+    PUBLISHING: "PUBLISHING",
+    PUBLISHED: "PUBLISHED",
+    ERROR: "ERROR",
+});
