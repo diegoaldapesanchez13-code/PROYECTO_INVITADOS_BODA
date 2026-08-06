@@ -4,6 +4,10 @@ import {
     registerPersistenceModule,
 } from "../../persistence/index.js";
 import { registerMigrationModule } from "../../migration/index.js";
+import {
+    CanvasWorkspaceController,
+    renderCanvasPreview,
+} from "../../workspace/index.js";
 
 const root = document.querySelector("[data-builder-engine-root]");
 
@@ -16,14 +20,15 @@ if (root) {
 
 async function mountBuilderEngine(root) {
     const config = readBootstrap(root);
-    const canvasList = root.querySelector("[data-engine-canvases]");
     const documentInfo = root.querySelector("[data-engine-document-info]");
     const migrationNotice = root.querySelector("[data-engine-migration-notice]");
+    const canvasNavigator = root.querySelector("[data-engine-canvas-nav]");
+    const canvasStage = root.querySelector("[data-engine-active-canvas]");
+    const inspectorTitle = root.querySelector("[data-engine-inspector-title]");
+    const inspectorName = root.querySelector("[data-engine-canvas-name]");
     const saveButton = root.querySelector("[data-engine-action='save']");
     const publishButton = root.querySelector("[data-engine-action='publish']");
     const reloadButton = root.querySelector("[data-engine-action='reload']");
-
-    setStatus(root, "LOADING", "Cargando documento…");
 
     const persistencePort = createDjangoPersistenceAdapter({
         endpoints: config.endpoints,
@@ -31,7 +36,6 @@ async function mountBuilderEngine(root) {
     });
 
     const app = new BuilderApp({ eventId: config.eventId });
-
     const persistenceModule = registerPersistenceModule(app, {
         port: persistencePort,
         autosave: true,
@@ -51,19 +55,68 @@ async function mountBuilderEngine(root) {
         });
     }
 
+    const workspaceController = new CanvasWorkspaceController({
+        app,
+        workspace: persistenceModule.workspace,
+    }).initialize();
+
     const render = () => {
         const documentValue = app.getDocument();
         renderDocumentInfo(documentInfo, documentValue);
-        renderCanvases(canvasList, documentValue.canvases || []);
+        renderCanvasNavigator(
+            canvasNavigator,
+            workspaceController.list(),
+            workspaceController.selectedCanvasId,
+        );
+        renderSelectedCanvas(
+            canvasStage,
+            workspaceController.getSelected(),
+            documentValue.assets || [],
+        );
+        renderCanvasInspector(
+            inspectorTitle,
+            inspectorName,
+            workspaceController.getSelected(),
+        );
         root.dataset.dirty = app.isDirty ? "true" : "false";
     };
 
+    root.addEventListener("click", async (event) => {
+        const button = event.target.closest("[data-engine-canvas-action]");
+        if (!button) return;
+
+        const action = button.dataset.engineCanvasAction;
+        const canvasId = button.dataset.canvasId;
+
+        try {
+            if (action === "select") workspaceController.select(canvasId);
+            if (action === "create") workspaceController.create();
+            if (action === "duplicate") workspaceController.duplicate(canvasId);
+            if (action === "delete") {
+                if (window.confirm("¿Eliminar este lienzo?")) {
+                    workspaceController.remove(canvasId);
+                }
+            }
+            if (action === "up") workspaceController.move(canvasId, "up");
+            if (action === "down") workspaceController.move(canvasId, "down");
+            if (action === "visibility") workspaceController.toggleVisibility(canvasId);
+            render();
+        } catch (error) {
+            window.alert(error.message || "No fue posible completar la acción.");
+        }
+    });
+
+    inspectorName?.addEventListener("change", () => {
+        const selected = workspaceController.getSelected();
+        if (!selected) return;
+        workspaceController.rename(selected.id, inspectorName.value);
+    });
+
     app.subscribe((event) => {
-        if (
-            event.type === "document:changed"
-            || event.type === "document:replaced"
-            || event.type === "document:saved"
-        ) render();
+        if (["document:changed", "document:replaced", "document:saved"].includes(event.type)) {
+            if (!workspaceController.getSelected()) workspaceController.initialize();
+            render();
+        }
     });
 
     persistenceModule.service.subscribe((state) => {
@@ -96,13 +149,9 @@ async function mountBuilderEngine(root) {
             && !window.confirm("Hay cambios pendientes. ¿Recargar el borrador guardado?")
         ) return;
         await persistenceModule.service.load();
-        const report = migrationModule.migrateIfNeeded(app);
-        if (report.migrated) {
-            showMigrationNotice(migrationNotice, report);
-            await persistenceModule.service.save({
-                reason: "legacy-schema-migration",
-            });
-        }
+        migrationModule.migrateIfNeeded(app);
+        workspaceController.initialize();
+        render();
     });
 
     window.DIRTEC_BUILDER = Object.freeze({
@@ -110,11 +159,66 @@ async function mountBuilderEngine(root) {
         persistence: persistenceModule.service,
         workspace: persistenceModule.workspace,
         migration: migrationModule,
+        canvasWorkspace: workspaceController,
         config,
     });
 
     render();
     setStatus(root, "SAVED", "Builder Engine conectado");
+}
+
+function renderCanvasNavigator(node, canvases, selectedId) {
+    if (!node) return;
+
+    node.innerHTML = `
+        <div class="engine-canvas-nav-head">
+            <strong>Lienzos</strong>
+            <button type="button" data-engine-canvas-action="create">＋</button>
+        </div>
+        <div class="engine-canvas-nav-list">
+            ${canvases.map((canvas, index) => `
+                <article class="engine-canvas-nav-item ${canvas.id === selectedId ? "active" : ""}">
+                    <button
+                        class="engine-canvas-select"
+                        type="button"
+                        data-engine-canvas-action="select"
+                        data-canvas-id="${escapeHtml(canvas.id)}"
+                    >
+                        <span>${index + 1}</span>
+                        <div>
+                            <strong>${escapeHtml(canvas.name || `Lienzo ${index + 1}`)}</strong>
+                            <small>${escapeHtml(canvas.type || "PERSONALIZADA")}</small>
+                        </div>
+                    </button>
+                    <div class="engine-canvas-item-actions">
+                        <button type="button" title="Subir" data-engine-canvas-action="up" data-canvas-id="${escapeHtml(canvas.id)}">↑</button>
+                        <button type="button" title="Bajar" data-engine-canvas-action="down" data-canvas-id="${escapeHtml(canvas.id)}">↓</button>
+                        <button type="button" title="Duplicar" data-engine-canvas-action="duplicate" data-canvas-id="${escapeHtml(canvas.id)}">⧉</button>
+                        <button type="button" title="Mostrar u ocultar" data-engine-canvas-action="visibility" data-canvas-id="${escapeHtml(canvas.id)}">${canvas.visible === false ? "○" : "●"}</button>
+                        <button type="button" title="Eliminar" data-engine-canvas-action="delete" data-canvas-id="${escapeHtml(canvas.id)}">×</button>
+                    </div>
+                </article>
+            `).join("")}
+        </div>
+    `;
+}
+
+function renderSelectedCanvas(node, canvas, assets) {
+    if (!node) return;
+    node.innerHTML = "";
+    if (!canvas) {
+        node.innerHTML = '<div class="engine-live-empty"><strong>Sin lienzo seleccionado</strong></div>';
+        return;
+    }
+    node.appendChild(renderCanvasPreview(canvas, { assets }));
+}
+
+function renderCanvasInspector(titleNode, nameInput, canvas) {
+    if (titleNode) titleNode.textContent = canvas ? "Propiedades del lienzo" : "Sin selección";
+    if (nameInput) {
+        nameInput.disabled = !canvas;
+        nameInput.value = canvas?.name || "";
+    }
 }
 
 function showMigrationNotice(node, report) {
@@ -146,54 +250,6 @@ function renderDocumentInfo(node, documentValue) {
         <span>Documento v${Number(documentValue.documentVersion || 1)}</span>
         <span>Builder ${escapeHtml(documentValue.builderVersion || "—")}</span>
     `;
-}
-
-function renderCanvases(node, canvases) {
-    if (!node) return;
-    if (!canvases.length) {
-        node.innerHTML = `
-            <article class="engine-empty">
-                <span class="engine-empty-icon">＋</span>
-                <h2>Documento vacío</h2>
-                <p>Agrega el primer lienzo en el siguiente sprint.</p>
-            </article>
-        `;
-        return;
-    }
-
-    node.innerHTML = canvases.map((canvas, index) => `
-        <article class="engine-canvas-card">
-            <header>
-                <span>${index + 1}</span>
-                <div>
-                    <strong>${escapeHtml(canvas.name || `Lienzo ${index + 1}`)}</strong>
-                    <small>${escapeHtml(canvas.type || canvas.id || "")}</small>
-                </div>
-            </header>
-            <div class="engine-canvas-preview">
-                <div class="engine-node-summary">
-                    ${renderNodeSummary(canvas.nodes || [])}
-                </div>
-            </div>
-        </article>
-    `).join("");
-}
-
-function renderNodeSummary(nodes) {
-    const flat = flattenNodes(nodes);
-    if (!flat.length) return "<span>Sin elementos</span>";
-    return flat.slice(0, 18).map((node) => `
-        <span class="engine-node-chip">
-            ${escapeHtml(node.type || "NODE")} · ${escapeHtml(node.name || node.id || "")}
-        </span>
-    `).join("");
-}
-
-function flattenNodes(nodes = []) {
-    return nodes.flatMap((node) => [
-        node,
-        ...flattenNodes(Array.isArray(node.children) ? node.children : []),
-    ]);
 }
 
 function setStatus(root, status, message) {

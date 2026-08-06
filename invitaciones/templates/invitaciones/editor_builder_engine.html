@@ -51,8 +51,9 @@
                     </p>
                 </section>
 
+                <div class="engine-canvas-navigator" data-engine-canvas-nav></div>
+
                 <nav>
-                    <button class="active" type="button">Lienzos</button>
                     <button type="button" disabled>Componentes</button>
                     <button type="button" disabled>Assets</button>
                     <button type="button" disabled>Capas</button>
@@ -76,22 +77,20 @@
                     </div>
                 </div>
 
-                <div class="engine-canvas-list" data-engine-canvases>
-                    <article class="engine-empty">
-                        <span class="engine-empty-icon">…</span>
-                        <h2>Iniciando Builder Engine</h2>
-                        <p>Cargando el documento desde Django.</p>
-                    </article>
-                </div>
+                                <div class="engine-active-canvas" data-engine-active-canvas></div>
             </section>
 
             <aside class="engine-inspector">
                 <span class="section-kicker">Inspector</span>
-                <h2>Sin selección</h2>
+                <h2 data-engine-inspector-title>Sin selección</h2>
                 <p>
-                    El montaje visual ya utiliza BuilderApp y Persistence Engine.
-                    Canvas, Components e Inspector se conectarán progresivamente.
+                    Selecciona un lienzo para editar sus propiedades básicas.
                 </p>
+
+                <label class="engine-field">
+                    Nombre del lienzo
+                    <input type="text" data-engine-canvas-name disabled>
+                </label>
 
                 <dl>
                     <div>
