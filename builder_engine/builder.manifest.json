@@ -1,8 +1,11 @@
 {
   "name": "DIRTEC Builder Engine",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "schemaVersion": 1,
   "rendererVersion": 1,
   "themeVersion": 1,
-  "minimumStudioVersion": "1.0.0"
+  "minimumStudioVersion": "1.0.0",
+  "modules": [
+    "canvas"
+  ]
 }
