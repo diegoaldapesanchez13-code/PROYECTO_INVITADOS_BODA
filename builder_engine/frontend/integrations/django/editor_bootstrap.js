@@ -147,6 +147,7 @@ async function mountBuilderEngine(root) {
 
         try {
             if (path === "name") nodeController.rename(value);
+            else if (path === "style.zIndex") nodeController.setZIndex(value);
             else nodeController.update(path, value);
             render();
         } catch (error) {

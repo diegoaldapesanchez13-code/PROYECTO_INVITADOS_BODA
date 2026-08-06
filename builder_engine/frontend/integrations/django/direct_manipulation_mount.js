@@ -203,6 +203,7 @@ function applyPreview(element, style) {
     element.style.left = `${number(style.x, 50)}%`;
     element.style.top = `${number(style.y, 50)}%`;
     element.style.width = `${number(style.width, 72)}%`;
+    element.style.height = `${number(style.height, 12)}%`;
     element.style.transform = [
         "translate(-50%, -50%)",
         `scale(${number(style.scale, 1)})`,

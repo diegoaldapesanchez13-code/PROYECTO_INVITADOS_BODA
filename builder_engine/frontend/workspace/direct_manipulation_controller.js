@@ -74,7 +74,7 @@ export class DirectManipulationController {
                 delta,
                 this.#session.bounds,
                 this.#session.handle,
-                { minWidth: 2, maxWidth: 300 },
+                { minWidth: 2, minHeight: 1, maxWidth: 300, maxHeight: 300 },
             );
         }
         if (this.#session.mode === "rotate") {
@@ -101,7 +101,7 @@ export class DirectManipulationController {
         }
 
         const patch = {};
-        for (const key of ["x", "y", "width", "scale", "rotation", "opacity", "zIndex"]) {
+        for (const key of ["x", "y", "width", "height", "scale", "rotation", "opacity", "zIndex"]) {
             if (transform[key] !== undefined) patch[key] = transform[key];
         }
 
