@@ -52,6 +52,7 @@ export class UniversalRenderer {
         this.document = null;
         this.root = null;
         this.nodeMap = new Map();
+        this.countdownTimer = null;
     }
 
     mount(root, document) {
@@ -85,6 +86,7 @@ export class UniversalRenderer {
         );
 
         this.render();
+        this.startCountdownTicker();
 
         return this;
     }
@@ -114,6 +116,7 @@ export class UniversalRenderer {
             return;
         }
 
+        this.stopCountdownTicker();
         this.root.replaceChildren();
         this.root.classList.add("r3-page");
         this.root.dataset.r3Device =
@@ -619,6 +622,7 @@ export class UniversalRenderer {
             case NODE_TYPES.TEXT:
                 element.textContent =
                     this.resolveTextContent(node);
+                this.applyCountdownBindingMetadata(element, node);
                 if (node.style?.textTransform) {
                     element.style.textTransform = node.style.textTransform;
                 }
@@ -1010,6 +1014,123 @@ export class UniversalRenderer {
         return String(
             node.content?.src || ""
         );
+    }
+
+
+    applyCountdownBindingMetadata(element, node) {
+        const binding = node.content?.binding;
+
+        if (binding?.source !== "COUNTDOWN") {
+            return;
+        }
+
+        const countdown = this.findAncestorByType(
+            node,
+            NODE_TYPES.COUNTDOWN
+        );
+
+        if (!countdown) {
+            return;
+        }
+
+        element.dataset.r3CountdownId = countdown.id;
+        element.dataset.r3CountdownUnit = String(binding.unit || "");
+        element.dataset.r3CountdownRole = String(binding.role || "value");
+    }
+
+    startCountdownTicker() {
+        this.stopCountdownTicker();
+        this.updateCountdownBindings();
+
+        const hasActiveCountdown = [...this.nodeMap.values()].some((node) => {
+            if (node.type !== NODE_TYPES.COUNTDOWN || !node.visible) return false;
+            return Number.isFinite(this.resolveCountdownTimestamp(node.content?.targetDate));
+        });
+
+        if (!hasActiveCountdown) {
+            return;
+        }
+
+        this.countdownTimer = setInterval(() => {
+            this.updateCountdownBindings();
+        }, 1000);
+    }
+
+    stopCountdownTicker() {
+        if (this.countdownTimer !== null) {
+            clearInterval(this.countdownTimer);
+            this.countdownTimer = null;
+        }
+    }
+
+    destroy() {
+        this.stopCountdownTicker();
+        this.root = null;
+        this.document = null;
+        this.nodeMap = new Map();
+    }
+
+    updateCountdownBindings(now = Date.now()) {
+        if (!this.root) return;
+
+        const countdowns = [...this.nodeMap.values()]
+            .filter((node) => node.type === NODE_TYPES.COUNTDOWN && node.visible);
+
+        for (const countdown of countdowns) {
+            const target = this.resolveCountdownTimestamp(countdown.content?.targetDate);
+            if (!Number.isFinite(target)) continue;
+
+            const values = this.calculateCountdownValues(target, now);
+            countdown.content = countdown.content || {};
+            countdown.content.values = values;
+
+            const boundElements = this.root.querySelectorAll("[data-r3-countdown-id]");
+            for (const element of boundElements) {
+                if (element.dataset.r3CountdownId !== countdown.id) continue;
+                if (element.dataset.r3CountdownRole !== "value") continue;
+
+                const unitIndex = {
+                    days: 0,
+                    hours: 1,
+                    minutes: 2,
+                    seconds: 3,
+                }[element.dataset.r3CountdownUnit];
+
+                if (unitIndex === undefined) continue;
+                element.textContent = String(values[unitIndex]);
+            }
+        }
+    }
+
+    resolveCountdownTimestamp(value) {
+        if (value === null || value === undefined || value === "") {
+            return Number.NaN;
+        }
+
+        if (typeof value === "number") {
+            return Number.isFinite(value) ? value : Number.NaN;
+        }
+
+        const parsed = new Date(String(value)).getTime();
+        return Number.isFinite(parsed) ? parsed : Number.NaN;
+    }
+
+    calculateCountdownValues(targetTimestamp, nowTimestamp = Date.now()) {
+        let remaining = Math.max(0, targetTimestamp - nowTimestamp);
+        const day = 24 * 60 * 60 * 1000;
+        const hour = 60 * 60 * 1000;
+        const minute = 60 * 1000;
+        const second = 1000;
+
+        const days = Math.floor(remaining / day);
+        remaining %= day;
+        const hours = Math.floor(remaining / hour);
+        remaining %= hour;
+        const minutes = Math.floor(remaining / minute);
+        remaining %= minute;
+        const seconds = Math.floor(remaining / second);
+
+        return [days, hours, minutes, seconds];
     }
 
     resolveTextContent(node) {

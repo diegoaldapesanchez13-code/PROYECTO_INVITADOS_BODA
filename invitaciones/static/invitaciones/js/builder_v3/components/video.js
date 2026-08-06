@@ -12,7 +12,7 @@ export function normalizeVideoSource(value, options = {}) {
     const sourceType = String(options.sourceType || "auto").toLowerCase();
     const raw = String(value || "").trim();
 
-    if (!raw) return invalid("Agrega una URL o archivo de video.");
+    if (!raw) return invalid("Agrega una URL, un enlace de YouTube o selecciona un video de la biblioteca.");
 
     if (sourceType === "youtube" || sourceType === "auto") {
         const youtube = normalizeYouTubeSource(raw, options);
@@ -20,10 +20,10 @@ export function normalizeVideoSource(value, options = {}) {
         if (sourceType === "youtube") return youtube;
     }
 
-    if (sourceType === "direct" || sourceType === "auto") {
+    if (["direct", "library", "file", "upload", "auto"].includes(sourceType)) {
         const direct = normalizeDirectVideoSource(raw);
         if (direct.valid) return direct;
-        if (sourceType === "direct") return direct;
+        if (sourceType !== "auto") return direct;
     }
 
     return invalid("La fuente no corresponde a YouTube ni a un video directo válido.");

@@ -63,6 +63,8 @@ import {
     ComponentLibrary,
 } from "./components/index.js";
 
+import { MobilePreview } from "./preview/mobile_preview.js";
+
 const assetStorage =
     new AssetStorage({
         key:
@@ -81,7 +83,7 @@ const uploadService =
     new AssetUploadService({
         manager: assets,
         maxBytes:
-            12 * 1024 * 1024,
+            150 * 1024 * 1024,
     });
 
 const documentStorage =
@@ -492,6 +494,19 @@ const status =
         "[data-r3-status]"
     );
 
+
+const previewRoot = document.querySelector("[data-r3-preview]");
+const mobilePreview = new MobilePreview({
+    root: previewRoot,
+    state,
+    assetResolver(assetId) { return assets.resolve(assetId); },
+    invitationContext: { url: globalThis.location?.href || "" },
+});
+
+document.querySelector("[data-r3-open-preview]")?.addEventListener("click", () => {
+    mobilePreview.open();
+});
+
 const renderer =
     new UniversalRenderer({
         editable: true,
@@ -563,6 +578,8 @@ inspector =
         state,
         renderer,
         canvas,
+        assets,
+        uploadService,
 
         onNodeUpdated() {
             autoLayout.applyAll();
@@ -898,4 +915,5 @@ globalThis.r3Demo = {
     stopDocumentPersistence,
     canvases,
     components,
+    mobilePreview,
 };

@@ -90,6 +90,8 @@ export class UniversalInspector {
             canvas,
             onStatus = null,
             onNodeUpdated = null,
+            assets = null,
+            uploadService = null,
         } = options;
 
         if (!(root instanceof Element)) {
@@ -110,6 +112,8 @@ export class UniversalInspector {
         this.canvas = canvas;
         this.onStatus = onStatus;
         this.onNodeUpdated = onNodeUpdated;
+        this.assets = assets;
+        this.uploadService = uploadService;
         this.selectedNodeId = null;
         this.groupOpenState = new Map();
         this.scrollStateByNode = new Map();
@@ -221,6 +225,8 @@ export class UniversalInspector {
             node,
             inspector: this,
             state: this.state,
+            assets: this.assets,
+            uploadService: this.uploadService,
         };
 
         this.root.append(header);
@@ -617,15 +623,28 @@ export class UniversalInspector {
                 definition
             );
 
-        const next =
-            setPathClone(
+        const customPatch = typeof definition.onChange === "function"
+            ? definition.onChange({
+                inspector: this,
+                state: this.state,
+                assets: this.assets,
+                uploadService: this.uploadService,
+                current,
+                value,
+                definition,
+            })
+            : null;
+
+        const next = customPatch
+            ? null
+            : setPathClone(
                 current,
                 definition.path,
                 value
             );
 
-        const patch =
-            topLevelPatch(
+        const patch = customPatch
+            || topLevelPatch(
                 current,
                 next,
                 definition.path

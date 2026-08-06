@@ -109,7 +109,7 @@ export class AssetLibrary {
         fileInput.multiple = true;
         fileInput.hidden = true;
         fileInput.accept =
-            "image/*,video/mp4,video/webm";
+            "image/*,video/mp4,video/webm,video/ogg,video/quicktime,video/x-m4v,.mov,.m4v,.ogv";
 
         uploadButton.addEventListener(
             "click",
@@ -146,7 +146,7 @@ export class AssetLibrary {
 
         search.type = "search";
         search.placeholder =
-            "Buscar fondos, flores, fotos...";
+            "Buscar imágenes, videos, fondos...";
         search.value =
             this.state.query;
 

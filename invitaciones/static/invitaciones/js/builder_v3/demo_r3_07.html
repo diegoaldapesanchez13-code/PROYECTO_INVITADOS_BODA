@@ -47,6 +47,8 @@
         href="./components/library.css"
     >
 
+    <link rel="stylesheet" href="./preview/mobile_preview.css">
+
     <style>
         :root {
             --r3-shell-gap: 12px;
@@ -342,6 +344,8 @@
                         Rehacer
                     </button>
 
+                    <button type="button" data-r3-open-preview>Vista previa móvil</button>
+
                     <button
                         type="button"
                         data-r3-reset-document
@@ -436,6 +440,31 @@
             <aside data-r3-inspector></aside>
         </div>
     </main>
+
+
+    <section class="r3-preview" data-r3-preview hidden aria-label="Vista previa móvil">
+        <div class="r3-preview__backdrop" data-r3-preview-backdrop></div>
+        <div class="r3-preview__dialog" role="dialog" aria-modal="true" aria-label="Vista previa de invitación">
+            <header class="r3-preview__toolbar">
+                <div class="r3-preview__toolbar-group">
+                    <strong>Vista previa real</strong>
+                    <select data-r3-preview-device aria-label="Dispositivo">
+                        <option value="iphone_13">iPhone 13 / 14 · 390 × 844</option>
+                        <option value="iphone_se">iPhone SE · 375 × 667</option>
+                        <option value="android">Android · 412 × 915</option>
+                    </select>
+                </div>
+                <button type="button" data-r3-preview-close>Cerrar</button>
+            </header>
+            <div class="r3-preview__stage">
+                <div class="r3-preview__phone" data-r3-preview-frame>
+                    <div class="r3-preview__screen" data-r3-preview-screen>
+                        <div class="r3-preview__surface" data-r3-preview-surface></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 
     <script
         type="module"

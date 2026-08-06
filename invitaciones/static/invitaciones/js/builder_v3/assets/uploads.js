@@ -12,6 +12,9 @@ const ACCEPTED_MIME_TYPES =
         "image/gif",
         "video/mp4",
         "video/webm",
+        "video/ogg",
+        "video/quicktime",
+        "video/x-m4v",
     ]);
 
 export class AssetUploadService {
@@ -68,20 +71,16 @@ export class AssetUploadService {
             this.maxBytes
         );
 
-        const dataUrl =
-            await readAsDataUrl(file);
+        const isVideo = file.type.startsWith("video/");
+        const resourceUrl = isVideo
+            ? await createVideoObjectUrl(file)
+            : await readAsDataUrl(file);
 
-        const metadata =
-            file.type.startsWith(
-                "image/"
-            )
-                ? await imageMetadata(
-                    dataUrl,
-                    file
-                )
-                : {
-                    size: file.size,
-                };
+        const metadata = file.type.startsWith("image/")
+            ? await imageMetadata(resourceUrl, file)
+            : isVideo
+                ? await videoMetadata(resourceUrl, file)
+                : { size: file.size };
 
         const type =
             typeFromMime(file.type);
@@ -96,8 +95,8 @@ export class AssetUploadService {
                 categoryFromType(type),
             collection:
                 "Mis archivos",
-            url: dataUrl,
-            previewUrl: dataUrl,
+            url: resourceUrl,
+            previewUrl: resourceUrl,
             mimeType: file.type,
             tags: [
                 "upload",
@@ -162,6 +161,42 @@ function readAsDataUrl(file) {
             reader.readAsDataURL(file);
         }
     );
+}
+
+function createVideoObjectUrl(file) {
+    if (globalThis.URL?.createObjectURL) {
+        return globalThis.URL.createObjectURL(file);
+    }
+
+    return readAsDataUrl(file);
+}
+
+function videoMetadata(url, file) {
+    return new Promise((resolve) => {
+        if (typeof document === "undefined") {
+            resolve({ size: file.size, volatileUrl: String(url).startsWith("blob:") });
+            return;
+        }
+
+        const video = document.createElement("video");
+        video.preload = "metadata";
+        video.muted = true;
+
+        const finish = (extra = {}) => {
+            resolve({
+                width: Number(video.videoWidth || 0),
+                height: Number(video.videoHeight || 0),
+                duration: Number(video.duration || 0),
+                size: file.size,
+                volatileUrl: String(url).startsWith("blob:"),
+                ...extra,
+            });
+        };
+
+        video.addEventListener("loadedmetadata", () => finish(), { once: true });
+        video.addEventListener("error", () => finish({ metadataError: true }), { once: true });
+        video.src = url;
+    });
 }
 
 function imageMetadata(

@@ -11,6 +11,7 @@ export function field({
     placeholder = "",
     help = "",
     visibleWhen = null,
+    onChange = null,
 }) {
     return {
         kind: "field",
@@ -26,6 +27,7 @@ export function field({
         placeholder,
         help,
         visibleWhen,
+        onChange,
     };
 }
 

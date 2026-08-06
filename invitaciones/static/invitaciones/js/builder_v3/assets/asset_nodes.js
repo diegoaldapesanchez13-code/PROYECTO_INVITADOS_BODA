@@ -67,6 +67,15 @@ export function useAsset({
         );
     }
 
+    if (asset.type === ASSET_TYPES.VIDEO) {
+        return createVideoNode(
+            state,
+            target,
+            asset,
+            position
+        );
+    }
+
     throw new Error(
         `Tipo de asset no soportado: ${asset.type}`
     );
@@ -251,6 +260,63 @@ function createImageNode(
                 contrast: 1,
                 saturation: 1,
                 blur: 0,
+            },
+        }
+    );
+}
+
+
+function createVideoNode(
+    state,
+    target,
+    asset,
+    position
+) {
+    const width = Number(asset.metadata?.width || 0);
+    const height = Number(asset.metadata?.height || 0);
+    const aspectRatio = width > 0 && height > 0 ? width / height : 16 / 9;
+    const nodeWidth = 78;
+    const nodeHeight = Math.max(18, Math.min(60, nodeWidth / aspectRatio));
+
+    return state.createNode(
+        NODE_TYPES.VIDEO,
+        {
+            name: asset.name,
+            parentId: target.id,
+            sectionId:
+                target.type === NODE_TYPES.SECTION
+                    ? target.id
+                    : target.sectionId,
+            layoutMode: LAYOUT_MODES.ABSOLUTE,
+            coordinateSpace:
+                target.type === NODE_TYPES.SECTION
+                    ? COORDINATE_SPACES.SECTION
+                    : COORDINATE_SPACES.PARENT,
+            x: Number(position?.x ?? 50),
+            y: Number(position?.y ?? 50),
+            width: nodeWidth,
+            height: nodeHeight,
+            zIndex: 20,
+            content: {
+                sourceType: "library",
+                assetId: asset.id,
+                source: asset.url,
+                poster: "",
+                title: asset.name,
+                autoplay: false,
+                loop: false,
+                muted: true,
+                controls: true,
+                playsInline: true,
+                loading: "lazy",
+            },
+            style: {
+                backgroundColor: "#111111",
+                borderColor: "#d7d2c8",
+                borderWidth: 0,
+                borderRadius: 18,
+                boxShadow: "0 12px 30px rgba(35, 40, 31, .14)",
+                overflow: "hidden",
             },
         }
     );
