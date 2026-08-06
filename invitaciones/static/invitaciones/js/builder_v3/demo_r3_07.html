@@ -159,9 +159,11 @@
             min-width: 0;
             min-height: 0;
             height: 100%;
-            overflow: auto;
+            overflow-y: scroll;
+            overflow-x: hidden;
             overscroll-behavior: contain;
-            scrollbar-gutter: stable both-edges;
+            scrollbar-gutter: stable;
+            -webkit-overflow-scrolling: touch;
         }
 
         .demo-left-panel[hidden] { display: none; }

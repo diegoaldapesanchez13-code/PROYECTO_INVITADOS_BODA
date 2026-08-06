@@ -790,10 +790,9 @@ document.querySelector(
 const leftPanelScrollPositions = new Map();
 
 function getPanelScrollElement(panel) {
-    if (!panel) return null;
-    return panel.querySelector(
-        ".r3-asset-library, .r3-component-library, .r3-layer-tree, .r3-canvas-manager"
-    ) || panel;
+    // Cada pestaña izquierda es su propio contexto de scroll.
+    // Los widgets internos no deben crear un segundo scroll anidado.
+    return panel || null;
 }
 
 function rememberLeftPanelScroll(panel) {
