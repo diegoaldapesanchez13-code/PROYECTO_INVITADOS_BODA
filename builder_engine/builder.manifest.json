@@ -1,6 +1,6 @@
 {
   "name": "DIRTEC Builder Engine",
-  "version": "0.12.0",
+  "version": "0.13.0",
   "schemaVersion": 1,
   "rendererVersion": 2,
   "themeVersion": 1,
@@ -8,6 +8,7 @@
   "modules": [
     "canvas",
     "components",
+    "interaction",
     "inspector",
     "renderer",
     "assets",
@@ -15,5 +16,6 @@
   ],
   "assetVersion": 1,
   "historyVersion": 1,
-  "componentContractVersion": 1
+  "componentContractVersion": 1,
+  "interactionContractVersion": 1
 }
