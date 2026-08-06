@@ -16,6 +16,10 @@ import {
 } from "../components/map.js";
 
 import {
+    normalizeVideoSource,
+} from "../components/video.js";
+
+import {
     INTERACTION_TRIGGERS,
     InteractionEngine,
 } from "../interaction/index.js";
@@ -629,17 +633,7 @@ export class UniversalRenderer {
                 break;
 
             case NODE_TYPES.VIDEO:
-                element.src =
-                    node.content?.src || "";
-                element.autoplay =
-                    Boolean(
-                        node.content?.autoplay
-                    );
-                element.loop =
-                    Boolean(node.content?.loop);
-                element.muted =
-                    node.content?.muted !== false;
-                element.playsInline = true;
+                this.applyVideoContent(element, node);
                 break;
 
             case NODE_TYPES.ICON:
@@ -668,6 +662,66 @@ export class UniversalRenderer {
             default:
                 break;
         }
+    }
+
+    applyVideoContent(element, node) {
+        const content = node.content || {};
+        const source = normalizeVideoSource(
+            content.source || content.src || "",
+            {
+                sourceType: content.sourceType || "auto",
+                autoplay: Boolean(content.autoplay),
+                loop: Boolean(content.loop),
+                muted: content.muted !== false,
+                controls: content.controls !== false,
+            }
+        );
+
+        element.replaceChildren();
+        element.dataset.r3VideoState = source.valid
+            ? source.kind
+            : "invalid";
+
+        if (!source.valid) {
+            const fallback = element.ownerDocument.createElement("div");
+            fallback.className = "r3-video-fallback";
+            const title = element.ownerDocument.createElement("strong");
+            title.textContent = "Configura una fuente de video válida";
+            const detail = element.ownerDocument.createElement("small");
+            detail.textContent = source.reason || "Usa una URL de YouTube o un video directo.";
+            fallback.append(title, detail);
+            element.append(fallback);
+            return;
+        }
+
+        if (source.kind === "youtube") {
+            const iframe = element.ownerDocument.createElement("iframe");
+            iframe.className = "r3-video-frame r3-video-frame--youtube";
+            iframe.src = source.embedUrl;
+            iframe.title = content.title || node.name || "Video de YouTube";
+            iframe.loading = content.loading === "eager" ? "eager" : "lazy";
+            iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
+            iframe.allowFullscreen = true;
+            iframe.referrerPolicy = "strict-origin-when-cross-origin";
+            iframe.setAttribute("tabindex", this.options.editable ? "-1" : "0");
+            if (this.options.editable) iframe.style.pointerEvents = "none";
+            element.append(iframe);
+            return;
+        }
+
+        const video = element.ownerDocument.createElement("video");
+        video.className = "r3-video-frame r3-video-frame--direct";
+        video.src = source.source;
+        video.autoplay = Boolean(content.autoplay) && !this.options.editable;
+        video.loop = Boolean(content.loop);
+        video.muted = content.muted !== false;
+        video.controls = content.controls !== false && !this.options.editable;
+        video.playsInline = content.playsInline !== false;
+        video.preload = content.loading === "eager" ? "auto" : "metadata";
+        if (content.poster) video.poster = String(content.poster);
+        video.setAttribute("aria-label", content.title || node.name || "Video");
+        if (this.options.editable) video.style.pointerEvents = "none";
+        element.append(video);
     }
 
     applyMapContent(element, node) {

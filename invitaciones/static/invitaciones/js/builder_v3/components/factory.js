@@ -190,6 +190,34 @@ function createDefinition(type, common) {
                 },
             };
 
+        case NODE_TYPES.VIDEO:
+            return {
+                ...common,
+                name: "Video / YouTube",
+                width: 84,
+                height: 28,
+                content: {
+                    sourceType: "youtube",
+                    source: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+                    poster: "",
+                    title: "Video",
+                    autoplay: false,
+                    loop: false,
+                    muted: true,
+                    controls: true,
+                    playsInline: true,
+                    loading: "lazy",
+                },
+                style: {
+                    backgroundColor: "#111111",
+                    borderColor: "#d7d2c8",
+                    borderWidth: 0,
+                    borderRadius: 18,
+                    boxShadow: "0 12px 30px rgba(35, 40, 31, .14)",
+                    overflow: "hidden",
+                },
+            };
+
         case NODE_TYPES.COUNTDOWN:
             return countdownParentDefinition(common);
 

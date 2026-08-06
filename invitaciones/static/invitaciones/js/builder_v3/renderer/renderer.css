@@ -394,3 +394,49 @@
 .r3-page[data-r3-editable="1"] .r3-node--map {
     cursor: move;
 }
+
+.r3-node[data-r3-type="VIDEO"] {
+    display: block;
+    overflow: hidden;
+    background: #111;
+}
+
+.r3-video-frame {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    object-fit: cover;
+    background: #111;
+}
+
+.r3-video-fallback {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    place-content: center;
+    gap: 6px;
+    padding: 18px;
+    text-align: center;
+    color: #f4f4f2;
+    background: linear-gradient(145deg, #1f2420, #111411);
+}
+
+.r3-video-fallback small {
+    max-width: 260px;
+    color: #bfc5bc;
+}
+
+.r3-renderer[data-editable="true"] .r3-node[data-r3-type="VIDEO"]::after {
+    content: "Video";
+    position: absolute;
+    right: 8px;
+    top: 8px;
+    z-index: 2;
+    padding: 3px 7px;
+    border-radius: 999px;
+    font: 600 10px/1 Arial, sans-serif;
+    color: #fff;
+    background: rgba(0, 0, 0, .62);
+    pointer-events: none;
+}

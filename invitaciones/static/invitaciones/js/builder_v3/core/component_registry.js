@@ -170,8 +170,8 @@ const DEFINITIONS = Object.freeze([
     definition(NODE_TYPES.VIDEO, {
         label: "Video",
         icon: "VD",
-        element: "video",
-        inspectorPanel: null,
+        element: "div",
+        inspectorPanel: "video",
         capabilities: [
             COMPONENT_CAPABILITIES.CONSTRAINTS,
             COMPONENT_CAPABILITIES.TRANSFORM,

@@ -18,6 +18,7 @@ assert.deepEqual(
         NODE_TYPES.CARD,
         NODE_TYPES.CONTAINER,
         NODE_TYPES.MAP,
+        NODE_TYPES.VIDEO,
         NODE_TYPES.COUNTDOWN,
         NODE_TYPES.SEPARATOR,
         NODE_TYPES.ICON,

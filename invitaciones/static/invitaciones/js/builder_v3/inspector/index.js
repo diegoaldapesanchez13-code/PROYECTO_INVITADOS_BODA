@@ -54,6 +54,10 @@ import {
 } from "./panels/map.js";
 
 import {
+    videoPanel,
+} from "./panels/video.js";
+
+import {
     separatorPanel,
 } from "./panels/separator.js";
 
@@ -270,6 +274,7 @@ export class UniversalInspector {
             image: imagePanel,
             button: buttonPanel,
             map: mapPanel,
+            video: videoPanel,
             countdown: countdownPanel,
             separator: separatorPanel,
             icon: iconPanel,
