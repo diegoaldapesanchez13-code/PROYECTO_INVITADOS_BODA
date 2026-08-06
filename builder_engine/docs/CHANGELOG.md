@@ -26,3 +26,9 @@
 - Modos EDIT, PREVIEW y PUBLIC.
 - Registry de renderers por tipo.
 - Adaptador DOM y compatibilidad con R3.
+
+## 0.10.0
+- Extrae Assets como módulo registrable.
+- Define referencias persistentes para imagen, video y audio.
+- Prohíbe Base64 y `blob:` dentro del Documento.
+- Añade adaptadores temporales para R3 y Django.

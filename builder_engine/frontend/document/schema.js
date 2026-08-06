@@ -57,6 +57,14 @@ export function validateDocument(document) {
     if (!isObject(document.metadata)) errors.push("metadata es obligatorio.");
     if (!isObject(document.theme)) errors.push("theme debe ser un objeto.");
     if (!Array.isArray(document.assets)) errors.push("assets debe ser un arreglo.");
+    if (Array.isArray(document.assets)) {
+        document.assets.forEach((asset, index) => {
+            const url = String(asset?.url || "").trim().toLowerCase();
+            const previewUrl = String(asset?.previewUrl || "").trim().toLowerCase();
+            if (url.startsWith("data:") || url.startsWith("blob:")) errors.push(`assets[${index}].url debe ser persistente.`);
+            if (previewUrl.startsWith("data:") || previewUrl.startsWith("blob:")) errors.push(`assets[${index}].previewUrl debe ser persistente.`);
+        });
+    }
     if (!isObject(document.globals)) errors.push("globals debe ser un objeto.");
     if (!Array.isArray(document.canvases)) errors.push("canvases debe ser un arreglo.");
     return { valid: errors.length === 0, errors };

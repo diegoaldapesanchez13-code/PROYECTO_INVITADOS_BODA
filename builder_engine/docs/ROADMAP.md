@@ -14,3 +14,6 @@
 
 - [x] Sprint 4: Renderer Module
 - [ ] Sprint 5: Assets Module
+
+### Sprint 5 — Assets Module ✅
+Biblioteca desacoplada, referencias persistentes y adaptadores de almacenamiento.
