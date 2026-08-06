@@ -6,3 +6,8 @@ export * from "./renderer_service.js";
 export * from "./renderer_module.js";
 export * from "./dom_adapter.js";
 export * from "./adapters/r3_renderer_adapter.js";
+export * from "./universal_style_resolver.js";
+export * from "./universal_interaction_resolver.js";
+export * from "./universal_renderer.js";
+export * from "./universal_dom_adapter.js";
+export * from "./universal_fixture.js";

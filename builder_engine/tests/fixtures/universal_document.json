@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "documentVersion": 1,
+  "metadata": {
+    "name": "Universal renderer fixture"
+  },
+  "canvases": [
+    {
+      "id": "canvas-1",
+      "name": "Portada",
+      "order": 1,
+      "visible": true,
+      "size": {
+        "responsive": {
+          "mobile": {
+            "height": 1000
+          },
+          "tablet": {
+            "height": 900
+          },
+          "desktop": {
+            "height": 820
+          }
+        }
+      },
+      "nodes": []
+    }
+  ]
+}
