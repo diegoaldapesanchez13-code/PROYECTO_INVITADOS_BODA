@@ -12,6 +12,10 @@ import {
 } from "../canvas/transform_policy.js";
 
 import {
+    normalizeMapSource,
+} from "../components/map.js";
+
+import {
     INTERACTION_TRIGGERS,
     InteractionEngine,
 } from "../interaction/index.js";
@@ -644,9 +648,7 @@ export class UniversalRenderer {
                 break;
 
             case NODE_TYPES.MAP:
-                element.textContent =
-                    node.content?.placeholder
-                    || "Mapa";
+                this.applyMapContent(element, node);
                 break;
 
             case NODE_TYPES.GALLERY:
@@ -666,6 +668,67 @@ export class UniversalRenderer {
             default:
                 break;
         }
+    }
+
+    applyMapContent(element, node) {
+        const source = normalizeMapSource(
+            node.content?.source || "",
+            { zoom: node.content?.zoom ?? 15 }
+        );
+
+        element.replaceChildren();
+        element.dataset.r3MapState = source.valid
+            ? source.kind
+            : "invalid";
+
+        if (!source.valid || !source.embedUrl) {
+            const fallback = element.ownerDocument.createElement("div");
+            fallback.className = "r3-map-fallback";
+
+            const title = element.ownerDocument.createElement("strong");
+            title.textContent = source.valid
+                ? "Abrir ubicación en Google Maps"
+                : "Configura una ubicación válida";
+
+            const detail = element.ownerDocument.createElement("small");
+            detail.textContent = source.valid
+                ? "Este enlace corto no se puede embeber directamente."
+                : "Usa coordenadas, una dirección, una URL de Maps o un iframe.";
+
+            fallback.append(title, detail);
+
+            if (source.externalUrl && !this.options.editable) {
+                fallback.tabIndex = 0;
+                fallback.setAttribute("role", "link");
+                fallback.addEventListener("click", () => {
+                    globalThis.open?.(
+                        source.externalUrl,
+                        "_blank",
+                        "noopener,noreferrer"
+                    );
+                });
+            }
+
+            element.append(fallback);
+            return;
+        }
+
+        const iframe = element.ownerDocument.createElement("iframe");
+        iframe.className = "r3-map-frame";
+        iframe.src = source.embedUrl;
+        iframe.title = node.content?.title || node.name || "Google Maps";
+        iframe.loading = node.content?.loading === "eager" ? "eager" : "lazy";
+        iframe.referrerPolicy = "no-referrer-when-downgrade";
+        iframe.allowFullscreen = true;
+        iframe.setAttribute("aria-label", iframe.title);
+        iframe.setAttribute("tabindex", this.options.editable ? "-1" : "0");
+
+        if (this.options.editable) {
+            iframe.style.pointerEvents = "none";
+            element.dataset.r3MapEditable = "1";
+        }
+
+        element.append(iframe);
     }
 
     applyBackground(element, node, style) {

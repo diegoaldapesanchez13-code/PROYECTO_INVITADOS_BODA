@@ -17,10 +17,10 @@ const layersCss = fs.readFileSync(path.join(root, "layers", "layer_tree.css"), "
 assert.match(html, /height:\s*100dvh/);
 assert.match(html, /body\s*\{[\s\S]*overflow:\s*hidden/);
 assert.match(html, /\.demo-workspace\s*\{[\s\S]*min-height:\s*0;[\s\S]*overflow:\s*hidden/);
-assert.match(html, /\.demo-left-panel\s*\{[\s\S]*height:\s*100%;[\s\S]*overflow:\s*hidden/);
+assert.match(html, /\.demo-left-panel\s*\{[\s\S]*height:\s*100%;[\s\S]*overflow-y:\s*scroll/);
 
 assert.match(canvasCss, /\.r3-canvas-viewport\s*\{[\s\S]*height:\s*100%;[\s\S]*overflow:\s*auto/);
-assert.match(inspectorCss, /\.r3-inspector\s*\{[\s\S]*overflow:\s*auto/);
+assert.match(inspectorCss, /\.r3-inspector\s*\{[\s\S]*overflow-y:\s*scroll/);
 assert.match(inspectorCss, /\.r3-inspector-header\s*\{[\s\S]*position:\s*sticky/);
 assert.match(assetsCss, /\.r3-asset-library__header\s*\{[\s\S]*position:\s*sticky/);
 assert.match(componentsCss, /\.r3-component-library__header\s*\{[\s\S]*position:\s*sticky/);

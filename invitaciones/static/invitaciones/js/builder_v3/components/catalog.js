@@ -7,6 +7,7 @@ const COMPONENT_CATALOG = Object.freeze([
     item("button", NODE_TYPES.BUTTON, "Botón", "Agrega un botón editable con interacción.", "BT", "Básicos"),
     item("card", NODE_TYPES.CARD, "Card", "Contenedor visual con fondo, borde y capas hijas.", "CD", "Estructura"),
     item("container", NODE_TYPES.CONTAINER, "Contenedor", "Agrupa capas sin imponer apariencia visual.", "CT", "Estructura"),
+    item("map", NODE_TYPES.MAP, "Google Maps", "Agrega un mapa interactivo, redimensionable y editable.", "MP", "Contenido"),
     item("countdown", NODE_TYPES.COUNTDOWN, "Cuenta regresiva", "Agrega días, horas, minutos y segundos personalizables.", "CDN", "Contenido"),
     item("separator", NODE_TYPES.SEPARATOR, "Separador", "Agrega una línea horizontal o vertical editable.", "—", "Estructura"),
     item("icon", NODE_TYPES.ICON, "Icono", "Agrega un símbolo o carácter editable como capa.", "IC", "Contenido"),

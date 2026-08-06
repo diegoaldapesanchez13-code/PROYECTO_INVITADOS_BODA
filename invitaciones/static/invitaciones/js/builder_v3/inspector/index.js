@@ -50,6 +50,10 @@ import {
 } from "./panels/countdown.js";
 
 import {
+    mapPanel,
+} from "./panels/map.js";
+
+import {
     separatorPanel,
 } from "./panels/separator.js";
 
@@ -265,6 +269,7 @@ export class UniversalInspector {
             text: textPanel,
             image: imagePanel,
             button: buttonPanel,
+            map: mapPanel,
             countdown: countdownPanel,
             separator: separatorPanel,
             icon: iconPanel,

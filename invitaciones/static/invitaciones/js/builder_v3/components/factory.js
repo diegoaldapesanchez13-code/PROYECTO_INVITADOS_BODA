@@ -168,6 +168,28 @@ function createDefinition(type, common) {
                 },
             };
 
+        case NODE_TYPES.MAP:
+            return {
+                ...common,
+                name: "Google Maps",
+                width: 84,
+                height: 34,
+                content: {
+                    source: "21.1225,-101.6834",
+                    zoom: 15,
+                    title: "Ubicación del evento",
+                    loading: "lazy",
+                },
+                style: {
+                    backgroundColor: "#ece9e1",
+                    borderColor: "#d7d2c8",
+                    borderWidth: 1,
+                    borderRadius: 18,
+                    boxShadow: "0 12px 30px rgba(35, 40, 31, .14)",
+                    overflow: "hidden",
+                },
+            };
+
         case NODE_TYPES.COUNTDOWN:
             return countdownParentDefinition(common);
 

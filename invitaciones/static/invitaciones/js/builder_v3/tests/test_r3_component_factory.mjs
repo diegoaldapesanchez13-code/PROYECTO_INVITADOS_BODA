@@ -51,9 +51,8 @@ const icon = insertComponent({ state, type: NODE_TYPES.ICON, selectedNodeId: car
 assert.equal(icon.content.value, "✦");
 
 assert.equal(resolveInsertionTarget(state, text.id).id, canvas.id);
-assert.throws(
-    () => insertComponent({ state, type: NODE_TYPES.MAP }),
-    /no insertable/
-);
+const map = insertComponent({ state, type: NODE_TYPES.MAP, selectedNodeId: canvas.id });
+assert.equal(map.type, NODE_TYPES.MAP);
+assert.equal(map.content.zoom, 15);
 
 console.log("✓ inserción de componentes base y anidamiento");

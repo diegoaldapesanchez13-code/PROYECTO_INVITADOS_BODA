@@ -12,16 +12,16 @@ assert.match(base, /key: "zIndex"/);
 assert.match(base, /label: "Capa"/);
 
 const countdown = read("inspector/panels/countdown.js");
-assert.match(countdown, /key: "columns"/);
-assert.match(countdown, /itemMinHeight/);
-assert.match(countdown, /itemContentGap/);
+assert.match(countdown, /Edición por capas/);
+assert.match(countdown, /content\.values\.0/);
+assert.match(countdown, /content\.targetDate/);
 
 const rendererCss = read("renderer/renderer.css");
-assert.match(rendererCss, /--r3-countdown-columns/);
-assert.match(rendererCss, /height: 100%/);
+assert.match(rendererCss, /COMPOSITE COUNTDOWN V1/);
+assert.match(rendererCss, /\.r3-node--countdown/);
 
 const canvasCss = read("canvas/canvas.css");
-assert.match(canvasCss, /--r3-canvas-height/);
-assert.match(canvasCss, /transform: scale\(var\(--r3-canvas-zoom\)\)/);
+assert.match(canvasCss, /--r3-canvas-zoom/);
+assert.match(canvasCss, /transform:\s*[\s\S]*scale\([\s\S]*var\(--r3-canvas-zoom\)/);
 
 console.log("test_r3_editor_stabilization: ok");

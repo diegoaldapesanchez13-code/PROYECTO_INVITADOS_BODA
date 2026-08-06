@@ -109,7 +109,7 @@ const DEFINITIONS = Object.freeze([
         label: "Google Maps",
         icon: "MP",
         element: "div",
-        inspectorPanel: null,
+        inspectorPanel: "map",
         capabilities: [
             COMPONENT_CAPABILITIES.CONSTRAINTS,
             COMPONENT_CAPABILITIES.TRANSFORM,
