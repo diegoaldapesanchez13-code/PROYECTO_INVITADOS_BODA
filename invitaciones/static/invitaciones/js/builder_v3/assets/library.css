@@ -4,7 +4,10 @@
     gap: 12px;
     height: 100%;
     min-width: 0;
-    overflow: auto;
+    overflow-y: scroll;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
     padding: 14px;
     border: 1px solid #d5d0c6;
     border-radius: 16px;
@@ -13,6 +16,12 @@
 }
 
 .r3-asset-library__header {
+    position: sticky;
+    top: -14px;
+    z-index: 15;
+    margin: -14px -14px 0;
+    padding: 14px 14px 12px;
+    background: #f8f6f1;
     display: grid;
     gap: 10px;
 }
@@ -280,3 +289,13 @@
 .r3-asset-library__empty span {
     font-size: .68rem;
 }
+
+
+.r3-asset-library {
+    scrollbar-width: auto;
+    scrollbar-color: #78866a #e5e1d8;
+}
+
+.r3-asset-library::-webkit-scrollbar { width: 12px; }
+.r3-asset-library::-webkit-scrollbar-track { background: #e5e1d8; border-radius: 999px; }
+.r3-asset-library::-webkit-scrollbar-thumb { min-height: 42px; border: 3px solid #e5e1d8; border-radius: 999px; background: #78866a; }

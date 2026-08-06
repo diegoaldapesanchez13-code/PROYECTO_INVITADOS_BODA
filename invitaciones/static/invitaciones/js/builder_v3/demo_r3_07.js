@@ -720,19 +720,41 @@ document.querySelectorAll(
                 button.dataset.r3Zoom;
 
             if (value === "fit") {
-                canvas.fitToViewport({
+                const zoom = canvas.fitToViewport({
                     horizontalPadding: 30,
                     verticalPadding: 30,
                 });
+                updateZoomStatus(zoom);
                 return;
             }
 
-            canvas.setZoom(
+            const zoom = canvas.setZoom(
                 Number(value)
             );
+            updateZoomStatus(zoom);
         }
     );
 });
+
+
+
+const zoomStatus = document.querySelector("[data-r3-zoom-status]");
+
+function updateZoomStatus(value) {
+    if (!zoomStatus) return;
+    zoomStatus.textContent = `${Math.round(Number(value || 1) * 100)}%`;
+}
+
+document.querySelectorAll("[data-r3-zoom-step]").forEach((button) => {
+    button.addEventListener("click", () => {
+        const factor = button.dataset.r3ZoomStep === "in" ? 1.1 : 0.9;
+        updateZoomStatus(canvas.setZoom(canvas.zoom * factor));
+    });
+});
+
+viewport.addEventListener("wheel", () => {
+    requestAnimationFrame(() => updateZoomStatus(canvas.zoom));
+}, { passive: true });
 
 document.querySelector(
     "[data-r3-undo]"
@@ -765,6 +787,35 @@ document.querySelector(
 );
 
 
+const leftPanelScrollPositions = new Map();
+
+function getPanelScrollElement(panel) {
+    if (!panel) return null;
+    return panel.querySelector(
+        ".r3-asset-library, .r3-component-library, .r3-layer-tree, .r3-canvas-manager"
+    ) || panel;
+}
+
+function rememberLeftPanelScroll(panel) {
+    if (!panel) return;
+    const scrollElement = getPanelScrollElement(panel);
+    leftPanelScrollPositions.set(panel.dataset.r3LeftPanel, {
+        top: scrollElement.scrollTop,
+        left: scrollElement.scrollLeft,
+    });
+}
+
+function restoreLeftPanelScroll(panel) {
+    if (!panel) return;
+    const saved = leftPanelScrollPositions.get(panel.dataset.r3LeftPanel);
+    if (!saved) return;
+    requestAnimationFrame(() => {
+        const scrollElement = getPanelScrollElement(panel);
+        scrollElement.scrollTop = saved.top;
+        scrollElement.scrollLeft = saved.left;
+    });
+}
+
 document.querySelectorAll(
     "[data-r3-left-tab]"
 ).forEach((button) => {
@@ -773,6 +824,11 @@ document.querySelectorAll(
         () => {
             const target =
                 button.dataset.r3LeftTab;
+
+            const currentPanel = document.querySelector(
+                "[data-r3-left-panel]:not([hidden])"
+            );
+            rememberLeftPanelScroll(currentPanel);
 
             document.querySelectorAll(
                 "[data-r3-left-tab]"
@@ -784,16 +840,20 @@ document.querySelectorAll(
                     )
             );
 
+            let targetPanel = null;
+
             document.querySelectorAll(
                 "[data-r3-left-panel]"
             ).forEach(
                 (panel) => {
-                    panel.hidden =
-                        panel.dataset
-                            .r3LeftPanel
-                        !== target;
+                    const isTarget =
+                        panel.dataset.r3LeftPanel === target;
+                    panel.hidden = !isTarget;
+                    if (isTarget) targetPanel = panel;
                 }
             );
+
+            restoreLeftPanelScroll(targetPanel);
         }
     );
 });
