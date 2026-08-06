@@ -1,6 +1,7 @@
 .r3-inspector {
     display: grid;
     align-content: start;
+    grid-auto-rows: max-content;
     gap: 12px;
     min-width: 0;
     height: 100%;
@@ -69,7 +70,9 @@
 }
 
 .r3-inspector-group {
-    overflow: hidden;
+    min-width: 0;
+    min-height: max-content;
+    overflow: visible;
     border: 1px solid #d8d3c9;
     border-radius: 11px;
     background: #fff;
@@ -142,14 +145,32 @@
     line-height: 1.35;
 }
 
+.r3-inspector-group[open] {
+    height: auto;
+    max-height: none;
+}
+
 .r3-inspector-group[open] > summary {
+    position: sticky;
+    top: 52px;
+    z-index: 5;
     border-bottom: 1px solid #e3dfd7;
+    background: #fff;
+}
+
+.r3-inspector-group:not([open]) > .r3-inspector-group__body {
+    display: none;
 }
 
 .r3-inspector-group__body {
     display: grid;
+    grid-auto-rows: max-content;
     gap: 10px;
+    width: 100%;
+    min-width: 0;
+    min-height: max-content;
     padding: 12px;
+    overflow: visible;
 }
 
 .r3-inspector-field {

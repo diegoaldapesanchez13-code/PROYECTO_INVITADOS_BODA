@@ -45,6 +45,18 @@ export function generalPanel() {
                     help:
                         "SECTION permanece en Flow y BACKGROUND permanece en Layer.",
                 }),
+                field({
+                    key: "zIndex",
+                    label: "Capa",
+                    type: "number",
+                    min: -9999,
+                    max: 9999,
+                    step: 1,
+                    visibleWhen: ({ node }) =>
+                        node.type !== "SECTION",
+                    help:
+                        "Nivel visual exacto del elemento. También puede ordenarse desde el panel Capas.",
+                }),
             ],
         }),
 
