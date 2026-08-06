@@ -192,3 +192,33 @@ button { color: inherit; }
     margin-right: 6px;
     color: #f0ca78;
 }
+
+.engine-migration-notice {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 10px 22px;
+    border-bottom: 1px solid #4d432e;
+    background: #2b2519;
+    color: #f4d58d;
+    font-size: 12px;
+}
+.engine-migration-notice[hidden] { display: none; }
+.engine-migration-notice span { color: #c8b88f; }
+.engine-node-summary {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    padding: 28px;
+}
+.engine-node-chip {
+    display: inline-flex;
+    padding: 7px 10px;
+    border: 1px solid #d6cbb8;
+    border-radius: 999px;
+    background: #fffaf0;
+    color: #665d4f;
+    font-size: 11px;
+}

@@ -3,6 +3,7 @@ import {
     createDjangoPersistenceAdapter,
     registerPersistenceModule,
 } from "../../persistence/index.js";
+import { registerMigrationModule } from "../../migration/index.js";
 
 const root = document.querySelector("[data-builder-engine-root]");
 
@@ -15,9 +16,9 @@ if (root) {
 
 async function mountBuilderEngine(root) {
     const config = readBootstrap(root);
-    const statusNode = root.querySelector("[data-engine-status]");
     const canvasList = root.querySelector("[data-engine-canvases]");
     const documentInfo = root.querySelector("[data-engine-document-info]");
+    const migrationNotice = root.querySelector("[data-engine-migration-notice]");
     const saveButton = root.querySelector("[data-engine-action='save']");
     const publishButton = root.querySelector("[data-engine-action='publish']");
     const reloadButton = root.querySelector("[data-engine-action='reload']");
@@ -29,21 +30,26 @@ async function mountBuilderEngine(root) {
         csrfToken: getCsrfToken(),
     });
 
-    const app = new BuilderApp({
-        eventId: config.eventId,
-    });
+    const app = new BuilderApp({ eventId: config.eventId });
 
     const persistenceModule = registerPersistenceModule(app, {
         port: persistencePort,
         autosave: true,
         autosaveDelay: 3000,
-        workspaceState: {
-            previewDevice: "iphone-13",
-        },
+        workspaceState: { previewDevice: "iphone-13" },
     });
+    const migrationModule = registerMigrationModule(app);
 
     await app.start();
     await persistenceModule.service.load();
+
+    const migrationReport = migrationModule.migrateIfNeeded(app);
+    if (migrationReport.migrated) {
+        showMigrationNotice(migrationNotice, migrationReport);
+        await persistenceModule.service.save({
+            reason: "legacy-schema-migration",
+        });
+    }
 
     const render = () => {
         const documentValue = app.getDocument();
@@ -57,9 +63,7 @@ async function mountBuilderEngine(root) {
             event.type === "document:changed"
             || event.type === "document:replaced"
             || event.type === "document:saved"
-        ) {
-            render();
-        }
+        ) render();
     });
 
     persistenceModule.service.subscribe((state) => {
@@ -77,33 +81,35 @@ async function mountBuilderEngine(root) {
         if (publishButton) publishButton.disabled = state.status === "PUBLISHING";
     });
 
-    saveButton?.addEventListener("click", async () => {
-        await persistenceModule.service.save({ reason: "manual" });
-    });
+    saveButton?.addEventListener("click", () =>
+        persistenceModule.service.save({ reason: "manual" })
+    );
 
     publishButton?.addEventListener("click", async () => {
-        const confirmed = window.confirm(
-            "¿Publicar este documento? Se guardará una versión publicada."
-        );
-        if (!confirmed) return;
+        if (!window.confirm("¿Publicar este documento?")) return;
         await persistenceModule.service.publish();
     });
 
     reloadButton?.addEventListener("click", async () => {
-        if (app.isDirty) {
-            const confirmed = window.confirm(
-                "Hay cambios pendientes. ¿Recargar el último borrador guardado?"
-            );
-            if (!confirmed) return;
-        }
+        if (
+            app.isDirty
+            && !window.confirm("Hay cambios pendientes. ¿Recargar el borrador guardado?")
+        ) return;
         await persistenceModule.service.load();
+        const report = migrationModule.migrateIfNeeded(app);
+        if (report.migrated) {
+            showMigrationNotice(migrationNotice, report);
+            await persistenceModule.service.save({
+                reason: "legacy-schema-migration",
+            });
+        }
     });
 
-    // API temporal de diagnóstico para el siguiente sprint.
     window.DIRTEC_BUILDER = Object.freeze({
         app,
         persistence: persistenceModule.service,
         workspace: persistenceModule.workspace,
+        migration: migrationModule,
         config,
     });
 
@@ -111,16 +117,22 @@ async function mountBuilderEngine(root) {
     setStatus(root, "SAVED", "Builder Engine conectado");
 }
 
+function showMigrationNotice(node, report) {
+    if (!node) return;
+    node.hidden = false;
+    node.innerHTML = `
+        <strong>Diseño anterior migrado correctamente</strong>
+        <span>${report.canvases} lienzos · ${report.nodes} elementos · ${report.assets} assets</span>
+    `;
+}
+
 function readBootstrap(root) {
-    const scriptId = root.dataset.bootstrapId;
-    const script = document.getElementById(scriptId);
+    const script = document.getElementById(root.dataset.bootstrapId);
     if (!script) throw new Error("No se encontró la configuración de arranque.");
     const config = JSON.parse(script.textContent || "{}");
     if (!config.eventId) throw new Error("eventId es obligatorio.");
     for (const name of ["load", "save", "publish"]) {
-        if (!config.endpoints?.[name]) {
-            throw new Error(`Falta endpoint: ${name}.`);
-        }
+        if (!config.endpoints?.[name]) throw new Error(`Falta endpoint: ${name}.`);
     }
     return config;
 }
@@ -142,12 +154,8 @@ function renderCanvases(node, canvases) {
         node.innerHTML = `
             <article class="engine-empty">
                 <span class="engine-empty-icon">＋</span>
-                <h2>Documento conectado</h2>
-                <p>
-                    El Builder Engine ya carga, guarda y publica desde Django.
-                    La migración visual de las secciones anteriores a lienzos se
-                    realizará en el siguiente sprint.
-                </p>
+                <h2>Documento vacío</h2>
+                <p>Agrega el primer lienzo en el siguiente sprint.</p>
             </article>
         `;
         return;
@@ -158,15 +166,34 @@ function renderCanvases(node, canvases) {
             <header>
                 <span>${index + 1}</span>
                 <div>
-                    <strong>${escapeHtml(canvas.name || canvas.title || `Lienzo ${index + 1}`)}</strong>
-                    <small>${escapeHtml(canvas.id || "sin-id")}</small>
+                    <strong>${escapeHtml(canvas.name || `Lienzo ${index + 1}`)}</strong>
+                    <small>${escapeHtml(canvas.type || canvas.id || "")}</small>
                 </div>
             </header>
             <div class="engine-canvas-preview">
-                <span>${Array.isArray(canvas.nodes) ? canvas.nodes.length : 0} elementos</span>
+                <div class="engine-node-summary">
+                    ${renderNodeSummary(canvas.nodes || [])}
+                </div>
             </div>
         </article>
     `).join("");
+}
+
+function renderNodeSummary(nodes) {
+    const flat = flattenNodes(nodes);
+    if (!flat.length) return "<span>Sin elementos</span>";
+    return flat.slice(0, 18).map((node) => `
+        <span class="engine-node-chip">
+            ${escapeHtml(node.type || "NODE")} · ${escapeHtml(node.name || node.id || "")}
+        </span>
+    `).join("");
+}
+
+function flattenNodes(nodes = []) {
+    return nodes.flatMap((node) => [
+        node,
+        ...flattenNodes(Array.isArray(node.children) ? node.children : []),
+    ]);
 }
 
 function setStatus(root, status, message) {
@@ -181,12 +208,10 @@ function setStatus(root, status, message) {
 function getCsrfToken() {
     const input = document.querySelector("input[name='csrfmiddlewaretoken']");
     if (input?.value) return input.value;
-
     const cookie = document.cookie
         .split(";")
         .map((item) => item.trim())
         .find((item) => item.startsWith("csrftoken="));
-
     return cookie ? decodeURIComponent(cookie.split("=").slice(1).join("=")) : "";
 }
 
