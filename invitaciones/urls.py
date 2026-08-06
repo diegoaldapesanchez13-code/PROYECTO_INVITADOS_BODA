@@ -1,6 +1,7 @@
 from django.urls import path
 from . import views
 from . import builder_engine_views
+from . import builder_engine_editor_views
 
 urlpatterns = [
     path('', views.inicio, name='inicio'),
@@ -25,6 +26,7 @@ urlpatterns = [
     path('dashboard/mesas/guardar-posiciones/', views.guardar_posiciones_mesas, name='guardar_posiciones_mesas'),
 
     path('dashboard/editor-invitacion/<int:evento_id>/', views.editor_invitacion_visual, name='editor_invitacion_visual'),
+    path('dashboard/editor-invitacion/<int:evento_id>/engine/', builder_engine_editor_views.editor_builder_engine, name='builder_engine_editor',),
     path('dashboard/editor-invitacion/<int:evento_id>/guardar/', views.guardar_diseno_invitacion_visual, name='guardar_diseno_invitacion_visual'),
     path('dashboard/editor-invitacion/<int:evento_id>/publicar/', views.publicar_diseno_invitacion_visual, name='publicar_diseno_invitacion_visual'),
 
