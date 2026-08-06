@@ -6,7 +6,10 @@ import {
 import { registerMigrationModule } from "../../migration/index.js";
 import {
     CanvasWorkspaceController,
+    NodeWorkspaceController,
     renderCanvasPreview,
+    renderLayersTree,
+    renderNodeInspector,
 } from "../../workspace/index.js";
 
 const root = document.querySelector("[data-builder-engine-root]");
@@ -24,8 +27,8 @@ async function mountBuilderEngine(root) {
     const migrationNotice = root.querySelector("[data-engine-migration-notice]");
     const canvasNavigator = root.querySelector("[data-engine-canvas-nav]");
     const canvasStage = root.querySelector("[data-engine-active-canvas]");
-    const inspectorTitle = root.querySelector("[data-engine-inspector-title]");
-    const inspectorName = root.querySelector("[data-engine-canvas-name]");
+    const layersPanel = root.querySelector("[data-engine-layers-panel]");
+    const nodeInspector = root.querySelector("[data-engine-node-inspector]");
     const saveButton = root.querySelector("[data-engine-action='save']");
     const publishButton = root.querySelector("[data-engine-action='publish']");
     const reloadButton = root.querySelector("[data-engine-action='reload']");
@@ -50,71 +53,113 @@ async function mountBuilderEngine(root) {
     const migrationReport = migrationModule.migrateIfNeeded(app);
     if (migrationReport.migrated) {
         showMigrationNotice(migrationNotice, migrationReport);
-        await persistenceModule.service.save({
-            reason: "legacy-schema-migration",
-        });
+        await persistenceModule.service.save({ reason: "legacy-schema-migration" });
     }
 
-    const workspaceController = new CanvasWorkspaceController({
+    const canvasController = new CanvasWorkspaceController({
         app,
         workspace: persistenceModule.workspace,
     }).initialize();
 
+    const nodeController = new NodeWorkspaceController({
+        app,
+        workspace: persistenceModule.workspace,
+        canvasController,
+    }).initialize();
+
     const render = () => {
         const documentValue = app.getDocument();
+        const selectedCanvas = canvasController.getSelected();
+
         renderDocumentInfo(documentInfo, documentValue);
         renderCanvasNavigator(
             canvasNavigator,
-            workspaceController.list(),
-            workspaceController.selectedCanvasId,
+            canvasController.list(),
+            canvasController.selectedCanvasId,
+        );
+        renderLayersTree(
+            layersPanel,
+            selectedCanvas?.nodes || [],
+            { selectedId: nodeController.selectedNodeId },
         );
         renderSelectedCanvas(
             canvasStage,
-            workspaceController.getSelected(),
+            selectedCanvas,
             documentValue.assets || [],
+            nodeController.selectedNodeId,
         );
-        renderCanvasInspector(
-            inspectorTitle,
-            inspectorName,
-            workspaceController.getSelected(),
-        );
+        renderNodeInspector(nodeInspector, nodeController.getSelected());
         root.dataset.dirty = app.isDirty ? "true" : "false";
     };
 
-    root.addEventListener("click", async (event) => {
-        const button = event.target.closest("[data-engine-canvas-action]");
-        if (!button) return;
-
-        const action = button.dataset.engineCanvasAction;
-        const canvasId = button.dataset.canvasId;
+    root.addEventListener("click", (event) => {
+        const canvasButton = event.target.closest("[data-engine-canvas-action]");
+        const nodeButton = event.target.closest("[data-engine-node-action]");
 
         try {
-            if (action === "select") workspaceController.select(canvasId);
-            if (action === "create") workspaceController.create();
-            if (action === "duplicate") workspaceController.duplicate(canvasId);
-            if (action === "delete") {
-                if (window.confirm("¿Eliminar este lienzo?")) {
-                    workspaceController.remove(canvasId);
+            if (canvasButton) {
+                const action = canvasButton.dataset.engineCanvasAction;
+                const canvasId = canvasButton.dataset.canvasId;
+
+                if (action === "select") {
+                    canvasController.select(canvasId);
+                    nodeController.select(null);
+                }
+                if (action === "create") {
+                    canvasController.create();
+                    nodeController.select(null);
+                }
+                if (action === "duplicate") canvasController.duplicate(canvasId);
+                if (action === "delete" && window.confirm("¿Eliminar este lienzo?")) {
+                    canvasController.remove(canvasId);
+                    nodeController.select(null);
+                }
+                if (action === "up") canvasController.move(canvasId, "up");
+                if (action === "down") canvasController.move(canvasId, "down");
+                if (action === "visibility") canvasController.toggleVisibility(canvasId);
+            }
+
+            if (nodeButton) {
+                const action = nodeButton.dataset.engineNodeAction;
+                const nodeId = nodeButton.dataset.nodeId;
+
+                if (action === "select") nodeController.select(nodeId);
+                if (action === "visibility") nodeController.toggleVisibility();
+                if (action === "lock") nodeController.toggleLock();
+                if (action === "delete" && window.confirm("¿Eliminar este elemento?")) {
+                    nodeController.remove();
                 }
             }
-            if (action === "up") workspaceController.move(canvasId, "up");
-            if (action === "down") workspaceController.move(canvasId, "down");
-            if (action === "visibility") workspaceController.toggleVisibility(canvasId);
+
             render();
         } catch (error) {
             window.alert(error.message || "No fue posible completar la acción.");
         }
     });
 
-    inspectorName?.addEventListener("change", () => {
-        const selected = workspaceController.getSelected();
-        if (!selected) return;
-        workspaceController.rename(selected.id, inspectorName.value);
+    root.addEventListener("input", (event) => {
+        const field = event.target.closest("[data-node-field]");
+        if (!field) return;
+
+        const path = field.dataset.nodeField;
+        let value = field.value;
+        if (field.type === "number") value = Number(field.value);
+
+        try {
+            if (path === "name") nodeController.rename(value);
+            else nodeController.update(path, value);
+            render();
+        } catch (error) {
+            console.error(error);
+        }
     });
 
     app.subscribe((event) => {
         if (["document:changed", "document:replaced", "document:saved"].includes(event.type)) {
-            if (!workspaceController.getSelected()) workspaceController.initialize();
+            if (!canvasController.getSelected()) canvasController.initialize();
+            if (nodeController.selectedNodeId && !nodeController.getSelected()) {
+                nodeController.select(null);
+            }
             render();
         }
     });
@@ -150,7 +195,8 @@ async function mountBuilderEngine(root) {
         ) return;
         await persistenceModule.service.load();
         migrationModule.migrateIfNeeded(app);
-        workspaceController.initialize();
+        canvasController.initialize();
+        nodeController.initialize();
         render();
     });
 
@@ -159,7 +205,8 @@ async function mountBuilderEngine(root) {
         persistence: persistenceModule.service,
         workspace: persistenceModule.workspace,
         migration: migrationModule,
-        canvasWorkspace: workspaceController,
+        canvasWorkspace: canvasController,
+        nodeWorkspace: nodeController,
         config,
     });
 
@@ -169,7 +216,6 @@ async function mountBuilderEngine(root) {
 
 function renderCanvasNavigator(node, canvases, selectedId) {
     if (!node) return;
-
     node.innerHTML = `
         <div class="engine-canvas-nav-head">
             <strong>Lienzos</strong>
@@ -178,12 +224,9 @@ function renderCanvasNavigator(node, canvases, selectedId) {
         <div class="engine-canvas-nav-list">
             ${canvases.map((canvas, index) => `
                 <article class="engine-canvas-nav-item ${canvas.id === selectedId ? "active" : ""}">
-                    <button
-                        class="engine-canvas-select"
-                        type="button"
+                    <button class="engine-canvas-select" type="button"
                         data-engine-canvas-action="select"
-                        data-canvas-id="${escapeHtml(canvas.id)}"
-                    >
+                        data-canvas-id="${escapeHtml(canvas.id)}">
                         <span>${index + 1}</span>
                         <div>
                             <strong>${escapeHtml(canvas.name || `Lienzo ${index + 1}`)}</strong>
@@ -191,11 +234,11 @@ function renderCanvasNavigator(node, canvases, selectedId) {
                         </div>
                     </button>
                     <div class="engine-canvas-item-actions">
-                        <button type="button" title="Subir" data-engine-canvas-action="up" data-canvas-id="${escapeHtml(canvas.id)}">↑</button>
-                        <button type="button" title="Bajar" data-engine-canvas-action="down" data-canvas-id="${escapeHtml(canvas.id)}">↓</button>
-                        <button type="button" title="Duplicar" data-engine-canvas-action="duplicate" data-canvas-id="${escapeHtml(canvas.id)}">⧉</button>
-                        <button type="button" title="Mostrar u ocultar" data-engine-canvas-action="visibility" data-canvas-id="${escapeHtml(canvas.id)}">${canvas.visible === false ? "○" : "●"}</button>
-                        <button type="button" title="Eliminar" data-engine-canvas-action="delete" data-canvas-id="${escapeHtml(canvas.id)}">×</button>
+                        <button type="button" data-engine-canvas-action="up" data-canvas-id="${escapeHtml(canvas.id)}">↑</button>
+                        <button type="button" data-engine-canvas-action="down" data-canvas-id="${escapeHtml(canvas.id)}">↓</button>
+                        <button type="button" data-engine-canvas-action="duplicate" data-canvas-id="${escapeHtml(canvas.id)}">⧉</button>
+                        <button type="button" data-engine-canvas-action="visibility" data-canvas-id="${escapeHtml(canvas.id)}">${canvas.visible === false ? "○" : "●"}</button>
+                        <button type="button" data-engine-canvas-action="delete" data-canvas-id="${escapeHtml(canvas.id)}">×</button>
                     </div>
                 </article>
             `).join("")}
@@ -203,22 +246,14 @@ function renderCanvasNavigator(node, canvases, selectedId) {
     `;
 }
 
-function renderSelectedCanvas(node, canvas, assets) {
+function renderSelectedCanvas(node, canvas, assets, selectedNodeId) {
     if (!node) return;
     node.innerHTML = "";
     if (!canvas) {
         node.innerHTML = '<div class="engine-live-empty"><strong>Sin lienzo seleccionado</strong></div>';
         return;
     }
-    node.appendChild(renderCanvasPreview(canvas, { assets }));
-}
-
-function renderCanvasInspector(titleNode, nameInput, canvas) {
-    if (titleNode) titleNode.textContent = canvas ? "Propiedades del lienzo" : "Sin selección";
-    if (nameInput) {
-        nameInput.disabled = !canvas;
-        nameInput.value = canvas?.name || "";
-    }
+    node.appendChild(renderCanvasPreview(canvas, { assets, selectedNodeId }));
 }
 
 function showMigrationNotice(node, report) {

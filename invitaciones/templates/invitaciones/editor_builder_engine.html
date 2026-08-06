@@ -56,8 +56,14 @@
                 <nav>
                     <button type="button" disabled>Componentes</button>
                     <button type="button" disabled>Assets</button>
-                    <button type="button" disabled>Capas</button>
                 </nav>
+
+                <section class="engine-layers-panel">
+                    <div class="engine-canvas-nav-head">
+                        <strong>Capas</strong>
+                    </div>
+                    <div data-engine-layers-panel></div>
+                </section>
 
                 <a class="legacy-link" href="{{ legacy_editor_url }}">
                     Abrir editor anterior
@@ -82,30 +88,7 @@
 
             <aside class="engine-inspector">
                 <span class="section-kicker">Inspector</span>
-                <h2 data-engine-inspector-title>Sin selección</h2>
-                <p>
-                    Selecciona un lienzo para editar sus propiedades básicas.
-                </p>
-
-                <label class="engine-field">
-                    Nombre del lienzo
-                    <input type="text" data-engine-canvas-name disabled>
-                </label>
-
-                <dl>
-                    <div>
-                        <dt>Engine</dt>
-                        <dd>0.14.0</dd>
-                    </div>
-                    <div>
-                        <dt>Schema</dt>
-                        <dd>1</dd>
-                    </div>
-                    <div>
-                        <dt>Backend</dt>
-                        <dd>Django</dd>
-                    </div>
-                </dl>
+                <div data-engine-node-inspector></div>
             </aside>
         </div>
     </main>

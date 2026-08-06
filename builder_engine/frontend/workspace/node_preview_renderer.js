@@ -8,12 +8,10 @@ export function renderCanvasPreview(canvas, options = {}) {
     root.dataset.canvasId = canvas.id;
     root.style.minHeight = `${Number(canvas.height || 700)}px`;
 
-    if (canvas.background?.color) {
-        root.style.backgroundColor = canvas.background.color;
-    }
+    if (canvas.background?.color) root.style.backgroundColor = canvas.background.color;
 
     for (const node of orderedNodes(canvas.nodes || [])) {
-        const element = renderNode(node, assets);
+        const element = renderNode(node, assets, options.selectedNodeId);
         if (element) root.appendChild(element);
     }
 
@@ -27,7 +25,7 @@ export function renderCanvasPreview(canvas, options = {}) {
     return root;
 }
 
-function renderNode(node, assets) {
+function renderNode(node, assets, selectedNodeId) {
     if (!node || node.visible === false) return null;
 
     let element;
@@ -53,19 +51,12 @@ function renderNode(node, assets) {
             element.textContent = node.content?.label || node.content?.text || "Botón";
             break;
         case "COUNTDOWN":
-            element = document.createElement("div");
-            element.className = "engine-preview-countdown";
-            for (const child of node.children || []) {
-                const childElement = renderNode(child, assets);
-                if (childElement) element.appendChild(childElement);
-            }
-            break;
         case "CARD":
         case "CONTAINER":
         case "GROUP":
             element = document.createElement("div");
             for (const child of node.children || []) {
-                const childElement = renderNode(child, assets);
+                const childElement = renderNode(child, assets, selectedNodeId);
                 if (childElement) element.appendChild(childElement);
             }
             break;
@@ -75,6 +66,8 @@ function renderNode(node, assets) {
     }
 
     element.classList.add("engine-preview-node");
+    if (node.id === selectedNodeId) element.classList.add("is-selected");
+    element.dataset.engineNodeAction = "select";
     element.dataset.nodeId = node.id || "";
     element.dataset.nodeType = node.type || "";
     applyStyle(element, node.style || {}, node.type);
@@ -94,12 +87,12 @@ function applyStyle(element, style, type) {
         `rotate(${number(style.rotation, 0)}deg)`,
     ].join(" ");
     element.style.textAlign = style.textAlign || "center";
+    element.style.cursor = "pointer";
 
     if (element.tagName === "IMG" || element.tagName === "VIDEO") {
         element.style.height = "auto";
         element.style.objectFit = style.fit || "contain";
     }
-
     if (style.fontSize) element.style.fontSize = `${number(style.fontSize, 24)}px`;
     if (style.fontWeight) element.style.fontWeight = String(style.fontWeight);
     if (style.color) element.style.color = style.color;
