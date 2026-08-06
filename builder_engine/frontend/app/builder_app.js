@@ -57,6 +57,13 @@ export class BuilderApp {
         return this.getDocument();
     }
 
+    replaceDocument(document, meta = {}) {
+        this.#document.replace(document);
+        if (meta.markDirty !== false) this.#dirty = true;
+        this.#emit("document:replaced", meta);
+        return this.getDocument();
+    }
+
     markSaved() {
         this.#dirty = false;
         this.#emit("document:saved");
