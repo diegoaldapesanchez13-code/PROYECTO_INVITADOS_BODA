@@ -44,3 +44,8 @@ htmlcov/
 *.tmp
 *.swp
 *~
+
+# Respaldos y archivos generados locales
+*.zip
+arbol_*.txt
+inventario_*.txt
