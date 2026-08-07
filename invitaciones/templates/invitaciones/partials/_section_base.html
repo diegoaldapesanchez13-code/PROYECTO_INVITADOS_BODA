@@ -1,0 +1,40 @@
+{% if seccion.fondo_es_video and seccion.fondo %}
+    <video
+        class="panel-bg-video"
+        src="{{ seccion.fondo.url }}"
+        autoplay
+        muted
+        loop
+        playsinline
+        preload="metadata"
+    ></video>
+{% endif %}
+
+{% if seccion.imagen_titulo %}
+    <div class="section-full-media{% if media_wrap_class %} {{ media_wrap_class }}{% endif %}">
+        {% if seccion.imagen_titulo_es_video %}
+            <video
+                class="section-full-image{% if media_class %} {{ media_class }}{% endif %}"
+                src="{{ seccion.imagen_titulo.url }}"
+                autoplay
+                muted
+                loop
+                playsinline
+                preload="metadata"
+            ></video>
+        {% else %}
+            <img
+                class="section-full-image{% if media_class %} {{ media_class }}{% endif %}"
+                src="{{ seccion.imagen_titulo.url }}"
+                alt="{{ texto_alt|default:'Diseño completo de la sección' }}"
+                loading="lazy"
+                decoding="async"
+            >
+        {% endif %}
+    </div>
+{% else %}
+    {% include "invitaciones/partials/_section_header.html" with seccion=seccion titulo_default=titulo_default texto_alt=texto_alt %}
+{% endif %}
+
+{% include "invitaciones/partials/_capas_personalizadas.html" with seccion=seccion %}
+{% include "invitaciones/partials/_componentes_invitacion.html" with seccion=seccion %}

@@ -1,0 +1,338 @@
+{% if secciones.DETALLES.activa %}
+<section
+    class="section"
+    id="detalles"
+    data-invitation-section="DETALLES"
+    style="
+        order: {{ secciones.DETALLES.orden }};
+        {{ secciones.DETALLES.estilo_editor }}
+    "
+>
+    <div
+        class="panel details-panel section-header-panel
+        {% if secciones.DETALLES.imagen_titulo %}has-section-header-media has-section-full-image is-image-only-section{% endif %}
+        {% if secciones.DETALLES.fondo %}
+            bg-panel
+        {% endif %}
+        {% if secciones.DETALLES.fondo_es_video %}
+            bg-video-panel
+        {% endif %}"
+        {% if secciones.DETALLES.fondo and not secciones.DETALLES.fondo_es_video %}
+            style="
+                background-image: url('{{ secciones.DETALLES.fondo.url }}');
+                background-position: {{ secciones.DETALLES.posicion_fondo }};
+            "
+        {% endif %}
+    >
+        {% include "invitaciones/partials/_section_base.html" with seccion=secciones.DETALLES titulo_default="Detalles del evento" texto_alt="Detalles del evento" media_class="details-full-image" %}
+
+        {% with real_content=secciones.DETALLES.editor_config.realContent %}
+        <div
+            class="section-main-content real-content-layer details-real-content"
+            data-real-content-layout="{{ real_content.layout|default:'grid' }}"
+            data-real-content-align="{{ real_content.align|default:'center' }}"
+            data-real-content-shadow="{% if real_content.cardShadow %}1{% else %}0{% endif %}"
+            data-real-content-show-media="{% if real_content.showMedia != False %}1{% else %}0{% endif %}"
+            data-real-content-show-address="{% if real_content.showAddress != False %}1{% else %}0{% endif %}"
+            data-real-content-show-maps="{% if real_content.showMaps != False %}1{% else %}0{% endif %}"
+        >
+            <div class="event-detail-grid real-content-grid">
+
+                {% if real_content.items.ceremony.visible != False %}
+                <div
+                    class="info-box event-place-card"
+                    data-real-card="ceremony" data-native-element data-element-id="details-ceremony-card" data-element-type="container" data-element-role="event-place-card" data-element-section="DETALLES" data-element-item="ceremony"
+                    data-real-card-media-position="{{ real_content.items.ceremony.mediaPosition|default:'top' }}"
+                    data-real-card-map-display="{{ real_content.items.ceremony.mapDisplay|default:'button-map' }}"
+                    style="
+                        --real-card-bg: {{ real_content.items.ceremony.cardBg|default:'#ffffff' }};
+                        --native-card-width: {{ real_content.items.ceremony.cardWidth|default:100 }}%;
+                        --native-card-min-height: {{ real_content.items.ceremony.cardMinHeight|default:0 }}px;
+                        --native-card-padding: {{ real_content.items.ceremony.cardPadding|default:16 }}px;
+                        --native-card-gap: {{ real_content.items.ceremony.cardGap|default:8 }}px;
+                        --native-card-radius: {{ real_content.items.ceremony.cardRadius|default:0 }}px;
+                        --native-card-border-width: {{ real_content.items.ceremony.cardBorderWidth|default:0 }}px;
+                        --native-card-border-color: {{ real_content.items.ceremony.cardBorderColor|default:'#e5e7eb' }};
+                        --native-card-align: {{ real_content.items.ceremony.cardAlign|default:'center' }};
+                        --native-card-shadow: {% if real_content.items.ceremony.cardShadow %}0 14px 34px rgba(17, 24, 39, .16){% else %}none{% endif %};
+                        {% if real_content.items.ceremony.cardBackgroundAsset.url and not real_content.items.ceremony.cardBackgroundAsset.isVideo %}
+                            --native-card-background-image: url('{{ real_content.items.ceremony.cardBackgroundAsset.url }}');
+                        {% else %}
+                            --native-card-background-image: none;
+                        {% endif %}
+                        --native-card-background-fit: {{ real_content.items.ceremony.cardBackgroundFit|default:'cover' }};
+                        --native-card-background-position:
+                            {{ real_content.items.ceremony.cardBackgroundX|default:50 }}%
+                            {{ real_content.items.ceremony.cardBackgroundY|default:50 }}%;
+                        --native-card-background-opacity:
+                            {{ real_content.items.ceremony.cardBackgroundOpacity|default:0.35 }};
+                        --native-media-height: {{ real_content.items.ceremony.mediaHeight|default:220 }}px;
+                        --native-media-fit: {{ real_content.items.ceremony.mediaFit|default:'cover' }};
+                        --native-media-x: {{ real_content.items.ceremony.mediaX|default:50 }}%;
+                        --native-media-y: {{ real_content.items.ceremony.mediaY|default:50 }}%;
+                        order: {{ real_content.items.ceremony.order|default:1 }};
+                    "
+                >
+                    {% if real_content.showMedia != False and real_content.items.ceremony.showMedia != False and real_content.items.ceremony.mediaPosition != 'hidden' and evento.foto_ceremonia %}
+                        <div class="place-media" data-native-element data-element-id="details-ceremony-media" data-element-type="media" data-element-role="event-place-media" data-element-section="DETALLES" data-element-item="ceremony">
+                            {% if evento.ceremonia_es_video %}
+                                <video
+                                    src="{{ evento.foto_ceremonia.url }}"
+                                    muted
+                                    controls
+                                    playsinline
+                                    preload="metadata"
+                                ></video>
+                            {% else %}
+                                <img
+                                    src="{{ evento.foto_ceremonia.url }}"
+                                    alt="{{ evento.lugar_misa }}"
+                                    loading="lazy"
+                                    decoding="async"
+                                >
+                            {% endif %}
+                        </div>
+                    {% endif %}
+
+                    {% if real_content.items.ceremony.showTitle != False %}
+                        <div class="card-title" data-native-element data-element-id="details-ceremony-title" data-element-type="text" data-element-role="event-place-title" data-element-section="DETALLES" data-element-item="ceremony">
+                            {{ real_content.items.ceremony.label|default:"Ceremonia" }}
+                        </div>
+                    {% endif %}
+
+                    {% if real_content.items.ceremony.showDate != False and evento.fecha_misa %}
+                        <div class="value" data-native-element data-element-id="details-ceremony-date" data-element-type="date" data-element-role="event-place-date" data-element-section="DETALLES" data-element-item="ceremony">
+                            {{ evento.fecha_misa|date:"d/m/Y" }}
+                        </div>
+                    {% endif %}
+
+                    {% if real_content.items.ceremony.showTime != False and evento.fecha_misa %}
+                        <p class="place-time" data-native-element data-element-id="details-ceremony-time" data-element-type="time" data-element-role="event-place-time" data-element-section="DETALLES" data-element-item="ceremony">
+                            {{ evento.fecha_misa|date:"h:i A" }}
+                        </p>
+                    {% endif %}
+
+                    {% if real_content.items.ceremony.showPlace != False and evento.lugar_misa %}
+                        <p class="place-name" data-native-element data-element-id="details-ceremony-place" data-element-type="text" data-element-role="event-place-name" data-element-section="DETALLES" data-element-item="ceremony">
+                            {{ evento.lugar_misa }}
+                        </p>
+                    {% endif %}
+
+                    {% if real_content.showAddress != False and real_content.items.ceremony.showAddress != False and evento.direccion_ceremonia %}
+                        <p class="place-address" data-native-element data-element-id="details-ceremony-address" data-element-type="text" data-element-role="event-place-address" data-element-section="DETALLES" data-element-item="ceremony">
+                            {{ evento.direccion_ceremonia }}
+                        </p>
+                    {% endif %}
+
+                    {% if real_content.items.ceremony.showButton != False and real_content.items.ceremony.mapDisplay != 'hidden' and real_content.items.ceremony.mapDisplay != 'map-only' and evento.link_mapa_misa %}
+                        <a
+                            class="btn secondary" data-native-element data-element-id="details-ceremony-button" data-element-type="button" data-element-role="event-place-button" data-element-section="DETALLES" data-element-item="ceremony"
+                            href="{{ evento.link_mapa_misa }}"
+                            target="_blank"
+                            rel="noopener"
+                        >
+                            {{ real_content.items.ceremony.buttonLabel|default:"Ver ubicacion" }}
+                        </a>
+                    {% endif %}
+
+                    {% if real_content.showMaps != False and real_content.items.ceremony.showMaps != False and real_content.items.ceremony.mapDisplay != 'hidden' and real_content.items.ceremony.mapDisplay != 'button-only' and evento.mostrar_mapa %}
+                        {% if real_content.items.ceremony.mapAsset.url %}
+                            <div class="map-card map-image-card" data-native-element data-element-id="details-ceremony-map" data-element-type="map" data-element-role="event-place-map" data-element-section="DETALLES" data-element-item="ceremony">
+                                {% if real_content.items.ceremony.mapAsset.isVideo %}
+                                    <video
+                                        src="{{ real_content.items.ceremony.mapAsset.url }}"
+                                        muted
+                                        controls
+                                        playsinline
+                                        preload="metadata"
+                                    ></video>
+                                {% else %}
+                                    <img
+                                        src="{{ real_content.items.ceremony.mapAsset.url }}"
+                                        alt="Ubicacion de la ceremonia"
+                                        loading="lazy"
+                                        decoding="async"
+                                    >
+                                {% endif %}
+                            </div>
+                        {% elif evento.mapa_misa_embed_html %}
+                            <div class="map-card">
+                                <div class="embed-map">
+                                    {{ evento.mapa_misa_embed_html }}
+                                </div>
+                            </div>
+                        {% elif evento.link_mapa_misa %}
+                            <div class="map-card">
+                                <iframe
+                                    src="{{ evento.link_mapa_misa }}"
+                                    loading="lazy"
+                                    allowfullscreen
+                                    title="Mapa de la ceremonia"
+                                ></iframe>
+                            </div>
+                        {% endif %}
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                {% if real_content.items.reception.visible != False %}
+                <div
+                    class="info-box event-place-card"
+                    data-real-card="reception" data-native-element data-element-id="details-reception-card" data-element-type="container" data-element-role="event-place-card" data-element-section="DETALLES" data-element-item="reception"
+                    data-real-card-media-position="{{ real_content.items.reception.mediaPosition|default:'top' }}"
+                    data-real-card-map-display="{{ real_content.items.reception.mapDisplay|default:'button-map' }}"
+                    style="
+                        --real-card-bg: {{ real_content.items.reception.cardBg|default:'#ffffff' }};
+                        --native-card-width: {{ real_content.items.reception.cardWidth|default:100 }}%;
+                        --native-card-min-height: {{ real_content.items.reception.cardMinHeight|default:0 }}px;
+                        --native-card-padding: {{ real_content.items.reception.cardPadding|default:16 }}px;
+                        --native-card-gap: {{ real_content.items.reception.cardGap|default:8 }}px;
+                        --native-card-radius: {{ real_content.items.reception.cardRadius|default:0 }}px;
+                        --native-card-border-width: {{ real_content.items.reception.cardBorderWidth|default:0 }}px;
+                        --native-card-border-color: {{ real_content.items.reception.cardBorderColor|default:'#e5e7eb' }};
+                        --native-card-align: {{ real_content.items.reception.cardAlign|default:'center' }};
+                        --native-card-shadow: {% if real_content.items.reception.cardShadow %}0 14px 34px rgba(17, 24, 39, .16){% else %}none{% endif %};
+                        {% if real_content.items.reception.cardBackgroundAsset.url and not real_content.items.reception.cardBackgroundAsset.isVideo %}
+                            --native-card-background-image: url('{{ real_content.items.reception.cardBackgroundAsset.url }}');
+                        {% else %}
+                            --native-card-background-image: none;
+                        {% endif %}
+                        --native-card-background-fit: {{ real_content.items.reception.cardBackgroundFit|default:'cover' }};
+                        --native-card-background-position:
+                            {{ real_content.items.reception.cardBackgroundX|default:50 }}%
+                            {{ real_content.items.reception.cardBackgroundY|default:50 }}%;
+                        --native-card-background-opacity:
+                            {{ real_content.items.reception.cardBackgroundOpacity|default:0.35 }};
+                        --native-media-height: {{ real_content.items.reception.mediaHeight|default:220 }}px;
+                        --native-media-fit: {{ real_content.items.reception.mediaFit|default:'cover' }};
+                        --native-media-x: {{ real_content.items.reception.mediaX|default:50 }}%;
+                        --native-media-y: {{ real_content.items.reception.mediaY|default:50 }}%;
+                        order: {{ real_content.items.reception.order|default:2 }};
+                    "
+                >
+                    {% if real_content.showMedia != False and real_content.items.reception.showMedia != False and real_content.items.reception.mediaPosition != 'hidden' and evento.foto_recepcion %}
+                        <div class="place-media" data-native-element data-element-id="details-reception-media" data-element-type="media" data-element-role="event-place-media" data-element-section="DETALLES" data-element-item="reception">
+                            {% if evento.recepcion_es_video %}
+                                <video
+                                    src="{{ evento.foto_recepcion.url }}"
+                                    muted
+                                    controls
+                                    playsinline
+                                    preload="metadata"
+                                ></video>
+                            {% else %}
+                                <img
+                                    src="{{ evento.foto_recepcion.url }}"
+                                    alt="{{ evento.lugar_fiesta }}"
+                                    loading="lazy"
+                                    decoding="async"
+                                >
+                            {% endif %}
+                        </div>
+                    {% endif %}
+
+                    {% if real_content.items.reception.showTitle != False %}
+                        <div class="card-title" data-native-element data-element-id="details-reception-title" data-element-type="text" data-element-role="event-place-title" data-element-section="DETALLES" data-element-item="reception">
+                            {{ real_content.items.reception.label|default:"Recepcion" }}
+                        </div>
+                    {% endif %}
+
+                    {% if real_content.items.reception.showDate != False and evento.fecha_fiesta %}
+                        <div class="value" data-native-element data-element-id="details-reception-date" data-element-type="date" data-element-role="event-place-date" data-element-section="DETALLES" data-element-item="reception">
+                            {{ evento.fecha_fiesta|date:"d/m/Y" }}
+                        </div>
+                    {% endif %}
+
+                    {% if real_content.items.reception.showTime != False and evento.fecha_fiesta %}
+                        <p class="place-time" data-native-element data-element-id="details-reception-time" data-element-type="time" data-element-role="event-place-time" data-element-section="DETALLES" data-element-item="reception">
+                            {{ evento.fecha_fiesta|date:"h:i A" }}
+                        </p>
+                    {% endif %}
+
+                    {% if real_content.items.reception.showPlace != False and evento.lugar_fiesta %}
+                        <p class="place-name" data-native-element data-element-id="details-reception-place" data-element-type="text" data-element-role="event-place-name" data-element-section="DETALLES" data-element-item="reception">
+                            {{ evento.lugar_fiesta }}
+                        </p>
+                    {% endif %}
+
+                    {% if real_content.showAddress != False and real_content.items.reception.showAddress != False and evento.direccion_recepcion %}
+                        <p class="place-address" data-native-element data-element-id="details-reception-address" data-element-type="text" data-element-role="event-place-address" data-element-section="DETALLES" data-element-item="reception">
+                            {{ evento.direccion_recepcion }}
+                        </p>
+                    {% endif %}
+
+                    {% if real_content.items.reception.showButton != False and real_content.items.reception.mapDisplay != 'hidden' and real_content.items.reception.mapDisplay != 'map-only' and evento.link_mapa_fiesta %}
+                        <a
+                            class="btn secondary" data-native-element data-element-id="details-reception-button" data-element-type="button" data-element-role="event-place-button" data-element-section="DETALLES" data-element-item="reception"
+                            href="{{ evento.link_mapa_fiesta }}"
+                            target="_blank"
+                            rel="noopener"
+                        >
+                            {{ real_content.items.reception.buttonLabel|default:"Ver ubicacion" }}
+                        </a>
+                    {% elif real_content.items.reception.showButton != False and real_content.items.reception.mapDisplay != 'hidden' and real_content.items.reception.mapDisplay != 'map-only' and evento.link_mapa %}
+                        <a
+                            class="btn secondary" data-native-element data-element-id="details-reception-button" data-element-type="button" data-element-role="event-place-button" data-element-section="DETALLES" data-element-item="reception"
+                            href="{{ evento.link_mapa }}"
+                            target="_blank"
+                            rel="noopener"
+                        >
+                            {{ real_content.items.reception.buttonLabel|default:"Ver ubicacion" }}
+                        </a>
+                    {% endif %}
+
+                    {% if real_content.showMaps != False and real_content.items.reception.showMaps != False and real_content.items.reception.mapDisplay != 'hidden' and real_content.items.reception.mapDisplay != 'button-only' and evento.mostrar_mapa %}
+                        {% if real_content.items.reception.mapAsset.url %}
+                            <div class="map-card map-image-card" data-native-element data-element-id="details-reception-map" data-element-type="map" data-element-role="event-place-map" data-element-section="DETALLES" data-element-item="reception">
+                                {% if real_content.items.reception.mapAsset.isVideo %}
+                                    <video
+                                        src="{{ real_content.items.reception.mapAsset.url }}"
+                                        muted
+                                        controls
+                                        playsinline
+                                        preload="metadata"
+                                    ></video>
+                                {% else %}
+                                    <img
+                                        src="{{ real_content.items.reception.mapAsset.url }}"
+                                        alt="Ubicacion de la recepcion"
+                                        loading="lazy"
+                                        decoding="async"
+                                    >
+                                {% endif %}
+                            </div>
+                        {% elif evento.mapa_fiesta_embed_html %}
+                            <div class="map-card">
+                                <div class="embed-map">
+                                    {{ evento.mapa_fiesta_embed_html }}
+                                </div>
+                            </div>
+                        {% elif evento.link_mapa_fiesta %}
+                            <div class="map-card">
+                                <iframe
+                                    src="{{ evento.link_mapa_fiesta }}"
+                                    loading="lazy"
+                                    allowfullscreen
+                                    title="Mapa de la fiesta"
+                                ></iframe>
+                            </div>
+                        {% elif evento.link_mapa %}
+                            <div class="map-card">
+                                <iframe
+                                    src="{{ evento.link_mapa }}"
+                                    loading="lazy"
+                                    allowfullscreen
+                                    title="Mapa de la fiesta"
+                                ></iframe>
+                            </div>
+                        {% endif %}
+                    {% endif %}
+                </div>
+                {% endif %}
+
+            </div>
+        </div>
+        {% endwith %}
+    </div>
+</section>
+{% endif %}

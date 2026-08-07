@@ -16,10 +16,28 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.conf import settings
+from django.conf.urls.static import static
+
+from core.services.permisos import usuario_es_dirtec_operativo
+
+
+def dirtec_admin_has_permission(request):
+    user = request.user
+    return bool(
+        user.is_active
+        and user.is_staff
+        and usuario_es_dirtec_operativo(user)
+    )
+
+
+admin.site.has_permission = dirtec_admin_has_permission
 
 urlpatterns = [
     # Ruta para el panel administrativo de Django.
     path('admin/', admin.site.urls),
+    path('', include('core.urls')),
+    path('suscripcion/', include('suscripciones.urls')),
     # Todas las demás rutas se delegan a la aplicación 'invitaciones'.
     path('', include('invitaciones.urls')),
-]
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

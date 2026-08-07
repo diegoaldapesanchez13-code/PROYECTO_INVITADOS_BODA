@@ -1,0 +1,12 @@
+{
+  "sprint": "11.3.1",
+  "name": "Visual Transform Lab",
+  "requires": [
+    "11.1",
+    "11.2",
+    "11.2.1",
+    "11.3"
+  ],
+  "readOnly": true,
+  "route": "/dashboard/editor-invitacion/<evento_id>/engine/transform-lab/"
+}

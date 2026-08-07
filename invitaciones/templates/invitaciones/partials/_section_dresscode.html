@@ -1,0 +1,59 @@
+{% if secciones.DRESS_CODE.activa %}
+<section class="section dress-code-section" id="dress-code" data-invitation-section="DRESS_CODE"
+    style="order: {{ secciones.DRESS_CODE.orden }}; {{ secciones.DRESS_CODE.estilo_editor }}">
+    <div class="panel dress-code-panel section-header-panel
+        {% if secciones.DRESS_CODE.fondo %}bg-panel{% endif %}
+        {% if secciones.DRESS_CODE.fondo_es_video %}bg-video-panel{% endif %}
+        {% if secciones.DRESS_CODE.imagen_titulo %}has-section-header-media{% endif %}"
+        {% if secciones.DRESS_CODE.fondo and not secciones.DRESS_CODE.fondo_es_video %}
+            style="background-image: url('{{ secciones.DRESS_CODE.fondo.url }}'); background-position: {{ secciones.DRESS_CODE.posicion_fondo }};"
+        {% endif %}>
+        {% include "invitaciones/partials/_section_base.html" with seccion=secciones.DRESS_CODE titulo_default="Dress Code" texto_alt="Portada de Dress Code" media_class="dress-code-full-image" %}
+        <div class="dress-code-content section-main-content" data-native-element
+            data-element-id="dress-code-content" data-element-type="container"
+            data-element-role="dress-code-content" data-element-section="DRESS_CODE">
+            <div class="dress-grid" data-native-element data-element-id="dress-code-grid"
+                data-element-type="container" data-element-role="dress-code-grid"
+                data-element-section="DRESS_CODE">
+                <div class="info-box dress-section-card" data-native-element
+                    data-element-id="dress-code-card" data-element-type="container"
+                    data-element-role="dress-code-card" data-element-section="DRESS_CODE">
+                    <div class="value dress-code-value" data-native-element
+                        data-element-id="dress-code-value" data-element-type="text"
+                        data-element-role="dress-code-value" data-element-section="DRESS_CODE">
+                        {{ evento.dress_code|default:"Formal elegante" }}
+                    </div>
+                    {% if evento.dress_code_permitido_imagen %}
+                    <div class="dress-card allowed" data-native-element
+                        data-element-id="dress-code-allowed-card" data-element-type="container"
+                        data-element-role="dress-code-allowed-card" data-element-section="DRESS_CODE">
+                        <div class="label" data-native-element data-element-id="dress-code-allowed-label"
+                            data-element-type="text" data-element-role="dress-code-allowed-label"
+                            data-element-section="DRESS_CODE">Permitido</div>
+                        <img class="dress-image" src="{{ evento.dress_code_permitido_imagen.url }}"
+                            alt="Ejemplos de vestimenta permitida" loading="lazy" decoding="async"
+                            data-native-element data-element-id="dress-code-allowed-image"
+                            data-element-type="media" data-element-role="dress-code-allowed-image"
+                            data-element-section="DRESS_CODE">
+                    </div>
+                    {% endif %}
+                    {% if evento.dress_code_prohibido_imagen %}
+                    <div class="dress-card prohibited" data-native-element
+                        data-element-id="dress-code-prohibited-card" data-element-type="container"
+                        data-element-role="dress-code-prohibited-card" data-element-section="DRESS_CODE">
+                        <div class="label" data-native-element data-element-id="dress-code-prohibited-label"
+                            data-element-type="text" data-element-role="dress-code-prohibited-label"
+                            data-element-section="DRESS_CODE">No permitido</div>
+                        <img class="dress-image" src="{{ evento.dress_code_prohibido_imagen.url }}"
+                            alt="Ejemplos de vestimenta no permitida" loading="lazy" decoding="async"
+                            data-native-element data-element-id="dress-code-prohibited-image"
+                            data-element-type="media" data-element-role="dress-code-prohibited-image"
+                            data-element-section="DRESS_CODE">
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endif %}

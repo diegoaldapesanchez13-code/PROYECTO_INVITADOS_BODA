@@ -1,0 +1,78 @@
+{% if secciones.ALBUM_COMPARTIDO.activa and evento.mostrar_album_compartido and evento.link_album_compartido %}
+<section
+    class="section"
+    id="album-compartido"
+    data-invitation-section="ALBUM_COMPARTIDO"
+    style="
+        order: {{ secciones.ALBUM_COMPARTIDO.orden }};
+        {{ secciones.ALBUM_COMPARTIDO.estilo_editor }}
+    "
+>
+    <div
+        class="panel shared-album-panel section-header-panel
+        {% if secciones.ALBUM_COMPARTIDO.imagen_titulo %}has-section-header-media has-section-full-image{% endif %}
+        {% if secciones.ALBUM_COMPARTIDO.fondo %}bg-panel{% endif %}
+        {% if secciones.ALBUM_COMPARTIDO.fondo_es_video %}bg-video-panel{% endif %}"
+        {% if secciones.ALBUM_COMPARTIDO.fondo and not secciones.ALBUM_COMPARTIDO.fondo_es_video %}
+            style="
+                background-image: url('{{ secciones.ALBUM_COMPARTIDO.fondo.url }}');
+                background-position: {{ secciones.ALBUM_COMPARTIDO.posicion_fondo }};
+            "
+        {% endif %}
+    >
+        {% include "invitaciones/partials/_section_base.html" with seccion=secciones.ALBUM_COMPARTIDO titulo_default="Álbum compartido" texto_alt="Álbum compartido" media_class="shared-album-full-image" %}
+
+        <div
+            class="section-main-content"
+            data-native-element
+            data-element-id="shared-album-content"
+            data-element-type="container"
+            data-element-role="shared-album-content"
+            data-element-section="ALBUM_COMPARTIDO"
+        >
+            <div
+                class="shared-album-content"
+                data-native-element
+                data-element-id="shared-album-card"
+                data-element-type="container"
+                data-element-role="shared-album-card"
+                data-element-section="ALBUM_COMPARTIDO"
+            >
+                <p
+                    class="shared-album-message"
+                    data-native-element
+                    data-element-id="shared-album-message"
+                    data-element-type="text"
+                    data-element-role="shared-album-message"
+                    data-element-section="ALBUM_COMPARTIDO"
+                >
+                    Comparte con nosotros las fotos y videos que captures durante el evento.
+                </p>
+
+                <div
+                    class="btn-row"
+                    data-native-element
+                    data-element-id="shared-album-actions"
+                    data-element-type="container"
+                    data-element-role="shared-album-actions"
+                    data-element-section="ALBUM_COMPARTIDO"
+                >
+                    <a
+                        class="btn"
+                        href="{{ evento.link_album_compartido }}"
+                        data-native-element
+                        data-element-id="shared-album-button"
+                        data-element-type="button"
+                        data-element-role="shared-album-button"
+                        data-element-section="ALBUM_COMPARTIDO"
+                        target="_blank"
+                        rel="noopener"
+                    >
+                        Subir fotos y videos
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endif %}

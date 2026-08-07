@@ -1,0 +1,117 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DIRTEC Builder Engine · {{ evento }}</title>
+    <link rel="stylesheet" href="{% static 'invitaciones/css/builder_engine_editor.css' %}?v=0.14.0">
+</head>
+<body>
+    {% csrf_token %}
+    {{ builder_bootstrap|json_script:"dirtec-builder-bootstrap" }}
+
+    <main
+        class="engine-shell"
+        data-builder-engine-root
+        data-bootstrap-id="dirtec-builder-bootstrap"
+        data-status="LOADING"
+        data-dirty="false"
+    >
+        <header class="engine-topbar">
+            <div class="engine-brand">
+                <a href="{{ dashboard_url }}">DIRTEC Event Studio</a>
+                <span>/</span>
+                <strong>Builder Engine</strong>
+            </div>
+
+            <div class="engine-document" data-engine-document-info>
+                <strong>{{ evento }}</strong>
+                <span>Cargando documento…</span>
+            </div>
+
+            <div class="engine-actions">
+                <span class="engine-status" data-engine-status>Cargando…</span>
+                <button type="button" data-engine-action="reload">Recargar</button>
+                <button type="button" data-engine-action="save">Guardar</button>
+                <button class="primary" type="button" data-engine-action="publish">Publicar</button>
+            </div>
+        </header>
+
+                <div class="engine-migration-notice" data-engine-migration-notice hidden></div>
+
+        <div class="engine-workspace">
+            <aside class="engine-sidebar">
+                <section>
+                    <span class="section-kicker">Documento</span>
+                    <h1>{{ evento }}</h1>
+                    <p>
+                        Esta es la nueva ruta oficial del DIRTEC Builder Engine.
+                        El editor anterior continúa disponible como respaldo.
+                    </p>
+                </section>
+
+                <div class="engine-canvas-navigator" data-engine-canvas-nav></div>
+
+                <nav>
+                    <button type="button" class="active" data-engine-panel-toggle="components">Componentes</button>
+                    <button type="button" class="active">Assets</button>
+                </nav>
+
+                <section class="engine-component-library" data-engine-component-library></section>
+
+                <section class="engine-asset-library" data-engine-asset-library></section>
+
+                <section class="engine-layers-panel">
+                    <div class="engine-canvas-nav-head">
+                        <strong>Capas</strong>
+                    </div>
+                    <div data-engine-layers-panel></div>
+                </section>
+
+                <a class="legacy-link" href="{{ legacy_editor_url }}">
+                    Abrir editor anterior
+                </a>
+            </aside>
+
+            <section class="engine-stage">
+                <div class="engine-stage-toolbar">
+                    <div>
+                        <strong>Canvas Workspace</strong>
+                        <small>Persistencia Django activa</small>
+                    </div>
+                    <div class="engine-device-selector">
+                        <button class="active" type="button" data-engine-device="mobile">iPhone</button>
+                        <button type="button" data-engine-device="tablet">Tablet</button>
+                        <button type="button" data-engine-device="desktop">Desktop</button>
+                    </div>
+                </div>
+
+                                <div class="engine-active-canvas" data-engine-active-canvas></div>
+            </section>
+
+            <aside class="engine-inspector">
+                <span class="section-kicker">Inspector</span>
+                <div data-engine-node-inspector></div>
+            </aside>
+        </div>
+    </main>
+
+    <script
+        type="module"
+        src="{% static 'invitaciones/builder_engine/integrations/django/editor_bootstrap.js' %}?v=0.14.0"
+    ></script>
+    <script
+        type="module"
+        src="{% static 'invitaciones/builder_engine/integrations/django/direct_manipulation_mount.js' %}?v=0.18.0"
+    ></script>
+    <script
+        type="module"
+        src="{% static 'invitaciones/builder_engine/integrations/django/component_library_mount.js' %}?v=0.19.0"
+    ></script>
+    <script
+        type="module"
+        src="{% static 'invitaciones/builder_engine/integrations/django/asset_library_mount.js' %}?v=0.21.0"
+    ></script>
+</body>
+</html>

@@ -1,0 +1,60 @@
+{% if seccion.objeto %}
+    {% with componentes=seccion.objeto.componentes.all %}
+        {% if componentes %}
+            <div class="invitation-components" aria-label="Componentes visuales de la seccion">
+                {% for componente in componentes %}
+                    {% if not componente.hidden %}
+                        <div
+                            class="invitation-component invitation-component-{{ componente.tipo|lower }}"
+                            data-component-id="{{ componente.id }}"
+                            data-layout-mode="{{ componente.layout_mode|default:'ABSOLUTE' }}"
+                            data-coordinate-space="{{ componente.coordinate_space|default:'SECTION' }}"
+                            data-parent-key="{{ componente.parent_key|default:'' }}"
+                            data-component-locked="{% if componente.locked %}1{% else %}0{% endif %}"
+                            style="
+                                --component-x: {{ componente.x }}%;
+                                --component-y: {{ componente.y }}%;
+                                --component-width: {{ componente.width }}%;
+                                --component-height: {{ componente.height }}%;
+                                --component-rotation: {{ componente.rotation }}deg;
+                                --component-opacity: {{ componente.opacity }};
+                                --component-z: {{ componente.z_index }};
+                            "
+                        >
+                            {% if componente.tipo == 'TEXTO' %}
+                                <div
+                                    class="invitation-component-text"
+                                    style="
+                                        {% if componente.properties.color %}color: {{ componente.properties.color }};{% endif %}
+                                        {% if componente.properties.fontSize %}font-size: {{ componente.properties.fontSize }}px;{% endif %}
+                                        {% if componente.properties.fontFamily %}font-family: '{{ componente.properties.fontFamily }}', var(--font-title);{% endif %}
+                                    "
+                                >
+                                    {{ componente.properties.text|default:'Nuevo texto' }}
+                                </div>
+                            {% elif componente.tipo == 'IMAGEN' %}
+                                {% if componente.properties.src %}
+                                    <img
+                                        src="{{ componente.properties.src }}"
+                                        alt="{{ componente.properties.alt|default:'Imagen' }}"
+                                        loading="lazy"
+                                        decoding="async"
+                                        style="object-fit: {{ componente.properties.fit|default:'contain' }};"
+                                    >
+                                {% endif %}
+                            {% elif componente.tipo == 'BOTON' %}
+                                <a
+                                    class="invitation-component-button {% if componente.properties.style == 'secondary' %}secondary{% endif %}"
+                                    href="{{ componente.properties.href|default:'#' }}"
+                                    {% if componente.properties.href and componente.properties.href != '#' %}target="_blank" rel="noopener"{% endif %}
+                                >
+                                    {{ componente.properties.label|default:'Boton' }}
+                                </a>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+{% endif %}

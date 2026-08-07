@@ -1,0 +1,88 @@
+.admin-image-preview {
+    width: 150px;
+    height: 96px;
+    object-fit: cover;
+    border: 1px solid var(--border-color, #d0d7de);
+    border-radius: 8px;
+    background: #f6f7f8;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, .08);
+}
+
+.admin-empty-preview {
+    display: inline-flex;
+    align-items: center;
+    min-height: 34px;
+    padding: 6px 10px;
+    border: 1px dashed var(--border-color, #c9d1d9);
+    border-radius: 6px;
+    color: var(--body-quiet-color, #6b7280);
+    background: rgba(0, 0, 0, .03);
+}
+
+.admin-action-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 34px;
+    padding: 7px 12px;
+    border-radius: 6px;
+    background: var(--button-bg, #417690);
+    color: var(--button-fg, #fff) !important;
+    text-decoration: none;
+    font-weight: 700;
+}
+
+.admin-action-button.small {
+    min-height: 28px;
+    padding: 4px 9px;
+    font-size: 12px;
+}
+
+.admin-palette-preview {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px;
+    border: 1px solid var(--border-color, #d0d7de);
+    border-radius: 999px;
+    background: #fff;
+}
+
+.admin-palette-preview span {
+    width: 28px;
+    height: 28px;
+    border: 1px solid rgba(0, 0, 0, .12);
+    border-radius: 999px;
+}
+
+.admin-live-preview {
+    display: block;
+    width: 150px;
+    height: 96px;
+    object-fit: cover;
+    margin-top: 8px;
+    border: 1px solid var(--border-color, #d0d7de);
+    border-radius: 8px;
+}
+
+.admin-dynamic-note {
+    margin: 10px 0;
+    padding: 10px 12px;
+    border-left: 4px solid var(--link-fg, #447e9b);
+    background: rgba(68, 126, 155, .08);
+    color: var(--body-fg, #333);
+}
+
+.field-preview .readonly,
+.field-preview_foto_portada .readonly,
+.field-preview_dress_permitido .readonly,
+.field-preview_dress_prohibido .readonly,
+.field-preview_fondo_invitacion .readonly,
+.field-preview_fondo_cuenta_regresiva .readonly,
+.field-preview_fondo_detalles .readonly,
+.field-preview_fondo_album .readonly,
+.field-preview_fondo_menu .readonly,
+.field-preview_fondo_regalos .readonly,
+.field-preview_fondo_rsvp .readonly {
+    overflow: visible;
+}

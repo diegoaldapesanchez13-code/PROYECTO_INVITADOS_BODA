@@ -1,0 +1,102 @@
+{% if secciones.REGALOS.activa and evento.mostrar_regalos %}
+<section
+    class="section"
+    id="regalos"
+    data-invitation-section="REGALOS"
+    style="
+        order: {{ secciones.REGALOS.orden }};
+        {{ secciones.REGALOS.estilo_editor }}
+    "
+>
+    <div
+        class="panel gifts-panel section-header-panel
+        {% if secciones.REGALOS.imagen_titulo %}has-section-header-media has-section-full-image{% endif %}
+        {% if secciones.REGALOS.fondo %}bg-panel{% endif %}
+        {% if secciones.REGALOS.fondo_es_video %}bg-video-panel{% endif %}"
+        {% if secciones.REGALOS.fondo and not secciones.REGALOS.fondo_es_video %}
+            style="
+                background-image: url('{{ secciones.REGALOS.fondo.url }}');
+                background-position: {{ secciones.REGALOS.posicion_fondo }};
+            "
+        {% endif %}
+    >
+        {% include "invitaciones/partials/_section_base.html" with seccion=secciones.REGALOS titulo_default="Mesa de regalos" texto_alt="Mesa de regalos" media_class="gifts-full-image" %}
+
+        {% with real_content=secciones.REGALOS.editor_config.realContent %}
+        <div
+            class="section-main-content real-content-layer"
+            data-real-content-layout="{{ real_content.layout|default:'grid' }}"
+            data-real-content-align="{{ real_content.align|default:'center' }}"
+            data-real-content-shadow="{% if real_content.cardShadow %}1{% else %}0{% endif %}"
+        >
+            <div class="gift-grid">
+                {% if evento.link_mesa_regalos %}
+                    <a
+                        class="gift-box"
+                        href="{{ evento.link_mesa_regalos }}"
+                        target="_blank"
+                        rel="noopener"
+                    >
+                        <span class="gift-kind">Mesa principal</span>
+                        <strong>Mesa de regalos</strong>
+                    </a>
+                {% endif %}
+
+                {% for regalo in regalos %}
+                    {% if regalo.es_deposito or regalo.banco or regalo.titular or regalo.numero_cuenta or regalo.clabe %}
+                        <div class="gift-box deposit-box">
+                            <span class="gift-kind">Depósito</span>
+                            <strong>{{ regalo.nombre }}</strong>
+
+                            {% if regalo.banco %}
+                                <p><b>Banco:</b> {{ regalo.banco }}</p>
+                            {% endif %}
+
+                            {% if regalo.titular %}
+                                <p><b>Titular:</b> {{ regalo.titular }}</p>
+                            {% endif %}
+
+                            {% if regalo.numero_cuenta %}
+                                <p><b>Cuenta:</b> {{ regalo.numero_cuenta }}</p>
+                            {% endif %}
+
+                            {% if regalo.clabe %}
+                                <p><b>CLABE:</b> {{ regalo.clabe }}</p>
+                            {% endif %}
+
+                            {% if regalo.instrucciones %}
+                                <small>{{ regalo.instrucciones }}</small>
+                            {% endif %}
+                        </div>
+
+                    {% elif regalo.url %}
+                        <a
+                            class="gift-box"
+                            href="{{ regalo.url }}"
+                            target="_blank"
+                            rel="noopener"
+                        >
+                            <span class="gift-kind">Tienda</span>
+                            <strong>{{ regalo.nombre }}</strong>
+                        </a>
+
+                    {% else %}
+                        <div class="gift-box">
+                            <span class="gift-kind">Regalo</span>
+                            <strong>{{ regalo.nombre }}</strong>
+                            <p>Información pendiente de completar.</p>
+                        </div>
+                    {% endif %}
+                {% empty %}
+                    {% if not evento.link_mesa_regalos %}
+                        <p class="section-copy">
+                            Aún no se han agregado opciones de regalo.
+                        </p>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+        {% endwith %}
+    </div>
+</section>
+{% endif %}

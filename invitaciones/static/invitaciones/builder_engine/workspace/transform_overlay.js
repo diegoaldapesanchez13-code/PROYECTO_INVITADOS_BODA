@@ -1,0 +1,6 @@
+export function createTransformOverlay() {
+ const overlay=document.createElement("div"); overlay.className="engine-transform-overlay"; overlay.hidden=true;
+ const hs=[["nw","Esquina superior izquierda"],["n","Borde superior"],["ne","Esquina superior derecha"],["e","Borde derecho"],["se","Esquina inferior derecha"],["s","Borde inferior"],["sw","Esquina inferior izquierda"],["w","Borde izquierdo"]];
+ overlay.innerHTML=`<div class="engine-transform-box">${hs.map(([h,l])=>`<button type="button" class="engine-transform-handle resize ${h}" data-transform-mode="resize" data-handle="${h}" aria-label="Redimensionar: ${l}"></button>`).join("")}<button type="button" class="engine-transform-handle rotate" data-transform-mode="rotate" aria-label="Rotar elemento">↻</button></div>`; return overlay;
+}
+export function positionTransformOverlay(overlay,element,liveCanvas){ if(!overlay||!element||!liveCanvas){if(overlay)overlay.hidden=true;return;} const c=liveCanvas.getBoundingClientRect(),e=element.getBoundingClientRect(); overlay.hidden=false; overlay.style.left=`${e.left-c.left+liveCanvas.scrollLeft}px`; overlay.style.top=`${e.top-c.top+liveCanvas.scrollTop}px`; overlay.style.width=`${e.width}px`; overlay.style.height=`${e.height}px`; }

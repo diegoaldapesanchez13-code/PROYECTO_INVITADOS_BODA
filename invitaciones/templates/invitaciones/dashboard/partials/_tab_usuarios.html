@@ -1,0 +1,159 @@
+﻿        {% if puede_gestionar_usuarios and empresa_dashboard %}
+        <section class="users-panel tab-panel" id="usuarios" data-tab-panel="usuarios" hidden>
+            <div class="workspace-header">
+                <div>
+                    <h2>Usuarios y permisos</h2>
+                    <p class="muted">Crea accesos para la empresa, asigna roles y decide que planner lleva este evento.</p>
+                </div>
+            </div>
+
+            <div class="permissions-summary">
+                <article>
+                    <span>DIRTEC</span>
+                    <strong>Superadmin</strong>
+                    <p>Administra suscripciones, empresas y todos los eventos.</p>
+                </article>
+                <article>
+                    <span>{{ empresa_dashboard.nombre_comercial }}</span>
+                    <strong>Admin empresa</strong>
+                    <p>Crea planners, catálogos, proveedores, paquetes y ve todos sus eventos.</p>
+                </article>
+                <article>
+                    <span>Wedding planner</span>
+                    <strong>Eventos asignados</strong>
+                    <p>Edita la información operativa e invitación de los eventos que le asignen.</p>
+                </article>
+            </div>
+            <p class="help-note">
+                Por seguridad no se muestran contraseñas guardadas. Si alguien la olvida, escribe una nueva contraseña temporal, usa “Mostrar” para revisarla antes de guardar y compártela por un canal seguro.
+            </p>
+
+            <div class="dashboard-forms">
+                <form class="mini-admin-form" method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="accion" value="crear_usuario_empresa">
+                    <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                    <h3>Crear usuario para {{ empresa_dashboard.nombre_comercial }}</h3>
+                    <div class="design-grid">
+                        <label>Usuario<input type="text" name="username_usuario" placeholder="planner_ana" required></label>
+                        <label>Contraseña temporal<input type="password" name="password_usuario" placeholder="Contraseña temporal" autocomplete="new-password" required></label>
+                        <label>Nombre<input type="text" name="first_name_usuario" placeholder="Nombre"></label>
+                        <label>Apellido<input type="text" name="last_name_usuario" placeholder="Apellido"></label>
+                        <label class="wide">Correo<input type="email" name="email_usuario" placeholder="correo@empresa.com"></label>
+                        <label>
+                            Rol
+                            <select name="rol_usuario">
+                                {% for valor, texto in roles_empresa %}
+                                    <option value="{{ valor }}">{{ texto }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <label class="toggle-field">
+                            <input type="checkbox" name="puede_gestionar_catalogos_usuario">
+                            Puede editar catálogos
+                        </label>
+                        <label class="toggle-field">
+                            <input type="checkbox" name="activo_usuario" checked>
+                            Usuario activo
+                        </label>
+                    </div>
+                    <div class="actions form-actions">
+                        <button class="btn" type="submit">Crear usuario</button>
+                    </div>
+                </form>
+
+                <form class="mini-admin-form" method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="accion" value="asignar_planner_evento">
+                    <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                    <h3>Asignar planner a este evento</h3>
+                    <div class="design-grid">
+                        <label class="wide">
+                            Planner responsable
+                            <select name="planner_id">
+                                <option value="">Sin planner asignado</option>
+                                {% for membresia in planners_empresa %}
+                                    <option value="{{ membresia.usuario_id }}" {% if evento.wedding_planner_id == membresia.usuario_id %}selected{% endif %}>
+                                        {{ membresia.usuario.get_full_name|default:membresia.usuario.username }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                    </div>
+                    <div class="actions form-actions">
+                        <button class="btn" type="submit">Guardar planner</button>
+                    </div>
+                </form>
+            </div>
+
+            <section class="catalog-panel">
+                <div class="workspace-header">
+                    <div>
+                        <h2>Equipo de {{ empresa_dashboard.nombre_comercial }}</h2>
+                        <p class="muted">Edita datos básicos, rol, permiso de catálogos o desactiva accesos.</p>
+                    </div>
+                </div>
+                <div class="users-grid">
+                    {% for membresia in usuarios_empresa %}
+                        <article class="saved-item user-card {% if not membresia.activo %}is-muted{% endif %}">
+                            <div>
+                                <strong>{{ membresia.usuario.get_full_name|default:membresia.usuario.username }}</strong>
+                                <span>{{ membresia.get_rol_display }}{% if not membresia.activo %} · Inactivo{% endif %}</span>
+                            </div>
+                            <p>Usuario: {{ membresia.usuario.username }} · {{ membresia.usuario.email|default:"Sin correo" }}</p>
+                            <details>
+                                <summary>Editar usuario</summary>
+                                <form class="inline-edit-form" method="post">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="accion" value="editar_membresia_empresa">
+                                    <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                                    <input type="hidden" name="membresia_id" value="{{ membresia.id }}">
+                                    <div class="design-grid compact-grid">
+                                        <label>Nombre<input type="text" name="first_name_usuario" value="{{ membresia.usuario.first_name }}"></label>
+                                        <label>Apellido<input type="text" name="last_name_usuario" value="{{ membresia.usuario.last_name }}"></label>
+                                        <label>Correo<input type="email" name="email_usuario" value="{{ membresia.usuario.email }}"></label>
+                                        <label>Contraseña nueva temporal<input type="password" name="password_usuario" placeholder="Solo si quieres cambiarla" autocomplete="new-password"></label>
+                                        <label>
+                                            Rol
+                                            <select name="rol_usuario">
+                                                {% for valor, texto in roles_empresa %}
+                                                    <option value="{{ valor }}" {% if membresia.rol == valor %}selected{% endif %}>{{ texto }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </label>
+                                        <label class="toggle-field">
+                                            <input type="checkbox" name="puede_gestionar_catalogos_usuario" {% if membresia.puede_gestionar_catalogos %}checked{% endif %}>
+                                            Puede editar catálogos
+                                        </label>
+                                        <label class="toggle-field">
+                                            <input type="checkbox" name="activo_usuario" {% if membresia.activo %}checked{% endif %}>
+                                            Activo
+                                        </label>
+                                    </div>
+                                    <div class="actions form-actions">
+                                        <button class="btn" type="submit">Guardar cambios</button>
+                                    </div>
+                                </form>
+                                <form method="post" data-confirm="¿Desactivar este acceso?">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="accion" value="desactivar_membresia_empresa">
+                                    <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                                    <input type="hidden" name="membresia_id" value="{{ membresia.id }}">
+                                    <button class="btn danger" type="submit">Desactivar acceso</button>
+                                </form>
+                                <form method="post" data-confirm="Esta acción eliminará el acceso del usuario a esta empresa. ¿Deseas continuar?">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="accion" value="eliminar_membresia_empresa">
+                                    <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                                    <input type="hidden" name="membresia_id" value="{{ membresia.id }}">
+                                    <button class="btn danger" type="submit">Eliminar acceso</button>
+                                </form>
+                            </details>
+                        </article>
+                    {% empty %}
+                        <p class="muted">Todavía no hay usuarios creados para esta empresa.</p>
+                    {% endfor %}
+                </div>
+            </section>
+        </section>
+        {% endif %}

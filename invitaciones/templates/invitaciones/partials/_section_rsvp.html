@@ -1,0 +1,452 @@
+{% if secciones.RSVP.activa %}
+<section
+    class="section"
+    id="rsvp"
+    data-invitation-section="RSVP"
+    style="
+        order: {{ secciones.RSVP.orden }};
+        {{ secciones.RSVP.estilo_editor }}
+    "
+>
+    <div
+        class="panel rsvp-panel section-header-panel
+        {% if secciones.RSVP.imagen_titulo %}has-section-header-media has-section-full-image{% endif %}
+        {% if secciones.RSVP.fondo %}bg-panel{% endif %}
+        {% if secciones.RSVP.fondo_es_video %}bg-video-panel{% endif %}"
+        {% if secciones.RSVP.fondo and not secciones.RSVP.fondo_es_video %}
+            style="
+                background-image: url('{{ secciones.RSVP.fondo.url }}');
+                background-position: {{ secciones.RSVP.posicion_fondo }};
+            "
+        {% endif %}
+    >
+        {% include "invitaciones/partials/_section_base.html" with seccion=secciones.RSVP titulo_default="Confirmar asistencia" texto_alt="Confirmación de asistencia" media_class="rsvp-full-image" %}
+
+        <div
+            class="section-main-content"
+            data-native-element
+            data-element-id="rsvp-content"
+            data-element-type="container"
+            data-element-role="rsvp-content"
+            data-element-section="RSVP"
+        >
+            <div
+                class="invitation-summary"
+                data-native-element
+                data-element-id="rsvp-summary"
+                data-element-type="container"
+                data-element-role="rsvp-summary"
+                data-element-section="RSVP"
+            >
+                <h2
+                    class="section-title"
+                    data-native-element
+                    data-element-id="rsvp-event-title"
+                    data-element-type="text"
+                    data-element-role="rsvp-event-title"
+                    data-element-section="RSVP"
+                >
+                    {{ evento.titulo_invitacion }}
+                </h2>
+
+                {% if evento.texto_invitacion %}
+                    <p
+                        class="section-copy"
+                        data-native-element
+                        data-element-id="rsvp-event-copy"
+                        data-element-type="text"
+                        data-element-role="rsvp-event-copy"
+                        data-element-section="RSVP"
+                    >
+                        {{ evento.texto_invitacion }}
+                    </p>
+                {% endif %}
+
+                <div
+                    class="summary-grid"
+                    data-native-element
+                    data-element-id="rsvp-summary-grid"
+                    data-element-type="container"
+                    data-element-role="rsvp-summary-grid"
+                    data-element-section="RSVP"
+                >
+                    <div class="info-box">
+                        <div class="label">Invitación para</div>
+
+                        <div class="value guest-summary-name">
+                            {% if grupo.es_familiar %}
+                                Familia
+                            {% endif %}
+                            {{ grupo.nombre_grupo }}
+                        </div>
+                    </div>
+
+                    <div class="info-box">
+                        <div class="label">Tipo</div>
+
+                        <div class="value">
+                            {{ grupo.get_tipo_display }}
+                        </div>
+                    </div>
+
+                    <div class="info-box">
+                        <div class="label">Lugares</div>
+
+                        <div class="value">
+                            {{ grupo.total_lugares }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div
+                class="rsvp-status"
+                data-native-element
+                data-element-id="rsvp-status"
+                data-element-type="container"
+                data-element-role="rsvp-status"
+                data-element-section="RSVP"
+            >
+                {% if grupo.confirmado %}
+                    <p class="section-copy">
+                        Esta invitación ya fue respondida. Puedes actualizar la información si lo necesitas.
+                    </p>
+                {% endif %}
+            </div>
+
+            <form
+                method="post"
+                class="rsvp-form"
+                id="rsvpForm"
+                data-native-element
+                data-element-id="rsvp-form"
+                data-element-type="form"
+                data-element-role="rsvp-form"
+                data-element-section="RSVP"
+            >
+                {% csrf_token %}
+
+                {% if grupo.es_personal %}
+                    <div class="guest-box">
+                        <div class="guest-head">
+                            <h3 class="guest-name">
+                                {{ grupo.nombre_grupo }}
+                            </h3>
+
+                            <span class="pill">
+                                Acompañantes permitidos:
+                                {{ grupo.cantidad_extra_permitida }}
+                            </span>
+                        </div>
+
+                        <div class="radio-row">
+                            <div class="option">
+                                <input
+                                    type="radio"
+                                    id="si_grupo"
+                                    name="asistira"
+                                    value="si"
+                                    {% if grupo.asistira == True %}checked{% endif %}
+                                >
+
+                                <label for="si_grupo">
+                                    Sí asistiré
+                                </label>
+                            </div>
+
+                            <div class="option">
+                                <input
+                                    type="radio"
+                                    id="no_grupo"
+                                    name="asistira"
+                                    value="no"
+                                    {% if grupo.asistira == False %}checked{% endif %}
+                                >
+
+                                <label for="no_grupo">
+                                    No asistiré
+                                </label>
+                            </div>
+                        </div>
+
+                        {% if grupo.invitados.all %}
+                            <div class="form-grid compact-guests">
+                                {% for invitado in grupo.invitados.all %}
+                                    <div class="guest-box subtle">
+                                        <div class="guest-head">
+                                            <h3 class="guest-name">
+                                                {{ invitado.nombre }}
+                                            </h3>
+
+                                            <span class="pill">
+                                                {{ invitado.get_tipo_persona_display }}
+                                            </span>
+                                        </div>
+
+                                        <div class="radio-row">
+                                            <div class="option">
+                                                <input
+                                                    type="radio"
+                                                    id="si_extra_{{ invitado.id }}"
+                                                    name="asistira_extra_{{ invitado.id }}"
+                                                    value="si"
+                                                    {% if invitado.asistira == True %}checked{% endif %}
+                                                >
+
+                                                <label for="si_extra_{{ invitado.id }}">
+                                                    Sí asistirá
+                                                </label>
+                                            </div>
+
+                                            <div class="option">
+                                                <input
+                                                    type="radio"
+                                                    id="no_extra_{{ invitado.id }}"
+                                                    name="asistira_extra_{{ invitado.id }}"
+                                                    value="no"
+                                                    {% if invitado.asistira == False %}checked{% endif %}
+                                                >
+
+                                                <label for="no_extra_{{ invitado.id }}">
+                                                    No asistirá
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <label class="checkbox-line">
+                                            <input
+                                                type="checkbox"
+                                                name="menu_infantil_extra_{{ invitado.id }}"
+                                                {% if invitado.menu_infantil %}checked{% endif %}
+                                            >
+                                            Prefiere buffet infantil
+                                        </label>
+
+                                        <textarea
+                                            name="comentario_extra_{{ invitado.id }}"
+                                            placeholder="Comentario opcional"
+                                        >{{ invitado.comentario|default_if_none:'' }}</textarea>
+                                    </div>
+                                {% endfor %}
+                            </div>
+
+                        {% elif grupo.cantidad_extra_permitida %}
+                            <div class="number-grid">
+                                <label>
+                                    Acompañantes adultos
+
+                                    <input
+                                        type="number"
+                                        id="acompanantes_adultos"
+                                        name="acompanantes_adultos"
+                                        min="0"
+                                        max="{{ grupo.cantidad_extra_permitida }}"
+                                        value="{{ grupo.acompanantes_adultos }}"
+                                    >
+                                </label>
+
+                                <label>
+                                    Acompañantes niños
+
+                                    <input
+                                        type="number"
+                                        id="acompanantes_ninos"
+                                        name="acompanantes_ninos"
+                                        min="0"
+                                        max="{{ grupo.cantidad_extra_permitida }}"
+                                        value="{{ grupo.acompanantes_ninos }}"
+                                    >
+                                </label>
+                            </div>
+                        {% endif %}
+
+                        <details class="guest-extra-details">
+                            <summary>Notas de alimentos</summary>
+
+                            <div class="guest-notes-grid">
+                                <label>
+                                    Restricciones alimentarias
+
+                                    <textarea
+                                        name="restricciones_alimentarias"
+                                        placeholder="Vegetariano, sin gluten, etc."
+                                    >{{ grupo.restricciones_alimentarias|default_if_none:'' }}</textarea>
+                                </label>
+
+                                <label>
+                                    Alergias
+
+                                    <textarea
+                                        name="alergias"
+                                        placeholder="Alergias importantes"
+                                    >{{ grupo.alergias|default_if_none:'' }}</textarea>
+                                </label>
+
+                                <label class="checkbox-line">
+                                    <input
+                                        type="checkbox"
+                                        name="requiere_menu_infantil"
+                                        {% if grupo.requiere_menu_infantil %}checked{% endif %}
+                                    >
+                                    Prefiero buffet infantil
+                                </label>
+                            </div>
+                        </details>
+
+                        <textarea
+                            name="comentario"
+                            placeholder="Comentario opcional"
+                        >{{ grupo.comentario|default_if_none:'' }}</textarea>
+                    </div>
+
+                {% else %}
+                    <div class="form-grid">
+                        {% for invitado in grupo.invitados.all %}
+                            <div class="guest-box">
+                                <div class="guest-head">
+                                    <h3 class="guest-name">
+                                        {{ invitado.nombre }}
+                                    </h3>
+
+                                    <span class="pill">
+                                        {{ invitado.get_tipo_persona_display }}
+                                    </span>
+                                </div>
+
+                                <div class="radio-row">
+                                    <div class="option">
+                                        <input
+                                            type="radio"
+                                            id="si_{{ invitado.id }}"
+                                            name="asistira_{{ invitado.id }}"
+                                            value="si"
+                                            {% if invitado.asistira == True %}checked{% endif %}
+                                        >
+
+                                        <label for="si_{{ invitado.id }}">
+                                            Sí asistirá
+                                        </label>
+                                    </div>
+
+                                    <div class="option">
+                                        <input
+                                            type="radio"
+                                            id="no_{{ invitado.id }}"
+                                            name="asistira_{{ invitado.id }}"
+                                            value="no"
+                                            {% if invitado.asistira == False %}checked{% endif %}
+                                        >
+
+                                        <label for="no_{{ invitado.id }}">
+                                            No asistirá
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <details class="guest-extra-details">
+                                    <summary>Notas de alimentos</summary>
+
+                                    <div class="guest-notes-grid">
+                                        <label>
+                                            Restricciones
+
+                                            <input
+                                                type="text"
+                                                name="restricciones_{{ invitado.id }}"
+                                                value="{{ invitado.restricciones_alimentarias|default_if_none:'' }}"
+                                                placeholder="Vegetariano, sin gluten..."
+                                            >
+                                        </label>
+
+                                        <label>
+                                            Alergias
+
+                                            <input
+                                                type="text"
+                                                name="alergias_{{ invitado.id }}"
+                                                value="{{ invitado.alergias|default_if_none:'' }}"
+                                                placeholder="Alergias importantes"
+                                            >
+                                        </label>
+
+                                        <label class="checkbox-line">
+                                            <input
+                                                type="checkbox"
+                                                name="menu_infantil_{{ invitado.id }}"
+                                                {% if invitado.menu_infantil %}checked{% endif %}
+                                            >
+                                            Prefiere buffet infantil
+                                        </label>
+                                    </div>
+                                </details>
+
+                                <textarea
+                                    name="comentario_{{ invitado.id }}"
+                                    placeholder="Comentario opcional"
+                                >{{ invitado.comentario|default_if_none:'' }}</textarea>
+                            </div>
+
+                        {% empty %}
+                            <p class="section-copy">
+                                Esta familia aún no tiene invitados capturados en el administrador.
+                            </p>
+                        {% endfor %}
+
+                        <textarea
+                            name="comentario_grupo"
+                            placeholder="Comentario general de la familia"
+                        >{{ grupo.comentario|default_if_none:'' }}</textarea>
+                    </div>
+                {% endif %}
+
+                <div
+                    class="btn-row rsvp-submit-row"
+                    data-native-element
+                    data-element-id="rsvp-submit-row"
+                    data-element-type="container"
+                    data-element-role="rsvp-submit-row"
+                    data-element-section="RSVP"
+                >
+                    <button
+                        class="btn"
+                        type="submit"
+                        id="rsvpSubmit"
+                        data-native-element
+                        data-element-id="rsvp-submit-button"
+                        data-element-type="button"
+                        data-element-role="rsvp-submit-button"
+                        data-element-section="RSVP"
+                    >
+                        Guardar confirmación
+                    </button>
+                </div>
+
+                {% if evento.link_whatsapp %}
+                    <div
+                        class="btn-row rsvp-contact-row"
+                        data-native-element
+                        data-element-id="rsvp-contact-row"
+                        data-element-type="container"
+                        data-element-role="rsvp-contact-row"
+                        data-element-section="RSVP"
+                    >
+                        <a
+                            class="btn secondary"
+                            href="{{ evento.link_whatsapp }}"
+                            target="_blank"
+                            data-native-element
+                            data-element-id="rsvp-whatsapp-button"
+                            data-element-type="button"
+                            data-element-role="rsvp-whatsapp-button"
+                            data-element-section="RSVP"
+                            rel="noopener"
+                        >
+                            Contactar por WhatsApp
+                        </a>
+                    </div>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+</section>
+{% endif %}

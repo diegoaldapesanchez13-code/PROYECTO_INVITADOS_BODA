@@ -1,0 +1,470 @@
+.r3-page {
+    --r3-page-background: #f4f1ea;
+    --r3-selection: #7c3aed;
+
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    min-height: 100%;
+    margin: 0;
+    background: var(--r3-page-background);
+}
+
+.r3-node {
+    box-sizing: border-box;
+}
+
+.r3-node[hidden] {
+    display: none !important;
+}
+
+/* =========================================================
+   LAYOUT MODES
+   These rules own position. Node-type rules must not
+   overwrite position.
+   ========================================================= */
+
+.r3-layout-flow {
+    position: relative;
+    width: var(--r3-width, auto);
+    min-height: var(--r3-min-height, 0);
+    height: var(--r3-height, auto);
+    max-height: var(--r3-max-height, none);
+    z-index: var(--r3-z, 1);
+    opacity: var(--r3-opacity, 1);
+}
+
+.r3-layout-absolute,
+.r3-layout-layer {
+    position: absolute;
+    left: var(--r3-x, 50%);
+    top: var(--r3-y, 50%);
+    width: var(--r3-width, auto);
+    min-height: var(--r3-min-height, 0);
+    height: var(--r3-height, auto);
+    max-height: var(--r3-max-height, none);
+    z-index: var(--r3-z, 1);
+    opacity: var(--r3-opacity, 1);
+    transform:
+        translate(-50%, -50%)
+        rotate(var(--r3-rotation, 0deg))
+        scale(
+            calc(
+                var(--r3-scale, 1)
+                * var(--r3-flip-x, 1)
+            ),
+            calc(
+                var(--r3-scale, 1)
+                * var(--r3-flip-y, 1)
+            )
+        );
+    transform-origin: center;
+}
+
+/* =========================================================
+   STRUCTURAL NODES
+   ========================================================= */
+
+.r3-node--section {
+    position: relative;
+    isolation: isolate;
+    width: 100%;
+    min-height: var(--r3-min-height, 0);
+    height: var(--r3-height, auto);
+    max-height: var(--r3-max-height, none);
+    padding:
+        var(--r3-padding-y, 0)
+        var(--r3-padding-x, 0);
+    overflow: visible;
+}
+
+/*
+ * SECTION is structural and always rendered as FLOW by
+ * effectiveLayoutMode(). This selector only establishes its
+ * coordinate system; it does not compete with Card layout.
+ */
+.r3-node--section.r3-layout-flow {
+    position: relative;
+    left: auto;
+    top: auto;
+    transform: none;
+}
+
+.r3-node--container,
+.r3-node--card,
+.r3-node--gallery,
+.r3-node--rsvp,
+.r3-node--countdown {
+    isolation: isolate;
+    display: flex;
+    flex-direction: var(--r3-direction, column);
+    align-items: var(--r3-align, stretch);
+    justify-content: var(--r3-justify, flex-start);
+    gap: var(--r3-gap, 0);
+    max-width: var(--r3-content-max-width, none);
+    padding:
+        var(--r3-padding-y, 0)
+        var(--r3-padding-x, 0);
+}
+
+/*
+ * Important: no position declaration exists in the Card,
+ * Container, Gallery or RSVP type rules. Their position is
+ * controlled exclusively by the layout-mode classes.
+ */
+
+/* =========================================================
+   BACKGROUND / OVERLAY
+   ========================================================= */
+
+.r3-node--section > .r3-node--background,
+.r3-node--card > .r3-node--background,
+.r3-node--container > .r3-node--background,
+.r3-node--gallery > .r3-node--background,
+.r3-node--section > .r3-node--overlay,
+.r3-node--card > .r3-node--overlay,
+.r3-node--container > .r3-node--overlay,
+.r3-node--gallery > .r3-node--overlay {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    border-radius: inherit;
+    transform: none;
+}
+
+.r3-node--background {
+    z-index: var(--r3-z, 0);
+    pointer-events: none;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.r3-node--overlay {
+    pointer-events: none;
+}
+
+.r3-node--card
+> .r3-node:not(.r3-node--background):not(.r3-node--overlay),
+.r3-node--container
+> .r3-node:not(.r3-node--background):not(.r3-node--overlay) {
+    z-index: max(var(--r3-z, 1), 2);
+}
+
+/* =========================================================
+   CONTENT NODES
+   ========================================================= */
+
+.r3-node--image,
+.r3-node--decoration {
+    display: block;
+    object-fit: cover;
+    user-select: none;
+    -webkit-user-drag: none;
+}
+
+.r3-node--decoration {
+    object-fit: contain;
+}
+
+.r3-node--button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding:
+        var(--r3-padding-y, 0)
+        var(--r3-padding-x, 0);
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.r3-node--separator {
+    border: 0;
+    border-top: 1px solid currentColor;
+}
+
+/* =========================================================
+   COUNTDOWN
+   ========================================================= */
+
+.r3-countdown {
+    display: grid;
+    grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+    gap: var(--r3-gap, 12px);
+    width: 100%;
+}
+
+.r3-countdown__item {
+    display: grid;
+    place-items: center;
+    min-width: 0;
+}
+
+.r3-countdown__value,
+.r3-countdown__label {
+    display: block;
+}
+
+.r3-countdown__value {
+    font-size:
+        var(
+            --r3-countdown-value-size,
+            2rem
+        );
+}
+
+.r3-countdown__label {
+    font-size:
+        var(
+            --r3-countdown-label-size,
+            .75rem
+        );
+}
+
+/* =========================================================
+   EDITOR STATE
+   ========================================================= */
+
+.r3-page[data-r3-editable="1"]
+.r3-node:not(.r3-node--background) {
+    cursor: pointer;
+}
+
+.r3-page[data-r3-editable="1"]
+.r3-node:hover {
+    outline:
+        1px dashed
+        color-mix(
+            in srgb,
+            var(--r3-selection),
+            transparent 24%
+        );
+    outline-offset: 2px;
+}
+
+.r3-selection-overlay.is-background-pan {
+    cursor: grab;
+    border-style: dotted;
+}
+
+.r3-selection-overlay.is-background-pan:active {
+    cursor: grabbing;
+}
+
+/* =========================================================
+   RESPONSIVE PREVIEW
+   ========================================================= */
+
+.r3-page[data-r3-device="mobile"]
+.r3-countdown {
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 600px) {
+    .r3-countdown {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+    }
+}
+
+/* =========================================================
+   INTERACTION STATE
+   ========================================================= */
+
+.r3-page[data-r3-editable="0"]
+.r3-node[data-r3-interactive="1"] {
+    cursor: pointer;
+    touch-action: manipulation;
+}
+
+/* =========================================================
+   BASE COMPONENTS — PHASE 4.2
+   ========================================================= */
+
+.r3-countdown__item {
+    gap: 3px;
+    padding:
+        var(--r3-countdown-item-padding-y, 0)
+        var(--r3-countdown-item-padding-x, 0);
+    border:
+        var(--r3-countdown-item-border-width, 0)
+        solid
+        var(--r3-countdown-item-border-color, transparent);
+    border-radius: var(--r3-countdown-item-radius, 0);
+    background: var(--r3-countdown-item-bg, transparent);
+}
+
+.r3-countdown__value {
+    color: var(--r3-countdown-value-color, currentColor);
+    font-family: var(--r3-countdown-value-font, inherit);
+    font-weight: var(--r3-countdown-value-weight, 700);
+    font-style: var(--r3-countdown-value-style, normal);
+    letter-spacing: var(--r3-countdown-value-spacing, 0);
+    line-height: 1;
+}
+
+.r3-countdown__label {
+    color: var(--r3-countdown-label-color, currentColor);
+    font-family: var(--r3-countdown-label-font, inherit);
+    font-weight: var(--r3-countdown-label-weight, 600);
+    font-style: var(--r3-countdown-label-style, normal);
+    letter-spacing: var(--r3-countdown-label-spacing, 0);
+    line-height: 1.2;
+    text-transform: var(--r3-countdown-label-transform, none);
+}
+
+.r3-node--icon {
+    display: grid;
+    place-items: center;
+    overflow: visible;
+    white-space: nowrap;
+}
+
+.r3-node--separator {
+    display: block;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: currentColor;
+}
+
+.r3-node--separator[data-r3-orientation="vertical"] {
+    width: var(--r3-width, 2%);
+    height: var(--r3-height, 30%);
+}
+
+
+/* =========================================================
+   COMPOSITE COUNTDOWN V1
+   COUNTDOWN is a free container. Its units are real Card
+   layers and each number/label is a real Text layer.
+   ========================================================= */
+.r3-node--countdown {
+    isolation: isolate;
+    display: block;
+    overflow: visible;
+}
+
+.r3-node--countdown > .r3-node--card {
+    overflow: visible;
+}
+
+/* =========================================================
+   GOOGLE MAPS COMPONENT
+   ========================================================= */
+.r3-node--map {
+    display: block;
+    min-width: 40px;
+    min-height: 40px;
+    overflow: hidden;
+}
+
+.r3-map-frame {
+    display: block;
+    width: 100%;
+    height: 100%;
+    min-height: 100%;
+    border: 0;
+    background: transparent;
+}
+
+.r3-map-fallback {
+    display: grid;
+    place-content: center;
+    gap: 6px;
+    width: 100%;
+    height: 100%;
+    min-height: 120px;
+    padding: 18px;
+    text-align: center;
+    color: #4d5547;
+    background:
+        linear-gradient(135deg, rgba(255,255,255,.75), rgba(236,233,225,.9)),
+        repeating-linear-gradient(45deg, transparent 0 12px, rgba(82,96,67,.08) 12px 13px);
+}
+
+.r3-map-fallback small {
+    color: #747a70;
+}
+
+.r3-page[data-r3-editable="1"] .r3-node--map {
+    cursor: move;
+}
+
+.r3-node[data-r3-type="VIDEO"] {
+    display: block;
+    overflow: hidden;
+    background: #111;
+}
+
+.r3-video-frame {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    object-fit: cover;
+    background: #111;
+}
+
+.r3-video-fallback {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    place-content: center;
+    gap: 6px;
+    padding: 18px;
+    text-align: center;
+    color: #f4f4f2;
+    background: linear-gradient(145deg, #1f2420, #111411);
+}
+
+.r3-video-fallback small {
+    max-width: 260px;
+    color: #bfc5bc;
+}
+
+.r3-renderer[data-editable="true"] .r3-node[data-r3-type="VIDEO"]::after {
+    content: "Video";
+    position: absolute;
+    right: 8px;
+    top: 8px;
+    z-index: 2;
+    padding: 3px 7px;
+    border-radius: 999px;
+    font: 600 10px/1 Arial, sans-serif;
+    color: #fff;
+    background: rgba(0, 0, 0, .62);
+    pointer-events: none;
+}
+
+.r3-rsvp {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.r3-rsvp__title,
+.r3-rsvp__description { margin: 0; }
+.r3-rsvp__title { font-size: 1.35rem; }
+.r3-rsvp__description { opacity: .78; line-height: 1.45; }
+.r3-rsvp__form { display: grid; gap: 12px; }
+.r3-rsvp__group { font-size: 1rem; }
+.r3-rsvp__limit { opacity: .72; }
+.r3-rsvp__choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.r3-rsvp__choice { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border: 1px solid color-mix(in srgb, var(--r3-rsvp-accent) 35%, transparent); border-radius: 14px; cursor: pointer; }
+.r3-rsvp__count,
+.r3-rsvp__comment { width: 100%; box-sizing: border-box; border: 1px solid rgba(0,0,0,.16); border-radius: 12px; padding: 10px 12px; font: inherit; }
+.r3-rsvp__comment { resize: vertical; }
+.r3-rsvp__submit { border: 0; border-radius: 999px; padding: 12px 18px; background: var(--r3-rsvp-accent); color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+.r3-rsvp__submit:disabled { opacity: .55; cursor: wait; }
+.r3-rsvp__status { min-height: 1.2em; font-size: .88rem; opacity: .8; }
+.r3-page[data-r3-editable="1"] .r3-rsvp input,
+.r3-page[data-r3-editable="1"] .r3-rsvp textarea,
+.r3-page[data-r3-editable="1"] .r3-rsvp button,
+.r3-page[data-r3-editable="1"] .r3-rsvp label { pointer-events: none; }

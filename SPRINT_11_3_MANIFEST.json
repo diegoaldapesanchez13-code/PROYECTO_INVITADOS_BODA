@@ -1,0 +1,19 @@
+{
+  "sprint": "11.3",
+  "name": "Canvas Selection Transform Core",
+  "requires": [
+    "11.1",
+    "11.2"
+  ],
+  "files": [
+    "builder_engine/frontend/selection/selection_state.js",
+    "builder_engine/frontend/selection/index.js",
+    "builder_engine/frontend/transform/transform_session.js",
+    "builder_engine/frontend/transform/coordinate_mapper.js",
+    "builder_engine/frontend/transform/canvas_height_session.js",
+    "builder_engine/frontend/transform/selection_overlay_contract.js",
+    "builder_engine/frontend/transform/index.js",
+    "builder_engine/tests/canvas_transform_11_3.test.mjs",
+    "builder_engine/docs/CANVAS_TRANSFORM_11_3.md"
+  ]
+}

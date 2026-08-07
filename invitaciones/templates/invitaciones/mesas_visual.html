@@ -1,0 +1,253 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acomodo de mesas</title>
+    <link rel="stylesheet" href="{% static 'invitaciones/css/dashboard.css' %}">
+</head>
+<body>
+    <div class="wrapper">
+        <div class="topbar">
+            <h1>Acomodo de mesas</h1>
+            <div class="actions">
+                <a href="{% url 'dashboard' %}{% if evento %}?evento={{ evento.id }}{% endif %}">Dashboard</a>
+                <form method="post" action="{% url 'logout' %}">
+                    {% csrf_token %}
+                    <button class="btn secondary" type="submit">Cerrar sesión</button>
+                </form>
+            </div>
+        </div>
+
+        {% if messages %}
+            <section class="message-stack">
+                {% for message in messages %}
+                    <div class="notice {{ message.tags }}">{{ message }}</div>
+                {% endfor %}
+            </section>
+        {% endif %}
+
+        <section class="event-panel">
+            <div>
+                {% if evento %}
+                    <h2 class="event-title">{{ evento }}</h2>
+                    <p class="muted">Vista inicial para revisar capacidad, ocupacion y asignaciones por mesa.</p>
+                {% else %}
+                    <h2 class="event-title">Sin evento</h2>
+                    <p class="muted">Crea un evento y mesas para comenzar el acomodo.</p>
+                {% endif %}
+            </div>
+
+            <form method="get">
+                <label for="evento">Evento</label>
+                <select id="evento" name="evento" onchange="this.form.submit()">
+                    {% for item in eventos %}
+                        <option value="{{ item.id }}" {% if evento and item.id == evento.id %}selected{% endif %}>
+                            {{ item }}{% if item.activo %} · Activo{% endif %}
+                        </option>
+                    {% endfor %}
+                </select>
+            </form>
+        </section>
+
+        {% if evento %}
+        <section class="floorplan-panel">
+            <div class="workspace-header">
+                <div>
+                    <h2>Gestión de mesas</h2>
+                    <p class="muted">Crea mesas, define capacidad y asigna invitados desde este panel operativo.</p>
+                </div>
+            </div>
+            <div class="dashboard-forms">
+                <form class="mini-admin-form" method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="accion" value="crear_mesa">
+                    <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                    <h3>Nueva mesa</h3>
+                    <div class="design-grid">
+                        <label>Nombre<input type="text" name="nombre_mesa" placeholder="Mesa 1" required></label>
+                        <label>Número<input type="number" name="numero_mesa" min="1"></label>
+                        <label>Tipo
+                            <select name="tipo_mesa">
+                                {% for valor, texto in tipos_mesa %}
+                                    <option value="{{ valor }}">{{ texto }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <label>Capacidad<input type="number" name="capacidad_mesa" min="1" value="10"></label>
+                        <label>Zona<input type="text" name="zona_mesa" placeholder="Jardín, terraza, salón..."></label>
+                        <label class="wide">Notas<input type="text" name="notas_mesa" placeholder="Mesa familiar, proveedores, mesa principal..."></label>
+                    </div>
+                    <div class="actions form-actions">
+                        <button class="btn" type="submit">Crear mesa</button>
+                    </div>
+                </form>
+
+                <form class="mini-admin-form" method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="accion" value="asignar_mesa">
+                    <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                    <h3>Asignar lugar</h3>
+                    <div class="design-grid">
+                        <label>Mesa
+                            <select name="mesa_id" required>
+                                {% for mesa in mesas %}
+                                    <option value="{{ mesa.id }}">{{ mesa.nombre }} · {{ mesa.lugares_ocupados }}/{{ mesa.capacidad }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <label>Invitado familiar
+                            <select name="invitado_id">
+                                <option value="">No asignar invitado familiar</option>
+                                {% for invitado in invitados_sin_mesa %}
+                                    <option value="{{ invitado.id }}">{{ invitado }} · {{ invitado.grupo.nombre_grupo }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <label>Invitación personal
+                            <select name="grupo_id">
+                                <option value="">No asignar grupo personal</option>
+                                {% for grupo in grupos_personales_sin_mesa %}
+                                    <option value="{{ grupo.id }}">{{ grupo.nombre_grupo }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <label>Número de asiento<input type="number" name="numero_asiento" min="1"></label>
+                        <label class="wide">Notas<input type="text" name="notas_asignacion" placeholder="Silla alta, accesibilidad, junto a familia..."></label>
+                    </div>
+                    <p class="muted">Para familias se asigna cada integrante por separado. Para invitaciones personales se asigna el grupo completo.</p>
+                    <div class="actions form-actions">
+                        <button class="btn" type="submit">Asignar a mesa</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <section class="floorplan-panel" data-save-url="{% url 'guardar_posiciones_mesas' %}" data-event-id="{{ evento.id }}">
+            {% csrf_token %}
+            <div class="workspace-header">
+                <div>
+                    <h2>Plano visual</h2>
+                    <p class="muted">Arrastra las mesas para acomodarlas. Guarda cuando tengas una distribucion lista.</p>
+                </div>
+                <div class="actions">
+                    <button class="btn secondary" type="button" id="resetFloorplan">Ordenar automaticamente</button>
+                    <button class="btn" type="button" id="saveFloorplan">Guardar acomodo</button>
+                </div>
+            </div>
+
+            <div class="floorplan-stage" id="floorplanStage">
+                {% for mesa in mesas %}
+                    <button
+                        class="floor-table {% if mesa.tipo == 'REDONDA' %}is-round{% endif %} {% if mesa.excedida %}is-overflow{% endif %}"
+                        type="button"
+                        data-table-id="{{ mesa.id }}"
+                        data-width="{{ mesa.ancho }}"
+                        data-height="{{ mesa.alto }}"
+                        style="left:{{ mesa.posicion_x }}px; top:{{ mesa.posicion_y }}px; width:{{ mesa.ancho }}px; height:{{ mesa.alto }}px;"
+                    >
+                        <span>{{ mesa.nombre }}</span>
+                        <strong>{{ mesa.lugares_ocupados }}/{{ mesa.capacidad }}</strong>
+                    </button>
+                {% empty %}
+                    <div class="empty-state">
+                        <h2>Aun no hay mesas</h2>
+                        <p class="muted">Crea mesas para comenzar el plano visual.</p>
+                    </div>
+                {% endfor %}
+            </div>
+            <p class="muted floorplan-status" id="floorplanStatus">Acomodo listo para editar.</p>
+        </section>
+        {% endif %}
+
+        <section class="floorplan-grid">
+            {% for mesa in mesas %}
+                <article class="table-card {% if mesa.excedida %}is-overflow{% endif %}">
+                    <div class="table-card-header">
+                        <div>
+                            <span>{{ mesa.get_tipo_display }}</span>
+                            <h2>{{ mesa.nombre }}</h2>
+                        </div>
+                        <strong>{{ mesa.lugares_ocupados }}/{{ mesa.capacidad }}</strong>
+                    </div>
+
+                    <div class="table-meter">
+                        <span style="width:{% widthratio mesa.lugares_ocupados mesa.capacidad 100 %}%"></span>
+                    </div>
+
+                    <p class="muted">
+                        Zona: {{ mesa.zona|default:"Sin zona" }} · Disponibles: {{ mesa.lugares_disponibles }}
+                    </p>
+
+                    {% if mesa.mesero %}
+                        <p class="muted">Mesero: {{ mesa.mesero.nombre }}</p>
+                    {% endif %}
+
+                    <div class="seat-list">
+                        {% for asignacion in mesa.asignaciones.all %}
+                            <form class="seat-row" method="post">
+                                {% csrf_token %}
+                                <input type="hidden" name="accion" value="eliminar_asignacion">
+                                <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                                <input type="hidden" name="asignacion_id" value="{{ asignacion.id }}">
+                                <span>
+                                    {% if asignacion.numero_asiento %}{{ asignacion.numero_asiento }}. {% endif %}
+                                    {% if asignacion.invitado %}
+                                        {{ asignacion.invitado }}
+                                    {% else %}
+                                        {{ asignacion.grupo_invitacion }}
+                                    {% endif %}
+                                </span>
+                                <button class="text-danger-button" type="submit">Quitar</button>
+                            </form>
+                        {% empty %}
+                            <span class="muted">Sin invitados asignados</span>
+                        {% endfor %}
+                    </div>
+
+                    <details class="table-edit-panel">
+                        <summary>Editar mesa</summary>
+                        <form class="mini-admin-form" method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="accion" value="editar_mesa">
+                            <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                            <input type="hidden" name="mesa_id" value="{{ mesa.id }}">
+                            <div class="design-grid">
+                                <label>Nombre<input type="text" name="nombre_mesa" value="{{ mesa.nombre }}" required></label>
+                                <label>Número<input type="number" name="numero_mesa" min="1" value="{{ mesa.numero|default:'' }}"></label>
+                                <label>Tipo
+                                    <select name="tipo_mesa">
+                                        {% for valor, texto in tipos_mesa %}
+                                            <option value="{{ valor }}" {% if mesa.tipo == valor %}selected{% endif %}>{{ texto }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </label>
+                                <label>Capacidad<input type="number" name="capacidad_mesa" min="1" value="{{ mesa.capacidad }}"></label>
+                                <label>Zona<input type="text" name="zona_mesa" value="{{ mesa.zona|default:'' }}"></label>
+                                <label class="wide">Notas<input type="text" name="notas_mesa" value="{{ mesa.notas|default:'' }}"></label>
+                            </div>
+                            <div class="actions form-actions">
+                                <button class="btn" type="submit">Guardar mesa</button>
+                            </div>
+                        </form>
+                        <form class="actions" method="post" data-confirm="Esta acción eliminará la mesa y sus asignaciones. ¿Deseas continuar?">
+                            {% csrf_token %}
+                            <input type="hidden" name="accion" value="eliminar_mesa">
+                            <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                            <input type="hidden" name="mesa_id" value="{{ mesa.id }}">
+                            <button class="btn danger" type="submit">Eliminar mesa</button>
+                        </form>
+                    </details>
+                </article>
+            {% empty %}
+                <article class="empty-state">
+                    <h2>Aun no hay mesas</h2>
+                    <p class="muted">Crea mesas desde el formulario superior y despues asigna invitados confirmados.</p>
+                </article>
+            {% endfor %}
+        </section>
+    </div>
+    <script src="{% static 'invitaciones/js/mesas_visual.js' %}"></script>
+</body>
+</html>

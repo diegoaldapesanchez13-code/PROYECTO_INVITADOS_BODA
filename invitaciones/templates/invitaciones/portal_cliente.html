@@ -1,0 +1,121 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal del cliente</title>
+    <link rel="stylesheet" href="{% static 'invitaciones/css/dashboard.css' %}">
+</head>
+<body>
+    <div class="wrapper">
+        <div class="topbar">
+            <h1>Portal del cliente</h1>
+            <div class="actions">
+                <a href="/">Inicio</a>
+                <form method="post" action="{% url 'logout' %}">
+                    {% csrf_token %}
+                    <button class="btn secondary" type="submit">Salir</button>
+                </form>
+            </div>
+        </div>
+
+        <section class="event-panel">
+            <div>
+                {% if evento %}
+                    <h2 class="event-title">{{ evento }}</h2>
+                    <p class="muted">{{ evento.fecha_fiesta|date:"d/m/Y h:i A" }} · {{ evento.lugar_fiesta }}</p>
+                    <p class="muted">{{ evento.descripcion|default:"Resumen privado del avance del evento." }}</p>
+                {% else %}
+                    <h2 class="event-title">Sin eventos asignados</h2>
+                    <p class="muted">Tu usuario aun no tiene eventos asociados.</p>
+                {% endif %}
+            </div>
+
+            <form method="get">
+                <label for="evento">Evento</label>
+                <select id="evento" name="evento" onchange="this.form.submit()">
+                    {% for item in eventos %}
+                        <option value="{{ item.id }}" {% if evento and item.id == evento.id %}selected{% endif %}>{{ item }}</option>
+                    {% empty %}
+                        <option>Sin eventos</option>
+                    {% endfor %}
+                </select>
+            </form>
+        </section>
+
+        {% if evento %}
+        <section class="stats">
+            <div class="stat"><strong>{{ total_lugares }}</strong><span>Lugares</span></div>
+            <div class="stat"><strong>{{ total_confirmados }}</strong><span>Confirmados</span></div>
+            <div class="stat"><strong>{{ total_pendientes }}</strong><span>Pendientes</span></div>
+            <div class="stat"><strong>${{ total_gasto|floatformat:0 }}</strong><span>Total evento</span></div>
+            <div class="stat"><strong>${{ total_pagado|floatformat:0 }}</strong><span>Pagado</span></div>
+            <div class="stat"><strong>${{ saldo|floatformat:0 }}</strong><span>Saldo</span></div>
+            <div class="stat"><strong>{{ aprobaciones_pendientes }}</strong><span>Aprobaciones pendientes</span></div>
+        </section>
+
+        <section class="portal-grid">
+            <article class="portal-panel">
+                <h2>Aprobaciones</h2>
+                <div class="portal-list">
+                    {% for aprobacion in aprobaciones %}
+                        <div class="approval-item">
+                            <strong>{{ aprobacion.titulo }}</strong>
+                            <span>{{ aprobacion.get_tipo_display }} · {{ aprobacion.get_estado_display }}</span>
+                            {% if aprobacion.descripcion %}
+                                <small>{{ aprobacion.descripcion }}</small>
+                            {% endif %}
+                            {% if aprobacion.comentario %}
+                                <small>Comentario: {{ aprobacion.comentario }}</small>
+                            {% endif %}
+                            {% if aprobacion.estado == 'PENDIENTE' %}
+                                <form method="post" action="{% url 'responder_aprobacion_cliente' aprobacion.id %}" class="approval-form">
+                                    {% csrf_token %}
+                                    <textarea name="comentario" rows="2" placeholder="Comentario opcional"></textarea>
+                                    <div class="actions">
+                                        <button class="btn" type="submit" name="accion" value="aprobar">Aprobar</button>
+                                        <button class="btn secondary" type="submit" name="accion" value="cambios">Pedir cambios</button>
+                                        <button class="btn danger" type="submit" name="accion" value="rechazar">Rechazar</button>
+                                    </div>
+                                </form>
+                            {% endif %}
+                        </div>
+                    {% empty %}
+                        <p class="muted">No hay aprobaciones registradas.</p>
+                    {% endfor %}
+                </div>
+            </article>
+
+            <article class="portal-panel">
+                <h2>Tareas activas</h2>
+                <div class="portal-list">
+                    {% for tarea in tareas %}
+                        <span>
+                            <strong>{{ tarea.titulo }}</strong>
+                            <small>{{ tarea.get_prioridad_display }} · {{ tarea.get_estado_display }}{% if tarea.fecha_limite %} · {{ tarea.fecha_limite|date:"d/m/Y" }}{% endif %}</small>
+                        </span>
+                    {% empty %}
+                        <p class="muted">No hay tareas activas.</p>
+                    {% endfor %}
+                </div>
+            </article>
+
+            <article class="portal-panel">
+                <h2>Documentos visibles</h2>
+                <div class="portal-list">
+                    {% for documento in documentos %}
+                        <a href="{{ documento.archivo.url }}" target="_blank" rel="noopener">
+                            <strong>{{ documento.titulo }}</strong>
+                            <span>{{ documento.get_tipo_documento_display }} · {{ documento.fecha_carga|date:"d/m/Y" }}</span>
+                        </a>
+                    {% empty %}
+                        <p class="muted">No hay documentos visibles por ahora.</p>
+                    {% endfor %}
+                </div>
+            </article>
+        </section>
+        {% endif %}
+    </div>
+</body>
+</html>

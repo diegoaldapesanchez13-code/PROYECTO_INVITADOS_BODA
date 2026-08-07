@@ -1,0 +1,819 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ empresa.nombre_comercial }} | Dashboard</title>
+    <link rel="stylesheet" href="{% static 'invitaciones/css/role_dashboards.css' %}">
+</head>
+<body>
+<div class="role-shell">
+    <aside class="role-sidebar">
+        <div class="brand-lockup">
+            <span>Empresa suscriptora</span>
+            <strong>{{ empresa.nombre_comercial }}</strong>
+        </div>
+        <nav class="role-nav">
+            <a href="#resumen" data-role-link>Resumen</a>
+            <a href="#eventos" data-role-link>Eventos</a>
+            <a href="#clientes" data-role-link>Clientes</a>
+            <a href="#equipo" data-role-link>Equipo</a>
+            <a href="#catalogos" data-role-link>Catalogos</a>
+            <a href="#operacion" data-role-link>Operacion</a>
+        </nav>
+        <div class="role-sidebar-footer">
+            <a class="btn ghost" href="{% url 'dashboard_profesional' %}">Panel profesional</a>
+            {% if es_planner_empresa %}
+                <a class="btn secondary" href="{% url 'dashboard_planner' %}">Vista planner</a>
+            {% endif %}
+        </div>
+    </aside>
+
+    <main class="role-main">
+        <section class="role-topbar">
+            <div>
+                <span class="eyebrow">Dashboard empresarial</span>
+                <h1>{{ empresa.nombre_comercial }}</h1>
+                <p class="muted">Administra eventos, wedding planners, salones, proveedores, paquetes y pendientes.</p>
+            </div>
+            <div class="role-actions">
+                <a href="#eventos" data-role-link>Crear evento</a>
+                <a class="secondary" href="{% url 'dashboard' %}">Editor avanzado</a>
+                <form method="post" action="{% url 'logout' %}">
+                    {% csrf_token %}
+                    <button class="secondary" type="submit">Cerrar sesión</button>
+                </form>
+            </div>
+        </section>
+
+        {% if messages %}
+            <section class="message-stack">
+                {% for message in messages %}
+                    <div class="notice {{ message.tags }}">{{ message }}</div>
+                {% endfor %}
+            </section>
+        {% endif %}
+
+        <section class="capability-strip" aria-label="Permisos actuales">
+            <div>
+                <span>Tu acceso</span>
+                <strong>{% if roles_usuario_actual %}{% for rol in roles_usuario_actual %}{{ rol }}{% if not forloop.last %}, {% endif %}{% endfor %}{% else %}DIRTEC{% endif %}</strong>
+            </div>
+            <div>
+                <span>Usuarios</span>
+                <strong class="{% if puede_usuarios %}ok{% else %}locked{% endif %}">{% if puede_usuarios %}Gestionar{% else %}Solo lectura{% endif %}</strong>
+            </div>
+            <div>
+                <span>Catalogos</span>
+                <strong class="{% if puede_catalogos %}ok{% else %}locked{% endif %}">{% if puede_catalogos %}Gestionar{% else %}Solo lectura{% endif %}</strong>
+            </div>
+            <div>
+                <span>Eventos</span>
+                <strong class="ok">Gestionar</strong>
+            </div>
+        </section>
+
+        <section class="role-section tab-panel" id="resumen" data-role-panel>
+            <div class="section-header">
+                <div>
+                    <h2>Estado general</h2>
+                    <p class="muted">Indicadores principales para operar la empresa desde un panel claro y profesional.</p>
+                </div>
+                {% if empresas|length > 1 %}
+                    <form method="get">
+                        <select name="empresa" onchange="this.form.submit()">
+                            {% for item in empresas %}
+                                <option value="{{ item.id }}" {% if item.id == empresa.id %}selected{% endif %}>{{ item.nombre_comercial }}</option>
+                            {% endfor %}
+                        </select>
+                    </form>
+                {% endif %}
+            </div>
+            <div class="quick-actions">
+                <a href="#eventos" data-role-link>Crear evento</a>
+                <a href="#clientes" data-role-link>Clientes</a>
+                <a href="#equipo" data-role-link>Planners</a>
+                {% if puede_catalogos %}<a href="#catalogos" data-role-link>Catalogos</a>{% endif %}
+                <a href="#operacion" data-role-link>Operacion</a>
+            </div>
+            <div class="metrics-grid">
+                <article class="metric"><span>Plan</span><strong>{% if uso_plan.plan %}{{ uso_plan.plan.nombre }}{% else %}Sin plan{% endif %}</strong><p class="muted">{% if suscripcion_empresa %}{{ suscripcion_empresa.get_estado_display }}{% else %}Sin suscripcion{% endif %}</p></article>
+                <article class="metric"><span>Eventos plan</span><strong>{{ uso_plan.eventos_activos }}</strong><p class="muted">{% if uso_plan.limite_eventos_activos %}de {{ uso_plan.limite_eventos_activos }} activos{% else %}Sin limite configurado{% endif %}</p></article>
+                <article class="metric"><span>Usuarios plan</span><strong>{{ uso_plan.usuarios }}</strong><p class="muted">{% if uso_plan.limite_usuarios %}de {{ uso_plan.limite_usuarios }} usuarios{% else %}Sin limite configurado{% endif %}</p></article>
+                <article class="metric"><span>Planners plan</span><strong>{{ uso_plan.planners }}</strong><p class="muted">{% if uso_plan.limite_planners %}de {{ uso_plan.limite_planners }} planners{% else %}Sin limite configurado{% endif %}</p></article>
+                <article class="metric"><span>Clientes plan</span><strong>{{ uso_plan.clientes }}</strong><p class="muted">{% if uso_plan.limite_clientes %}de {{ uso_plan.limite_clientes }} clientes{% else %}Sin limite configurado{% endif %}</p></article>
+                <article class="metric"><span>Eventos</span><strong>{{ resumen_eventos.total }}</strong><p class="muted">{{ resumen_eventos.activos }} activos</p></article>
+                <article class="metric"><span>Proximos</span><strong>{{ resumen_eventos.proximos }}</strong><p class="muted">Con fecha futura</p></article>
+                <article class="metric"><span>Sin planner</span><strong>{{ resumen_eventos.sin_planner }}</strong><p class="muted">Requieren asignacion</p></article>
+                <article class="metric"><span>RSVP pendiente</span><strong>{{ resumen_operativo.pendientes_rsvp }}</strong><p class="muted">Invitados sin respuesta</p></article>
+                <article class="metric"><span>Tareas</span><strong>{{ resumen_operativo.tareas_pendientes }}</strong><p class="muted">{{ resumen_operativo.tareas_vencidas }} vencidas</p></article>
+                <article class="metric"><span>Pagos</span><strong>{{ resumen_operativo.pagos_vencidos }}</strong><p class="muted">Vencidos</p></article>
+            </div>
+        </section>
+
+        <section class="role-section tab-panel" id="eventos" data-role-panel hidden data-subnav-scope="empresa-eventos">
+            <div class="section-header">
+                <div>
+                    <h2>Eventos</h2>
+                    <p class="muted">Crea eventos base, asigna planner y entra al editor visual cuando necesites fotos, regalos, mapas, mesas o RSVP.</p>
+                </div>
+            </div>
+            <div class="module-tabs" role="tablist" aria-label="Eventos de empresa">
+                <button type="button" data-subpanel-button="alta">Nuevo evento</button>
+                <button type="button" data-subpanel-button="directorio">Editar eventos</button>
+            </div>
+            <div class="forms-grid">
+                <form class="mini-form" method="post" data-subpanel="alta">
+                    {% csrf_token %}
+                    <input type="hidden" name="accion" value="crear_evento">
+                    <input type="hidden" name="empresa_id" value="{{ empresa.id }}">
+                    <h3>Nuevo evento</h3>
+                    <div class="form-grid">
+                        <label>Nombre del evento<input name="nombre_evento" required placeholder="Boda Wendy y Diego"></label>
+                        <label>Tipo
+                            <select name="tipo_evento">
+                                {% for valor, texto in tipos_evento %}
+                                    <option value="{{ valor }}">{{ texto }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <label>Nombre principal<input name="nombre_principal" placeholder="Wendy"></label>
+                        <label>Nombre secundario<input name="nombre_secundario" placeholder="Diego"></label>
+                        <label>Fecha y hora<input type="datetime-local" name="fecha_evento"></label>
+                        <label>Sede
+                            <select name="sede_id">
+                                <option value="">Sin sede</option>
+                                {% for sede in sedes %}
+                                    <option value="{{ sede.id }}">{{ sede.nombre }} - {{ sede.capacidad_maxima }} pax</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <label>Ceremonia<input name="lugar_ceremonia" placeholder="Templo o ceremonia"></label>
+                        <label>Recepcion<input name="lugar_recepcion" placeholder="Salon o jardin"></label>
+                        <label>Capacidad contratada<input type="number" name="capacidad_contratada" min="0" value="0"></label>
+                        <label>Planner
+                            <select name="planner_id">
+                                <option value="">Asignar despues</option>
+                                {% for planner in planners %}
+                                    <option value="{{ planner.usuario_id }}">{{ planner.usuario.get_full_name|default:planner.usuario.username }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <label class="wide">Frase portada<input name="frase_portada" placeholder="Nuestra boda, Mis XV, Baby shower..."></label>
+                    </div>
+                    <button class="btn" type="submit">Crear evento</button>
+                </form>
+
+                <article class="section-card" data-filter-scope data-subpanel="directorio">
+                    <span>Eventos registrados</span>
+                    <div class="module-toolbar">
+                        <label>Buscar<input type="search" data-filter-search placeholder="Nombre, sede o planner"></label>
+                        <label>Estado
+                            <select data-filter-field="status">
+                                <option value="">Todos</option>
+                                <option value="activo">Activos</option>
+                                <option value="inactivo">Inactivos</option>
+                            </select>
+                        </label>
+                        <span class="filter-count" data-filter-count></span>
+                    </div>
+                    <div class="list-stack">
+                        {% for evento in eventos %}
+                            <details class="edit-panel" data-filter-item data-status="{% if evento.activo %}activo{% else %}inactivo{% endif %}" data-search="{{ evento }} {{ evento.sede.nombre|default:evento.lugar_fiesta }} {% if evento.wedding_planner %}{{ evento.wedding_planner.get_full_name|default:evento.wedding_planner.username }}{% endif %}">
+                                <summary>
+                                    <div>
+                                        <strong>{{ evento }}</strong>
+                                        <span class="muted">{{ evento.fecha_fiesta|date:"d/m/Y h:i A" }} - {{ evento.sede.nombre|default:evento.lugar_fiesta }}</span>
+                                    </div>
+                                    <span class="pill">{% if evento.activo %}Activo{% else %}Inactivo{% endif %}</span>
+                                </summary>
+                                <form class="mini-form nested-form" method="post">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="accion" value="editar_evento">
+                                    <input type="hidden" name="empresa_id" value="{{ empresa.id }}">
+                                    <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                                    <div class="form-grid">
+                                        <label>Nombre del evento<input name="nombre_evento" value="{{ evento.nombre_evento|default:'' }}"></label>
+                                        <label>Tipo
+                                            <select name="tipo_evento">
+                                                {% for valor, texto in tipos_evento %}
+                                                    <option value="{{ valor }}" {% if evento.tipo_evento == valor %}selected{% endif %}>{{ texto }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </label>
+                                        <label>Estado
+                                            <select name="estado">
+                                                {% for valor, texto in estados_evento %}
+                                                    <option value="{{ valor }}" {% if evento.estado == valor %}selected{% endif %}>{{ texto }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </label>
+                                        <label>Planner
+                                            <select name="planner_id">
+                                                <option value="">Sin planner</option>
+                                                {% for planner in planners %}
+                                                    <option value="{{ planner.usuario_id }}" {% if evento.wedding_planner_id == planner.usuario_id %}selected{% endif %}>{{ planner.usuario.get_full_name|default:planner.usuario.username }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </label>
+                                        <label>Nombre principal<input name="nombre_principal" value="{{ evento.nombre_principal|default:evento.novio }}"></label>
+                                        <label>Nombre secundario<input name="nombre_secundario" value="{{ evento.nombre_secundario|default:'' }}"></label>
+                                        <label>Fecha recepcion<input type="datetime-local" name="fecha_evento" placeholder="{{ evento.fecha_fiesta|date:'Y-m-d H:i' }}"></label>
+                                        <label>Fecha ceremonia<input type="datetime-local" name="fecha_ceremonia" placeholder="{{ evento.fecha_misa|date:'Y-m-d H:i' }}"></label>
+                                        <label>Ceremonia<input name="lugar_ceremonia" value="{{ evento.lugar_misa }}"></label>
+                                        <label>Recepcion<input name="lugar_recepcion" value="{{ evento.lugar_fiesta }}"></label>
+                                        <label>Capacidad<input type="number" name="capacidad_contratada" min="0" value="{{ evento.capacidad_contratada }}"></label>
+                                        <label>Sede
+                                            <select name="sede_id">
+                                                <option value="">Sin sede</option>
+                                                {% for sede in sedes %}
+                                                    <option value="{{ sede.id }}" {% if evento.sede_id == sede.id %}selected{% endif %}>{{ sede.nombre }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </label>
+                                        <label class="wide">Frase portada<input name="frase_portada" value="{{ evento.frase_portada }}"></label>
+                                        <label class="toggle-field"><input type="checkbox" name="activo_evento" {% if evento.activo %}checked{% endif %}> Evento activo</label>
+                                    </div>
+                                    <div class="form-actions">
+                                        <button class="btn" type="submit">Guardar evento</button>
+                                        <a class="btn secondary" href="{% url 'dashboard' %}?evento={{ evento.id }}">Editor visual</a>
+                                    </div>
+                                </form>
+                                <form class="inline-danger-form" method="post">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="accion" value="desactivar_evento">
+                                    <input type="hidden" name="empresa_id" value="{{ empresa.id }}">
+                                    <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                                    <button class="btn danger" type="submit">Desactivar evento</button>
+                                </form>
+                                <form class="inline-danger-form" method="post" data-confirm="Esta accion eliminara definitivamente el evento, su invitacion e informacion relacionada. ¿Deseas continuar?">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="accion" value="eliminar_evento">
+                                    <input type="hidden" name="empresa_id" value="{{ empresa.id }}">
+                                    <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                                    <button class="btn danger" type="submit">Eliminar evento</button>
+                                </form>
+                            </details>
+                        {% empty %}
+                            <p class="muted">Todavia no hay eventos registrados.</p>
+                        {% endfor %}
+                        <p class="empty-filter-state">No hay eventos con esos filtros.</p>
+                    </div>
+                </article>
+            </div>
+        </section>
+
+        <section class="role-section tab-panel" id="clientes" data-role-panel hidden data-subnav-scope="empresa-clientes">
+            <div class="section-header">
+                <div>
+                    <h2>Clientes</h2>
+                    <p class="muted">Registra responsables del evento y asignales acceso al portal del cliente.</p>
+                </div>
+            </div>
+            <p class="help-note">Las contraseñas se restablecen con una temporal. Usa “Mostrar” solo para revisar lo que estás capturando antes de guardar.</p>
+            <div class="module-tabs" role="tablist" aria-label="Clientes de empresa">
+                <button type="button" data-subpanel-button="alta">Nuevo cliente</button>
+                <button type="button" data-subpanel-button="directorio">Editar clientes</button>
+            </div>
+            <div class="forms-grid">
+                {% if puede_usuarios %}
+                <form class="mini-form" method="post" data-subpanel="alta">
+                    {% csrf_token %}
+                    <input type="hidden" name="accion" value="crear_cliente">
+                    <input type="hidden" name="empresa_id" value="{{ empresa.id }}">
+                    <input type="hidden" name="rol_usuario" value="CLIENTE">
+                    <h3>Nuevo cliente</h3>
+                    <div class="form-grid">
+                        <label>Usuario<input name="username_usuario" required placeholder="cliente_wendy"></label>
+                        <label>Contraseña temporal<input type="password" name="password_usuario" required autocomplete="new-password"></label>
+                        <label>Nombre<input name="first_name_usuario"></label>
+                        <label>Apellido<input name="last_name_usuario"></label>
+                        <label class="wide">Correo<input type="email" name="email_usuario"></label>
+                        <label>Asignar a evento
+                            <select name="evento_cliente_id">
+                                <option value="">Asignar despues</option>
+                                {% for evento in eventos_activos_empresa %}
+                                    <option value="{{ evento.id }}">{{ evento }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <label class="toggle-field"><input type="checkbox" name="activo_usuario" checked> Activo</label>
+                    </div>
+                    <button class="btn" type="submit">Crear cliente</button>
+                </form>
+                {% else %}
+                <article class="section-card permission-card" data-subpanel="alta">
+                    <span>Solo lectura</span>
+                    <strong>Clientes protegidos</strong>
+                    <p class="muted">Puedes consultar clientes y responsables, pero la creacion, edicion y eliminacion queda reservada para administradores de empresa.</p>
+                </article>
+                {% endif %}
+
+                <article class="section-card" data-filter-scope data-subpanel="directorio">
+                    <span>Clientes registrados</span>
+                    <div class="module-toolbar">
+                        <label>Buscar<input type="search" data-filter-search placeholder="Nombre, usuario o correo"></label>
+                        <label>Estado
+                            <select data-filter-field="status">
+                                <option value="">Todos</option>
+                                <option value="activo">Activos</option>
+                                <option value="inactivo">Inactivos</option>
+                            </select>
+                        </label>
+                        <span class="filter-count" data-filter-count></span>
+                    </div>
+                    <div class="list-stack">
+                        {% for membresia in clientes_empresa %}
+                            <details class="edit-panel" data-filter-item data-status="{% if membresia.activo %}activo{% else %}inactivo{% endif %}" data-search="{{ membresia.usuario.get_full_name }} {{ membresia.usuario.username }} {{ membresia.usuario.email }}">
+                                <summary>
+                                    <div>
+                                        <strong>{{ membresia.usuario.get_full_name|default:membresia.usuario.username }}</strong>
+                                        <span class="muted">Usuario: {{ membresia.usuario.username }} - {{ membresia.usuario.email|default:"Sin correo" }} - {% if membresia.activo %}Activo{% else %}Inactivo{% endif %}</span>
+                                    </div>
+                                    <span class="pill">Cliente</span>
+                                </summary>
+                                {% if puede_usuarios %}
+                                <form class="mini-form nested-form" method="post">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="accion" value="editar_usuario_empresa">
+                                    <input type="hidden" name="empresa_id" value="{{ empresa.id }}">
+                                    <input type="hidden" name="membresia_id" value="{{ membresia.id }}">
+                                    <input type="hidden" name="origen" value="clientes">
+                                    <div class="form-grid">
+                                        <label>Nombre<input name="first_name_usuario" value="{{ membresia.usuario.first_name }}"></label>
+                                        <label>Apellido<input name="last_name_usuario" value="{{ membresia.usuario.last_name }}"></label>
+                                        <label class="wide">Correo<input type="email" name="email_usuario" value="{{ membresia.usuario.email }}"></label>
+                                        <label>Nueva contraseña temporal<input type="password" name="password_usuario" placeholder="Solo si deseas cambiarla" autocomplete="new-password"></label>
+                                        <label class="toggle-field"><input type="checkbox" name="activo_usuario" {% if membresia.activo %}checked{% endif %}> Activo</label>
+                                        <input type="hidden" name="rol_usuario" value="CLIENTE">
+                                    </div>
+                                    <button class="btn" type="submit">Guardar cliente</button>
+                                </form>
+                                <form class="inline-danger-form" method="post">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="accion" value="desactivar_usuario_empresa">
+                                    <input type="hidden" name="empresa_id" value="{{ empresa.id }}">
+                                    <input type="hidden" name="membresia_id" value="{{ membresia.id }}">
+                                    <input type="hidden" name="origen" value="clientes">
+                                    <button class="btn danger" type="submit">Desactivar cliente</button>
+                                </form>
+                                <form class="inline-danger-form" method="post" data-confirm="Esta accion eliminara el acceso del cliente a esta empresa. ¿Deseas continuar?">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="accion" value="eliminar_usuario_empresa">
+                                    <input type="hidden" name="empresa_id" value="{{ empresa.id }}">
+                                    <input type="hidden" name="membresia_id" value="{{ membresia.id }}">
+                                    <input type="hidden" name="origen" value="clientes">
+                                    <button class="btn danger" type="submit">Eliminar cliente</button>
+                                </form>
+                                {% endif %}
+                            </details>
+                        {% empty %}
+                            <p class="muted">Sin clientes registrados.</p>
+                        {% endfor %}
+                        <p class="empty-filter-state">No hay clientes con esos filtros.</p>
+                    </div>
+                </article>
+            </div>
+        </section>
+
+        <section class="role-section tab-panel" id="equipo" data-role-panel hidden data-subnav-scope="empresa-equipo">
+            <div class="section-header">
+                <div>
+                    <h2>Equipo y permisos</h2>
+                    <p class="muted">Registra planners y controla quien puede editar catalogos, eventos y operacion.</p>
+                </div>
+            </div>
+            <p class="help-note">No se pueden consultar contraseñas anteriores porque se guardan protegidas. Para recuperar acceso, escribe una nueva contraseña temporal.</p>
+            <div class="module-tabs" role="tablist" aria-label="Equipo de empresa">
+                <button type="button" data-subpanel-button="alta">Nuevo planner</button>
+                <button type="button" data-subpanel-button="directorio">Editar equipo</button>
+            </div>
+            <div class="forms-grid">
+                {% if puede_usuarios %}
+                <form class="mini-form" method="post" data-subpanel="alta">
+                    {% csrf_token %}
+                    <input type="hidden" name="accion" value="crear_planner">
+                    <input type="hidden" name="empresa_id" value="{{ empresa.id }}">
+                    <input type="hidden" name="rol_usuario" value="WEDDING_PLANNER">
+                    <h3>Nuevo wedding planner</h3>
+                    <div class="form-grid">
+                        <label>Usuario<input name="username_usuario" required placeholder="planner_ana"></label>
+                        <label>Contraseña temporal<input type="password" name="password_usuario" required autocomplete="new-password"></label>
+                        <label>Nombre<input name="first_name_usuario"></label>
+                        <label>Apellido<input name="last_name_usuario"></label>
+                        <label class="wide">Correo<input type="email" name="email_usuario"></label>
+                        <label class="toggle-field"><input type="checkbox" name="activo_usuario" checked> Activo</label>
+                        <label class="toggle-field"><input type="checkbox" name="puede_gestionar_catalogos_usuario"> Puede catalogos</label>
+                    </div>
+                    <button class="btn" type="submit">Crear planner</button>
+                </form>
+                {% else %}
+                <article class="section-card permission-card" data-subpanel="alta">
+                    <span>Solo lectura</span>
+                    <strong>Equipo protegido</strong>
+                    <p class="muted">Puedes revisar usuarios y roles activos, pero solo administradores de empresa pueden crear, editar, desactivar o eliminar accesos.</p>
+                </article>
+                {% endif %}
+
+                <article class="section-card" data-filter-scope data-subpanel="directorio">
+                    <span>Usuarios registrados</span>
+                    <div class="module-toolbar">
+                        <label>Buscar<input type="search" data-filter-search placeholder="Nombre, usuario o correo"></label>
+                        <label>Rol
+                            <select data-filter-field="role">
+                                <option value="">Todos</option>
+                                {% for valor, texto in roles_empresa %}
+                                    <option value="{{ valor }}">{{ texto }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <label>Estado
+                            <select data-filter-field="status">
+                                <option value="">Todos</option>
+                                <option value="activo">Activos</option>
+                                <option value="inactivo">Inactivos</option>
+                            </select>
+                        </label>
+                        <span class="filter-count" data-filter-count></span>
+                    </div>
+                    <div class="list-stack">
+                        {% for membresia in membresias %}
+                            <details class="edit-panel" data-filter-item data-role="{{ membresia.rol }}" data-status="{% if membresia.activo %}activo{% else %}inactivo{% endif %}" data-search="{{ membresia.usuario.get_full_name }} {{ membresia.usuario.username }} {{ membresia.usuario.email }} {{ membresia.get_rol_display }}">
+                                <summary>
+                                    <div>
+                                        <strong>{{ membresia.usuario.get_full_name|default:membresia.usuario.username }}</strong>
+                                        <span class="muted">Usuario: {{ membresia.usuario.username }} - {{ membresia.get_rol_display }} - {% if membresia.activo %}Activo{% else %}Inactivo{% endif %}</span>
+                                    </div>
+                                    {% if membresia.puede_gestionar_catalogos %}<span class="pill">Catalogos</span>{% endif %}
+                                </summary>
+                                {% if puede_usuarios %}
+                                <form class="mini-form nested-form" method="post">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="accion" value="editar_usuario_empresa">
+                                    <input type="hidden" name="empresa_id" value="{{ empresa.id }}">
+                                    <input type="hidden" name="membresia_id" value="{{ membresia.id }}">
+                                    <div class="form-grid">
+                                        <label>Nombre<input name="first_name_usuario" value="{{ membresia.usuario.first_name }}"></label>
+                                        <label>Apellido<input name="last_name_usuario" value="{{ membresia.usuario.last_name }}"></label>
+                                        <label class="wide">Correo<input type="email" name="email_usuario" value="{{ membresia.usuario.email }}"></label>
+                                        <label>Rol
+                                            <select name="rol_usuario">
+                                                {% for valor, texto in roles_empresa %}
+                                                    <option value="{{ valor }}" {% if membresia.rol == valor %}selected{% endif %}>{{ texto }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </label>
+                                        <label>Nueva contraseña temporal<input type="password" name="password_usuario" placeholder="Solo si deseas cambiarla" autocomplete="new-password"></label>
+                                        <label class="toggle-field"><input type="checkbox" name="activo_usuario" {% if membresia.activo %}checked{% endif %}> Activo</label>
+                                        <label class="toggle-field"><input type="checkbox" name="puede_gestionar_catalogos_usuario" {% if membresia.puede_gestionar_catalogos %}checked{% endif %}> Puede catalogos</label>
+                                    </div>
+                                    <button class="btn" type="submit">Guardar usuario</button>
+                                </form>
+                                <form class="inline-danger-form" method="post">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="accion" value="desactivar_usuario_empresa">
+                                    <input type="hidden" name="empresa_id" value="{{ empresa.id }}">
+                                    <input type="hidden" name="membresia_id" value="{{ membresia.id }}">
+                                    <button class="btn danger" type="submit">Desactivar usuario</button>
+                                </form>
+                                <form class="inline-danger-form" method="post" data-confirm="Esta accion eliminara el acceso del usuario a esta empresa. ¿Deseas continuar?">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="accion" value="eliminar_usuario_empresa">
+                                    <input type="hidden" name="empresa_id" value="{{ empresa.id }}">
+                                    <input type="hidden" name="membresia_id" value="{{ membresia.id }}">
+                                    <button class="btn danger" type="submit">Eliminar usuario</button>
+                                </form>
+                                {% endif %}
+                            </details>
+                        {% empty %}
+                            <p class="muted">Sin usuarios registrados.</p>
+                        {% endfor %}
+                        <p class="empty-filter-state">No hay usuarios con esos filtros.</p>
+                    </div>
+                </article>
+            </div>
+        </section>
+
+        <section class="role-section tab-panel" id="catalogos" data-role-panel hidden data-subnav-scope="empresa-catalogos">
+            <div class="section-header">
+                <div>
+                    <h2>Catalogos de operacion</h2>
+                    <p class="muted">Sedes, proveedores y paquetes reutilizables para todos los eventos de la empresa.</p>
+                </div>
+            </div>
+            <div class="module-tabs" role="tablist" aria-label="Catalogos de operacion">
+                <button type="button" data-subpanel-button="sedes">Sedes</button>
+                <button type="button" data-subpanel-button="proveedores">Proveedores</button>
+                <button type="button" data-subpanel-button="paquetes">Paquetes</button>
+            </div>
+            {% if puede_catalogos %}
+            <div class="forms-grid">
+                <form class="mini-form" method="post" data-subpanel="sedes">
+                    {% csrf_token %}
+                    <input type="hidden" name="accion" value="crear_sede">
+                    <input type="hidden" name="empresa_id" value="{{ empresa.id }}">
+                    <h3>Sede</h3>
+                    <div class="form-grid">
+                        <label>Nombre<input name="nombre_sede" required></label>
+                        <label>Tipo
+                            <select name="tipo_sede">{% for valor, texto in tipos_sede %}<option value="{{ valor }}">{{ texto }}</option>{% endfor %}</select>
+                        </label>
+                        <label>Cap. minima<input type="number" name="capacidad_minima" value="0"></label>
+                        <label>Cap. maxima<input type="number" name="capacidad_maxima" value="0"></label>
+                        <label>Precio base<input type="number" step="0.01" name="precio_base_sede" value="0"></label>
+                        <label class="wide">Direccion<input name="direccion_sede"></label>
+                    </div>
+                    <button class="btn" type="submit">Agregar sede</button>
+                </form>
+
+                <form class="mini-form" method="post" data-subpanel="proveedores">
+                    {% csrf_token %}
+                    <input type="hidden" name="accion" value="crear_proveedor">
+                    <input type="hidden" name="empresa_id" value="{{ empresa.id }}">
+                    <h3>Proveedor</h3>
+                    <div class="form-grid">
+                        <label>Nombre<input name="nombre_proveedor" required></label>
+                        <label>Tipo
+                            <select name="tipo_proveedor">{% for valor, texto in tipos_proveedor %}<option value="{{ valor }}">{{ texto }}</option>{% endfor %}</select>
+                        </label>
+                        <label>Contacto<input name="contacto_proveedor"></label>
+                        <label>Telefono<input name="telefono_proveedor"></label>
+                        <label class="wide">Correo<input type="email" name="correo_proveedor"></label>
+                        <label>Contacto planner<input name="contacto_operativo_proveedor"></label>
+                        <label>Telefono planner<input name="telefono_operativo_proveedor"></label>
+                        <label class="wide">Correo planner<input type="email" name="correo_operativo_proveedor"></label>
+                        <label>RFC<input name="rfc_proveedor"></label>
+                        <label class="wide">Datos bancarios<textarea name="datos_bancarios_proveedor" rows="2"></textarea></label>
+                        <label class="wide">Notas privadas<textarea name="notas_privadas_proveedor" rows="2"></textarea></label>
+                        <label class="wide">Descripcion<input name="descripcion_proveedor"></label>
+                        <label class="toggle-field wide"><input type="checkbox" name="visible_wedding_planners_proveedor" checked> Visible para wedding planners</label>
+                    </div>
+                    <button class="btn" type="submit">Agregar proveedor</button>
+                </form>
+
+                <form class="mini-form" method="post" data-subpanel="paquetes">
+                    {% csrf_token %}
+                    <input type="hidden" name="accion" value="crear_paquete">
+                    <input type="hidden" name="empresa_id" value="{{ empresa.id }}">
+                    <h3>Paquete</h3>
+                    <div class="form-grid">
+                        <label>Nombre<input name="nombre_paquete" required></label>
+                        <label>Personas<input type="number" name="personas_paquete" value="0"></label>
+                        <label>Precio base<input type="number" step="0.01" name="precio_base_paquete" value="0"></label>
+                        <label class="wide">Descripcion<input name="descripcion_paquete"></label>
+                    </div>
+                    <button class="btn" type="submit">Agregar paquete</button>
+                </form>
+            </div>
+            {% else %}
+            <article class="section-card permission-card">
+                <span>Solo lectura</span>
+                <strong>Catalogos protegidos</strong>
+                <p class="muted">Puedes consultar sedes, proveedores y paquetes. Los cambios al catalogo general los realiza un administrador o un usuario con permiso de catalogos.</p>
+            </article>
+            {% endif %}
+
+            <div class="catalog-grid">
+                <article class="section-card" data-filter-scope data-subpanel="sedes">
+                    <span>Sedes</span>
+                    <div class="module-toolbar">
+                        <label>Buscar<input type="search" data-filter-search placeholder="Sede o direccion"></label>
+                        <label>Estado
+                            <select data-filter-field="status">
+                                <option value="">Todas</option>
+                                <option value="activo">Activas</option>
+                                <option value="inactivo">Inactivas</option>
+                            </select>
+                        </label>
+                        <span class="filter-count" data-filter-count></span>
+                    </div>
+                    <div class="list-stack">
+                        {% for sede in sedes %}
+                            <details class="edit-panel" data-filter-item data-status="{% if sede.activa %}activo{% else %}inactivo{% endif %}" data-search="{{ sede.nombre }} {{ sede.direccion }} {{ sede.get_tipo_display }}">
+                                <summary>
+                                    <div><strong>{{ sede.nombre }}</strong><span class="muted">{{ sede.get_tipo_display }} - {{ sede.capacidad_maxima }} pax - {% if sede.activa %}Activa{% else %}Inactiva{% endif %}</span></div>
+                                </summary>
+                                {% if puede_catalogos %}
+                                <form class="mini-form nested-form" method="post">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="accion" value="editar_sede">
+                                    <input type="hidden" name="empresa_id" value="{{ empresa.id }}">
+                                    <input type="hidden" name="sede_id" value="{{ sede.id }}">
+                                    <div class="form-grid">
+                                        <label>Nombre<input name="nombre_sede" value="{{ sede.nombre }}"></label>
+                                        <label>Tipo<select name="tipo_sede">{% for valor, texto in tipos_sede %}<option value="{{ valor }}" {% if sede.tipo == valor %}selected{% endif %}>{{ texto }}</option>{% endfor %}</select></label>
+                                        <label>Cap. minima<input type="number" name="capacidad_minima" value="{{ sede.capacidad_minima }}"></label>
+                                        <label>Cap. maxima<input type="number" name="capacidad_maxima" value="{{ sede.capacidad_maxima }}"></label>
+                                        <label>Precio base<input type="number" step="0.01" name="precio_base_sede" value="{{ sede.precio_base }}"></label>
+                                        <label class="wide">Direccion<input name="direccion_sede" value="{{ sede.direccion|default:'' }}"></label>
+                                        <label class="wide">Descripcion<input name="descripcion_sede" value="{{ sede.descripcion|default:'' }}"></label>
+                                        <label class="toggle-field"><input type="checkbox" name="activa_sede" {% if sede.activa %}checked{% endif %}> Sede activa</label>
+                                    </div>
+                                    <button class="btn" type="submit">Guardar sede</button>
+                                </form>
+                                <form class="inline-danger-form" method="post">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="accion" value="desactivar_sede">
+                                    <input type="hidden" name="empresa_id" value="{{ empresa.id }}">
+                                    <input type="hidden" name="sede_id" value="{{ sede.id }}">
+                                    <button class="btn danger" type="submit">Desactivar sede</button>
+                                </form>
+                                <form class="inline-danger-form" method="post" data-confirm="Esta accion eliminara definitivamente la sede. ¿Deseas continuar?">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="accion" value="eliminar_sede">
+                                    <input type="hidden" name="empresa_id" value="{{ empresa.id }}">
+                                    <input type="hidden" name="sede_id" value="{{ sede.id }}">
+                                    <button class="btn danger" type="submit">Eliminar sede</button>
+                                </form>
+                                {% endif %}
+                            </details>
+                        {% empty %}
+                            <p class="muted">Sin sedes.</p>
+                        {% endfor %}
+                        <p class="empty-filter-state">No hay sedes con esos filtros.</p>
+                    </div>
+                </article>
+
+                <article class="section-card" data-filter-scope data-subpanel="proveedores">
+                    <span>Proveedores</span>
+                    <div class="module-toolbar">
+                        <label>Buscar<input type="search" data-filter-search placeholder="Proveedor, contacto o servicio"></label>
+                        <label>Tipo
+                            <select data-filter-field="type">
+                                <option value="">Todos</option>
+                                {% for valor, texto in tipos_proveedor %}
+                                    <option value="{{ valor }}">{{ texto }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <label>Estado
+                            <select data-filter-field="status">
+                                <option value="">Todos</option>
+                                <option value="activo">Activos</option>
+                                <option value="inactivo">Inactivos</option>
+                            </select>
+                        </label>
+                        <span class="filter-count" data-filter-count></span>
+                    </div>
+                    <div class="list-stack">
+                        {% for proveedor in proveedores %}
+                            <details class="edit-panel" data-filter-item data-type="{{ proveedor.tipo_proveedor }}" data-status="{% if proveedor.activo %}activo{% else %}inactivo{% endif %}" data-search="{{ proveedor.nombre_comercial }} {{ proveedor.nombre_contacto }} {{ proveedor.telefono }} {{ proveedor.correo }} {{ proveedor.get_tipo_proveedor_display }}">
+                                <summary>
+                                    <div><strong>{{ proveedor.nombre_comercial }}</strong><span class="muted">{{ proveedor.get_tipo_proveedor_display }} - {{ proveedor.telefono|default:"Sin telefono" }} - {% if proveedor.visible_para_wedding_planners %}Visible para planners{% else %}Solo empresa{% endif %} - {% if proveedor.activo %}Activo{% else %}Inactivo{% endif %}</span></div>
+                                </summary>
+                                {% if puede_catalogos %}
+                                <form class="mini-form nested-form" method="post">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="accion" value="editar_proveedor">
+                                    <input type="hidden" name="empresa_id" value="{{ empresa.id }}">
+                                    <input type="hidden" name="proveedor_id" value="{{ proveedor.id }}">
+                                    <div class="form-grid">
+                                        <label>Nombre<input name="nombre_proveedor" value="{{ proveedor.nombre_comercial }}"></label>
+                                        <label>Tipo<select name="tipo_proveedor">{% for valor, texto in tipos_proveedor %}<option value="{{ valor }}" {% if proveedor.tipo_proveedor == valor %}selected{% endif %}>{{ texto }}</option>{% endfor %}</select></label>
+                                        <label>Contacto<input name="contacto_proveedor" value="{{ proveedor.nombre_contacto|default:'' }}"></label>
+                                        <label>Telefono<input name="telefono_proveedor" value="{{ proveedor.telefono|default:'' }}"></label>
+                                        <label class="wide">Correo<input type="email" name="correo_proveedor" value="{{ proveedor.correo|default:'' }}"></label>
+                                        <label>Contacto planner<input name="contacto_operativo_proveedor" value="{{ proveedor.contacto_operativo|default:'' }}"></label>
+                                        <label>Telefono planner<input name="telefono_operativo_proveedor" value="{{ proveedor.telefono_operativo|default:'' }}"></label>
+                                        <label class="wide">Correo planner<input type="email" name="correo_operativo_proveedor" value="{{ proveedor.correo_operativo|default:'' }}"></label>
+                                        <label>RFC<input name="rfc_proveedor" value="{{ proveedor.rfc|default:'' }}"></label>
+                                        <label class="wide">Datos bancarios<textarea name="datos_bancarios_proveedor" rows="2">{{ proveedor.datos_bancarios|default:'' }}</textarea></label>
+                                        <label class="wide">Notas privadas<textarea name="notas_privadas_proveedor" rows="2">{{ proveedor.notas_privadas|default:'' }}</textarea></label>
+                                        <label class="wide">Descripcion<input name="descripcion_proveedor" value="{{ proveedor.descripcion|default:'' }}"></label>
+                                        <label class="toggle-field"><input type="checkbox" name="visible_wedding_planners_proveedor" {% if proveedor.visible_para_wedding_planners %}checked{% endif %}> Visible para planners</label>
+                                        <label class="toggle-field"><input type="checkbox" name="activo_proveedor" {% if proveedor.activo %}checked{% endif %}> Proveedor activo</label>
+                                    </div>
+                                    <button class="btn" type="submit">Guardar proveedor</button>
+                                </form>
+                                <form class="inline-danger-form" method="post">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="accion" value="desactivar_proveedor">
+                                    <input type="hidden" name="empresa_id" value="{{ empresa.id }}">
+                                    <input type="hidden" name="proveedor_id" value="{{ proveedor.id }}">
+                                    <button class="btn danger" type="submit">Desactivar proveedor</button>
+                                </form>
+                                <form class="inline-danger-form" method="post" data-confirm="Esta accion eliminara definitivamente el proveedor del catalogo. ¿Deseas continuar?">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="accion" value="eliminar_proveedor">
+                                    <input type="hidden" name="empresa_id" value="{{ empresa.id }}">
+                                    <input type="hidden" name="proveedor_id" value="{{ proveedor.id }}">
+                                    <button class="btn danger" type="submit">Eliminar proveedor</button>
+                                </form>
+                                {% endif %}
+                            </details>
+                        {% empty %}
+                            <p class="muted">Sin proveedores.</p>
+                        {% endfor %}
+                        <p class="empty-filter-state">No hay proveedores con esos filtros.</p>
+                    </div>
+                </article>
+
+                <article class="section-card" data-filter-scope data-subpanel="paquetes">
+                    <span>Paquetes</span>
+                    <div class="module-toolbar">
+                        <label>Buscar<input type="search" data-filter-search placeholder="Nombre o descripcion"></label>
+                        <label>Estado
+                            <select data-filter-field="status">
+                                <option value="">Todos</option>
+                                <option value="activo">Activos</option>
+                                <option value="inactivo">Inactivos</option>
+                            </select>
+                        </label>
+                        <span class="filter-count" data-filter-count></span>
+                    </div>
+                    <div class="list-stack">
+                        {% for paquete in paquetes %}
+                            <details class="edit-panel" data-filter-item data-status="{% if paquete.activo %}activo{% else %}inactivo{% endif %}" data-search="{{ paquete.nombre }} {{ paquete.descripcion }}">
+                                <summary>
+                                    <div><strong>{{ paquete.nombre }}</strong><span class="muted">{{ paquete.numero_personas_incluidas }} pax - ${{ paquete.precio_base|floatformat:0 }} - {% if paquete.activo %}Activo{% else %}Inactivo{% endif %}</span></div>
+                                </summary>
+                                {% if puede_catalogos %}
+                                <form class="mini-form nested-form" method="post">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="accion" value="editar_paquete">
+                                    <input type="hidden" name="empresa_id" value="{{ empresa.id }}">
+                                    <input type="hidden" name="paquete_id" value="{{ paquete.id }}">
+                                    <div class="form-grid">
+                                        <label>Nombre<input name="nombre_paquete" value="{{ paquete.nombre }}"></label>
+                                        <label>Personas<input type="number" name="personas_paquete" value="{{ paquete.numero_personas_incluidas }}"></label>
+                                        <label>Precio base<input type="number" step="0.01" name="precio_base_paquete" value="{{ paquete.precio_base }}"></label>
+                                        <label class="wide">Descripcion<input name="descripcion_paquete" value="{{ paquete.descripcion|default:'' }}"></label>
+                                        <label class="toggle-field"><input type="checkbox" name="activo_paquete" {% if paquete.activo %}checked{% endif %}> Paquete activo</label>
+                                    </div>
+                                    <button class="btn" type="submit">Guardar paquete</button>
+                                </form>
+                                <form class="inline-danger-form" method="post">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="accion" value="desactivar_paquete">
+                                    <input type="hidden" name="empresa_id" value="{{ empresa.id }}">
+                                    <input type="hidden" name="paquete_id" value="{{ paquete.id }}">
+                                    <button class="btn danger" type="submit">Desactivar paquete</button>
+                                </form>
+                                <form class="inline-danger-form" method="post" data-confirm="Esta accion eliminara definitivamente el paquete y sus asignaciones. ¿Deseas continuar?">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="accion" value="eliminar_paquete">
+                                    <input type="hidden" name="empresa_id" value="{{ empresa.id }}">
+                                    <input type="hidden" name="paquete_id" value="{{ paquete.id }}">
+                                    <button class="btn danger" type="submit">Eliminar paquete</button>
+                                </form>
+                                {% endif %}
+                            </details>
+                        {% empty %}
+                            <p class="muted">Sin paquetes.</p>
+                        {% endfor %}
+                        <p class="empty-filter-state">No hay paquetes con esos filtros.</p>
+                    </div>
+                </article>
+            </div>
+        </section>
+
+        <section class="role-section tab-panel" id="operacion" data-role-panel hidden>
+            <div class="section-header">
+                <div>
+                    <h2>Operacion</h2>
+                    <p class="muted">Atajos para produccion, mesas, calendario, invitados y edicion visual.</p>
+                </div>
+            </div>
+            <div data-filter-scope>
+                <div class="module-toolbar">
+                    <label>Buscar<input type="search" data-filter-search placeholder="Evento, lugar o planner"></label>
+                    <label>Estado
+                        <select data-filter-field="status">
+                            <option value="">Todos</option>
+                            {% for valor, texto in estados_evento %}
+                                <option value="{{ valor }}">{{ texto }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <span class="filter-count" data-filter-count></span>
+                </div>
+            <div class="events-grid">
+                {% for evento in eventos %}
+                    <article class="event-card" data-filter-item data-status="{{ evento.estado }}" data-search="{{ evento }} {{ evento.lugar_fiesta }} {% if evento.wedding_planner %}{{ evento.wedding_planner.get_full_name|default:evento.wedding_planner.username }}{% endif %}">
+                        <div>
+                            <h3>{{ evento }}</h3>
+                            <p class="muted">{{ evento.fecha_fiesta|date:"d/m/Y h:i A" }} - {{ evento.lugar_fiesta }}</p>
+                        </div>
+                        <div class="event-meta">
+                            <span class="pill">{{ evento.get_estado_display }}</span>
+                            {% if evento.wedding_planner %}<span class="pill">{{ evento.wedding_planner.get_full_name|default:evento.wedding_planner.username }}</span>{% else %}<span class="pill">Sin planner</span>{% endif %}
+                        </div>
+                        <div class="event-actions">
+                            <a href="{% url 'dashboard' %}?evento={{ evento.id }}">Invitacion</a>
+                            <a class="secondary" href="{% url 'calendario_operativo' %}?evento={{ evento.id }}">Calendario</a>
+                            <a class="secondary" href="{% url 'mesas_visual' %}?evento={{ evento.id }}">Mesas</a>
+                        </div>
+                    </article>
+                {% empty %}
+                    <p class="muted">Crea tu primer evento para ver la operacion.</p>
+                {% endfor %}
+                <p class="empty-filter-state">No hay eventos operativos con esos filtros.</p>
+            </div>
+            </div>
+        </section>
+    </main>
+</div>
+<script src="{% static 'invitaciones/js/role_dashboards.js' %}"></script>
+</body>
+</html>

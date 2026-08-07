@@ -1,0 +1,84 @@
+﻿                <form class="mini-admin-form" method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="accion" value="agregar_persona_ceremonia">
+                    <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                    <h3>Padres y padrinos</h3>
+                    <div class="design-grid">
+                        <label>
+                            Sección
+                            <select name="seccion_persona">
+                                {% for valor, texto in secciones_persona %}
+                                    <option value="{{ valor }}">{{ texto }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <label>
+                            Etiqueta
+                            <input type="text" name="etiqueta_persona" placeholder="Papá, mamá, padrino de anillos...">
+                        </label>
+                        <label>
+                            Orden
+                            <input type="number" name="orden_persona" min="0" value="0">
+                        </label>
+                        <label class="wide">
+                            Nombre
+                            <input type="text" name="nombre_persona" placeholder="Nombre completo">
+                        </label>
+                        <label class="toggle-field">
+                            <input type="checkbox" name="visible_persona" checked>
+                            Visible en invitación
+                        </label>
+                    </div>
+                    <div class="actions form-actions">
+                        <button class="btn" type="submit">Agregar nombre</button>
+                    </div>
+                </form>
+
+                <section class="mini-admin-form saved-items">
+                    <h3>Nombres guardados</h3>
+                    <div class="saved-list">
+                        {% for persona in evento.personas_ceremonia.all %}
+                            <article class="saved-item">
+                                <div>
+                                    <strong>{{ persona.nombre }}</strong>
+                                    <span>{{ persona.get_seccion_display }} · {{ persona.etiqueta }}{% if not persona.visible %} · Oculto{% endif %}</span>
+                                </div>
+                                <details>
+                                    <summary>Editar</summary>
+                                    <form method="post" class="inline-edit-form">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="accion" value="editar_persona_ceremonia">
+                                        <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                                        <input type="hidden" name="persona_id" value="{{ persona.id }}">
+                                        <div class="design-grid">
+                                            <label>
+                                                Sección
+                                                <select name="seccion_persona">
+                                                    {% for valor, texto in secciones_persona %}
+                                                        <option value="{{ valor }}" {% if persona.seccion == valor %}selected{% endif %}>{{ texto }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </label>
+                                            <label>Etiqueta<input type="text" name="etiqueta_persona" value="{{ persona.etiqueta }}"></label>
+                                            <label>Orden<input type="number" name="orden_persona" min="0" value="{{ persona.orden }}"></label>
+                                            <label class="wide">Nombre<input type="text" name="nombre_persona" value="{{ persona.nombre }}"></label>
+                                            <label class="toggle-field"><input type="checkbox" name="visible_persona" {% if persona.visible %}checked{% endif %}> Visible</label>
+                                        </div>
+                                        <div class="actions form-actions">
+                                            <button class="btn" type="submit">Guardar</button>
+                                        </div>
+                                    </form>
+                                    <form method="post" onsubmit="return confirm('¿Eliminar este nombre?');">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="accion" value="eliminar_persona_ceremonia">
+                                        <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                                        <input type="hidden" name="persona_id" value="{{ persona.id }}">
+                                        <button class="btn danger" type="submit">Eliminar</button>
+                                    </form>
+                                </details>
+                            </article>
+                        {% empty %}
+                            <p class="muted">Todavía no hay padres o padrinos capturados.</p>
+                        {% endfor %}
+                    </div>
+                </section>

@@ -1,0 +1,69 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendario operativo</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css">
+    <link rel="stylesheet" href="{% static 'invitaciones/css/dashboard.css' %}">
+</head>
+<body>
+    <div class="wrapper">
+        <div class="topbar">
+            <h1>Calendario operativo</h1>
+            <div class="actions">
+                <a href="{% url 'dashboard' %}{% if evento %}?evento={{ evento.id }}{% endif %}">Dashboard</a>
+                {% if es_dirtec %}
+                <a href="/admin/itinerario/actividaditinerario/add/{% if evento %}?evento={{ evento.id }}{% endif %}" target="_blank">Agregar actividad</a>
+                <a href="/admin/tareas/tareaevento/add/{% if evento %}?evento={{ evento.id }}{% endif %}" target="_blank">Agregar tarea</a>
+                <a href="/admin/presupuesto/gastoevento/add/{% if evento %}?evento={{ evento.id }}{% endif %}" target="_blank">Agregar pago</a>
+                {% endif %}
+                <form method="post" action="{% url 'logout' %}">
+                    {% csrf_token %}
+                    <button class="btn secondary" type="submit">Cerrar sesión</button>
+                </form>
+            </div>
+        </div>
+
+        <section class="event-panel">
+            <div>
+                {% if evento %}
+                    <h2 class="event-title">{{ evento }}</h2>
+                    <p class="muted">Actividades operativas, tareas con fecha limite y pagos próximos o vencidos en una sola vista.</p>
+                {% else %}
+                    <h2 class="event-title">Sin evento</h2>
+                    <p class="muted">Crea un evento para comenzar a planear el calendario.</p>
+                {% endif %}
+            </div>
+
+            <form method="get">
+                <label for="evento">Evento</label>
+                <select id="evento" name="evento" onchange="this.form.submit()">
+                    {% for item in eventos %}
+                        <option value="{{ item.id }}" {% if evento and item.id == evento.id %}selected{% endif %}>
+                            {{ item }}{% if item.activo %} · Activo{% endif %}
+                        </option>
+                    {% endfor %}
+                </select>
+            </form>
+        </section>
+
+        {% if evento %}
+        <section class="calendar-panel">
+            <div class="calendar-legend">
+                <span><i style="background:#2f7a4d"></i> Confirmado / en progreso</span>
+                <span><i style="background:#d2b074"></i> Alta prioridad / tarea</span>
+                <span><i style="background:#9b4d36"></i> Urgente o vencido</span>
+                <span><i style="background:#52627d"></i> Pendiente</span>
+            </div>
+            <div id="calendar" data-events-url="{{ calendar_events_url }}"></div>
+        </section>
+        {% endif %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/locales-all.global.min.js"></script>
+    <script src="{% static 'invitaciones/js/calendario_operativo.js' %}"></script>
+</body>
+</html>
