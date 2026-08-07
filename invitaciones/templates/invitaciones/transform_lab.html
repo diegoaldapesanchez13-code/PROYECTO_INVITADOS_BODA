@@ -1,0 +1,78 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transform Lab · {{ evento }}</title>
+    <link rel="stylesheet" href="{% static 'invitaciones/css/transform_lab.css' %}?v=0.32.0">
+</head>
+<body>
+    {{ transform_lab_bootstrap|json_script:"dirtec-transform-lab-bootstrap" }}
+
+    <main
+        class="transform-lab"
+        data-transform-lab-root
+        data-bootstrap-id="dirtec-transform-lab-bootstrap"
+    >
+        <header class="transform-lab-topbar">
+            <div>
+                <a href="{{ renderer_lab_url }}">← Renderer Lab</a>
+                <span>Laboratorio aislado</span>
+                <h1>Canvas, Selection &amp; Transform</h1>
+                <p>{{ evento }}</p>
+            </div>
+
+            <div class="transform-lab-actions">
+                <div class="transform-lab-devices">
+                    <button class="active" type="button" data-transform-device="mobile">Celular</button>
+                    <button type="button" data-transform-device="tablet">Tablet</button>
+                    <button type="button" data-transform-device="desktop">Desktop</button>
+                </div>
+                <button type="button" data-transform-cancel>Cancelar</button>
+                <button type="button" data-transform-reset>Restablecer fixture</button>
+            </div>
+        </header>
+
+        <section class="transform-lab-status">
+            <strong>Sin persistencia</strong>
+            <span>Los cambios viven solo en memoria y desaparecen al recargar.</span>
+            <output data-transform-lab-status>Preparando laboratorio…</output>
+        </section>
+
+        <section class="transform-lab-stage" data-transform-stage>
+            <div class="transform-lab-render-host">
+                <div data-transform-render-target></div>
+                <div class="transform-lab-overlay-root" data-transform-overlay-root></div>
+            </div>
+
+            <button
+                class="transform-lab-canvas-height"
+                type="button"
+                data-canvas-height-handle
+                aria-label="Cambiar altura del lienzo"
+            >
+                <span></span>
+                Arrastra para cambiar la altura
+            </button>
+        </section>
+
+        <aside class="transform-lab-help">
+            <h2>Validación</h2>
+            <ol>
+                <li>Selecciona imagen, texto, Card o botón.</li>
+                <li>Arrastra el contenido para moverlo.</li>
+                <li>Usa los ocho puntos para ancho y alto.</li>
+                <li>Usa el control superior para rotar.</li>
+                <li>Arrastra el borde inferior del lienzo.</li>
+                <li>Pulsa Escape para cancelar.</li>
+            </ol>
+        </aside>
+    </main>
+
+    <script
+        type="module"
+        src="{% static 'invitaciones/builder_engine/integrations/django/transform_lab_mount.js' %}?v=0.32.1"
+    ></script>
+</body>
+</html>

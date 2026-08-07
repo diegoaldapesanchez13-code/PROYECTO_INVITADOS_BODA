@@ -514,3 +514,315 @@ button { color: inherit; }
 .engine-transform-overlay * {
     box-sizing: border-box;
 }
+
+.engine-component-library {
+    margin: 18px 0;
+    padding: 14px;
+    border: 1px solid #2d3542;
+    border-radius: 12px;
+    background: #11161e;
+}
+.engine-component-library-head {
+    display: grid;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+.engine-component-library-head strong { display: block; }
+.engine-component-library-head small {
+    display: block;
+    margin-top: 3px;
+    color: #7f8999;
+    font-size: 10px;
+}
+.engine-component-library-head input {
+    width: 100%;
+    padding: 9px 10px;
+    border: 1px solid #343c4c;
+    border-radius: 8px;
+    background: #0b0f15;
+    color: #eef1f7;
+}
+.engine-component-library-groups {
+    display: grid;
+    gap: 16px;
+    max-height: 420px;
+    overflow: auto;
+    padding-right: 3px;
+}
+.engine-component-group h3 {
+    margin: 0 0 8px;
+    color: #8993a3;
+    font-size: 10px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+.engine-component-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 7px;
+}
+.engine-component-item {
+    display: grid;
+    grid-template-columns: 28px 1fr;
+    grid-template-rows: auto auto;
+    gap: 1px 8px;
+    min-width: 0;
+    padding: 9px;
+    border: 1px solid #303847;
+    border-radius: 9px;
+    background: #1a202a;
+    color: #dce2ec;
+    text-align: left;
+    cursor: grab;
+}
+.engine-component-item:hover {
+    border-color: #d2b074;
+    background: #29241c;
+}
+.engine-component-item > span {
+    grid-row: 1 / 3;
+    display: grid;
+    width: 28px;
+    height: 28px;
+    place-content: center;
+    align-self: center;
+    border-radius: 7px;
+    background: #2a313e;
+    color: #f0ca78;
+    font-weight: 800;
+}
+.engine-component-item strong {
+    overflow: hidden;
+    font-size: 11px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+.engine-component-item small {
+    color: #778191;
+    font-size: 8px;
+}
+.engine-library-empty {
+    color: #7f8999;
+    font-size: 11px;
+}
+.engine-media-placeholder {
+    display: grid;
+    min-height: 160px;
+    place-content: center;
+    gap: 5px;
+    border: 2px dashed #aaa194;
+    background:
+        linear-gradient(135deg, rgba(0,0,0,.03) 25%, transparent 25%) -10px 0/20px 20px,
+        linear-gradient(225deg, rgba(0,0,0,.03) 25%, transparent 25%) -10px 0/20px 20px,
+        #eee8dd;
+    color: #72695d;
+    text-align: center;
+}
+.engine-media-placeholder span { font-size: 30px; }
+.engine-media-placeholder strong { font-size: 12px; }
+.engine-media-placeholder small { font-size: 9px; }
+.engine-preview-countdown {
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    gap: 8px;
+}
+.engine-preview-card {
+    box-shadow: 0 8px 22px rgba(0,0,0,.09);
+}
+
+/* Hotfix 10.7.1 — workspace sin scroll vertical global */
+.engine-shell {
+    height: 100vh;
+    max-height: 100vh;
+    overflow: hidden;
+}
+
+.engine-shell main,
+.engine-shell .engine-main,
+.engine-shell .engine-workspace,
+.engine-shell [data-engine-workspace] {
+    min-height: 0;
+}
+
+.engine-shell .engine-sidebar,
+.engine-shell aside {
+    min-height: 0;
+    max-height: calc(100vh - 70px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+}
+
+.engine-component-library {
+    margin: 10px 0;
+}
+
+.engine-component-library-groups {
+    max-height: min(38vh, 430px);
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.engine-layers-panel {
+    min-height: 140px;
+    max-height: min(34vh, 360px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+.engine-active-canvas {
+    min-height: 0;
+    max-height: calc(100vh - 110px);
+    overflow: auto;
+    overscroll-behavior: contain;
+}
+
+.engine-component-item[draggable="true"] {
+    user-select: none;
+    -webkit-user-drag: element;
+}
+
+.engine-component-item[draggable="true"]:active {
+    cursor: grabbing;
+}
+
+@media (max-width: 900px) {
+    .engine-shell {
+        height: auto;
+        max-height: none;
+        overflow: visible;
+    }
+
+    .engine-shell .engine-sidebar,
+    .engine-shell aside,
+    .engine-active-canvas {
+        max-height: none;
+    }
+}
+
+/* Hotfix 10.7.2 — edición continua del Inspector */
+.engine-inspector input:focus,
+.engine-inspector textarea:focus {
+    border-color: #8f5cff;
+    outline: 2px solid rgba(143, 92, 255, .22);
+    outline-offset: 1px;
+}
+
+.engine-inspector input,
+.engine-inspector textarea {
+    scroll-margin-block: 80px;
+}
+
+.engine-asset-library {
+    margin: 10px 0;
+    padding: 14px;
+    border: 1px solid #2d3542;
+    border-radius: 12px;
+    background: #11161e;
+}
+.engine-assets-head {
+    display: grid;
+    gap: 9px;
+    margin-bottom: 10px;
+}
+.engine-assets-head small {
+    display: block;
+    margin-top: 3px;
+    color: #7f8999;
+    font-size: 10px;
+}
+.engine-assets-head input {
+    width: 100%;
+    padding: 9px 10px;
+    border: 1px solid #343c4c;
+    border-radius: 8px;
+    background: #0b0f15;
+    color: #eef1f7;
+}
+.engine-assets-filters {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 10px;
+}
+.engine-assets-filters button {
+    padding: 6px 9px;
+    border: 1px solid #343c4c;
+    border-radius: 999px;
+    background: #1a202a;
+    color: #9da7b7;
+    font-size: 9px;
+}
+.engine-assets-filters button.active {
+    border-color: #d2b074;
+    color: #f0ca78;
+}
+.engine-assets-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 7px;
+    max-height: min(34vh, 360px);
+    overflow-y: auto;
+}
+.engine-asset-card {
+    min-width: 0;
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid #303847;
+    border-radius: 9px;
+    background: #1a202a;
+    color: #dce2ec;
+    text-align: left;
+    cursor: pointer;
+}
+.engine-asset-card:hover { border-color: #d2b074; }
+.engine-asset-preview {
+    display: block;
+    aspect-ratio: 1.25;
+    background: #0b0f15;
+}
+.engine-asset-preview img,
+.engine-asset-preview video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.engine-asset-copy {
+    display: block;
+    padding: 7px;
+}
+.engine-asset-copy strong,
+.engine-asset-copy small {
+    display: block;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+.engine-asset-copy strong { font-size: 10px; }
+.engine-asset-copy small {
+    margin-top: 3px;
+    color: #778191;
+    font-size: 8px;
+}
+.engine-assets-empty,
+.engine-assets-message {
+    grid-column: 1 / -1;
+    padding: 18px;
+    color: #7f8999;
+    text-align: center;
+    font-size: 10px;
+}
+.engine-assets-empty span,
+.engine-assets-empty strong,
+.engine-assets-empty small { display: block; }
+.engine-assets-empty span { font-size: 28px; }
+.engine-assets-empty small { margin-top: 4px; }
+.engine-assets-message.error { color: #ff9aa4; }
+
+
+/* Sprint 10.9.1 — 8 handles universales */
+.engine-transform-handle.n { left:50%; top:-7px; transform:translateX(-50%); cursor:ns-resize; }
+.engine-transform-handle.s { left:50%; bottom:-7px; transform:translateX(-50%); cursor:ns-resize; }
+.engine-transform-handle.e { right:-7px; top:50%; transform:translateY(-50%); cursor:ew-resize; }
+.engine-transform-handle.w { left:-7px; top:50%; transform:translateY(-50%); cursor:ew-resize; }
+.engine-preview-node { min-width:0; min-height:0; }
+.engine-layer-z { font-size:9px; font-weight:600; color:#d2b074; margin-right:5px; }

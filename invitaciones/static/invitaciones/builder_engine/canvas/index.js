@@ -19,3 +19,4 @@ export {
     applyCanvasesToR3Document,
     canvasesFromR3Document,
 } from "./adapters/r3_canvas_adapter.js";
+export * from "./canvas_size_contract.js";

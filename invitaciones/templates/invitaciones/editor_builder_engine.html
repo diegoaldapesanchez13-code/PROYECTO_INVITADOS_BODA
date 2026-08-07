@@ -54,9 +54,13 @@
                 <div class="engine-canvas-navigator" data-engine-canvas-nav></div>
 
                 <nav>
-                    <button type="button" disabled>Componentes</button>
-                    <button type="button" disabled>Assets</button>
+                    <button type="button" class="active" data-engine-panel-toggle="components">Componentes</button>
+                    <button type="button" class="active">Assets</button>
                 </nav>
+
+                <section class="engine-component-library" data-engine-component-library></section>
+
+                <section class="engine-asset-library" data-engine-asset-library></section>
 
                 <section class="engine-layers-panel">
                     <div class="engine-canvas-nav-head">
@@ -77,9 +81,9 @@
                         <small>Persistencia Django activa</small>
                     </div>
                     <div class="engine-device-selector">
-                        <button class="active" type="button">iPhone</button>
-                        <button type="button" disabled>Tablet</button>
-                        <button type="button" disabled>Desktop</button>
+                        <button class="active" type="button" data-engine-device="mobile">iPhone</button>
+                        <button type="button" data-engine-device="tablet">Tablet</button>
+                        <button type="button" data-engine-device="desktop">Desktop</button>
                     </div>
                 </div>
 
@@ -96,6 +100,18 @@
     <script
         type="module"
         src="{% static 'invitaciones/builder_engine/integrations/django/editor_bootstrap.js' %}?v=0.14.0"
+    ></script>
+    <script
+        type="module"
+        src="{% static 'invitaciones/builder_engine/integrations/django/direct_manipulation_mount.js' %}?v=0.18.0"
+    ></script>
+    <script
+        type="module"
+        src="{% static 'invitaciones/builder_engine/integrations/django/component_library_mount.js' %}?v=0.19.0"
+    ></script>
+    <script
+        type="module"
+        src="{% static 'invitaciones/builder_engine/integrations/django/asset_library_mount.js' %}?v=0.21.0"
     ></script>
 </body>
 </html>

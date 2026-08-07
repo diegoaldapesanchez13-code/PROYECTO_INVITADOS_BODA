@@ -6,3 +6,5 @@ export * from "./node_inspector_renderer.js";
 export * from "./transform_math.js";
 export * from "./direct_manipulation_controller.js";
 export * from "./transform_overlay.js";
+export * from "./component_library.js";
+export * from "./component_library_renderer.js";

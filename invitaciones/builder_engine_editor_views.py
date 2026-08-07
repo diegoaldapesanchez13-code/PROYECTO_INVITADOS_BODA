@@ -76,3 +76,34 @@ def renderer_lab(request, evento_id):
         },
     )
 
+@login_required
+def transform_lab(request, evento_id):
+    evento = get_object_or_404(
+        eventos_visibles_usuario(request.user),
+        id=evento_id,
+    )
+
+    bootstrap = {
+        "eventId": evento.id,
+        "readOnly": True,
+        "engineVersion": "0.32.0",
+        "endpoints": {
+            "load": reverse(
+                "builder_engine_document_load",
+                args=[evento.id],
+            ),
+        },
+    }
+
+    return render(
+        request,
+        "invitaciones/transform_lab.html",
+        {
+            "evento": evento,
+            "transform_lab_bootstrap": bootstrap,
+            "renderer_lab_url": reverse(
+                "builder_engine_renderer_lab",
+                args=[evento.id],
+            ),
+        },
+    )

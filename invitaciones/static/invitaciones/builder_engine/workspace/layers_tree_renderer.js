@@ -11,7 +11,7 @@ export function renderLayersTree(container, nodes, options = {}) {
 
     const list = document.createElement("div");
     list.className = "engine-layers-tree";
-    for (const node of nodes) {
+    for (const node of sortByZ(nodes)) {
         list.appendChild(renderLayerNode(node, selectedId, 0));
     }
     container.appendChild(list);
@@ -35,7 +35,7 @@ function renderLayerNode(node, selectedId, depth) {
             <strong>${escapeHtml(node.name || node.type || "Elemento")}</strong>
             <small>${escapeHtml(node.type || "NODE")}</small>
         </span>
-        <span class="engine-layer-state">${node.locked ? "🔒" : ""}${node.visible === false ? "○" : "●"}</span>
+        <span class="engine-layer-state"><b class="engine-layer-z">z:${Number(node.style?.zIndex || 0)}</b> ${node.locked ? "🔒" : ""}${node.visible === false ? "○" : "●"}</span>
     `;
     wrapper.appendChild(button);
 
@@ -50,6 +50,8 @@ function renderLayerNode(node, selectedId, depth) {
 
     return wrapper;
 }
+
+function sortByZ(nodes=[]){return [...nodes].sort((a,b)=>Number(b.style?.zIndex||0)-Number(a.style?.zIndex||0));}
 
 function iconFor(type) {
     return {

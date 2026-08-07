@@ -1,0 +1,11 @@
+{
+  "sprint": "11.4",
+  "name": "Layer Stack Core",
+  "requires": [
+    "11.1",
+    "11.2",
+    "11.3"
+  ],
+  "version": 2,
+  "canonical_order": "parent.children[] back-to-front"
+}

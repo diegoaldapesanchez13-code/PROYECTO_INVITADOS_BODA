@@ -33,6 +33,11 @@ urlpatterns = [
         builder_engine_editor_views.renderer_lab,
         name='builder_engine_renderer_lab',
     ),
+    path(
+        'dashboard/editor-invitacion/<int:evento_id>/engine/transform-lab/',
+        builder_engine_editor_views.transform_lab,
+        name='builder_engine_transform_lab',
+    ),
     path('dashboard/editor-invitacion/<int:evento_id>/guardar/', views.guardar_diseno_invitacion_visual, name='guardar_diseno_invitacion_visual'),
     path('dashboard/editor-invitacion/<int:evento_id>/publicar/', views.publicar_diseno_invitacion_visual, name='publicar_diseno_invitacion_visual'),
 

@@ -22,25 +22,11 @@ export function dragTransform(initial, delta, bounds, options = {}) {
 }
 
 export function resizeTransform(initial, delta, bounds, handle = "se", options = {}) {
-    const widthDelta = pixelsToPercent(delta.x, bounds.width);
-    const minWidth = Number(options.minWidth ?? 2);
-    const maxWidth = Number(options.maxWidth ?? 300);
-    let width = Number(initial.width ?? 50);
-    let x = Number(initial.x ?? 50);
-
-    if (handle.includes("e")) width += widthDelta;
-    if (handle.includes("w")) {
-        width -= widthDelta;
-        x += widthDelta / 2;
-    }
-    if (handle.includes("e")) x += widthDelta / 2;
-
-    return {
-        ...initial,
-        width: clamp(width, minWidth, maxWidth),
-        x,
-    };
+ const dx=pixelsToPercent(delta.x,bounds.width),dy=pixelsToPercent(delta.y,bounds.height); let width=Number(initial.width??50),height=Number(initial.height??inferHeight(initial)),x=Number(initial.x??50),y=Number(initial.y??50);
+ if(handle.includes("e")){width+=dx;x+=dx/2;} if(handle.includes("w")){width-=dx;x+=dx/2;} if(handle.includes("s")){height+=dy;y+=dy/2;} if(handle.includes("n")){height-=dy;y+=dy/2;}
+ return {...initial,width:clamp(width,Number(options.minWidth??2),Number(options.maxWidth??300)),height:clamp(height,Number(options.minHeight??1),Number(options.maxHeight??300)),x,y};
 }
+function inferHeight(style={}){const w=Number(style.width??50),r=Number(style.aspectRatio||0);return Number.isFinite(r)&&r>0?w/r:Number(style.height??12);}
 
 export function rotationFromPoints(center, start, current, initialRotation = 0, options = {}) {
     const startAngle = Math.atan2(start.y - center.y, start.x - center.x);

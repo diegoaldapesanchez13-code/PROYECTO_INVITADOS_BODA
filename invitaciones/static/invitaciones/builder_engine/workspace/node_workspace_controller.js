@@ -100,6 +100,9 @@ export class NodeWorkspaceController {
         });
     }
 
+    setZIndex(value) { const parsed=Number(value); if(!Number.isFinite(parsed)) throw new Error("Z-index inválido."); return this.update("style.zIndex",Math.round(parsed),{label:"Cambiar orden de capa",mergeKey:null}); }
+    moveLayer(direction) { const node=this.getSelected(); if(!node) throw new Error("No hay un elemento seleccionado."); const flat=flattenNodes(this.listTree()),vals=flat.map(i=>Number(i.style?.zIndex||0)),cur=Number(node.style?.zIndex||0),min=vals.length?Math.min(...vals):0,max=vals.length?Math.max(...vals):0; const next={front:max+1,back:min-1,up:cur+1,down:cur-1}[direction]; if(next===undefined)throw new Error("Dirección de capa inválida."); return this.setZIndex(next); }
+
     remove() {
         const nodeId = this.#selectedNodeId;
         if (!nodeId) throw new Error("No hay un elemento seleccionado.");
@@ -120,6 +123,8 @@ export class NodeWorkspaceController {
         return true;
     }
 }
+
+function flattenNodes(nodes=[]){return nodes.flatMap(node=>[node,...flattenNodes(node.children||[])]);}
 
 function findNode(nodes, nodeId, parent = null) {
     for (let index = 0; index < nodes.length; index += 1) {
