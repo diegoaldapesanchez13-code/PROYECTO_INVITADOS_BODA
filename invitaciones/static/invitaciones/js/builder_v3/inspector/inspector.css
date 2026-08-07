@@ -1,10 +1,15 @@
 .r3-inspector {
     display: grid;
     align-content: start;
+    grid-auto-rows: max-content;
     gap: 12px;
     min-width: 0;
     height: 100%;
-    overflow: auto;
+    min-height: 0;
+    overflow-y: scroll;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
     padding: 14px;
     border: 1px solid #d5d0c6;
     border-radius: 16px;
@@ -32,15 +37,21 @@
 }
 
 .r3-inspector-header {
+    position: sticky;
+    top: -14px;
+    z-index: 20;
     display: grid;
     gap: 4px;
-    padding: 4px 2px 12px;
+    margin: -14px -14px 0;
+    padding: 14px 16px 12px;
     border-bottom: 1px solid #d5d0c6;
+    background: #f8f6f1;
+    box-shadow: 0 5px 10px rgba(37, 41, 34, .06);
 }
 
 .r3-inspector-header__type {
     color: #7c3aed;
-    font-size: .68rem;
+    font-size: .76rem;
     font-weight: 900;
     letter-spacing: .11em;
 }
@@ -59,7 +70,9 @@
 }
 
 .r3-inspector-group {
-    overflow: hidden;
+    min-width: 0;
+    min-height: max-content;
+    overflow: visible;
     border: 1px solid #d8d3c9;
     border-radius: 11px;
     background: #fff;
@@ -67,10 +80,55 @@
 
 .r3-inspector-group > summary {
     display: grid;
-    gap: 3px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 3px 10px;
+    align-items: center;
     padding: 12px;
     cursor: pointer;
     list-style: none;
+}
+
+
+.r3-inspector-group > summary::after {
+    content: "▸";
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    color: #526043;
+    font-size: 1rem;
+    font-weight: 900;
+    transform: rotate(0deg);
+    transition: transform .16s ease;
+}
+
+.r3-inspector-group[open] > summary::after {
+    transform: rotate(90deg);
+}
+
+.r3-inspector-group > summary:hover,
+.r3-inspector-group > summary:focus-visible {
+    background: #f3f5f0;
+    outline: none;
+}
+
+.r3-inspector::-webkit-scrollbar {
+    width: 12px;
+}
+
+.r3-inspector::-webkit-scrollbar-track {
+    background: #e5e1d8;
+    border-radius: 999px;
+}
+
+.r3-inspector::-webkit-scrollbar-thumb {
+    min-height: 42px;
+    border: 3px solid #e5e1d8;
+    border-radius: 999px;
+    background: #78866a;
+}
+
+.r3-inspector {
+    scrollbar-width: auto;
+    scrollbar-color: #78866a #e5e1d8;
 }
 
 .r3-inspector-group > summary::-webkit-details-marker {
@@ -78,23 +136,41 @@
 }
 
 .r3-inspector-group > summary strong {
-    font-size: .82rem;
+    font-size: .9rem;
 }
 
 .r3-inspector-group > summary small {
     color: #777971;
-    font-size: .68rem;
+    font-size: .76rem;
     line-height: 1.35;
 }
 
+.r3-inspector-group[open] {
+    height: auto;
+    max-height: none;
+}
+
 .r3-inspector-group[open] > summary {
+    position: sticky;
+    top: 52px;
+    z-index: 5;
     border-bottom: 1px solid #e3dfd7;
+    background: #fff;
+}
+
+.r3-inspector-group:not([open]) > .r3-inspector-group__body {
+    display: none;
 }
 
 .r3-inspector-group__body {
     display: grid;
+    grid-auto-rows: max-content;
     gap: 10px;
+    width: 100%;
+    min-width: 0;
+    min-height: max-content;
     padding: 12px;
+    overflow: visible;
 }
 
 .r3-inspector-field {
@@ -109,13 +185,13 @@
 
 .r3-inspector-field__label {
     min-width: 0;
-    font-size: .74rem;
+    font-size: .82rem;
     font-weight: 750;
 }
 
 .r3-inspector-field__unit {
     color: #7a7b75;
-    font-size: .68rem;
+    font-size: .76rem;
     font-weight: 700;
 }
 
@@ -136,7 +212,7 @@
     color: #282d27;
     padding: 8px 9px;
     font: inherit;
-    font-size: .74rem;
+    font-size: .82rem;
 }
 
 textarea.r3-inspector-control {

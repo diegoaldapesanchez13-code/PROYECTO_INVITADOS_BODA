@@ -1,7 +1,9 @@
 .r3-canvas-viewport {
     position: relative;
     min-height: 620px;
-    overflow: auto;
+    overflow: scroll;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable both-edges;
     border: 1px solid #c9c3b7;
     border-radius: 16px;
     background:
@@ -262,7 +264,7 @@
     display: grid;
     align-content: start;
     gap: 10px;
-    height: 100%;
+    height: auto;
     overflow: auto;
     padding: 12px;
     border: 1px solid #d5d0c6;
@@ -397,3 +399,12 @@
     cursor: default;
     opacity: .35;
 }
+
+
+.r3-canvas-viewport {
+    scrollbar-width: auto;
+    scrollbar-color: #78866a #d8d5ce;
+}
+.r3-canvas-viewport::-webkit-scrollbar { width: 13px; height: 13px; }
+.r3-canvas-viewport::-webkit-scrollbar-track { background: #d8d5ce; }
+.r3-canvas-viewport::-webkit-scrollbar-thumb { min-height: 42px; min-width: 42px; border: 3px solid #d8d5ce; border-radius: 999px; background: #667655; }

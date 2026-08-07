@@ -98,7 +98,7 @@ const DEFINITIONS = Object.freeze([
         label: "Botón",
         icon: "BT",
         element: "a",
-        inspectorPanel: null,
+        inspectorPanel: "button",
         capabilities: [
             COMPONENT_CAPABILITIES.CONSTRAINTS,
             COMPONENT_CAPABILITIES.TRANSFORM,
@@ -109,7 +109,7 @@ const DEFINITIONS = Object.freeze([
         label: "Google Maps",
         icon: "MP",
         element: "div",
-        inspectorPanel: null,
+        inspectorPanel: "map",
         capabilities: [
             COMPONENT_CAPABILITIES.CONSTRAINTS,
             COMPONENT_CAPABILITIES.TRANSFORM,
@@ -123,11 +123,11 @@ const DEFINITIONS = Object.freeze([
         element: "div",
         inspectorPanel: "countdown",
         capabilities: [
+            COMPONENT_CAPABILITIES.CONTAINER,
             COMPONENT_CAPABILITIES.CONSTRAINTS,
             COMPONENT_CAPABILITIES.TRANSFORM,
             COMPONENT_CAPABILITIES.DYNAMIC_DATA,
         ],
-        customRenderer: "countdown",
     }),
     definition(NODE_TYPES.GALLERY, {
         label: "Galería",
@@ -146,10 +146,8 @@ const DEFINITIONS = Object.freeze([
         label: "RSVP",
         icon: "RS",
         element: "div",
-        inspectorPanel: null,
+        inspectorPanel: "rsvp",
         capabilities: [
-            COMPONENT_CAPABILITIES.CONTAINER,
-            COMPONENT_CAPABILITIES.AUTO_LAYOUT,
             COMPONENT_CAPABILITIES.CONSTRAINTS,
             COMPONENT_CAPABILITIES.TRANSFORM,
             COMPONENT_CAPABILITIES.DYNAMIC_DATA,
@@ -170,8 +168,8 @@ const DEFINITIONS = Object.freeze([
     definition(NODE_TYPES.VIDEO, {
         label: "Video",
         icon: "VD",
-        element: "video",
-        inspectorPanel: null,
+        element: "div",
+        inspectorPanel: "video",
         capabilities: [
             COMPONENT_CAPABILITIES.CONSTRAINTS,
             COMPONENT_CAPABILITIES.TRANSFORM,
