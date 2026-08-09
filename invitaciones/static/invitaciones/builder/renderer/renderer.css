@@ -66,7 +66,7 @@
    STRUCTURAL NODES
    ========================================================= */
 
-.r3-node--section {
+.r3-node--canvas {
     position: relative;
     isolation: isolate;
     width: 100%;
@@ -80,11 +80,11 @@
 }
 
 /*
- * SECTION is structural and always rendered as FLOW by
+ * CANVAS is structural and always rendered as FLOW by
  * effectiveLayoutMode(). This selector only establishes its
  * coordinate system; it does not compete with Card layout.
  */
-.r3-node--section.r3-layout-flow {
+.r3-node--canvas.r3-layout-flow {
     position: relative;
     left: auto;
     top: auto;
@@ -118,11 +118,11 @@
    BACKGROUND / OVERLAY
    ========================================================= */
 
-.r3-node--section > .r3-node--background,
+.r3-node--canvas > .r3-node--background,
 .r3-node--card > .r3-node--background,
 .r3-node--container > .r3-node--background,
 .r3-node--gallery > .r3-node--background,
-.r3-node--section > .r3-node--overlay,
+.r3-node--canvas > .r3-node--overlay,
 .r3-node--card > .r3-node--overlay,
 .r3-node--container > .r3-node--overlay,
 .r3-node--gallery > .r3-node--overlay {

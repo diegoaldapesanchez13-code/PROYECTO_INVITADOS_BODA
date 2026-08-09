@@ -167,6 +167,18 @@ export function normalizeNode(rawNode) {
         ? [...new Set(node.children.map(String))]
         : [];
 
+    if (node.type === NODE_TYPES.CANVAS) {
+        node.parentId = null;
+        node.canvasId = node.id;
+        node.layoutMode = LAYOUT_MODES.FLOW;
+        node.coordinateSpace = COORDINATE_SPACES.CANVAS;
+        node.x = 50;
+        node.y = 50;
+        node.width = 100;
+        node.rotation = 0;
+        node.scale = 1;
+    }
+
     return node;
 }
 

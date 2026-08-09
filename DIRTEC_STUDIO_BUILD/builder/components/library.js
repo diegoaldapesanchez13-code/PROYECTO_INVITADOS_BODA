@@ -1,10 +1,10 @@
 import {
     listInsertableComponents,
-} from "./catalog.js";
+} from "./catalog.js?v=phase-f3-target-selection";
 
 import {
     insertComponent,
-} from "./factory.js";
+} from "./factory.js?v=phase-f3-target-selection";
 
 export class ComponentLibrary {
     constructor(options = {}) {
@@ -91,6 +91,7 @@ export class ComponentLibrary {
                 state: this.state,
                 type: item.type,
                 selectedNodeId: this.state.selection.nodeId,
+                selectedCanvasId: this.state.selection.canvasId,
             });
 
             this.renderer.update(this.state.document);

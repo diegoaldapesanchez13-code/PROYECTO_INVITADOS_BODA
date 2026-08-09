@@ -50,7 +50,7 @@ assert.doesNotMatch(
 
 assert.match(
     declarationsFor(
-        ".r3-node--section {"
+        ".r3-node--canvas {"
     ),
     /position:\s*relative;/
 );

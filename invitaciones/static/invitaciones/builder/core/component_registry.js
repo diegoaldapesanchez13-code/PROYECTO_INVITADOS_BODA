@@ -23,7 +23,7 @@ const DEFINITIONS = Object.freeze([
     definition(NODE_TYPES.CANVAS, {
         label: "Lienzo",
         icon: "LZ",
-        element: "canvas",
+        element: "section",
         inspectorPanel: "canvas",
         capabilities: [
             COMPONENT_CAPABILITIES.CONTAINER,

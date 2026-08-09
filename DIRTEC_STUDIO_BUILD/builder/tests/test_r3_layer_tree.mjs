@@ -69,6 +69,76 @@ assert.deepEqual(
     ]
 );
 
+class FakeElement {
+    constructor(tagName = "div") {
+        this.tagName = tagName;
+        this.children = [];
+        this.dataset = {};
+        this.style = {
+            setProperty() {},
+        };
+        this.classList = {
+            add() {},
+            toggle() {},
+            remove() {},
+        };
+    }
+
+    replaceChildren(...children) {
+        this.children = children;
+    }
+
+    append(...children) {
+        this.children.push(...children);
+    }
+
+    setAttribute(name, value) {
+        this[name] = String(value);
+    }
+
+    addEventListener() {}
+
+    querySelector() {
+        return null;
+    }
+
+    querySelectorAll() {
+        return [];
+    }
+}
+
+globalThis.Element = FakeElement;
+globalThis.document = {
+    createElement(tagName) {
+        return new FakeElement(tagName);
+    },
+};
+
+const { LayerTree } = await import("../layers/layer_tree.js");
+
+assert.doesNotThrow(() => {
+    const root = new FakeElement();
+    const state = {
+        document: {
+            nodes: [],
+        },
+        selection: {
+            nodeId: null,
+        },
+        subscribe() {
+            return () => {};
+        },
+    };
+
+    new LayerTree({
+        root,
+        state,
+        canvas: {
+            select() {},
+        },
+    });
+});
+
 console.log(
     "R3.07.3 Layer Tree tests: OK"
 );

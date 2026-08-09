@@ -58,6 +58,15 @@ globalThis.addEventListener(
     },
 );
 
+function markConnectedIfIdle() {
+    if (!status || status.dataset.state !== "ready") {
+        return;
+    }
+
+    status.textContent = "Conectado";
+    status.title = `Revision ${bridge.revision}`;
+}
+
 publishButton?.addEventListener("click", async () => {
     publishButton.disabled = true;
     try {
@@ -69,4 +78,5 @@ publishButton?.addEventListener("click", async () => {
     }
 });
 
-await import("../../demo_r3_07.js");
+await import("../../demo_r3_07.js" + "?v=phase-f3-target-selection");
+markConnectedIfIdle();

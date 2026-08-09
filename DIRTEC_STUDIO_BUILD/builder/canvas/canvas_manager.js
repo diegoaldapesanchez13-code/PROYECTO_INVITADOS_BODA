@@ -1,6 +1,6 @@
 import {
     NODE_TYPES,
-} from "../core/index.js";
+} from "../core/index.js?v=phase-f3-canvas-contract";
 
 export const MOBILE_CANVAS_WIDTH = 390;
 export const DEFAULT_CANVAS_HEIGHT = 844;
@@ -87,7 +87,7 @@ export class CanvasManager {
     }
 
     createCanvas() {
-        const count = this.state.document.canvases.length;
+        const count = canvasesOf(this.state.document).length;
         const node = this.state.createNode(
             NODE_TYPES.CANVAS,
             createBlankCanvasConfig({
@@ -113,7 +113,7 @@ export class CanvasManager {
     }
 
     deleteCanvas(nodeId) {
-        const canvass = this.state.document.canvases;
+        const canvass = canvasesOf(this.state.document);
         if (canvass.length <= 1) {
             this.onStatus?.(
                 "El documento debe conservar al menos un lienzo.",
@@ -147,7 +147,7 @@ export class CanvasManager {
 
         this.state.deleteNode(node.id);
 
-        const remaining = [...this.state.document.canvases]
+        const remaining = canvasesOf(this.state.document)
             .sort((a, b) => a.order - b.order);
         const next = remaining[
             Math.min(previousIndex, remaining.length - 1)
@@ -165,7 +165,7 @@ export class CanvasManager {
     }
 
     moveCanvas(nodeId, direction) {
-        const canvass = [...this.state.document.canvases]
+        const canvass = canvasesOf(this.state.document)
             .sort((a, b) => a.order - b.order);
         const index = canvass.findIndex(
             (canvas) => canvas.id === nodeId,
@@ -224,7 +224,7 @@ export class CanvasManager {
         const list = document.createElement("div");
         list.className = "r3-canvas-manager__list";
 
-        const canvass = [...this.state.document.canvases]
+        const canvass = canvasesOf(this.state.document)
             .sort((a, b) => a.order - b.order);
 
         for (const [index, canvas] of canvass.entries()) {
@@ -346,6 +346,12 @@ function cssEscape(value) {
     }
 
     return String(value).replace(/["\\]/g, "\\$&");
+}
+
+function canvasesOf(documentState) {
+    return Array.isArray(documentState?.canvases)
+        ? [...documentState.canvases]
+        : [];
 }
 
 function escapeHtml(value) {

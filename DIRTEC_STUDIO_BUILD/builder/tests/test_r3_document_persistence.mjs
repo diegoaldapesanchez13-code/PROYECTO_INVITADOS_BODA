@@ -65,7 +65,7 @@ const document = {
                 action: { type: "NONE", value: "", target: "", options: {} },
             },
             responsive: {},
-            children: [],
+            children: ["card-1"],
         },
     ],
     nodes: [

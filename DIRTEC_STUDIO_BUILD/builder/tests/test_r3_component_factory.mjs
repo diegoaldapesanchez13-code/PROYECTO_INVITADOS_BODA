@@ -55,4 +55,34 @@ const map = insertComponent({ state, type: NODE_TYPES.MAP, selectedNodeId: canva
 assert.equal(map.type, NODE_TYPES.MAP);
 assert.equal(map.content.zoom, 15);
 
+const secondCanvas = state.createNode(NODE_TYPES.CANVAS, {
+    name: "Segundo lienzo",
+});
+
+state.selectNode(secondCanvas.id);
+const secondCanvasText = insertComponent({
+    state,
+    type: NODE_TYPES.TEXT,
+});
+assert.equal(secondCanvasText.parentId, secondCanvas.id);
+assert.equal(secondCanvasText.canvasId, secondCanvas.id);
+
+const secondCanvasCard = insertComponent({
+    state,
+    type: NODE_TYPES.CARD,
+    selectedNodeId: secondCanvas.id,
+});
+const childText = insertComponent({
+    state,
+    type: NODE_TYPES.TEXT,
+    selectedNodeId: secondCanvasCard.id,
+});
+state.selectNode(childText.id);
+const nestedButton = insertComponent({
+    state,
+    type: NODE_TYPES.BUTTON,
+});
+assert.equal(nestedButton.parentId, secondCanvasCard.id);
+assert.equal(nestedButton.canvasId, secondCanvas.id);
+
 console.log("✓ inserción de componentes base y anidamiento");

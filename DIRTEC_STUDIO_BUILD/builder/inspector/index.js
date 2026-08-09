@@ -1,17 +1,18 @@
 import {
     COMPONENT_CAPABILITIES,
+    NODE_TYPES,
     componentLabel,
     componentSupports,
     getComponentDefinition,
-} from "../core/index.js";
+} from "../core/index.js?v=phase-f3-actions-visible";
 
 import {
     autoLayoutPanel,
-} from "./panels/auto_layout.js";
+} from "./panels/auto_layout.js?v=phase-f3-actions-visible";
 
 import {
     constraintsPanel,
-} from "./panels/constraints.js";
+} from "./panels/constraints.js?v=phase-f3-actions-visible";
 
 
 import {
@@ -19,67 +20,67 @@ import {
     setPathClone,
     shouldShow,
     valueFromInput,
-} from "./controls.js";
+} from "./controls.js?v=phase-f3-actions-visible";
 
 import {
     generalPanel,
-} from "./panels/base.js";
+} from "./panels/base.js?v=phase-f3-actions-visible";
 
 import {
     canvasPanel,
-} from "./panels/canvas.js";
+} from "./panels/canvas.js?v=phase-f3-actions-visible";
 
 import {
     cardPanel,
-} from "./panels/card.js";
+} from "./panels/card.js?v=phase-f3-actions-visible";
 
 import {
     textPanel,
-} from "./panels/text.js";
+} from "./panels/text.js?v=phase-f3-actions-visible";
 
 import {
     imagePanel,
-} from "./panels/image.js";
+} from "./panels/image.js?v=phase-f3-actions-visible";
 
 import {
     buttonPanel,
-} from "./panels/button.js";
+} from "./panels/button.js?v=phase-f3-actions-visible";
 
 import {
     countdownPanel,
-} from "./panels/countdown.js";
+} from "./panels/countdown.js?v=phase-f3-actions-visible";
 
 import {
     mapPanel,
-} from "./panels/map.js";
+} from "./panels/map.js?v=phase-f3-actions-visible";
 
 import {
     videoPanel,
-} from "./panels/video.js";
+} from "./panels/video.js?v=phase-f3-actions-visible";
 
 import {
     rsvpPanel,
-} from "./panels/rsvp.js";
+} from "./panels/rsvp.js?v=phase-f3-actions-visible";
 
 import {
     separatorPanel,
-} from "./panels/separator.js";
+} from "./panels/separator.js?v=phase-f3-actions-visible";
 
 import {
     iconPanel,
-} from "./panels/icon.js";
+} from "./panels/icon.js?v=phase-f3-actions-visible";
 
 import {
     backgroundPanel,
-} from "./panels/background.js";
+} from "./panels/background.js?v=phase-f3-actions-visible";
 
 import {
     decorationPanel,
-} from "./panels/decoration.js";
+} from "./panels/decoration.js?v=phase-f3-actions-visible";
 
 import {
     interactionPanel,
-} from "./panels/interaction.js";
+} from "./panels/interaction.js?v=phase-f3-actions-visible";
 
 export class UniversalInspector {
     constructor(options = {}) {
@@ -166,9 +167,21 @@ export class UniversalInspector {
 
         if (!node) return;
 
+        if (
+            node.type === NODE_TYPES.CANVAS
+            && this.state.document.canvases.length <= 1
+        ) {
+            this.onStatus?.(
+                "El documento debe conservar al menos un lienzo."
+            );
+            return;
+        }
+
         const confirmed = globalThis.confirm
             ? globalThis.confirm(
-                `¿Eliminar "${node.name}"?`
+                node.type === NODE_TYPES.CANVAS
+                    ? `¿Eliminar "${node.name}" y todas sus capas?`
+                    : `¿Eliminar "${node.name}"?`
             )
             : true;
 
@@ -277,6 +290,10 @@ export class UniversalInspector {
     }
 
     #panelDefinitions(node) {
+        if (node.type === NODE_TYPES.CANVAS) {
+            return canvasPanel();
+        }
+
         const panelFactories = {
             canvas: canvasPanel,
             card: cardPanel,
@@ -710,10 +727,10 @@ export class UniversalInspector {
         definition,
         context
     ) {
-        const canvas =
-            document.createElement("canvas");
+        const section =
+            document.createElement("section");
 
-        canvas.className =
+        section.className =
             "r3-inspector-actions";
 
         const title =
@@ -758,9 +775,9 @@ export class UniversalInspector {
             grid.append(button);
         }
 
-        canvas.append(title, grid);
+        section.append(title, grid);
 
-        return canvas;
+        return section;
     }
 }
 

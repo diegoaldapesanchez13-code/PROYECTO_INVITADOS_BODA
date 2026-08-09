@@ -6,7 +6,11 @@ import {
     normalizeNode,
     serializeDocument,
     validateDocument,
-} from "./schema.js";
+} from "./schema.js?v=phase-f3-canvas-contract";
+
+import {
+    canonicalizeDocumentV4,
+} from "./runtime_v4.js?v=phase-f3-canvas-contract";
 
 export class BuilderState {
     #document;
@@ -24,7 +28,9 @@ export class BuilderState {
     constructor(initialDocument = null, options = {}) {
         this.#maxHistory = Number(options.maxHistory || 100);
         this.#document = normalizeDocument(
-            initialDocument || createEmptyDocument()
+            canonicalizeDocumentV4(
+                initialDocument || createEmptyDocument()
+            )
         );
         this.#assertValid();
     }

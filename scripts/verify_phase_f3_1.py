@@ -20,7 +20,8 @@ for path in BUILDER.rglob("*.js"):
         target=match.group(1) or match.group(2)
         if not target.startswith("."):
             continue
-        resolved=(path.parent/target).resolve()
+        target_path=re.split(r"[?#]", target, maxsplit=1)[0]
+        resolved=(path.parent/target_path).resolve()
         if not resolved.exists():
             missing.append(
                 (

@@ -1,7 +1,7 @@
 import {
     NODE_TYPES,
     componentIcon,
-} from "../core/index.js";
+} from "../core/index.js?v=phase-f3-canvas-contract";
 
 import {
     LayerStackManager,
@@ -49,8 +49,11 @@ export class LayerTree {
                 state,
             });
 
+        const initialCanvases =
+            canvasesOf(state.document);
+
         this.expanded = new Set(
-            state.document.canvases.map(
+            initialCanvases.map(
                 (canvas) => canvas.id
             )
         );
@@ -155,13 +158,14 @@ export class LayerTree {
         expandAll.addEventListener(
             "click",
             () => {
+                const documentState =
+                    this.state.document;
+
                 for (
                     const node
                     of [
-                        ...this.state
-                            .document.canvases,
-                        ...this.state
-                            .document.nodes,
+                        ...canvasesOf(documentState),
+                        ...nodesOf(documentState),
                     ]
                 ) {
                     if (
@@ -197,7 +201,7 @@ export class LayerTree {
         );
 
         const canvass =
-            [...this.state.document.canvases]
+            canvasesOf(this.state.document)
                 .sort(
                     (a, b) =>
                         a.order - b.order
@@ -879,4 +883,16 @@ function cssEscape(value) {
             /["\\]/g,
             "\\$&"
         );
+}
+
+function canvasesOf(documentState) {
+    return Array.isArray(documentState?.canvases)
+        ? [...documentState.canvases]
+        : [];
+}
+
+function nodesOf(documentState) {
+    return Array.isArray(documentState?.nodes)
+        ? [...documentState.nodes]
+        : [];
 }

@@ -2,7 +2,7 @@ import {
     COMPONENT_CAPABILITIES,
     LAYOUT_MODES,
     componentSupports,
-} from "../core/index.js";
+} from "../core/index.js?v=phase-f3-canvas-contract";
 
 export class AutoLayoutEngine {
     constructor({ state, renderer, canvas = null, onLayout = null }) {
@@ -17,7 +17,10 @@ export class AutoLayoutEngine {
 
     applyAll() {
         const document = this.state.document;
-        const nodes = [...document.canvases, ...document.nodes]
+        const nodes = [
+            ...canvasesOf(document),
+            ...nodesOf(document),
+        ]
             .filter((node) => componentSupports(
                 node.type,
                 COMPONENT_CAPABILITIES.AUTO_LAYOUT
@@ -206,4 +209,16 @@ function pxPercent(px, base) {
 }
 function clamp(value, min, max) {
     return Math.min(Math.max(value, min), max);
+}
+
+function canvasesOf(document) {
+    return Array.isArray(document?.canvases)
+        ? document.canvases
+        : [];
+}
+
+function nodesOf(document) {
+    return Array.isArray(document?.nodes)
+        ? document.nodes
+        : [];
 }

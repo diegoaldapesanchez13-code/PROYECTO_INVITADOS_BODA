@@ -4,7 +4,7 @@ import {
     LAYOUT_MODES,
     NODE_TYPES,
     createEmptyDocument,
-} from "./core/index.js";
+} from "./core/index.js?v=phase-f3-canvas-contract";
 
 import {
     UniversalRenderer,
@@ -16,15 +16,15 @@ import {
 
 import {
     CanvasManager,
-} from "./canvas/canvas_manager.js";
+} from "./canvas/canvas_manager.js?v=phase-f3-canvas-contract";
 
 import {
     UniversalInspector,
-} from "./inspector/index.js";
+} from "./inspector/index.js?v=phase-f3-actions-visible";
 
 import {
     AutoLayoutEngine,
-} from "./layout/auto_layout.js";
+} from "./layout/auto_layout.js?v=phase-f3-canvas-contract";
 
 import {
     AssetManager,
@@ -37,7 +37,7 @@ import {
 import {
     BuilderDocumentStorage,
     connectDocumentPersistence,
-} from "./persistence/document_storage.js";
+} from "./persistence/document_storage.js?v=phase-f3-canvas-contract";
 
 import {
     AssetUploadService,
@@ -53,15 +53,15 @@ import {
 
 import {
     useAsset,
-} from "./assets/asset_nodes.js";
+} from "./assets/asset_nodes.js?v=phase-f3-target-selection";
 
 import {
     LayerTree,
-} from "./layers/layer_tree.js";
+} from "./layers/layer_tree.js?v=phase-f3-canvas-contract";
 
 import {
     ComponentLibrary,
-} from "./components/index.js";
+} from "./components/index.js?v=phase-f3-target-selection";
 
 import { MobilePreview } from "./preview/mobile_preview.js";
 
@@ -138,10 +138,10 @@ const state =
         })
     );
 
-let canvas;
+let canvasNode;
 
 if (!savedDocument) {
-canvas = state.createNode(
+canvasNode = state.createNode(
     NODE_TYPES.CANVAS,
     {
         name: "Portada",
@@ -168,14 +168,14 @@ useAsset({
         assets.get(
             "bg-olive-watercolor"
         ),
-    selectedNodeId: canvas.id,
+    selectedNodeId: canvasNode.id,
 });
 
 const frame = useAsset({
     state,
     asset:
         assets.get("dec-gold-frame"),
-    selectedNodeId: canvas.id,
+    selectedNodeId: canvasNode.id,
     position: {
         x: 50,
         y: 50,
@@ -201,7 +201,7 @@ const leftBranch = useAsset({
         assets.get(
             "dec-olive-corner-left"
         ),
-    selectedNodeId: canvas.id,
+    selectedNodeId: canvasNode.id,
     position: {
         x: 13,
         y: 19,
@@ -224,7 +224,7 @@ const rightBranch = useAsset({
         assets.get(
             "dec-olive-corner-right"
         ),
-    selectedNodeId: canvas.id,
+    selectedNodeId: canvasNode.id,
     position: {
         x: 87,
         y: 81,
@@ -245,8 +245,8 @@ const contentCard = state.createNode(
     NODE_TYPES.CARD,
     {
         name: "Tarjeta principal",
-        parentId: canvas.id,
-        canvasId: canvas.id,
+        parentId: canvasNode.id,
+        canvasId: canvasNode.id,
         layoutMode:
             LAYOUT_MODES.ABSOLUTE,
         coordinateSpace:
@@ -290,7 +290,7 @@ const monogram = state.createNode(
     {
         name: "Monograma",
         parentId: contentCard.id,
-        canvasId: canvas.id,
+        canvasId: canvasNode.id,
         layoutMode:
             LAYOUT_MODES.FLOW,
         width: 100,
@@ -319,7 +319,7 @@ const names = state.createNode(
     {
         name: "Nombres",
         parentId: contentCard.id,
-        canvasId: canvas.id,
+        canvasId: canvasNode.id,
         layoutMode:
             LAYOUT_MODES.FLOW,
         width: 100,
@@ -348,7 +348,7 @@ const subtitle = state.createNode(
     {
         name: "Frase",
         parentId: contentCard.id,
-        canvasId: canvas.id,
+        canvasId: canvasNode.id,
         layoutMode:
             LAYOUT_MODES.FLOW,
         width: 100,
@@ -400,7 +400,7 @@ const date = state.createNode(
     {
         name: "Fecha",
         parentId: contentCard.id,
-        canvasId: canvas.id,
+        canvasId: canvasNode.id,
         layoutMode:
             LAYOUT_MODES.FLOW,
         width: 100,
@@ -430,7 +430,7 @@ const button = state.createNode(
     {
         name: "Botón ubicación",
         parentId: contentCard.id,
-        canvasId: canvas.id,
+        canvasId: canvasNode.id,
         layoutMode:
             LAYOUT_MODES.FLOW,
         width: 44,
@@ -464,7 +464,7 @@ documentStorage.save(
     state.document
 );
 } else {
-    canvas =
+    canvasNode =
         state.document.canvases[0]
         || null;
 }
@@ -558,7 +558,7 @@ let layers;
 let canvases;
 let components;
 
-const canvas =
+const canvasEngine =
     new CanvasSelectionEngine({
         state,
         renderer,
@@ -601,7 +601,7 @@ const autoLayout =
     new AutoLayoutEngine({
         state,
         renderer,
-        canvas,
+        canvas: canvasEngine,
     });
 
 inspector =
@@ -609,7 +609,7 @@ inspector =
         root: inspectorRoot,
         state,
         renderer,
-        canvas,
+        canvas: canvasEngine,
         assets,
         uploadService,
 
@@ -627,14 +627,14 @@ layers =
     new LayerTree({
         root: layersRoot,
         state,
-        canvas,
+        canvas: canvasEngine,
 
         onDocumentChange() {
             renderer.update(
                 state.document
             );
 
-            canvas.refreshAfterRender();
+            canvasEngine.refreshAfterRender();
             inspector.refresh();
         },
 
@@ -647,7 +647,7 @@ canvases =
     new CanvasManager({
         root: canvasesRoot,
         state,
-        canvas,
+        canvas: canvasEngine,
         renderer,
 
         onDocumentChange() {
@@ -664,7 +664,7 @@ components =
         root: componentsRoot,
         state,
         renderer,
-        canvas,
+        canvas: canvasEngine,
         inspector,
 
         onStatus(message) {
@@ -689,7 +689,7 @@ const library =
             renderer.update(
                 state.document
             );
-            canvas.select(node.id);
+            canvasEngine.select(node.id);
             inspector.refresh();
         },
 
@@ -754,7 +754,7 @@ surface.addEventListener(
         renderer.update(
             state.document
         );
-        canvas.select(node.id);
+        canvasEngine.select(node.id);
         inspector.refresh();
     }
 );
@@ -769,7 +769,7 @@ document.querySelectorAll(
                 button.dataset.r3Zoom;
 
             if (value === "fit") {
-                const zoom = canvas.fitToViewport({
+                const zoom = canvasEngine.fitToViewport({
                     horizontalPadding: 30,
                     verticalPadding: 30,
                 });
@@ -777,7 +777,7 @@ document.querySelectorAll(
                 return;
             }
 
-            const zoom = canvas.setZoom(
+            const zoom = canvasEngine.setZoom(
                 Number(value)
             );
             updateZoomStatus(zoom);
@@ -797,12 +797,12 @@ function updateZoomStatus(value) {
 document.querySelectorAll("[data-r3-zoom-step]").forEach((button) => {
     button.addEventListener("click", () => {
         const factor = button.dataset.r3ZoomStep === "in" ? 1.1 : 0.9;
-        updateZoomStatus(canvas.setZoom(canvas.zoom * factor));
+        updateZoomStatus(canvasEngine.setZoom(canvasEngine.zoom * factor));
     });
 });
 
 viewport.addEventListener("wheel", () => {
-    requestAnimationFrame(() => updateZoomStatus(canvas.zoom));
+    requestAnimationFrame(() => updateZoomStatus(canvasEngine.zoom));
 }, { passive: true });
 
 document.querySelector(
@@ -815,7 +815,7 @@ document.querySelector(
         renderer.update(
             state.document
         );
-        canvas.refreshAfterRender();
+        canvasEngine.refreshAfterRender();
         inspector.refresh();
     }
 );
@@ -830,7 +830,7 @@ document.querySelector(
         renderer.update(
             state.document
         );
-        canvas.refreshAfterRender();
+        canvasEngine.refreshAfterRender();
         inspector.refresh();
     }
 );
@@ -928,7 +928,7 @@ document.querySelector(
 );
 
 autoLayout.applyAll();
-canvas.setZoom(.75);
+canvasEngine.setZoom(.75);
 
 
 window.addEventListener(

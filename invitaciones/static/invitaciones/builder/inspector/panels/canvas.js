@@ -1,10 +1,36 @@
 import {
+    action,
+    actionGroup,
     field,
     group,
 } from "../controls.js";
 
 export function canvasPanel() {
     return [
+        group({
+            id: "canvas-general",
+            title: "General",
+            description:
+                "Identidad del lienzo seleccionado.",
+            fields: [
+                field({
+                    key: "name",
+                    label: "Nombre",
+                    type: "text",
+                }),
+                field({
+                    key: "visible",
+                    label: "Visible",
+                    type: "checkbox",
+                }),
+                field({
+                    key: "locked",
+                    label: "Bloqueado",
+                    type: "checkbox",
+                }),
+            ],
+        }),
+
         group({
             id: "canvas-size",
             title: "Lienzo móvil",
@@ -22,15 +48,27 @@ export function canvasPanel() {
                     help:
                         "Los lienzos se apilan verticalmente y forman el scroll de la invitación.",
                 }),
-                field({
-                    key: "overflow",
-                    label: "Contenido excedente",
-                    type: "select",
-                    path: "style.overflow",
-                    options: [
-                        ["hidden", "Ocultar"],
-                        ["visible", "Mostrar"],
-                    ],
+            ],
+        }),
+
+        actionGroup({
+            id: "canvas-actions",
+            title: "Acciones",
+            actions: [
+                action({
+                    id: "duplicate",
+                    label: "Duplicar",
+                    handler: ({ inspector }) =>
+                        inspector.duplicateSelected(),
+                }),
+                action({
+                    id: "delete",
+                    label: "Eliminar",
+                    tone: "danger",
+                    visibleWhen: ({ state }) =>
+                        state.document.canvases.length > 1,
+                    handler: ({ inspector }) =>
+                        inspector.deleteSelected(),
                 }),
             ],
         }),

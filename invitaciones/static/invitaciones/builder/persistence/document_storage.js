@@ -1,6 +1,6 @@
 import {
     canonicalizeDocumentV4,
-} from "../core/runtime_v4.js";
+} from "../core/runtime_v4.js?v=phase-f3-canvas-contract";
 
 const NON_DOCUMENT_EVENTS =
     new Set([

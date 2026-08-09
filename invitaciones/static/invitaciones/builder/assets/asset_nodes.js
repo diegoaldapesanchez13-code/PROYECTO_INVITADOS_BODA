@@ -4,7 +4,7 @@ import {
     LAYOUT_MODES,
     NODE_TYPES,
     isContainerComponent,
-} from "../core/index.js";
+} from "../core/index.js?v=phase-f3-target-selection";
 
 import {
     ASSET_TYPES,
@@ -15,7 +15,8 @@ import {
 export function useAsset({
     state,
     asset,
-    selectedNodeId = null,
+    selectedNodeId = state?.selection?.nodeId || null,
+    selectedCanvasId = state?.selection?.canvasId || null,
     position = null,
 }) {
     if (!state || !asset) {
@@ -26,7 +27,8 @@ export function useAsset({
 
     const target = resolveTarget(
         state,
-        selectedNodeId
+        selectedNodeId,
+        selectedCanvasId
     );
 
     if (!target) {
@@ -83,7 +85,8 @@ export function useAsset({
 
 export function resolveTarget(
     state,
-    selectedNodeId
+    selectedNodeId,
+    selectedCanvasId = state?.selection?.canvasId || null
 ) {
     let current = selectedNodeId
         ? state.getNode(selectedNodeId)
@@ -99,7 +102,12 @@ export function resolveTarget(
             : null;
     }
 
-    return state.document.canvases[0] || null;
+    if (selectedCanvasId) {
+        const canvas = state.getNode(selectedCanvasId);
+        if (canvas) return canvas;
+    }
+
+    return canvasesOf(state.document)[0] || null;
 }
 
 function applyBackgroundAsset(
@@ -320,4 +328,10 @@ function createVideoNode(
             },
         }
     );
+}
+
+function canvasesOf(document) {
+    return Array.isArray(document?.canvases)
+        ? document.canvases
+        : [];
 }

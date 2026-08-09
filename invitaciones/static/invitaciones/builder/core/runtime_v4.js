@@ -2,7 +2,7 @@ import {
     migrateDocumentToV4,
     normalizeDocumentV4,
     validateDocumentV4,
-} from "./schema_v4.js";
+} from "./schema_v4.js?v=phase-f3-canvas-contract";
 
 export function canonicalizeDocumentV4(document) {
     const canonical =

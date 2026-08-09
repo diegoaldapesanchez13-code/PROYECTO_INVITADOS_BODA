@@ -3,20 +3,25 @@ import {
     LAYOUT_MODES,
     NODE_TYPES,
     isContainerComponent,
-} from "../core/index.js";
+} from "../core/index.js?v=phase-f3-target-selection";
 
 export function insertComponent(options = {}) {
     const {
         state,
         type,
         selectedNodeId = state?.selection?.nodeId || null,
+        selectedCanvasId = state?.selection?.canvasId || null,
     } = options;
 
     if (!state) {
         throw new Error("insertComponent requiere state.");
     }
 
-    const target = resolveInsertionTarget(state, selectedNodeId);
+    const target = resolveInsertionTarget(
+        state,
+        selectedNodeId,
+        selectedCanvasId
+    );
 
     if (!target) {
         throw new Error(
@@ -57,17 +62,34 @@ export function insertComponent(options = {}) {
     return state.createNode(type, definition);
 }
 
-export function resolveInsertionTarget(state, selectedNodeId = null) {
-    const selected = selectedNodeId
+export function resolveInsertionTarget(
+    state,
+    selectedNodeId = null,
+    selectedCanvasId = state?.selection?.canvasId || null
+) {
+    let selected = selectedNodeId
         ? state.getNode(selectedNodeId)
         : null;
 
-    if (selected && isContainerComponent(selected.type)) {
-        return selected;
+    while (selected) {
+        if (isContainerComponent(selected.type)) {
+            return selected;
+        }
+
+        selected = selected.parentId
+            ? state.getNode(selected.parentId)
+            : null;
     }
 
-    if (selected?.canvasId) {
-        const canvas = state.getNode(selected.canvasId);
+    const selectedNode = selectedNodeId
+        ? state.getNode(selectedNodeId)
+        : null;
+
+    const canvasId =
+        selectedNode?.canvasId || selectedCanvasId;
+
+    if (canvasId) {
+        const canvas = state.getNode(canvasId);
         if (canvas) return canvas;
     }
 
