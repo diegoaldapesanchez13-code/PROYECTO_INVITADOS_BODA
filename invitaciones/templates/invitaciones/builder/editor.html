@@ -1,0 +1,494 @@
+{% load static %}
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1"
+    >
+
+    <title>DIRTEC Studio · {{ evento }}</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Alex+Brush&family=Allura&family=Bodoni+Moda:opsz,wght@6..96,400;6..96,700&family=Cinzel:wght@400;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@400;500;600;700&family=Dancing+Script:wght@400;600;700&family=Great+Vibes&family=Inter:wght@400;500;600;700&family=Lato:wght@400;700&family=Libre+Baskerville:wght@400;700&family=Manrope:wght@400;500;600;700&family=Montserrat:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&family=Parisienne&family=Playfair+Display:wght@400;600;700&family=Poppins:wght@400;500;600;700&family=Raleway:wght@400;500;600;700&family=Sacramento&family=Tangerine:wght@400;700&display=swap" rel="stylesheet">
+
+    <link
+        rel="stylesheet"
+        href="{% static 'invitaciones/builder/renderer/renderer.css' %}"
+    >
+
+    <link
+        rel="stylesheet"
+        href="{% static 'invitaciones/builder/canvas/canvas.css' %}"
+    >
+
+    <link
+        rel="stylesheet"
+        href="{% static 'invitaciones/builder/inspector/inspector.css' %}"
+    >
+
+    <link
+        rel="stylesheet"
+        href="{% static 'invitaciones/builder/assets/library.css' %}"
+    >
+
+    <link
+        rel="stylesheet"
+        href="{% static 'invitaciones/builder/layers/layer_tree.css' %}"
+    >
+
+    <link
+        rel="stylesheet"
+        href="{% static 'invitaciones/builder/components/library.css' %}"
+    >
+
+    <link rel="stylesheet" href="{% static 'invitaciones/builder/preview/mobile_preview.css' %}">
+
+    <style>
+        :root {
+            --r3-shell-gap: 12px;
+            --r3-shell-padding: 12px;
+            --r3-sidebar-width: 280px;
+            --r3-inspector-width: 360px;
+        }
+
+        * { box-sizing: border-box; }
+
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            min-height: 0;
+        }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #e9e5dc;
+            color: #252922;
+            font-family: Arial, sans-serif;
+        }
+
+        button,
+        input,
+        select,
+        textarea { font: inherit; }
+
+        .demo-shell {
+            display: grid;
+            grid-template-rows: auto minmax(0, 1fr);
+            gap: var(--r3-shell-gap);
+            width: 100%;
+            height: 100dvh;
+            min-height: 0;
+            padding: var(--r3-shell-padding);
+            overflow: hidden;
+        }
+
+        .demo-header {
+            position: relative;
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            min-width: 0;
+            padding: 2px 4px;
+            flex-wrap: wrap;
+        }
+
+        .demo-header h1 {
+            margin: 0;
+            font-size: 1.15rem;
+        }
+
+        .demo-workspace {
+            display: grid;
+            grid-template-columns:
+                minmax(240px, var(--r3-sidebar-width))
+                minmax(0, 1fr)
+                minmax(320px, var(--r3-inspector-width));
+            grid-template-rows: minmax(0, 1fr);
+            gap: var(--r3-shell-gap);
+            width: 100%;
+            height: 100%;
+            min-width: 0;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        .demo-left-sidebar {
+            display: grid;
+            grid-template-rows: auto minmax(0, 1fr);
+            gap: 8px;
+            min-width: 0;
+            min-height: 0;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .demo-left-tabs {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 6px;
+            flex: 0 0 auto;
+        }
+
+        .demo-left-tabs button {
+            min-height: 38px;
+            padding: 9px 10px;
+            border: 1px solid #d0cbc1;
+            border-radius: 9px;
+            background: #f8f6f1;
+            color: #3d423a;
+            cursor: pointer;
+            font-size: .78rem;
+            font-weight: 800;
+        }
+
+        .demo-left-tabs button.is-active {
+            border-color: #526043;
+            background: #526043;
+            color: #fff;
+        }
+
+        .demo-left-panel {
+            min-width: 0;
+            min-height: 0;
+            height: 100%;
+            overflow-y: scroll;
+            overflow-x: hidden;
+            overscroll-behavior: contain;
+            scrollbar-gutter: stable;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .demo-left-panel[hidden] { display: none; }
+
+        .r3-canvas-viewport {
+            width: 100%;
+            height: 100%;
+            min-width: 0;
+            min-height: 0;
+            overflow: auto;
+            scrollbar-gutter: stable both-edges;
+        }
+
+        .r3-canvas-zoom-layer,
+        .r3-canvas-surface,
+        .r3-canvas-overlay-layer {
+            width: 390px;
+            min-height: 0;
+        }
+
+        .r3-canvas-surface { border-radius: 28px; }
+
+        [data-r3-inspector] {
+            min-width: 0;
+            min-height: 0;
+            height: 100%;
+            overflow-y: scroll;
+            overflow-x: hidden;
+            overscroll-behavior: contain;
+            scrollbar-gutter: stable;
+        }
+
+        /* Scrollbars visibles en los tres espacios de trabajo. */
+        .demo-left-panel,
+        .r3-canvas-viewport,
+        [data-r3-inspector],
+        .r3-asset-library,
+        .r3-component-library,
+        .r3-layer-tree,
+        .r3-canvas-manager {
+            scrollbar-width: auto;
+            scrollbar-color: #78866a #e5e1d8;
+        }
+
+        .demo-left-panel::-webkit-scrollbar,
+        .r3-canvas-viewport::-webkit-scrollbar,
+        [data-r3-inspector]::-webkit-scrollbar,
+        .r3-asset-library::-webkit-scrollbar,
+        .r3-component-library::-webkit-scrollbar,
+        .r3-layer-tree::-webkit-scrollbar,
+        .r3-canvas-manager::-webkit-scrollbar {
+            width: 12px;
+            height: 12px;
+        }
+
+        .demo-left-panel::-webkit-scrollbar-track,
+        .r3-canvas-viewport::-webkit-scrollbar-track,
+        [data-r3-inspector]::-webkit-scrollbar-track,
+        .r3-asset-library::-webkit-scrollbar-track,
+        .r3-component-library::-webkit-scrollbar-track,
+        .r3-layer-tree::-webkit-scrollbar-track,
+        .r3-canvas-manager::-webkit-scrollbar-track {
+            background: #e5e1d8;
+            border-radius: 999px;
+        }
+
+        .demo-left-panel::-webkit-scrollbar-thumb,
+        .r3-canvas-viewport::-webkit-scrollbar-thumb,
+        [data-r3-inspector]::-webkit-scrollbar-thumb,
+        .r3-asset-library::-webkit-scrollbar-thumb,
+        .r3-component-library::-webkit-scrollbar-thumb,
+        .r3-layer-tree::-webkit-scrollbar-thumb,
+        .r3-canvas-manager::-webkit-scrollbar-thumb {
+            min-height: 42px;
+            border: 3px solid #e5e1d8;
+            border-radius: 999px;
+            background: #78866a;
+        }
+
+        @media (max-width: 1180px) {
+            :root {
+                --r3-sidebar-width: 245px;
+                --r3-inspector-width: 330px;
+            }
+        }
+
+        @media (max-width: 900px) {
+            body { overflow: auto; }
+
+            .demo-shell {
+                height: auto;
+                min-height: 100dvh;
+                overflow: visible;
+            }
+
+            .demo-workspace {
+                grid-template-columns: 1fr;
+                grid-template-rows: minmax(360px, 55vh) minmax(520px, auto) minmax(420px, auto);
+                overflow: visible;
+            }
+
+            .demo-left-sidebar,
+            [data-r3-inspector] {
+                min-height: 420px;
+                max-height: 70vh;
+            }
+        }
+    
+        .dirtec-save-status[data-state="saving"],
+        .dirtec-save-status[data-state="publishing"] { color: #9a7028; }
+        .dirtec-save-status[data-state="saved"],
+        .dirtec-save-status[data-state="published"] { color: #496c45; }
+        .dirtec-save-status[data-state="error"] { color: #a13f3f; }
+        .dirtec-builder-link {
+            display: inline-flex;
+            align-items: center;
+            min-height: 34px;
+            padding: 7px 11px;
+            border: 1px solid #d0cbc1;
+            border-radius: 8px;
+            background: #f8f6f1;
+            color: #3d423a;
+            text-decoration: none;
+            font-size: .78rem;
+            font-weight: 800;
+        }
+        .dirtec-builder-link--muted { opacity: .62; }
+
+    </style>
+</head>
+
+<body>
+    {{ builder_bootstrap|json_script:"dirtec-builder-bootstrap" }}
+    <main class="demo-shell">
+        <header class="demo-header">
+            <div>
+                <h1>
+                    DIRTEC Studio · {{ evento }}
+                </h1>
+
+                <div class="r3-canvas-status" data-r3-status>Design Studio listo</div>
+                <div class="r3-canvas-status dirtec-save-status" data-dirtec-save-status data-state="ready">
+                    Conectando…
+                </div>
+            </div>
+
+            <div class="r3-canvas-toolbar">
+                <div class="r3-canvas-toolbar__group">
+                    <button type="button" data-r3-zoom-step="out" aria-label="Alejar">−</button>
+                    <button type="button" data-r3-zoom="0.25">25%</button>
+                    <button
+                        type="button"
+                        data-r3-zoom="0.5"
+                    >
+                        50%
+                    </button>
+
+                    <button
+                        type="button"
+                        data-r3-zoom="0.75"
+                    >
+                        75%
+                    </button>
+
+                    <button
+                        type="button"
+                        data-r3-zoom="1"
+                    >
+                        100%
+                    </button>
+
+                    <button type="button" data-r3-zoom="1.25">125%</button>
+                    <button type="button" data-r3-zoom="1.5">150%</button>
+                    <button type="button" data-r3-zoom-step="in" aria-label="Acercar">+</button>
+                    <button
+                        type="button"
+                        data-r3-zoom="fit"
+                    >
+                        Ajustar
+                    </button>
+                    <span class="r3-canvas-status" data-r3-zoom-status>100%</span>
+                </div>
+
+                <div class="r3-canvas-toolbar__group">
+                    <button
+                        type="button"
+                        data-r3-undo
+                    >
+                        Deshacer
+                    </button>
+
+                    <button
+                        type="button"
+                        data-r3-redo
+                    >
+                        Rehacer
+                    </button>
+
+                    <button type="button" data-r3-open-preview>Vista previa móvil</button>
+                    <button type="button" data-dirtec-publish>Publicar</button>
+                    <a class="dirtec-builder-link" href="{{ dashboard_url }}">Dashboard</a>
+
+                    <button
+                        type="button"
+                        data-r3-reset-document
+                    >
+                        Restablecer diseño
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <div class="demo-workspace">
+            <aside class="demo-left-sidebar">
+                <nav class="demo-left-tabs">
+                    <button
+                        type="button"
+                        class="is-active"
+                        data-r3-left-tab="assets"
+                    >
+                        Assets
+                    </button>
+
+                    <button
+                        type="button"
+                        data-r3-left-tab="components"
+                    >
+                        Componentes
+                    </button>
+
+                    <button
+                        type="button"
+                        data-r3-left-tab="layers"
+                    >
+                        Capas
+                    </button>
+
+                    <button
+                        type="button"
+                        data-r3-left-tab="canvases"
+                    >
+                        Lienzos
+                    </button>
+                </nav>
+
+                <div
+                    class="demo-left-panel"
+                    data-r3-left-panel="assets"
+                    data-r3-library
+                ></div>
+
+                <div
+                    class="demo-left-panel"
+                    data-r3-left-panel="components"
+                    data-r3-components
+                    hidden
+                ></div>
+
+                <div
+                    class="demo-left-panel"
+                    data-r3-left-panel="layers"
+                    data-r3-layers
+                    hidden
+                ></div>
+
+                <div
+                    class="demo-left-panel"
+                    data-r3-left-panel="canvases"
+                    data-r3-canvases
+                    hidden
+                ></div>
+            </aside>
+
+            <div
+                class="r3-canvas-viewport"
+                data-r3-canvas-viewport
+            >
+                <div
+                    class="r3-canvas-zoom-layer"
+                    data-r3-canvas-zoom-layer
+                >
+                    <div
+                        class="r3-canvas-surface"
+                        data-r3-canvas-surface
+                    ></div>
+
+                    <div
+                        class="r3-canvas-overlay-layer"
+                        data-r3-canvas-overlay-layer
+                    ></div>
+                </div>
+            </div>
+
+            <aside data-r3-inspector></aside>
+        </div>
+    </main>
+
+
+    <section class="r3-preview" data-r3-preview hidden aria-label="Vista previa móvil">
+        <div class="r3-preview__backdrop" data-r3-preview-backdrop></div>
+        <div class="r3-preview__dialog" role="dialog" aria-modal="true" aria-label="Vista previa de invitación">
+            <header class="r3-preview__toolbar">
+                <div class="r3-preview__toolbar-group">
+                    <strong>Vista previa real</strong>
+                    <select data-r3-preview-device aria-label="Dispositivo">
+                        <option value="iphone_13">iPhone 13 / 14 · 390 × 844</option>
+                        <option value="iphone_se">iPhone SE · 375 × 667</option>
+                        <option value="android">Android · 412 × 915</option>
+                    </select>
+                </div>
+                <button type="button" data-r3-preview-close>Cerrar</button>
+            </header>
+            <div class="r3-preview__stage">
+                <div class="r3-preview__phone" data-r3-preview-frame>
+                    <div class="r3-preview__screen" data-r3-preview-screen>
+                        <div class="r3-preview__surface" data-r3-preview-surface></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script
+        type="module"
+        src="{% static 'invitaciones/builder/integrations/django/editor_bootstrap.js' %}?v=phase-b"
+    ></script>
+</body>
+</html>

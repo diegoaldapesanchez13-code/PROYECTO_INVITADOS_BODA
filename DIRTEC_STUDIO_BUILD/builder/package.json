@@ -1,0 +1,9 @@
+{
+  "name": "dirtec-builder",
+  "private": true,
+  "type": "module",
+  "version": "3.0.0-source-cut",
+  "scripts": {
+    "test": "node --test tests/*.mjs"
+  }
+}

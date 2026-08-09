@@ -803,6 +803,9 @@ class DisenoInvitacion(models.Model):
     estado = models.CharField(max_length=20, choices=ESTADOS, default='BORRADOR')
     configuracion_borrador = models.JSONField(default=dict, blank=True)
     configuracion_publicada = models.JSONField(default=dict, blank=True)
+    documento_builder_borrador = models.JSONField(default=dict, blank=True)
+    documento_builder_publicado = models.JSONField(default=dict, blank=True)
+    builder_revision = models.PositiveIntegerField(default=0)
     publicado_en = models.DateTimeField(blank=True, null=True)
     actualizado_por = models.ForeignKey(
         settings.AUTH_USER_MODEL,

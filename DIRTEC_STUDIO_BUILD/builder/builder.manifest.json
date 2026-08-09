@@ -1,0 +1,29 @@
+{
+  "name": "DIRTEC Builder",
+  "sourceVersion": "3.0.0",
+  "phase": "B_DJANGO_INTEGRATION",
+  "schemaVersion": 3,
+  "baselineTag": "builder-v3-stable-baseline",
+  "baselineCommit": "a97a5ec",
+  "sourceRoot": "builder",
+  "buildRoot": "invitaciones/static/invitaciones/builder",
+  "functionalFileCount": 119,
+  "tests": 45,
+  "rules": {
+    "sourceOfTruth": "builder/",
+    "generatedStatic": "invitaciones/static/invitaciones/builder/",
+    "legacyReference": "invitaciones/static/invitaciones/js/builder_v3/",
+    "legacyReferenceFrozen": true
+  },
+  "djangoIntegration": 1,
+  "documentPersistence": "DisenoInvitacion.documento_builder_borrador",
+  "publishedPersistence": "DisenoInvitacion.documento_builder_publicado",
+  "revisionField": "DisenoInvitacion.builder_revision",
+  "schemaRoadmap": {
+    "runtimeSchemaVersion": 3,
+    "nextSchemaVersion": 4,
+    "v4Mode": "shadow",
+    "mobileFirst": true,
+    "canvasTerminology": true
+  }
+}

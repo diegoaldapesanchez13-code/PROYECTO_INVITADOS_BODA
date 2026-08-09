@@ -1,0 +1,49 @@
+{
+  "phase": "E.1",
+  "baseline": "DIRTEC_EVENT_STUDIO(7).zip",
+  "runtime_new": {
+    "editor_route": "/dashboard/editor-invitacion/<evento_id>/",
+    "public_route": "/invitacion/<uuid>/",
+    "source_builder": "DIRTEC_STUDIO_BUILD/builder",
+    "generated_static": "invitaciones/static/invitaciones/builder",
+    "document_fields": [
+      "DisenoInvitacion.documento_builder_borrador",
+      "DisenoInvitacion.documento_builder_publicado",
+      "DisenoInvitacion.builder_revision"
+    ]
+  },
+  "legacy_runtime_files": [
+    "invitaciones/templates/invitaciones/editor_invitacion.html",
+    "invitaciones/templates/invitaciones/ver_invitacion.html",
+    "invitaciones/static/invitaciones/js/editor_invitacion.js",
+    "invitaciones/static/invitaciones/js/invitacion.js",
+    "invitaciones/static/invitaciones/css/editor_invitacion.css",
+    "invitaciones/static/invitaciones/css/invitacion.css"
+  ],
+  "duplicate_sources": {
+    "builder_v3_files": 132,
+    "builder_engine_files": [
+      "builder_engine/build/build_static.py"
+    ]
+  },
+  "legacy_models": {
+    "SeccionInvitacion": "KEEP_DATA_ONLY_UNTIL_DATABASE_CLEANUP",
+    "MediaSeccionInvitacion": "KEEP_DATA_ONLY_UNTIL_DATABASE_CLEANUP",
+    "ComponenteInvitacion": "KEEP_DATA_ONLY_UNTIL_DATABASE_CLEANUP",
+    "PlantillaInvitacion": "MIGRATE_TO_BUILDER_TEMPLATE_LATER"
+  },
+  "permanent_domain": [
+    "EventoBoda",
+    "Grupoinvitacion",
+    "Invitado",
+    "DisenoInvitacion",
+    "VersionDisenoInvitacion",
+    "AssetInvitacion",
+    "PersonaCeremonia",
+    "EnlaceRegalo",
+    "ItinerarioEvento",
+    "RSVP fields on Grupoinvitacion",
+    "company permissions",
+    "audit services"
+  ]
+}

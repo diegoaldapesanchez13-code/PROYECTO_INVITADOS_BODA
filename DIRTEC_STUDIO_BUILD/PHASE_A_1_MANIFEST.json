@@ -1,0 +1,17 @@
+{
+  "phase": "A.1",
+  "workspace": "DIRTEC_STUDIO_BUILD",
+  "source": "DIRTEC_STUDIO_BUILD/builder",
+  "static_output": "invitaciones/static/invitaciones/builder",
+  "baseline": "invitaciones/static/invitaciones/js/builder_v3",
+  "baseline_files": 119,
+  "missing": 0,
+  "changed": 0,
+  "workspace_metadata": [
+    "README.md",
+    "builder.manifest.json",
+    "package.json"
+  ],
+  "behavior_changes": false,
+  "django_changes": false
+}
