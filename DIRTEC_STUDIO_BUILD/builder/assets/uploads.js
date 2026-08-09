@@ -215,7 +215,11 @@ function createVideoObjectUrl(file) {
 function videoMetadata(url, file) {
     return new Promise((resolve) => {
         if (typeof document === "undefined") {
-            resolve({ size: file.size, volatileUrl: String(url).startsWith("blob:") });
+            resolve({
+                size: file.size,
+                mediaKind: "VIDEO",
+                volatileUrl: String(url).startsWith("blob:"),
+            });
             return;
         }
 
@@ -229,6 +233,7 @@ function videoMetadata(url, file) {
                 height: Number(video.videoHeight || 0),
                 duration: Number(video.duration || 0),
                 size: file.size,
+                mediaKind: "VIDEO",
                 volatileUrl: String(url).startsWith("blob:"),
                 ...extra,
             });
@@ -246,6 +251,16 @@ function imageMetadata(
 ) {
     return new Promise(
         (resolve) => {
+            const supportsAlpha =
+                [
+                    "image/png",
+                    "image/webp",
+                    "image/svg+xml",
+                    "image/gif",
+                ].includes(
+                    file.type
+                );
+
             const image =
                 new Image();
 
@@ -265,14 +280,11 @@ function imageMetadata(
                             ),
                         size: file.size,
                         transparent:
-                            [
-                                "image/png",
-                                "image/webp",
-                                "image/svg+xml",
-                                "image/gif",
-                            ].includes(
-                                file.type
-                            ),
+                            supportsAlpha,
+                        supportsAlpha,
+                        animated:
+                            file.type === "image/gif",
+                        mediaKind: "IMAGE",
                     });
                 }
             );
@@ -282,6 +294,10 @@ function imageMetadata(
                 () => {
                     resolve({
                         size: file.size,
+                        supportsAlpha,
+                        animated:
+                            file.type === "image/gif",
+                        mediaKind: "IMAGE",
                     });
                 }
             );
@@ -291,7 +307,7 @@ function imageMetadata(
     );
 }
 
-function typeFromMime(mime) {
+export function typeFromMime(mime) {
     if (
         mime.startsWith(
             "video/"
@@ -301,18 +317,17 @@ function typeFromMime(mime) {
     }
 
     if (
-        mime === "image/svg+xml"
-        || mime === "image/png"
-        || mime === "image/webp"
-        || mime === "image/gif"
+        mime.startsWith(
+            "image/"
+        )
     ) {
-        return ASSET_TYPES.DECORATION;
+        return ASSET_TYPES.IMAGE;
     }
 
     return ASSET_TYPES.IMAGE;
 }
 
-function categoryFromType(type) {
+export function categoryFromType(type) {
     if (
         type === ASSET_TYPES.VIDEO
     ) {

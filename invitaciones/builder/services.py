@@ -7,6 +7,7 @@ from invitaciones.models import DisenoInvitacion
 
 BUILDER_SCHEMA_VERSION = 4
 LEGACY_BUILDER_SCHEMA_VERSION = 3
+BUILDER_BUILD_VERSION = "f4-native-v4-freeze"
 
 
 class BuilderDocumentError(ValueError):

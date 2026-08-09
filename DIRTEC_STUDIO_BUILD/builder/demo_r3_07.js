@@ -4,7 +4,7 @@ import {
     LAYOUT_MODES,
     NODE_TYPES,
     createEmptyDocument,
-} from "./core/index.js?v=phase-f3-canvas-contract";
+} from "./core/index.js?v=f4-native-v4-freeze";
 
 import {
     UniversalRenderer,
@@ -16,15 +16,15 @@ import {
 
 import {
     CanvasManager,
-} from "./canvas/canvas_manager.js?v=phase-f3-canvas-contract";
+} from "./canvas/canvas_manager.js?v=f4-native-v4-freeze";
 
 import {
     UniversalInspector,
-} from "./inspector/index.js?v=phase-f3-actions-visible";
+} from "./inspector/index.js?v=f4-native-v4-freeze";
 
 import {
     AutoLayoutEngine,
-} from "./layout/auto_layout.js?v=phase-f3-canvas-contract";
+} from "./layout/auto_layout.js?v=f4-native-v4-freeze";
 
 import {
     AssetManager,
@@ -37,7 +37,7 @@ import {
 import {
     BuilderDocumentStorage,
     connectDocumentPersistence,
-} from "./persistence/document_storage.js?v=phase-f3-canvas-contract";
+} from "./persistence/document_storage.js?v=f4-native-v4-freeze";
 
 import {
     AssetUploadService,
@@ -53,15 +53,15 @@ import {
 
 import {
     useAsset,
-} from "./assets/asset_nodes.js?v=phase-f3-target-selection";
+} from "./assets/asset_nodes.js?v=f4-native-v4-freeze";
 
 import {
     LayerTree,
-} from "./layers/layer_tree.js?v=phase-f3-canvas-contract";
+} from "./layers/layer_tree.js?v=f4-native-v4-freeze";
 
 import {
     ComponentLibrary,
-} from "./components/index.js?v=phase-f3-target-selection";
+} from "./components/index.js?v=f4-native-v4-freeze";
 
 import { MobilePreview } from "./preview/mobile_preview.js";
 
@@ -934,9 +934,7 @@ canvasEngine.setZoom(.75);
 window.addEventListener(
     "beforeunload",
     () => {
-        documentStorage.save(
-            state.document
-        );
+        stopDocumentPersistence.flush?.();
     }
 );
 

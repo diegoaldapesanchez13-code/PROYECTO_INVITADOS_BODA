@@ -538,6 +538,26 @@ export function normalizeAsset(
                     rawAsset.metadata
                         ?.transparent
                 ),
+            supportsAlpha:
+                Boolean(
+                    rawAsset.metadata
+                        ?.supportsAlpha
+                ),
+            animated:
+                Boolean(
+                    rawAsset.metadata
+                        ?.animated
+                ),
+            mediaKind:
+                String(
+                    rawAsset.metadata
+                        ?.mediaKind
+                    || (
+                        type === ASSET_TYPES.VIDEO
+                            ? "VIDEO"
+                            : "IMAGE"
+                    )
+                ),
             aspectRatio:
                 finite(
                     rawAsset.metadata
@@ -602,6 +622,15 @@ function guessMimeType(url = "") {
         || value.endsWith(".webp")
     ) {
         return "image/webp";
+    }
+
+    if (
+        value.startsWith(
+            "data:image/gif"
+        )
+        || value.endsWith(".gif")
+    ) {
+        return "image/gif";
     }
 
     if (

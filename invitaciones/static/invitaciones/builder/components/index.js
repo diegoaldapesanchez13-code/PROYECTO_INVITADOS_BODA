@@ -1,7 +1,7 @@
-export * from "./catalog.js?v=phase-f3-target-selection";
-export * from "./factory.js?v=phase-f3-target-selection";
-export * from "./library.js?v=phase-f3-target-selection";
+export * from "./catalog.js?v=f4-native-v4-freeze";
+export * from "./factory.js?v=f4-native-v4-freeze";
+export * from "./library.js?v=f4-native-v4-freeze";
 
-export * from "./map.js?v=phase-f3-target-selection";
+export * from "./map.js?v=f4-native-v4-freeze";
 
-export * from "./video.js?v=phase-f3-target-selection";
+export * from "./video.js?v=f4-native-v4-freeze";

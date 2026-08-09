@@ -5,6 +5,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
+from invitaciones.builder.services import BUILDER_BUILD_VERSION
 from invitaciones.models import DisenoInvitacion, EventoBoda
 
 
@@ -45,6 +46,11 @@ class DirtecBuilderDjangoTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "DIRTEC Studio")
         self.assertContains(response, "dirtec-builder-bootstrap")
+        self.assertContains(response, f"?v={BUILDER_BUILD_VERSION}")
+        self.assertEqual(
+            response.context["builder_bootstrap"]["buildVersion"],
+            BUILDER_BUILD_VERSION,
+        )
 
     def test_document_api_guarda_y_recarga(self):
         url = reverse("builder_document_api", args=[self.evento.id])

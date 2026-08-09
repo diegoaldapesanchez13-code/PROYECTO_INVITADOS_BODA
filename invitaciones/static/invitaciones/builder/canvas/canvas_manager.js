@@ -1,6 +1,6 @@
 import {
     NODE_TYPES,
-} from "../core/index.js?v=phase-f3-canvas-contract";
+} from "../core/index.js?v=f4-native-v4-freeze";
 
 export const MOBILE_CANVAS_WIDTH = 390;
 export const DEFAULT_CANVAS_HEIGHT = 844;

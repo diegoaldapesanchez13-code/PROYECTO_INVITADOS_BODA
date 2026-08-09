@@ -1,8 +1,9 @@
 {
   "name": "DIRTEC Builder",
-  "sourceVersion": "3.0.0",
-  "phase": "B_DJANGO_INTEGRATION",
-  "schemaVersion": 3,
+  "version": "f4-native-v4-freeze",
+  "sourceVersion": "4.0.0",
+  "phase": "F.4_NATIVE_V4_HARDENING",
+  "schemaVersion": 4,
   "baselineTag": "builder-v3-stable-baseline",
   "baselineCommit": "a97a5ec",
   "sourceRoot": "builder",
@@ -20,9 +21,9 @@
   "publishedPersistence": "DisenoInvitacion.documento_builder_publicado",
   "revisionField": "DisenoInvitacion.builder_revision",
   "schemaRoadmap": {
-    "runtimeSchemaVersion": 3,
+    "runtimeSchemaVersion": 4,
     "nextSchemaVersion": 4,
-    "v4Mode": "shadow",
+    "v4Mode": "native",
     "mobileFirst": true,
     "canvasTerminology": true
   }

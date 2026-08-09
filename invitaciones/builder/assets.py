@@ -60,15 +60,18 @@ def serializar_asset_builder(asset):
         or "application/octet-stream"
     )
 
-    if extension in VIDEO_EXTENSIONS:
+    is_video = extension in VIDEO_EXTENSIONS
+    is_gif = extension == "gif"
+    supports_alpha = extension in {"png", "webp", "gif"}
+
+    if is_video:
         builder_type = "VIDEO"
         category = "Videos"
-    elif extension in {"png", "webp", "gif"}:
-        builder_type = "DECORATION"
-        category = "Decoraciones"
+        media_kind = "VIDEO"
     else:
         builder_type = "IMAGE"
         category = "Fotografías"
+        media_kind = "IMAGE"
 
     try:
         size = int(asset.archivo.size or 0)
@@ -96,6 +99,9 @@ def serializar_asset_builder(asset):
             "size": size,
             "extension": extension,
             "persistent": True,
+            "mediaKind": media_kind,
+            "supportsAlpha": supports_alpha,
+            "animated": is_gif,
         },
         "createdAt": asset.fecha_creacion.isoformat(),
         "updatedAt": asset.fecha_creacion.isoformat(),

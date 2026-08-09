@@ -1,7 +1,7 @@
 import {
     NODE_TYPES,
     componentIcon,
-} from "../core/index.js?v=phase-f3-canvas-contract";
+} from "../core/index.js?v=f4-native-v4-freeze";
 
 import {
     LayerStackManager,

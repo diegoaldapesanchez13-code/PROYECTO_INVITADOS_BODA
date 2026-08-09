@@ -10,7 +10,7 @@ from django.views.decorators.clickjacking import xframe_options_sameorigin
 
 from invitaciones.models import DisenoInvitacion, Grupoinvitacion
 from .assets import listar_assets_builder
-from .services import snapshot_documento
+from .services import BUILDER_BUILD_VERSION, snapshot_documento
 
 
 def _grupo(codigo):
@@ -78,7 +78,8 @@ def public_invitation(request, codigo):
         )
 
     bootstrap = {
-        "schemaVersion": 3,
+        "schemaVersion": 4,
+        "buildVersion": BUILDER_BUILD_VERSION,
         "document": snapshot_documento(document),
         "assets": listar_assets_builder(evento),
         "device": "mobile",
@@ -92,6 +93,7 @@ def public_invitation(request, codigo):
         "evento": evento,
         "grupo": grupo,
         "builder_public_bootstrap": bootstrap,
+        "builder_build_version": BUILDER_BUILD_VERSION,
     })
 
 

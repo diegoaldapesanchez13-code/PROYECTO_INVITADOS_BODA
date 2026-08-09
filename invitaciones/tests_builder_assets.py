@@ -141,3 +141,52 @@ class DirtecBuilderAssetTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "initialAssets")
         self.assertContains(response, "Persistente")
+
+    def test_imagenes_no_se_clasifican_por_formato_como_decoracion(self):
+        for filename, title in [
+            ("alpha.png", "PNG"),
+            ("alpha.webp", "WEBP"),
+            ("animado.gif", "GIF"),
+        ]:
+            AssetInvitacion.objects.create(
+                evento=self.evento,
+                titulo=title,
+                archivo=SimpleUploadedFile(filename, b"x"),
+                creado_por=self.user,
+            )
+
+        response = self.client.get(
+            reverse("builder_assets_api", args=[self.evento.id])
+        )
+
+        self.assertEqual(response.status_code, 200)
+        by_name = {
+            asset["name"]: asset
+            for asset in response.json()["assets"]
+        }
+
+        for title in ["PNG", "WEBP", "GIF"]:
+            self.assertEqual(by_name[title]["type"], "IMAGE")
+            self.assertNotEqual(by_name[title]["type"], "DECORATION")
+            self.assertEqual(by_name[title]["metadata"]["mediaKind"], "IMAGE")
+            self.assertTrue(by_name[title]["metadata"]["supportsAlpha"])
+
+        self.assertTrue(by_name["GIF"]["metadata"]["animated"])
+        self.assertFalse(by_name["PNG"]["metadata"]["animated"])
+
+    def test_video_conserva_tipo_video_en_assets(self):
+        AssetInvitacion.objects.create(
+            evento=self.evento,
+            titulo="Video",
+            archivo=SimpleUploadedFile("clip.mp4", b"x"),
+            creado_por=self.user,
+        )
+
+        response = self.client.get(
+            reverse("builder_assets_api", args=[self.evento.id])
+        )
+
+        self.assertEqual(response.status_code, 200)
+        asset = response.json()["assets"][0]
+        self.assertEqual(asset["type"], "VIDEO")
+        self.assertEqual(asset["metadata"]["mediaKind"], "VIDEO")

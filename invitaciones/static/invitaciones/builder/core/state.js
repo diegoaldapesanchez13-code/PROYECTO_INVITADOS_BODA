@@ -6,11 +6,11 @@ import {
     normalizeNode,
     serializeDocument,
     validateDocument,
-} from "./schema.js?v=phase-f3-canvas-contract";
+} from "./schema.js?v=f4-native-v4-freeze";
 
 import {
     canonicalizeDocumentV4,
-} from "./runtime_v4.js?v=phase-f3-canvas-contract";
+} from "./runtime_v4.js?v=f4-native-v4-freeze";
 
 export class BuilderState {
     #document;

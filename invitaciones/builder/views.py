@@ -21,6 +21,7 @@ from .assets import (
 )
 
 from .services import (
+    BUILDER_BUILD_VERSION,
     BuilderDocumentError,
     guardar_documento_builder,
     obtener_diseno_builder,
@@ -54,6 +55,7 @@ def editor(request, evento_id):
     bootstrap = {
         "eventId": evento.id,
         "schemaVersion": 4,
+        "buildVersion": BUILDER_BUILD_VERSION,
         "initialDocument": diseno.documento_builder_borrador or None,
         "revision": diseno.builder_revision,
         "csrfToken": get_token(request),
@@ -76,6 +78,7 @@ def editor(request, evento_id):
             "evento": evento,
             "diseno": diseno,
             "builder_bootstrap": bootstrap,
+            "builder_build_version": BUILDER_BUILD_VERSION,
             "dashboard_url": f"/dashboard/?evento={evento.id}#personalizacion",
         },
     )

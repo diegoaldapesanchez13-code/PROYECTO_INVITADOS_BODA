@@ -17,35 +17,35 @@
 
     <link
         rel="stylesheet"
-        href="{% static 'invitaciones/builder/renderer/renderer.css' %}"
+        href="{% static 'invitaciones/builder/renderer/renderer.css' %}?v={{ builder_build_version|urlencode }}"
     >
 
     <link
         rel="stylesheet"
-        href="{% static 'invitaciones/builder/canvas/canvas.css' %}"
+        href="{% static 'invitaciones/builder/canvas/canvas.css' %}?v={{ builder_build_version|urlencode }}"
     >
 
     <link
         rel="stylesheet"
-        href="{% static 'invitaciones/builder/inspector/inspector.css' %}"
+        href="{% static 'invitaciones/builder/inspector/inspector.css' %}?v={{ builder_build_version|urlencode }}"
     >
 
     <link
         rel="stylesheet"
-        href="{% static 'invitaciones/builder/assets/library.css' %}"
+        href="{% static 'invitaciones/builder/assets/library.css' %}?v={{ builder_build_version|urlencode }}"
     >
 
     <link
         rel="stylesheet"
-        href="{% static 'invitaciones/builder/layers/layer_tree.css' %}"
+        href="{% static 'invitaciones/builder/layers/layer_tree.css' %}?v={{ builder_build_version|urlencode }}"
     >
 
     <link
         rel="stylesheet"
-        href="{% static 'invitaciones/builder/components/library.css' %}"
+        href="{% static 'invitaciones/builder/components/library.css' %}?v={{ builder_build_version|urlencode }}"
     >
 
-    <link rel="stylesheet" href="{% static 'invitaciones/builder/preview/mobile_preview.css' %}">
+    <link rel="stylesheet" href="{% static 'invitaciones/builder/preview/mobile_preview.css' %}?v={{ builder_build_version|urlencode }}">
 
     <style>
         :root {
@@ -488,7 +488,7 @@
 
     <script
         type="module"
-        src="{% static 'invitaciones/builder/integrations/django/editor_bootstrap.js' %}?v=phase-f3-target-selection"
+        src="{% static 'invitaciones/builder/integrations/django/editor_bootstrap.js' %}?v={{ builder_build_version|urlencode }}"
     ></script>
 </body>
 </html>

@@ -191,6 +191,43 @@ assert.equal(
     null
 );
 
+let flushSaves = 0;
+let flushedDocument = null;
+const flushListeners = new Set();
+const flushController =
+    connectDocumentPersistence({
+        state: {
+            subscribe(listener) {
+                flushListeners.add(listener);
+                return () => flushListeners.delete(listener);
+            },
+        },
+        storage: {
+            save(document) {
+                flushSaves += 1;
+                flushedDocument = document;
+                return true;
+            },
+        },
+        debounceMs: 50,
+    });
+
+flushController.flush();
+assert.equal(flushSaves, 0);
+
+for (const listener of flushListeners) {
+    listener({
+        type: "node:update",
+        document: {
+            id: "pending-document",
+        },
+    });
+}
+
+flushController.flush();
+assert.equal(flushSaves, 1);
+assert.equal(flushedDocument.id, "pending-document");
+
 console.log(
     "R3.07.2 document persistence tests: OK"
 );

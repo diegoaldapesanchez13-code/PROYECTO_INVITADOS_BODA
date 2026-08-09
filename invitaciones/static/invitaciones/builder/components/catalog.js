@@ -1,6 +1,6 @@
 import {
     NODE_TYPES,
-} from "../core/index.js?v=phase-f3-target-selection";
+} from "../core/index.js?v=f4-native-v4-freeze";
 
 const COMPONENT_CATALOG = Object.freeze([
     item("text", NODE_TYPES.TEXT, "Texto", "Agrega una capa de texto editable.", "T", "Básicos"),

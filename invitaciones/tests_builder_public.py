@@ -3,6 +3,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
+from invitaciones.builder.services import BUILDER_BUILD_VERSION
 from invitaciones.models import DisenoInvitacion, EventoBoda, Grupoinvitacion
 
 
@@ -29,6 +30,14 @@ class BuilderPublicRendererTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "invitaciones/builder/public_invitation.html")
         self.assertContains(response, "dirtec-builder-public-bootstrap")
+
+    def test_public_bootstrap_schema_version_is_v4(self):
+        response = self.client.get(reverse("ver_invitacion", args=[self.grupo.codigo]))
+        bootstrap = response.context["builder_public_bootstrap"]
+        self.assertEqual(bootstrap["schemaVersion"], 4)
+        self.assertEqual(bootstrap["buildVersion"], BUILDER_BUILD_VERSION)
+        self.assertEqual(bootstrap["document"]["schemaVersion"], 3)
+        self.assertContains(response, f"?v={BUILDER_BUILD_VERSION}")
 
     def test_public_route_does_not_expose_draft_to_guest(self):
         self.diseno.documento_builder_borrador = {**self.document, "page": {"name": "SECRET-DRAFT"}}

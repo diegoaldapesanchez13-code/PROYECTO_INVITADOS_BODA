@@ -14,6 +14,7 @@ if (!root) {
 }
 
 const config = JSON.parse(root.textContent || "{}");
+const buildVersion = config.buildVersion || "f4-native-v4-freeze";
 
 const bridge = new DjangoDocumentStorageBridge({
     initialDocument: config.initialDocument || null,
@@ -78,5 +79,5 @@ publishButton?.addEventListener("click", async () => {
     }
 });
 
-await import("../../demo_r3_07.js" + "?v=phase-f3-target-selection");
+await import(`../../demo_r3_07.js?v=${encodeURIComponent(buildVersion)}`);
 markConnectedIfIdle();

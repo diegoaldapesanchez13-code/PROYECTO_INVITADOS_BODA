@@ -4,7 +4,7 @@ import {
     LAYOUT_MODES,
     NODE_TYPES,
     isContainerComponent,
-} from "../core/index.js?v=phase-f3-target-selection";
+} from "../core/index.js?v=f4-native-v4-freeze";
 
 import {
     ASSET_TYPES,

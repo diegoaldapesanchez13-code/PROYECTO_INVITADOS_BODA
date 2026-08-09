@@ -4,15 +4,15 @@ import {
     componentLabel,
     componentSupports,
     getComponentDefinition,
-} from "../core/index.js?v=phase-f3-actions-visible";
+} from "../core/index.js?v=f4-native-v4-freeze";
 
 import {
     autoLayoutPanel,
-} from "./panels/auto_layout.js?v=phase-f3-actions-visible";
+} from "./panels/auto_layout.js?v=f4-native-v4-freeze";
 
 import {
     constraintsPanel,
-} from "./panels/constraints.js?v=phase-f3-actions-visible";
+} from "./panels/constraints.js?v=f4-native-v4-freeze";
 
 
 import {
@@ -20,67 +20,67 @@ import {
     setPathClone,
     shouldShow,
     valueFromInput,
-} from "./controls.js?v=phase-f3-actions-visible";
+} from "./controls.js?v=f4-native-v4-freeze";
 
 import {
     generalPanel,
-} from "./panels/base.js?v=phase-f3-actions-visible";
+} from "./panels/base.js?v=f4-native-v4-freeze";
 
 import {
     canvasPanel,
-} from "./panels/canvas.js?v=phase-f3-actions-visible";
+} from "./panels/canvas.js?v=f4-native-v4-freeze";
 
 import {
     cardPanel,
-} from "./panels/card.js?v=phase-f3-actions-visible";
+} from "./panels/card.js?v=f4-native-v4-freeze";
 
 import {
     textPanel,
-} from "./panels/text.js?v=phase-f3-actions-visible";
+} from "./panels/text.js?v=f4-native-v4-freeze";
 
 import {
     imagePanel,
-} from "./panels/image.js?v=phase-f3-actions-visible";
+} from "./panels/image.js?v=f4-native-v4-freeze";
 
 import {
     buttonPanel,
-} from "./panels/button.js?v=phase-f3-actions-visible";
+} from "./panels/button.js?v=f4-native-v4-freeze";
 
 import {
     countdownPanel,
-} from "./panels/countdown.js?v=phase-f3-actions-visible";
+} from "./panels/countdown.js?v=f4-native-v4-freeze";
 
 import {
     mapPanel,
-} from "./panels/map.js?v=phase-f3-actions-visible";
+} from "./panels/map.js?v=f4-native-v4-freeze";
 
 import {
     videoPanel,
-} from "./panels/video.js?v=phase-f3-actions-visible";
+} from "./panels/video.js?v=f4-native-v4-freeze";
 
 import {
     rsvpPanel,
-} from "./panels/rsvp.js?v=phase-f3-actions-visible";
+} from "./panels/rsvp.js?v=f4-native-v4-freeze";
 
 import {
     separatorPanel,
-} from "./panels/separator.js?v=phase-f3-actions-visible";
+} from "./panels/separator.js?v=f4-native-v4-freeze";
 
 import {
     iconPanel,
-} from "./panels/icon.js?v=phase-f3-actions-visible";
+} from "./panels/icon.js?v=f4-native-v4-freeze";
 
 import {
     backgroundPanel,
-} from "./panels/background.js?v=phase-f3-actions-visible";
+} from "./panels/background.js?v=f4-native-v4-freeze";
 
 import {
     decorationPanel,
-} from "./panels/decoration.js?v=phase-f3-actions-visible";
+} from "./panels/decoration.js?v=f4-native-v4-freeze";
 
 import {
     interactionPanel,
-} from "./panels/interaction.js?v=phase-f3-actions-visible";
+} from "./panels/interaction.js?v=f4-native-v4-freeze";
 
 export class UniversalInspector {
     constructor(options = {}) {

@@ -2,7 +2,7 @@ import {
     COMPONENT_CAPABILITIES,
     LAYOUT_MODES,
     componentSupports,
-} from "../core/index.js?v=phase-f3-canvas-contract";
+} from "../core/index.js?v=f4-native-v4-freeze";
 
 export class AutoLayoutEngine {
     constructor({ state, renderer, canvas = null, onLayout = null }) {

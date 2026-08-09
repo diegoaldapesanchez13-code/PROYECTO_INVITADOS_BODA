@@ -1,6 +1,6 @@
 import {
     canonicalizeDocumentV4,
-} from "../core/runtime_v4.js?v=phase-f3-canvas-contract";
+} from "../core/runtime_v4.js?v=f4-native-v4-freeze";
 
 const NON_DOCUMENT_EVENTS =
     new Set([
@@ -135,6 +135,7 @@ export function connectDocumentPersistence(
 
     let timer = null;
     let stopped = false;
+    let queuedDocument = null;
 
     const persist =
         (document) => {
@@ -169,11 +170,15 @@ export function connectDocumentPersistence(
                     clearTimeout(timer);
                 }
 
+                queuedDocument = event.document;
                 timer = setTimeout(
                     () => {
                         timer = null;
+                        const document =
+                            queuedDocument;
+                        queuedDocument = null;
                         persist(
-                            event.document
+                            document
                         );
                     },
                     Math.max(
@@ -184,7 +189,7 @@ export function connectDocumentPersistence(
             }
         );
 
-    return () => {
+    const stop = () => {
         stopped = true;
 
         if (timer !== null) {
@@ -194,4 +199,22 @@ export function connectDocumentPersistence(
 
         unsubscribe();
     };
+
+    stop.flush = () => {
+        if (stopped || queuedDocument === null) {
+            return;
+        }
+
+        if (timer !== null) {
+            clearTimeout(timer);
+            timer = null;
+        }
+
+        const document =
+            queuedDocument;
+        queuedDocument = null;
+        persist(document);
+    };
+
+    return stop;
 }

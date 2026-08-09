@@ -90,7 +90,7 @@ export class DjangoDocumentStorageBridge {
         }
     }
 
-    async #save(next, retry = true) {
+    async #save(next) {
         this.#emit("saving", "Guardando…");
 
         const response = await fetch(this.endpoint, {
@@ -106,11 +106,6 @@ export class DjangoDocumentStorageBridge {
         });
 
         const payload = await safeJson(response);
-
-        if (response.status === 409 && retry && Number.isFinite(payload.revision)) {
-            this.revision = Number(payload.revision);
-            return this.#save(next, false);
-        }
 
         if (!response.ok || !payload.ok) {
             this.#emit("error", payload.error || "Error al guardar.");

@@ -1,10 +1,10 @@
 import {
     listInsertableComponents,
-} from "./catalog.js?v=phase-f3-target-selection";
+} from "./catalog.js?v=f4-native-v4-freeze";
 
 import {
     insertComponent,
-} from "./factory.js?v=phase-f3-target-selection";
+} from "./factory.js?v=f4-native-v4-freeze";
 
 export class ComponentLibrary {
     constructor(options = {}) {
