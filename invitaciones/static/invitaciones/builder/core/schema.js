@@ -1,6 +1,10 @@
 import {
     normalizeInteraction,
 } from "../interaction/index.js";
+import {
+    normalizeExperience,
+    validateExperience,
+} from "../experience/contract.js?v=f4-native-v4-freeze";
 
 export const SCHEMA_VERSION = 4;
 
@@ -64,6 +68,7 @@ export function createEmptyDocument(overrides = {}) {
             settings: {},
             ...structuredCloneSafe(overrides.page || {}),
         },
+        experience: normalizeExperience(overrides.experience),
         canvases: [],
         nodes: [],
         assets: [],
@@ -198,6 +203,8 @@ export function normalizeDocument(rawDocument = {}) {
     document.nodes = Array.isArray(rawDocument.nodes)
         ? rawDocument.nodes.map(normalizeNode)
         : [];
+
+    document.experience = normalizeExperience(rawDocument.experience);
 
     expandCompositeCountdowns(document);
 
@@ -394,6 +401,11 @@ export function validateDocument(document) {
 
     if (!(document.canvases || []).length) {
         warnings.push("El documento no contiene lienzos.");
+    }
+
+    const experienceValidation = validateExperience(document.experience);
+    if (!experienceValidation.valid) {
+        errors.push(...experienceValidation.errors);
     }
 
     return {

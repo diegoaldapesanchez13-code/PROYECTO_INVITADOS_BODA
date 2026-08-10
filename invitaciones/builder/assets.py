@@ -4,6 +4,7 @@ from pathlib import Path
 from django.core.exceptions import ValidationError
 
 from invitaciones.models import (
+    AUDIO_EXTENSIONS,
     AssetInvitacion,
     VIDEO_EXTENSIONS,
     extension_archivo,
@@ -24,8 +25,17 @@ def crear_asset_builder(*, evento, usuario, archivo):
         Path(getattr(archivo, "name", ""))
         .suffix.lower().lstrip(".")
     )
+    content_type = str(
+        getattr(archivo, "content_type", "")
+        or ""
+    ).lower()
 
-    if extension in VIDEO_EXTENSIONS:
+    if content_type.startswith("audio/") or (
+        extension in AUDIO_EXTENSIONS
+        and not content_type.startswith("video/")
+    ):
+        tipo = "AUDIO"
+    elif content_type.startswith("video/") or extension in VIDEO_EXTENSIONS:
         tipo = "VIDEO"
     elif extension == "gif":
         tipo = "GIF"
@@ -60,7 +70,15 @@ def serializar_asset_builder(asset):
         or "application/octet-stream"
     )
 
-    is_video = extension in VIDEO_EXTENSIONS
+    stored_type = str(asset.tipo or "").upper()
+    is_audio = stored_type == "AUDIO" or (
+        extension in AUDIO_EXTENSIONS
+        and stored_type != "VIDEO"
+    )
+    is_video = stored_type == "VIDEO" or (
+        extension in VIDEO_EXTENSIONS
+        and not is_audio
+    )
     is_gif = extension == "gif"
     supports_alpha = extension in {"png", "webp", "gif"}
 
@@ -68,6 +86,10 @@ def serializar_asset_builder(asset):
         builder_type = "VIDEO"
         category = "Videos"
         media_kind = "VIDEO"
+    elif is_audio:
+        builder_type = "AUDIO"
+        category = "Audio"
+        media_kind = "AUDIO"
     else:
         builder_type = "IMAGE"
         category = "Fotografías"

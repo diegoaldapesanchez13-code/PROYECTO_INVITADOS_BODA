@@ -50,8 +50,14 @@ def validar_imagen(archivo):
 
 
 def validar_media_visual(archivo):
-    extensiones = IMAGE_EXTENSIONS | VIDEO_EXTENSIONS
-    max_mb = MAX_VIDEO_SIZE_MB if extension_archivo(archivo) in VIDEO_EXTENSIONS else MAX_IMAGE_SIZE_MB
+    extensiones = IMAGE_EXTENSIONS | VIDEO_EXTENSIONS | AUDIO_EXTENSIONS
+    extension = extension_archivo(archivo)
+    if extension in VIDEO_EXTENSIONS:
+        max_mb = MAX_VIDEO_SIZE_MB
+    elif extension in AUDIO_EXTENSIONS:
+        max_mb = MAX_AUDIO_SIZE_MB
+    else:
+        max_mb = MAX_IMAGE_SIZE_MB
     validar_archivo_por_extension_y_tamano(archivo, extensiones, max_mb, 'Media')
 
 
@@ -888,6 +894,7 @@ class AssetInvitacion(models.Model):
         ('ALBUM', 'Album'),
         ('VIDEO', 'Video'),
         ('GIF', 'GIF'),
+        ('AUDIO', 'Audio'),
     ]
     evento = models.ForeignKey(EventoBoda, on_delete=models.CASCADE, related_name='assets_invitacion')
     seccion = models.ForeignKey(

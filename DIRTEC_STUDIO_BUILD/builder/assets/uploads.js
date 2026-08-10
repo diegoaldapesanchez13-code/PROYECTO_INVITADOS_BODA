@@ -15,6 +15,12 @@ const ACCEPTED_MIME_TYPES =
         "video/ogg",
         "video/quicktime",
         "video/x-m4v",
+        "audio/mpeg",
+        "audio/mp4",
+        "audio/x-m4a",
+        "audio/ogg",
+        "audio/wav",
+        "audio/x-wav",
     ]);
 
 export class AssetUploadService {
@@ -101,16 +107,21 @@ export class AssetUploadService {
             });
         }
 
-        const isVideo = file.type.startsWith("video/");
-        const resourceUrl = isVideo
-            ? await createVideoObjectUrl(file)
+        const isVideo =
+            file.type.startsWith("video/");
+        const isAudio =
+            file.type.startsWith("audio/");
+        const resourceUrl = isVideo || isAudio
+            ? await createMediaObjectUrl(file)
             : await readAsDataUrl(file);
 
         const metadata = file.type.startsWith("image/")
             ? await imageMetadata(resourceUrl, file)
             : isVideo
                 ? await videoMetadata(resourceUrl, file)
-                : { size: file.size };
+                : isAudio
+                    ? await audioMetadata(resourceUrl, file)
+                    : { size: file.size };
 
         const type =
             typeFromMime(file.type);
@@ -204,12 +215,14 @@ function readAsDataUrl(file) {
     );
 }
 
-function createVideoObjectUrl(file) {
+function createMediaObjectUrl(file) {
     if (globalThis.URL?.createObjectURL) {
         return globalThis.URL.createObjectURL(file);
     }
 
-    return readAsDataUrl(file);
+    throw new Error(
+        "El navegador no puede crear una URL local para este archivo."
+    );
 }
 
 function videoMetadata(url, file) {
@@ -242,6 +255,36 @@ function videoMetadata(url, file) {
         video.addEventListener("loadedmetadata", () => finish(), { once: true });
         video.addEventListener("error", () => finish({ metadataError: true }), { once: true });
         video.src = url;
+    });
+}
+
+function audioMetadata(url, file) {
+    return new Promise((resolve) => {
+        if (typeof document === "undefined") {
+            resolve({
+                size: file.size,
+                mediaKind: "AUDIO",
+                volatileUrl: String(url).startsWith("blob:"),
+            });
+            return;
+        }
+
+        const audio = document.createElement("audio");
+        audio.preload = "metadata";
+
+        const finish = (extra = {}) => {
+            resolve({
+                duration: Number(audio.duration || 0),
+                size: file.size,
+                mediaKind: "AUDIO",
+                volatileUrl: String(url).startsWith("blob:"),
+                ...extra,
+            });
+        };
+
+        audio.addEventListener("loadedmetadata", () => finish(), { once: true });
+        audio.addEventListener("error", () => finish({ metadataError: true }), { once: true });
+        audio.src = url;
     });
 }
 
@@ -318,6 +361,14 @@ export function typeFromMime(mime) {
 
     if (
         mime.startsWith(
+            "audio/"
+        )
+    ) {
+        return ASSET_TYPES.AUDIO;
+    }
+
+    if (
+        mime.startsWith(
             "image/"
         )
     ) {
@@ -332,6 +383,12 @@ export function categoryFromType(type) {
         type === ASSET_TYPES.VIDEO
     ) {
         return "Videos";
+    }
+
+    if (
+        type === ASSET_TYPES.AUDIO
+    ) {
+        return "Audio";
     }
 
     if (

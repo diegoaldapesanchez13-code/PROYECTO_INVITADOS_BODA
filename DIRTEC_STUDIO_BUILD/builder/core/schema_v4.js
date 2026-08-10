@@ -1,3 +1,8 @@
+import {
+    normalizeExperience,
+    validateExperience,
+} from "../experience/contract.js?v=f4-native-v4-freeze";
+
 export const SCHEMA_V4_VERSION = 4;
 
 export const V4_NODE_TYPES = Object.freeze({
@@ -20,6 +25,7 @@ export function createEmptyDocumentV4(overrides = {}) {
             settings: {},
             ...clone(overrides.page || {}),
         },
+        experience: normalizeExperience(overrides.experience),
         canvases: [],
         nodes: [],
         assets: [],
@@ -54,6 +60,7 @@ export function migrateDocumentToV4(input = {}) {
 
     const output = createEmptyDocumentV4({
         page: source.page || {},
+        experience: source.experience || {},
         responsive: {
             baseDevice: "mobile",
             inheritance: {
@@ -133,6 +140,7 @@ export function normalizeDocumentV4(input = {}) {
     const source = clone(input || {});
     const output = createEmptyDocumentV4({
         page: source.page || {},
+        experience: source.experience || {},
         responsive: source.responsive || {},
         meta: source.meta || {},
     });
@@ -333,6 +341,13 @@ export function validateDocumentV4(document) {
 
     if (document.responsive?.baseDevice !== "mobile") {
         errors.push("V4 debe ser mobile-first.");
+    }
+
+    const experienceValidation = validateExperience(
+        document.experience
+    );
+    if (!experienceValidation.valid) {
+        errors.push(...experienceValidation.errors);
     }
 
     return {

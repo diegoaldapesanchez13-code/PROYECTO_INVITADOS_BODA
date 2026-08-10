@@ -109,7 +109,7 @@ export class AssetLibrary {
         fileInput.multiple = true;
         fileInput.hidden = true;
         fileInput.accept =
-            "image/*,video/mp4,video/webm,video/ogg,video/quicktime,video/x-m4v,.mov,.m4v,.ogv";
+            "image/*,video/mp4,video/webm,video/ogg,video/quicktime,video/x-m4v,audio/mpeg,audio/mp4,audio/x-m4a,audio/ogg,audio/wav,audio/x-wav,.mov,.m4v,.ogv,.mp3,.m4a,.wav,.ogg";
 
         uploadButton.addEventListener(
             "click",
@@ -434,6 +434,32 @@ export class AssetLibrary {
         actions.className =
             "r3-asset-card__actions";
 
+        const inspect =
+            document.createElement(
+                "button"
+            );
+
+        inspect.type = "button";
+        inspect.className =
+            "r3-asset-card__inspect";
+        inspect.textContent = "Ver";
+        inspect.title =
+            "Ver recurso";
+        inspect.setAttribute(
+            "aria-label",
+            `Ver ${asset.name}`
+        );
+
+        inspect.addEventListener(
+            "click",
+            (event) => {
+                event.stopPropagation();
+                this.#openAssetDetail(
+                    asset
+                );
+            }
+        );
+
         const favorite =
             document.createElement(
                 "button"
@@ -459,7 +485,10 @@ export class AssetLibrary {
             }
         );
 
-        actions.append(favorite);
+        actions.append(
+            inspect,
+            favorite
+        );
 
         if (
             asset.source
@@ -481,35 +510,11 @@ export class AssetLibrary {
                 "click",
                 async (event) => {
                     event.stopPropagation();
-
-                    const confirmed =
-                        globalThis.confirm
-                            ? globalThis.confirm(
-                                `¿Eliminar "${asset.name}"?`
-                            )
-                            : true;
-
-                    if (!confirmed) {
-                        return;
-                    }
-
                     remove.disabled = true;
 
                     try {
-                        await this.uploadService
-                            ?.removeAsset(asset.id);
-
-                        this.manager.remove(
-                            asset.id
-                        );
-
-                        this.onStatus?.(
-                            `${asset.name} eliminado`
-                        );
-                    } catch (error) {
-                        this.onStatus?.(
-                            error?.message
-                            || "No se pudo eliminar el recurso."
+                        await this.#removeAsset(
+                            asset
                         );
                     } finally {
                         remove.disabled = false;
@@ -560,6 +565,206 @@ export class AssetLibrary {
         );
 
         return card;
+    }
+
+    #openAssetDetail(asset) {
+        const dialog =
+            document.createElement(
+                "dialog"
+            );
+
+        dialog.className =
+            "r3-asset-detail";
+
+        const shell =
+            document.createElement(
+                "div"
+            );
+
+        shell.className =
+            "r3-asset-detail__shell";
+
+        const header =
+            document.createElement(
+                "header"
+            );
+
+        header.className =
+            "r3-asset-detail__header";
+
+        const heading =
+            document.createElement(
+                "div"
+            );
+
+        const name =
+            document.createElement(
+                "strong"
+            );
+        name.textContent = asset.name;
+
+        const meta =
+            document.createElement(
+                "small"
+            );
+        meta.textContent =
+            [
+                asset.category,
+                asset.collection,
+                asset.mimeType,
+            ]
+                .filter(Boolean)
+                .join(" · ");
+
+        heading.append(name, meta);
+
+        const close =
+            document.createElement(
+                "button"
+            );
+        close.type = "button";
+        close.className =
+            "r3-asset-detail__close";
+        close.textContent = "Cerrar";
+        close.addEventListener(
+            "click",
+            () => dialog.close()
+        );
+
+        header.append(heading, close);
+
+        const media =
+            document.createElement(
+                "div"
+            );
+        media.className =
+            "r3-asset-detail__media";
+        media.append(
+            createDetailPreview(asset)
+        );
+
+        const footer =
+            document.createElement(
+                "footer"
+            );
+        footer.className =
+            "r3-asset-detail__footer";
+
+        const use =
+            document.createElement(
+                "button"
+            );
+        use.type = "button";
+        use.className =
+            "r3-asset-detail__use";
+        use.textContent = "Usar recurso";
+        use.addEventListener(
+            "click",
+            () => {
+                this.#useAsset(asset);
+                dialog.close();
+            }
+        );
+
+        footer.append(use);
+
+        if (
+            asset.source
+            !== ASSET_SOURCES.BUILTIN
+        ) {
+            const remove =
+                document.createElement(
+                    "button"
+                );
+            remove.type = "button";
+            remove.className =
+                "r3-asset-detail__delete";
+            remove.textContent =
+                "Eliminar recurso";
+            remove.addEventListener(
+                "click",
+                async () => {
+                    remove.disabled = true;
+                    const deleted =
+                        await this.#removeAsset(
+                            asset
+                        );
+                    remove.disabled = false;
+
+                    if (deleted) {
+                        dialog.close();
+                    }
+                }
+            );
+            footer.append(remove);
+        }
+
+        shell.append(
+            header,
+            media,
+            footer
+        );
+        dialog.append(shell);
+
+        dialog.addEventListener(
+            "close",
+            () => dialog.remove(),
+            { once: true }
+        );
+
+        document.body.append(dialog);
+
+        if (
+            typeof dialog.showModal
+            === "function"
+        ) {
+            dialog.showModal();
+        } else {
+            dialog.setAttribute(
+                "open",
+                ""
+            );
+        }
+    }
+
+    async #removeAsset(asset) {
+        const confirmed =
+            globalThis.confirm
+                ? globalThis.confirm(
+                    `¿Eliminar "${asset.name}"?`
+                )
+                : true;
+
+        if (!confirmed) {
+            return false;
+        }
+
+        if (!this.uploadService) {
+            this.onStatus?.(
+                "La eliminación remota no está configurada."
+            );
+            return false;
+        }
+
+        try {
+            await this.uploadService
+                .removeAsset(asset.id);
+
+            this.manager.remove(
+                asset.id
+            );
+
+            this.onStatus?.(
+                `${asset.name} eliminado`
+            );
+            return true;
+        } catch (error) {
+            this.onStatus?.(
+                error?.message
+                || "No se pudo eliminar el recurso."
+            );
+            return false;
+        }
     }
 
     #filteredAssets() {
@@ -676,12 +881,40 @@ function createPreview(asset) {
                 "video"
             );
 
-        video.src = asset.previewUrl;
+        video.src = asset.previewUrl
+            || asset.url;
         video.muted = true;
         video.playsInline = true;
         video.preload = "metadata";
 
         return video;
+    }
+
+    if (
+        asset.mimeType
+            .startsWith("audio/")
+    ) {
+        const preview =
+            document.createElement(
+                "div"
+            );
+        preview.className =
+            "r3-asset-card__audio-preview";
+
+        const icon =
+            document.createElement(
+                "span"
+            );
+        icon.textContent = "♫";
+
+        const label =
+            document.createElement(
+                "span"
+            );
+        label.textContent = asset.name;
+
+        preview.append(icon, label);
+        return preview;
     }
 
     const image =
@@ -693,5 +926,44 @@ function createPreview(asset) {
     image.alt = asset.name;
     image.loading = "lazy";
 
+    return image;
+}
+
+function createDetailPreview(asset) {
+    if (
+        asset.mimeType
+            .startsWith("video/")
+    ) {
+        const video =
+            document.createElement(
+                "video"
+            );
+        video.src = asset.url
+            || asset.previewUrl;
+        video.controls = true;
+        video.playsInline = true;
+        video.preload = "metadata";
+        return video;
+    }
+
+    if (
+        asset.mimeType
+            .startsWith("audio/")
+    ) {
+        const audio =
+            document.createElement(
+                "audio"
+            );
+        audio.src = asset.url;
+        audio.controls = true;
+        audio.preload = "metadata";
+        return audio;
+    }
+
+    const image =
+        document.createElement("img");
+    image.src = asset.url
+        || asset.previewUrl;
+    image.alt = asset.name;
     return image;
 }

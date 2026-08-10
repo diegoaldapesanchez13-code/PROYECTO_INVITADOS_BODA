@@ -1,4 +1,5 @@
 import { UniversalRenderer } from "../renderer/renderer.js";
+import { ExperienceController } from "../experience/controller.js";
 
 export const PREVIEW_DEVICES = Object.freeze({
     iphone_13: { label: "iPhone 13 / 14", width: 390, height: 844 },
@@ -11,6 +12,8 @@ export class MobilePreview {
         if (!(root instanceof Element)) throw new TypeError("root inválido para MobilePreview.");
         this.root = root;
         this.state = state;
+        this.assetResolver = assetResolver;
+        this.experienceController = null;
         this.deviceKey = "iphone_13";
         this.renderer = new UniversalRenderer({
             editable: false,
@@ -35,15 +38,36 @@ export class MobilePreview {
 
     isOpen() { return !this.root.hidden; }
 
-    open() {
+    open(options = {}) {
         const surface = this.root.querySelector("[data-r3-preview-surface]");
+        const screen = this.root.querySelector("[data-r3-preview-screen]") || this.root;
         this.root.hidden = false;
         document.body.classList.add("r3-preview-open");
-        this.renderer.mount(surface, this.state.document);
+        this.experienceController?.dispose();
+        this.experienceController = null;
+
+        if (options.experience) {
+            this.experienceController = new ExperienceController({
+                document: this.state.document,
+                root: screen,
+                invitationElement: surface,
+                assetResolver: (assetId) => this.#assetForExperience(assetId),
+                logger: console,
+                renderInvitation: () => {
+                    this.renderer.mount(surface, this.state.document);
+                },
+            });
+            this.experienceController.start();
+        } else {
+            this.renderer.mount(surface, this.state.document);
+            surface.hidden = false;
+        }
         surface.scrollTop = 0;
     }
 
     close() {
+        this.experienceController?.dispose();
+        this.experienceController = null;
         this.renderer.stopCountdownTicker?.();
         this.root.hidden = true;
         document.body.classList.remove("r3-preview-open");
@@ -51,6 +75,12 @@ export class MobilePreview {
 
     refresh() {
         if (this.isOpen()) this.renderer.update(this.state.document);
+    }
+
+    restartExperience() {
+        if (this.isOpen()) {
+            this.open({ experience: true });
+        }
     }
 
     setDevice(key) {
@@ -64,5 +94,12 @@ export class MobilePreview {
         const select = this.root.querySelector("[data-r3-preview-device]");
         if (select) select.value = this.deviceKey;
         this.renderer.setDevice("mobile");
+    }
+
+    #assetForExperience(assetId) {
+        const url = this.assetResolver?.(assetId);
+        return url
+            ? { id: assetId, url }
+            : null;
     }
 }

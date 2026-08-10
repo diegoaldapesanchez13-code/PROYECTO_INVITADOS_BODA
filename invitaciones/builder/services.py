@@ -3,6 +3,7 @@ from copy import deepcopy
 from django.db import transaction
 
 from invitaciones.models import DisenoInvitacion
+from .experience_migration import importar_experience_legacy
 
 
 BUILDER_SCHEMA_VERSION = 4
@@ -22,6 +23,7 @@ def obtener_diseno_builder(evento, usuario=None):
             "actualizado_por": usuario,
         },
     )
+    importar_experience_legacy(diseno, usuario=usuario)
     return diseno
 
 

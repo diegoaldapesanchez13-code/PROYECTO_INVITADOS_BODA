@@ -242,7 +242,7 @@ def assets_api(request, evento_id):
         return JsonResponse(
             {
                 "ok": False,
-                "error": "Selecciona una imagen o video.",
+                "error": "Selecciona una imagen, video o audio.",
             },
             status=400,
         )

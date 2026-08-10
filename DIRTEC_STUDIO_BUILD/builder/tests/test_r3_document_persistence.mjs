@@ -4,6 +4,7 @@ import {
     BuilderDocumentStorage,
     connectDocumentPersistence,
 } from "../persistence/document_storage.js";
+import { normalizeDocumentV4 } from "../core/schema_v4.js";
 
 const memory = {
     value: null,
@@ -119,7 +120,7 @@ assert.equal(
 
 assert.deepEqual(
     storage.load(),
-    document
+    normalizeDocumentV4(document)
 );
 
 const listeners = new Set();

@@ -1,4 +1,5 @@
 import { UniversalRenderer } from "../renderer/renderer.js";
+import { ExperienceController } from "../experience/controller.js";
 
 function readBootstrap() {
     const node = document.getElementById("dirtec-builder-public-bootstrap");
@@ -17,6 +18,11 @@ function createAssetResolver(items = []) {
         const asset = map.get(String(assetId));
         return asset?.url || asset?.previewUrl || "";
     };
+}
+
+function createAssetLookup(items = []) {
+    const map = new Map(items.map(asset => [String(asset.id), asset]));
+    return (assetId) => map.get(String(assetId)) || null;
 }
 
 function createRsvpProvider(bootstrap) {
@@ -48,10 +54,16 @@ function createRsvpProvider(bootstrap) {
 
 const bootstrap = readBootstrap();
 const root = document.getElementById("dirtec-public-root");
+const assetItems =
+    Array.isArray(bootstrap.assets) && bootstrap.assets.length
+        ? bootstrap.assets
+        : bootstrap.document?.assets || [];
+const assetResolver = createAssetResolver(assetItems);
+const assetLookup = createAssetLookup(assetItems);
 const renderer = new UniversalRenderer({
     editable: false,
     device: bootstrap.device || "mobile",
-    assetResolver: createAssetResolver(bootstrap.assets),
+    assetResolver,
     invitationContext: {
         invitationId: bootstrap.invitation?.invitationId,
         pathname: location.pathname,
@@ -60,5 +72,18 @@ const renderer = new UniversalRenderer({
     onInteractionError(error) { console.error("DIRTEC interaction", error); },
     onRsvpError(error) { console.error("DIRTEC RSVP", error); },
 });
-renderer.mount(root, bootstrap.document);
+
+const experience = new ExperienceController({
+    document: bootstrap.document,
+    root: document.body,
+    invitationElement: root,
+    assetResolver: assetLookup,
+    logger: console,
+    renderInvitation() {
+        renderer.mount(root, bootstrap.document);
+    },
+});
+
+experience.start();
 globalThis.__DIRTEC_PUBLIC_RENDERER__ = renderer;
+globalThis.__DIRTEC_PUBLIC_EXPERIENCE__ = experience;

@@ -503,7 +503,8 @@ export function normalizeAsset(
             String(
                 rawAsset.mimeType
                 || guessMimeType(
-                    rawAsset.url
+                    rawAsset.url,
+                    type
                 )
             ),
         tags:
@@ -555,7 +556,9 @@ export function normalizeAsset(
                     || (
                         type === ASSET_TYPES.VIDEO
                             ? "VIDEO"
-                            : "IMAGE"
+                            : type === ASSET_TYPES.AUDIO
+                                ? "AUDIO"
+                                : "IMAGE"
                     )
                 ),
             aspectRatio:
@@ -593,7 +596,7 @@ export function normalizeAsset(
     };
 }
 
-function guessMimeType(url = "") {
+function guessMimeType(url = "", type = ASSET_TYPES.IMAGE) {
     const value =
         String(url).toLowerCase();
 
@@ -638,15 +641,37 @@ function guessMimeType(url = "") {
             "data:video/"
         )
         || value.endsWith(".mp4")
+        || (
+            type === ASSET_TYPES.VIDEO
+            && value.endsWith(".ogg")
+        )
     ) {
-        return "video/mp4";
+        return value.endsWith(".ogg")
+            ? "video/ogg"
+            : "video/mp4";
     }
 
     if (
         value.startsWith(
             "data:audio/"
         )
+        || value.endsWith(".mp3")
+        || value.endsWith(".m4a")
+        || value.endsWith(".wav")
+        || (
+            type === ASSET_TYPES.AUDIO
+            && value.endsWith(".ogg")
+        )
     ) {
+        if (value.endsWith(".wav")) {
+            return "audio/wav";
+        }
+        if (value.endsWith(".m4a")) {
+            return "audio/mp4";
+        }
+        if (value.endsWith(".ogg")) {
+            return "audio/ogg";
+        }
         return "audio/mpeg";
     }
 

@@ -486,6 +486,33 @@ export class BuilderState {
         this.#emit("document:replace");
     }
 
+    updateExperience(experience, options = {}) {
+        const normalized = normalizeDocument({
+            ...this.#document,
+            experience,
+        });
+        const validation = validateDocument(normalized);
+
+        if (!validation.valid) {
+            throw new Error(
+                validation.errors.join("\n")
+            );
+        }
+
+        if (options.recordHistory !== false) {
+            this.#history.push(
+                this.#snapshot("experience:update")
+            );
+        }
+
+        const selection = { ...this.#selection };
+        this.#document = normalized;
+        this.#selection = selection;
+        this.#future = [];
+        this.#touch();
+        this.#emit("experience:update");
+    }
+
     serialize(spacing = 2) {
         return serializeDocument(
             this.#document,

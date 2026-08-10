@@ -190,3 +190,46 @@ class DirtecBuilderAssetTests(TestCase):
         asset = response.json()["assets"][0]
         self.assertEqual(asset["type"], "VIDEO")
         self.assertEqual(asset["metadata"]["mediaKind"], "VIDEO")
+
+    def test_audio_builder_asset_persistente(self):
+        url = reverse("builder_assets_api", args=[self.evento.id])
+        upload = SimpleUploadedFile(
+            "cancion.mp3",
+            b"audio-prueba",
+            content_type="audio/mpeg",
+        )
+
+        response = self.client.post(
+            url,
+            {"archivo": upload},
+        )
+
+        self.assertEqual(response.status_code, 201)
+        payload = response.json()
+        self.assertTrue(payload["ok"])
+        self.assertEqual(payload["asset"]["type"], "AUDIO")
+        self.assertEqual(payload["asset"]["category"], "Audio")
+        self.assertEqual(payload["asset"]["metadata"]["mediaKind"], "AUDIO")
+        self.assertFalse(payload["asset"]["url"].startswith("data:"))
+
+        asset = AssetInvitacion.objects.get()
+        self.assertEqual(asset.tipo, "AUDIO")
+
+    def test_audio_existente_se_serializa_como_audio(self):
+        AssetInvitacion.objects.create(
+            evento=self.evento,
+            titulo="Musica",
+            tipo="AUDIO",
+            archivo=SimpleUploadedFile("musica.ogg", b"x"),
+            creado_por=self.user,
+        )
+
+        response = self.client.get(
+            reverse("builder_assets_api", args=[self.evento.id])
+        )
+
+        self.assertEqual(response.status_code, 200)
+        asset = response.json()["assets"][0]
+        self.assertEqual(asset["type"], "AUDIO")
+        self.assertEqual(asset["mimeType"], "audio/ogg")
+        self.assertEqual(asset["metadata"]["mediaKind"], "AUDIO")

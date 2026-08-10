@@ -64,6 +64,7 @@ import {
 } from "./components/index.js?v=f4-native-v4-freeze";
 
 import { MobilePreview } from "./preview/mobile_preview.js";
+import { ExperiencePanel } from "./experience/panel.js";
 
 const assetStorage =
     globalThis.__DIRTEC_BUILDER_ASSET_STORAGE__
@@ -521,6 +522,11 @@ const canvasesRoot =
         "[data-r3-canvases]"
     );
 
+const experienceRoot =
+    document.querySelector(
+        "[data-r3-experience]"
+    );
+
 const status =
     document.querySelector(
         "[data-r3-status]"
@@ -557,6 +563,7 @@ let inspector;
 let layers;
 let canvases;
 let components;
+let experiencePanel;
 
 const canvasEngine =
     new CanvasSelectionEngine({
@@ -666,6 +673,25 @@ components =
         renderer,
         canvas: canvasEngine,
         inspector,
+
+        onStatus(message) {
+            status.textContent = message;
+        },
+    });
+
+experiencePanel =
+    new ExperiencePanel({
+        root: experienceRoot,
+        state,
+        assets,
+
+        onPreview() {
+            mobilePreview.open({ experience: true });
+        },
+
+        onResetPreview() {
+            mobilePreview.restartExperience?.();
+        },
 
         onStatus(message) {
             status.textContent = message;
@@ -945,5 +971,6 @@ globalThis.r3Demo = {
     stopDocumentPersistence,
     canvases,
     components,
+    experiencePanel,
     mobilePreview,
 };

@@ -46,6 +46,8 @@
     >
 
     <link rel="stylesheet" href="{% static 'invitaciones/builder/preview/mobile_preview.css' %}?v={{ builder_build_version|urlencode }}">
+    <link rel="stylesheet" href="{% static 'invitaciones/builder/experience/experience.css' %}?v={{ builder_build_version|urlencode }}">
+    <link rel="stylesheet" href="{% static 'invitaciones/builder/experience/panel.css' %}?v={{ builder_build_version|urlencode }}">
 
     <style>
         :root {
@@ -132,7 +134,7 @@
 
         .demo-left-tabs {
             display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
             gap: 6px;
             flex: 0 0 auto;
         }
@@ -167,6 +169,11 @@
         }
 
         .demo-left-panel[hidden] { display: none; }
+
+        /* H.11.1: Assets conserva header/filtros visibles y desplaza solo recursos. */
+        .demo-left-panel[data-r3-left-panel="assets"] {
+            overflow: hidden;
+        }
 
         .r3-canvas-viewport {
             width: 100%;
@@ -407,6 +414,13 @@
                     >
                         Lienzos
                     </button>
+
+                    <button
+                        type="button"
+                        data-r3-left-tab="experience"
+                    >
+                        Experiencia
+                    </button>
                 </nav>
 
                 <div
@@ -433,6 +447,13 @@
                     class="demo-left-panel"
                     data-r3-left-panel="canvases"
                     data-r3-canvases
+                    hidden
+                ></div>
+
+                <div
+                    class="demo-left-panel"
+                    data-r3-left-panel="experience"
+                    data-r3-experience
                     hidden
                 ></div>
             </aside>
