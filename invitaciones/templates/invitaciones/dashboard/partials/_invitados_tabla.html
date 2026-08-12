@@ -1,178 +1,231 @@
-﻿            <table>
-                <thead>
-                    <tr>
-                        <th>Grupo</th>
-                        <th>Tipo</th>
-                        <th>Mesa</th>
-                        <th>Lugares</th>
-                        <th>Adultos / Niños</th>
-                        <th>Estado</th>
-                        <th>Invitados familiares</th>
-                        <th>Link</th>
-                        <th>WhatsApp</th>
-                        <th>Envío</th>
-                        <th>Registrar</th>
-                        <th>Gestionar</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for grupo in grupos %}
-                    <tr>
-                        <td>
-                            <strong>{{ grupo.nombre_grupo }}</strong><br>
-                            <span class="muted">{{ grupo.telefono_contacto|default:"Sin teléfono" }}</span>
-                        </td>
-                        <td><span class="pill">{{ grupo.get_tipo_display }}</span></td>
-                        <td>{{ grupo.mesa|default:"Sin mesa" }}</td>
-                        <td>
-                            {{ grupo.lugares_asistiran }} / {{ grupo.total_lugares }}<br>
-                            <span class="muted">{{ grupo.lugares_pendientes }} pendiente(s)</span>
-                        </td>
-                        <td>
-                            <span class="pill">{{ grupo.adultos_confirmados }} adultos</span>
-                            <span class="pill">{{ grupo.ninos_confirmados }} niños</span>
-                        </td>
-                        <td>
-                            {% if grupo.confirmado %}
-                                Confirmado
-                            {% elif grupo.lugares_asistiran %}
-                                Parcial
+<div class="guest-workspace" data-filter-scope>
+    <div class="guest-toolbar">
+        <label class="guest-search">
+            <span>Buscar</span>
+            <input type="search" placeholder="Nombre, familia o teléfono..." data-filter-search>
+        </label>
+        <label>
+            Tipo
+            <select data-filter-field="guesttype">
+                <option value="">Todos</option>
+                <option value="PERSONAL">Personal</option>
+                <option value="FAMILIAR">Familiar</option>
+            </select>
+        </label>
+        <span class="guest-toolbar__count" data-filter-count></span>
+    </div>
+
+    <div class="guest-table-authority-note">
+        <span>Mesas</span>
+        <p>La asignación de mesa se gestiona únicamente desde <a href="{% url 'mesas_visual' %}?evento={{ evento.id }}">Herramientas → Mesas</a>. Aquí solo se muestra el acomodo real.</p>
+    </div>
+
+    <div class="guest-card-list">
+        {% for grupo in grupos %}
+        <article
+            class="guest-group-card"
+            data-filter-item
+            data-guesttype="{{ grupo.tipo }}"
+            data-search="{{ grupo.nombre_grupo }} {{ grupo.telefono_contacto|default:'' }} {% for invitado in grupo.invitados.all %} {{ invitado.nombre }} {% endfor %}"
+        >
+            <header class="guest-group-card__header">
+                <div class="guest-group-card__identity">
+                    <div class="guest-group-card__title-row">
+                        <h3>{{ grupo.nombre_grupo }}</h3>
+                        <span class="pill">{{ grupo.get_tipo_display }}</span>
+                    </div>
+                    <p>
+                        {{ grupo.telefono_contacto|default:"Sin teléfono" }}
+                        {% if grupo.correo_contacto %} · {{ grupo.correo_contacto }}{% endif %}
+                    </p>
+                </div>
+
+                <div class="guest-group-card__stats">
+                    <span><strong>{{ grupo.total_personas_v2 }}</strong> personas</span>
+                    <span class="is-confirmed"><strong>{{ grupo.confirmados_v2 }}</strong> sí</span>
+                    <span class="is-pending"><strong>{{ grupo.pendientes_v2 }}</strong> pendientes</span>
+                </div>
+            </header>
+
+            <div class="guest-roster">
+                {% for invitado in grupo.invitados.all %}
+                <details class="guest-person-card">
+                    <summary>
+                        <span class="guest-person-card__name">
+                            <strong>{{ invitado.nombre }}</strong>
+                            {% if invitado.es_acompanante_extra %}<small>Acompañante autorizado</small>{% endif %}
+                        </span>
+
+                        <span class="guest-person-card__chips">
+                            <span class="pill">{{ invitado.get_tipo_persona_display }}</span>
+                            <span class="pill">Buffet: {{ invitado.menu_buffet_efectivo|title }}</span>
+                            {% with asignacion=invitado.asignaciones_mesa.all|first %}
+                                <span class="pill">Mesa: {% if asignacion %}{{ asignacion.mesa.nombre }}{% else %}Sin mesa{% endif %}</span>
+                            {% endwith %}
+                            {% if invitado.asistira == True %}
+                                <span class="guest-status guest-status--yes">Confirmado</span>
+                            {% elif invitado.asistira == False %}
+                                <span class="guest-status guest-status--no">No asiste</span>
                             {% else %}
-                                <span class="warn">Pendiente</span>
+                                <span class="guest-status guest-status--pending">Pendiente</span>
                             {% endif %}
-                        </td>
-                        <td>
-                            {% if grupo.es_familiar %}
-                                <div class="guests">
-                                    {% for invitado in grupo.invitados.all %}
-                                        <details class="guest-editor">
-                                            <summary>
-                                                {{ invitado.nombre }}
-                                                <span class="pill">{{ invitado.get_tipo_persona_display }}</span>
-                                                {% if invitado.asistira == True %}Sí{% elif invitado.asistira == False %}No{% else %}Pendiente{% endif %}
-                                            </summary>
-                                            <form method="post" class="inline-edit-form">
-                                                {% csrf_token %}
-                                                <input type="hidden" name="accion" value="editar_invitado">
-                                                <input type="hidden" name="evento_id" value="{{ evento.id }}">
-                                                <input type="hidden" name="invitado_id" value="{{ invitado.id }}">
-                                                <div class="design-grid compact-grid">
-                                                    <label>Nombre<input type="text" name="nombre_invitado" value="{{ invitado.nombre }}"></label>
-                                                    <label>
-                                                        Tipo
-                                                        <select name="tipo_persona">
-                                                            {% for valor, texto in tipos_persona %}
-                                                                <option value="{{ valor }}" {% if invitado.tipo_persona == valor %}selected{% endif %}>{{ texto }}</option>
-                                                            {% endfor %}
-                                                        </select>
-                                                    </label>
-                                                    <label>Mesa<input type="text" name="mesa_invitado" value="{{ invitado.mesa|default_if_none:'' }}"></label>
-                                                    <label>Orden<input type="number" name="orden_invitado" min="0" value="{{ invitado.orden }}"></label>
-                                                    <label class="wide">Restricciones<input type="text" name="restricciones_invitado" value="{{ invitado.restricciones_alimentarias|default_if_none:'' }}"></label>
-                                                    <label>Alergias<input type="text" name="alergias_invitado" value="{{ invitado.alergias|default_if_none:'' }}"></label>
-                                                    <label class="toggle-field"><input type="checkbox" name="menu_infantil" {% if invitado.menu_infantil %}checked{% endif %}> Menú infantil</label>
-                                                </div>
-                                                <div class="actions form-actions">
-                                                    <button class="btn" type="submit">Guardar integrante</button>
-                                                </div>
-                                            </form>
-                                            <form method="post" onsubmit="return confirm('¿Eliminar este invitado?');">
-                                                {% csrf_token %}
-                                                <input type="hidden" name="accion" value="eliminar_invitado">
-                                                <input type="hidden" name="evento_id" value="{{ evento.id }}">
-                                                <input type="hidden" name="invitado_id" value="{{ invitado.id }}">
-                                                <button class="btn danger" type="submit">Eliminar integrante</button>
-                                            </form>
-                                        </details>
-                                    {% empty %}
-                                        <span class="warn">Agrega invitados en el admin</span>
+                        </span>
+                    </summary>
+
+                    <form method="post" class="guest-person-editor">
+                        {% csrf_token %}
+                        <input type="hidden" name="accion" value="editar_invitado">
+                        <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                        <input type="hidden" name="invitado_id" value="{{ invitado.id }}">
+
+                        <div class="guest-form-grid guest-form-grid--person">
+                            <label>Nombre<input type="text" name="nombre_invitado" value="{{ invitado.nombre }}"></label>
+                            <label>
+                                Adulto / Niño
+                                <select name="tipo_persona">
+                                    {% for valor, texto in tipos_persona %}
+                                        <option value="{{ valor }}" {% if invitado.tipo_persona == valor %}selected{% endif %}>{{ texto }}</option>
                                     {% endfor %}
-                                </div>
-                            {% else %}
-                                <span class="muted">Acompañantes permitidos: {{ grupo.cantidad_extra_permitida }}</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            <div class="link-box" id="link-{{ grupo.id }}">{{ grupo.link_invitacion }}</div>
-                            <button class="btn secondary" onclick="copiarLink('link-{{ grupo.id }}')" type="button">Copiar</button>
-                            <a class="btn secondary" href="{% url 'ver_invitacion' grupo.codigo %}" target="_blank">Abrir</a>
-                        </td>
-                        <td>
-                            {% if grupo.whatsapp_invitacion_url %}
-                                <div class="actions">
-                                    <a href="{{ grupo.whatsapp_invitacion_url }}" target="_blank">Invitación</a>
-                                    <a href="{{ grupo.whatsapp_recordatorio_url }}" target="_blank">Recordatorio</a>
-                                </div>
-                            {% else %}
-                                <span class="warn">Sin teléfono</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {{ grupo.estado_envio }}<br>
-                            <span class="muted">Último: {{ grupo.fecha_ultimo_envio|date:"d/m/Y h:i A"|default:"-" }}</span>
-                        </td>
-                        <td class="actions">
-                            <a href="{% url 'marcar_envio_invitacion' grupo.id %}">Marcar envío</a>
-                            <a href="{% url 'marcar_recordatorio' grupo.id %}">Recordatorio</a>
-                        </td>
-                        <td>
-                            <details class="row-editor">
-                                <summary>Editar</summary>
-                                <form method="post" class="inline-edit-form">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="accion" value="editar_grupo">
-                                    <input type="hidden" name="evento_id" value="{{ evento.id }}">
-                                    <input type="hidden" name="grupo_id" value="{{ grupo.id }}">
-                                    <div class="design-grid compact-grid">
-                                        <label>Nombre<input type="text" name="nombre_grupo" value="{{ grupo.nombre_grupo }}"></label>
-                                        <label>Teléfono<input type="text" name="telefono_contacto" value="{{ grupo.telefono_contacto|default_if_none:'' }}"></label>
-                                        <label>Correo<input type="text" name="correo_contacto" value="{{ grupo.correo_contacto|default_if_none:'' }}"></label>
-                                        <label>Mesa<input type="text" name="mesa" value="{{ grupo.mesa|default_if_none:'' }}"></label>
-                                        <label>Acompañantes<input type="number" name="cantidad_extra_permitida" min="0" value="{{ grupo.cantidad_extra_permitida }}"></label>
-                                        <label>Cupo familiar<input type="number" name="cantidad_maxima" min="1" value="{{ grupo.cantidad_maxima }}"></label>
-                                    </div>
-                                    <div class="actions form-actions">
-                                        <button class="btn" type="submit">Guardar</button>
-                                    </div>
-                                </form>
-                                {% if grupo.es_familiar %}
-                                    <form method="post" class="inline-edit-form">
-                                        {% csrf_token %}
-                                        <input type="hidden" name="accion" value="agregar_invitado">
-                                        <input type="hidden" name="evento_id" value="{{ evento.id }}">
-                                        <input type="hidden" name="grupo_id" value="{{ grupo.id }}">
-                                        <div class="design-grid compact-grid">
-                                            <label>Invitado<input type="text" name="nombre_invitado" placeholder="Nombre"></label>
-                                            <label>
-                                                Tipo
-                                                <select name="tipo_persona">
-                                                    {% for valor, texto in tipos_persona %}
-                                                        <option value="{{ valor }}">{{ texto }}</option>
-                                                    {% endfor %}
-                                                </select>
-                                            </label>
-                                            <label>Mesa<input type="text" name="mesa_invitado" placeholder="Mesa"></label>
-                                            <label>Orden<input type="number" name="orden_invitado" min="0" value="0"></label>
-                                        </div>
-                                        <div class="actions form-actions">
-                                            <button class="btn secondary" type="submit">Agregar integrante</button>
-                                        </div>
-                                    </form>
-                                {% endif %}
-                                <form method="post" onsubmit="return confirm('¿Eliminar esta invitación y sus invitados?');">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="accion" value="eliminar_grupo">
-                                    <input type="hidden" name="evento_id" value="{{ evento.id }}">
-                                    <input type="hidden" name="grupo_id" value="{{ grupo.id }}">
-                                    <button class="btn danger" type="submit">Eliminar invitación</button>
-                                </form>
-                            </details>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="12">No hay grupos registrados para este evento.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                                </select>
+                            </label>
+                            <label>
+                                Buffet
+                                <select name="menu_asignado">
+                                    {% for valor, texto in tipos_menu_invitado %}
+                                        <option value="{{ valor }}" {% if invitado.menu_asignado == valor %}selected{% endif %}>{{ texto }}</option>
+                                    {% endfor %}
+                                </select>
+                            </label>
+                            
+                            <label>Orden<input type="number" name="orden_invitado" min="0" value="{{ invitado.orden }}"></label>
+                        </div>
+
+                        <div class="actions form-actions">
+                            <button class="btn" type="submit">Guardar persona</button>
+                        </div>
+                    </form>
+
+                    {% if grupo.es_familiar and not invitado.es_acompanante_extra %}
+                    <form method="post" class="guest-delete-form" data-confirm="¿Eliminar a {{ invitado.nombre }} de esta familia?">
+                        {% csrf_token %}
+                        <input type="hidden" name="accion" value="eliminar_invitado">
+                        <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                        <input type="hidden" name="invitado_id" value="{{ invitado.id }}">
+                        <button class="btn danger" type="submit">Eliminar integrante</button>
+                    </form>
+                    {% endif %}
+                </details>
+                {% empty %}
+                <div class="guest-empty-roster">Esta familia todavía no tiene integrantes nominales.</div>
+                {% endfor %}
+            </div>
+
+            <footer class="guest-group-card__footer">
+                <div class="guest-link-actions">
+                    <button class="btn secondary" type="button" data-copy-link-target="link-{{ grupo.id }}" onclick="copiarLink('link-{{ grupo.id }}')">Copiar link</button>
+                    <a class="btn secondary" href="{% url 'ver_invitacion' grupo.codigo %}" target="_blank">Abrir invitación</a>
+                    {% if grupo.whatsapp_invitacion_url %}
+                        <a class="btn secondary" href="{{ grupo.whatsapp_invitacion_url }}" target="_blank">WhatsApp</a>
+                    {% endif %}
+                    <div class="link-box guest-link-box" id="link-{{ grupo.id }}">{{ grupo.link_invitacion }}</div>
+                </div>
+
+                <details class="guest-group-manage">
+                    <summary>Gestionar invitación</summary>
+
+                    <form method="post" class="guest-group-editor">
+                        {% csrf_token %}
+                        <input type="hidden" name="accion" value="editar_grupo">
+                        <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                        <input type="hidden" name="grupo_id" value="{{ grupo.id }}">
+
+                        <div class="guest-form-grid">
+                            <label class="guest-form-grid__wide">Nombre del grupo<input type="text" name="nombre_grupo" value="{{ grupo.nombre_grupo }}"></label>
+                            <label>Teléfono<input type="text" name="telefono_contacto" value="{{ grupo.telefono_contacto|default_if_none:'' }}"></label>
+                            <label>Correo<input type="email" name="correo_contacto" value="{{ grupo.correo_contacto|default_if_none:'' }}"></label>
+                            
+
+                            <label class="guest-extra-toggle guest-form-grid__wide">
+                                <input
+                                    type="checkbox"
+                                    name="permitir_acompanantes_extra"
+                                    data-guest-extra-toggle
+                                    {% if grupo.permitir_acompanantes_extra %}checked{% endif %}
+                                >
+                                <span>
+                                    <strong>Acompañantes adicionales</strong>
+                                    <small>El invitado no puede cambiar esta cantidad.</small>
+                                </span>
+                            </label>
+                            <label data-guest-extra-count {% if not grupo.permitir_acompanantes_extra %}hidden{% endif %}>
+                                Cantidad autorizada
+                                <input type="number" name="cantidad_extra_permitida" min="0" value="{{ grupo.cantidad_extra_permitida }}">
+                            </label>
+                        </div>
+
+                        <div class="actions form-actions">
+                            <button class="btn" type="submit">Guardar grupo</button>
+                        </div>
+                    </form>
+
+                    {% if grupo.es_familiar %}
+                    <form method="post" class="guest-add-person">
+                        {% csrf_token %}
+                        <input type="hidden" name="accion" value="agregar_invitado">
+                        <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                        <input type="hidden" name="grupo_id" value="{{ grupo.id }}">
+
+                        <h4>Agregar integrante</h4>
+                        <div class="guest-form-grid guest-form-grid--person">
+                            <label>Nombre<input type="text" name="nombre_invitado" required placeholder="Nombre completo"></label>
+                            <label>
+                                Adulto / Niño
+                                <select name="tipo_persona">
+                                    {% for valor, texto in tipos_persona %}
+                                        <option value="{{ valor }}">{{ texto }}</option>
+                                    {% endfor %}
+                                </select>
+                            </label>
+                            <label>
+                                Buffet
+                                <select name="menu_asignado">
+                                    {% for valor, texto in tipos_menu_invitado %}
+                                        <option value="{{ valor }}">{{ texto }}</option>
+                                    {% endfor %}
+                                </select>
+                            </label>
+                            
+                            <label>Orden<input type="number" name="orden_invitado" min="0" value="0"></label>
+                        </div>
+                        <button class="btn secondary" type="submit">Agregar persona</button>
+                    </form>
+                    {% endif %}
+
+                    <div class="guest-group-secondary-actions">
+                        <form method="post" action="{% url 'marcar_envio_invitacion' grupo.id %}" class="inline-action-form">{% csrf_token %}<button type="submit" class="btn secondary">Marcar envío</button></form>
+                        <form method="post" action="{% url 'marcar_recordatorio' grupo.id %}" class="inline-action-form">{% csrf_token %}<button type="submit" class="btn secondary">Preparar recordatorio</button></form>
+                        <span class="muted">Estado: {{ grupo.estado_envio }}</span>
+                    </div>
+
+                    <form method="post" data-confirm="¿Eliminar esta invitación y todas sus personas?">
+                        {% csrf_token %}
+                        <input type="hidden" name="accion" value="eliminar_grupo">
+                        <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                        <input type="hidden" name="grupo_id" value="{{ grupo.id }}">
+                        <button class="btn danger" type="submit">Eliminar invitación</button>
+                    </form>
+                </details>
+            </footer>
+        </article>
+        {% empty %}
+        <div class="guest-empty-state">
+            <strong>No hay invitaciones registradas.</strong>
+            <span>Crea una invitación personal o familiar para comenzar.</span>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="guest-filter-empty">
+        No hay invitaciones que coincidan con los filtros.
+    </div>
+</div>

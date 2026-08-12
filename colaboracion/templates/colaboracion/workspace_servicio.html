@@ -1,0 +1,489 @@
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ servicio.nombre_servicio }} · Workspace</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'colaboracion/workspace_k84.css' %}">
+</head>
+<body>
+<main class="ws-shell">
+    <header class="ws-header">
+        <div>
+            <a class="ws-back" href="javascript:history.back()">← Regresar</a>
+            <p class="ws-kicker">{{ servicio.evento }}</p>
+            <h1>{{ servicio.nombre_servicio }}</h1>
+            <p class="ws-muted">{{ servicio.proveedor_nombre_snapshot|default:servicio.proveedor|default:"Sin proveedor asignado" }}</p>
+        </div>
+        <div class="ws-status">
+            <span>{{ servicio.get_estado_comercial_display }}</span>
+            <span>{{ servicio.get_estado_operativo_display }}</span>
+        </div>
+    </header>
+
+    {% if messages %}
+        <div class="ws-flashes">
+            {% for message in messages %}<div class="ws-flash">{{ message }}</div>{% endfor %}
+        </div>
+    {% endif %}
+
+    <section class="ws-grid">
+        <aside class="ws-panel ws-sidebar">
+            <h2>Canales</h2>
+            <nav class="ws-channels">
+                {% if 'CLIENTE_PLANNER' in canales %}<a class="{% if canal_activo == 'CLIENTE_PLANNER' %}active{% endif %}" href="?canal=CLIENTE_PLANNER">Cliente ↔ Planner</a>{% endif %}
+                {% if 'PLANNER_PROVEEDOR' in canales %}<a class="{% if canal_activo == 'PLANNER_PROVEEDOR' %}active{% endif %}" href="?canal=PLANNER_PROVEEDOR">Planner ↔ Proveedor</a>{% endif %}
+                {% if 'INTERNO' in canales %}<a class="{% if canal_activo == 'INTERNO' %}active{% endif %}" href="?canal=INTERNO">Notas internas</a>{% endif %}
+            </nav>
+
+            <div class="ws-side-heading">
+                <div><span class="ws-label">Organización</span><h2>Temas</h2></div>
+                <small>Etiqueta conversaciones y referencias.</small>
+            </div>
+            <div class="ws-topics">
+                {% for tema in temas_workspace %}
+                <div class="ws-topic-chip">
+                    <span># {{ tema.nombre }}</span>
+                    {% if es_operador_workspace %}
+                    <form method="post" action="{% url 'colaboracion_workspace_archivar_tema' tema.id %}" onsubmit="return confirm('¿Archivar el tema #{{ tema.nombre|escapejs }}? Los mensajes y decisiones no se eliminan.');">
+                        {% csrf_token %}<input type="hidden" name="canal" value="{{ canal_activo }}">
+                        <button type="submit" title="Archivar tema">×</button>
+                    </form>
+                    {% endif %}
+                </div>
+                {% empty %}<p class="ws-muted">Todavía no hay temas.</p>{% endfor %}
+            </div>
+
+            {% if es_operador_workspace %}
+            <form method="post" action="{% url 'colaboracion_workspace_crear_tema' servicio.id %}" class="ws-mini-form">
+                {% csrf_token %}
+                <input type="hidden" name="canal" value="{{ canal_activo }}">
+                <input type="text" name="nombre" maxlength="120" placeholder="Nuevo tema" required>
+                <button type="submit">Crear tema</button>
+            </form>
+            {% endif %}
+        </aside>
+
+        <section class="ws-panel ws-chat">
+            <div class="ws-chat-head">
+                <div class="ws-chat-title">
+                    <div>
+                        <span class="ws-label">Conversación</span>
+                        <h2>{% if canal_activo == 'CLIENTE_PLANNER' %}Cliente ↔ Planner{% elif canal_activo == 'PLANNER_PROVEEDOR' %}Planner ↔ Proveedor{% else %}Notas internas{% endif %}</h2>
+                        {% if canal_activo == 'CLIENTE_PLANNER' %}<p>Coordina decisiones, dudas y avances que sí puede ver el cliente.</p>
+                        {% elif canal_activo == 'PLANNER_PROVEEDOR' %}<p>Coordina alcance, archivos, cotizaciones y ejecución con este proveedor.</p>
+                        {% else %}<p>Espacio privado del equipo. Cliente y proveedor nunca ven este canal.</p>{% endif %}
+                    </div>
+                    <span class="ws-message-count">{{ total_mensajes_canal }} mensaje{{ total_mensajes_canal|pluralize }}</span>
+                </div>
+                {% if es_operador_workspace and canal_activo %}
+                <details class="ws-planner-tools">
+                    <summary>Herramientas del Planner</summary>
+                    <div class="ws-planner-tools-menu">
+                        <div>
+                            <strong>Administrar conversación</strong>
+                            <small>Puedes corregir mensajes, referencias y temas sin borrar decisiones estructuradas.</small>
+                        </div>
+                        {% if total_mensajes_canal %}
+                        <form method="post" action="{% url 'colaboracion_workspace_limpiar_historial' servicio.id %}" onsubmit="return confirm('¿Vaciar TODO el historial de este canal? También se eliminarán las referencias originadas en estos mensajes. Decisiones, cotizaciones, propuestas y aprobaciones se conservarán. Esta acción no se puede deshacer.');">
+                            {% csrf_token %}
+                            <input type="hidden" name="canal" value="{{ canal_activo }}">
+                            <button type="submit" class="ws-danger-button">Vaciar historial de este canal</button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </details>
+                {% endif %}
+            </div>
+
+            <div class="ws-messages">
+                {% for item in mensajes_workspace %}
+                <article class="ws-message {% if item.autor_id == request.user.id %}is-own{% endif %}">
+                    <div class="ws-message-meta">
+                        <strong>{% if item.autor_id == request.user.id %}Tú{% else %}{{ item.autor.get_full_name|default:item.autor.username|default:"Sistema" }}{% endif %}</strong>
+                        {% if item.tema %}<span># {{ item.tema.nombre }}</span>{% endif %}
+                        <time>{{ item.fecha|date:"d/m/Y · H:i" }}</time>
+                        {% if es_operador_workspace and item.tipo == 'MENSAJE' %}
+                        <form method="post" action="{% url 'colaboracion_workspace_eliminar_mensaje' item.id %}" class="ws-message-delete" onsubmit="return confirm('¿Eliminar este mensaje? Si contiene una referencia guardada tendrás que eliminar primero la referencia.');">
+                            {% csrf_token %}
+                            <button type="submit" title="Eliminar mensaje">Eliminar</button>
+                        </form>
+                        {% endif %}
+                    </div>
+                    {% if item.texto %}<p>{{ item.texto|linebreaksbr }}</p>{% endif %}
+                    {% if item.adjuntos.all %}
+                    <div class="ws-attachments">
+                        {% for adjunto in item.adjuntos.all %}
+                        <div class="ws-attachment">
+                            <a class="ws-attachment-preview" href="{% url 'secure_adjunto_workspace' adjunto.id %}" target="_blank" rel="noopener">
+                                {% if adjunto.tipo_mime|slice:":6" == "image/" %}
+                                    <img src="{% url 'secure_adjunto_workspace' adjunto.id %}" alt="{{ adjunto.nombre_original|default:'Imagen adjunta' }}" loading="lazy">
+                                {% else %}
+                                    <span class="ws-file-thumb">{% if adjunto.tipo_mime == "application/pdf" %}PDF{% else %}FILE{% endif %}</span>
+                                {% endif %}
+                                <span class="ws-attachment-name">{{ adjunto.nombre_original|default:"Archivo" }}</span>
+                            </a>
+                            <div class="ws-attachment-actions">
+                                {% if es_operador_workspace %}
+                                <form method="post" action="{% url 'colaboracion_workspace_guardar_referencia' adjunto.id %}">
+                                    {% csrf_token %}
+                                    <button type="submit">Guardar como referencia</button>
+                                </form>
+                                {% endif %}
+                                {% if adjunto.mensaje.autor_id == request.user.id or es_operador_workspace %}
+                                <form method="post" action="{% url 'colaboracion_workspace_eliminar_adjunto' adjunto.id %}" onsubmit="return confirm('¿Eliminar este archivo del mensaje?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="ws-delete-file">Eliminar</button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </article>
+                {% empty %}<div class="ws-empty"><strong>Inicia la conversación</strong><span>{% if canal_activo == 'CLIENTE_PLANNER' %}Escribe aquí lo que necesites revisar con el cliente.{% elif canal_activo == 'PLANNER_PROVEEDOR' %}Usa este canal para coordinar directamente con el proveedor.{% else %}Agrega notas privadas para el equipo del evento.{% endif %}</span></div>{% endfor %}
+            </div>
+
+            {% if canal_activo %}
+            <form method="post" enctype="multipart/form-data" action="{% url 'colaboracion_workspace_enviar_mensaje' servicio.id %}" class="ws-composer">
+                {% csrf_token %}
+                <input type="hidden" name="canal" value="{{ canal_activo }}">
+                <div class="ws-composer-tools">
+                    <label>Tema
+                        <select name="tema_id">
+                            <option value="">Conversación general</option>
+                            {% for tema in temas_workspace %}<option value="{{ tema.id }}"># {{ tema.nombre }}</option>{% endfor %}
+                        </select>
+                    </label>
+                    <span>{% if canal_activo == 'INTERNO' %}Privado para el equipo{% else %}Visible para participantes de este canal{% endif %}</span>
+                </div>
+                <textarea name="texto" rows="3" placeholder="{% if canal_activo == 'CLIENTE_PLANNER' %}Escribe al cliente…{% elif canal_activo == 'PLANNER_PROVEEDOR' %}Escribe al proveedor…{% else %}Escribe una nota interna…{% endif %}"></textarea>
+                <div class="ws-composer-row">
+                    <label class="ws-file-trigger">Adjuntar archivos
+                        <input type="file" name="archivos" id="ws-file-input" multiple>
+                    </label>
+                    <div id="ws-file-selection" class="ws-file-selection" hidden></div>
+                    <button type="submit" class="ws-send-button">Enviar mensaje</button>
+                </div>
+            </form>
+            {% endif %}
+        </section>
+
+        <aside class="ws-panel ws-references">
+            <div class="ws-side-heading">
+                <div><span class="ws-label">Guardados</span><h2>Referencias</h2></div>
+                <small>Archivos importantes que separaste del chat.</small>
+            </div>
+            {% for ref in referencias_workspace %}
+            <article>
+                <strong>{{ ref.titulo }}</strong>
+                <span>{{ ref.get_tipo_display }}</span>
+                {% if ref.tema %}<small># {{ ref.tema.nombre }}</small>{% endif %}
+                {% if ref.adjunto_origen %}
+                    <a class="ws-reference-file" href="{% url 'secure_adjunto_workspace' ref.adjunto_origen.id %}" target="_blank" rel="noopener">
+                        {% if ref.adjunto_origen.tipo_mime|slice:":6" == "image/" %}
+                            <img src="{% url 'secure_adjunto_workspace' ref.adjunto_origen.id %}" alt="{{ ref.titulo }}" loading="lazy">
+                        {% else %}
+                            <span class="ws-file-thumb">{% if ref.adjunto_origen.tipo_mime == "application/pdf" %}PDF{% else %}FILE{% endif %}</span>
+                        {% endif %}
+                        <small>Abrir archivo</small>
+                    </a>
+                {% endif %}
+                {% if es_operador_workspace %}
+                <form method="post" action="{% url 'colaboracion_workspace_eliminar_referencia' ref.id %}" onsubmit="return confirm('¿Eliminar esta referencia? El mensaje original y su archivo permanecerán mientras no elimines el mensaje/adjunto.');">
+                    {% csrf_token %}<input type="hidden" name="canal" value="{{ canal_activo }}">
+                    <button type="submit" class="ws-reference-delete">Eliminar referencia</button>
+                </form>
+                {% endif %}
+            </article>
+            {% empty %}<p class="ws-muted">Aún no hay referencias guardadas.</p>{% endfor %}
+        </aside>
+    </section>
+
+<section class="ws-k85" id="decisiones-aprobaciones">
+    <div class="ws-k85-head"><div><p class="ws-kicker">K.8.5 · Operación estructurada</p><h2>Decisiones, cotizaciones y aprobaciones</h2></div></div>
+    <div class="ws-k85-grid">
+        {% if es_operador_workspace or es_cliente_workspace %}<article class="ws-panel ws-k85-card">
+            <h3>Decisiones</h3>
+            {% for d in decisiones_workspace %}<div class="ws-record"><strong>{{ d.titulo }}</strong><span>{{ d.get_estado_display }}</span>{% if d.tema %}<small># {{ d.tema.nombre }}</small>{% endif %}<p>{{ d.descripcion|default:"" }}</p></div>{% empty %}<p class="ws-muted">Sin decisiones registradas.</p>{% endfor %}
+            {% if es_operador_workspace %}<form method="post" action="{% url 'colaboracion_k85_decision_crear' servicio.id %}" class="ws-mini-form">{% csrf_token %}<input name="titulo" placeholder="Decisión tomada" required><textarea name="descripcion" rows="2" placeholder="Detalle"></textarea><select name="tema_id"><option value="">Sin tema</option>{% for tema in temas_workspace %}<option value="{{ tema.id }}"># {{ tema.nombre }}</option>{% endfor %}</select><button>Registrar decisión</button></form>{% endif %}
+        </article>{% endif %}
+
+        {% if es_operador_workspace or es_proveedor_workspace %}<article class="ws-panel ws-k85-card">
+            <h3>Cotizaciones proveedor</h3>
+            {% for c in cotizaciones_workspace %}<div class="ws-record"><strong>v{{ c.version }} · ${{ c.costo_proveedor }}</strong><span>{{ c.get_estado_display }}</span>{% if c.archivo %}<a href="{% url 'secure_cotizacion_servicio' c.id %}" target="_blank">Abrir archivo</a>{% endif %}<p>{{ c.descripcion|default:"" }}</p>{% if es_operador_workspace and c.estado == 'ENVIADA' %}<form method="post" action="{% url 'colaboracion_k85_cotizacion_decidir' c.id %}" class="ws-inline-actions">{% csrf_token %}<button name="estado" value="ACEPTADA">Aceptar</button><button name="estado" value="CAMBIOS_SOLICITADOS">Pedir cambios</button><button name="estado" value="RECHAZADA">Rechazar</button></form>{% endif %}</div>{% empty %}<p class="ws-muted">Sin cotizaciones.</p>{% endfor %}
+            {% if es_operador_workspace or es_proveedor_workspace %}<form method="post" enctype="multipart/form-data" action="{% url 'colaboracion_k85_cotizacion_crear' servicio.id %}" class="ws-mini-form">{% csrf_token %}<input type="number" step="0.01" min="0" name="costo_proveedor" placeholder="Costo proveedor" required><textarea name="descripcion" rows="2" placeholder="Descripción"></textarea><input type="date" name="vigencia"><input type="file" name="archivo"><button>Enviar nueva versión</button></form>{% endif %}
+        </article>{% endif %}
+
+        {% if es_operador_workspace or es_cliente_workspace %}<article class="ws-panel ws-k85-card">
+            <h3>Propuestas al cliente</h3>
+            {% for p in propuestas_workspace %}{% if es_operador_workspace or p.estado != 'BORRADOR' %}<div class="ws-record"><strong>v{{ p.version }} · {{ p.get_modalidad_display }}</strong><span>{{ p.get_estado_display }}</span><p>{{ p.descripcion|default:"" }}</p><small>Cargo adicional: ${{ p.cargo_adicional_cliente }}</small>{% if es_cliente_workspace and p.estado == 'ENVIADA' %}<form method="post" action="{% url 'colaboracion_k85_propuesta_responder' p.id %}" class="ws-inline-actions">{% csrf_token %}<input name="comentario" placeholder="Comentario opcional"><button name="estado" value="APROBADA">Aprobar</button><button name="estado" value="CAMBIOS_SOLICITADOS">Pedir cambios</button><button name="estado" value="RECHAZADA">Rechazar</button></form>{% endif %}</div>{% endif %}{% empty %}<p class="ws-muted">Sin propuestas.</p>{% endfor %}
+            {% if es_operador_workspace %}<form method="post" action="{% url 'colaboracion_k85_propuesta_crear' servicio.id %}" class="ws-mini-form">{% csrf_token %}<select name="modalidad"><option value="INCLUIDO">Incluido</option><option value="UPGRADE">Upgrade</option><option value="ADICIONAL">Adicional</option></select><input type="number" step="0.01" min="0" name="cargo_adicional_cliente" value="{{ servicio.cargo_adicional_cliente }}" placeholder="Cargo adicional"><textarea name="descripcion" rows="2" placeholder="Propuesta para cliente"></textarea><select name="cotizacion_id"><option value="">Sin cotización vinculada</option>{% for c in cotizaciones_workspace %}<option value="{{ c.id }}">Cotización v{{ c.version }} · ${{ c.costo_proveedor }}</option>{% endfor %}</select><button>Enviar propuesta</button></form>{% endif %}
+        </article>{% endif %}
+
+        {% if es_operador_workspace or es_cliente_workspace %}<article class="ws-panel ws-k85-card">
+            <h3>Aprobaciones</h3>
+            {% for a in aprobaciones_workspace %}<div class="ws-record"><strong>{{ a.titulo }}</strong><span>{{ a.get_estado_display }}</span><p>{{ a.descripcion|default:"" }}</p>{% if es_cliente_workspace and a.estado == 'PENDIENTE' %}<form method="post" action="{% url 'colaboracion_k85_aprobacion_responder' a.id %}" class="ws-inline-actions">{% csrf_token %}<input name="comentario" placeholder="Comentario opcional"><button name="estado" value="APROBADA">Aprobar</button><button name="estado" value="CAMBIOS">Pedir cambios</button><button name="estado" value="RECHAZADA">Rechazar</button></form>{% endif %}</div>{% empty %}<p class="ws-muted">Sin aprobaciones pendientes.</p>{% endfor %}
+            {% if es_operador_workspace %}<form method="post" action="{% url 'colaboracion_k85_aprobacion_crear' servicio.id %}" class="ws-mini-form">{% csrf_token %}<input name="titulo" placeholder="Qué debe aprobar el cliente" required><textarea name="descripcion" rows="2" placeholder="Detalle"></textarea><button>Solicitar aprobación</button></form>{% endif %}
+        </article>{% endif %}
+    </div>
+</section>
+
+
+<section class="ws-k86" id="operacion-servicio">
+    <div class="ws-k86-head">
+        <div>
+            <p class="ws-kicker">K.8.6 · Operación vinculada</p>
+            <h2>Agenda, tareas, documentos y pagos</h2>
+            <p class="ws-muted">Todo lo de esta sección pertenece al mismo servicio: <strong>{{ servicio.nombre_servicio }}</strong>.</p>
+        </div>
+    </div>
+
+    <div class="ws-k86-grid">
+        {% if es_operador_workspace or es_cliente_workspace %}
+        <article class="ws-panel ws-k86-card">
+            <div class="ws-card-heading"><div><span class="ws-meaning">Trabajo pendiente</span><h3>Tareas</h3></div><small>Algo que una persona debe hacer antes de una fecha límite.</small></div>
+            {% for tarea in tareas_operativas %}
+            <div class="ws-record">
+                <strong>{{ tarea.titulo }}</strong>
+                <span>{{ tarea.get_estado_display }} · {{ tarea.get_prioridad_display }}</span>
+                {% if tarea.fecha_limite %}<small>Vence {{ tarea.fecha_limite|date:"d/m/Y" }}</small>{% endif %}
+                {% if tarea.descripcion %}<p>{{ tarea.descripcion }}</p>{% endif %}
+                {% if es_operador_workspace %}
+                <form method="post" action="{% url 'colaboracion_k86_desvincular' servicio.id %}" class="ws-inline-actions">
+                    {% csrf_token %}<input type="hidden" name="tipo" value="TAREA"><input type="hidden" name="registro_id" value="{{ tarea.id }}"><button class="ws-link-button">Desvincular</button>
+                </form>
+                {% endif %}
+            </div>
+            {% empty %}<p class="ws-muted">No hay tareas vinculadas.</p>{% endfor %}
+            {% if es_operador_workspace %}
+            <details class="ws-k86-create"><summary>+ Nueva tarea</summary>
+                <form method="post" action="{% url 'colaboracion_k86_tarea_crear' servicio.id %}" class="ws-mini-form">
+                    {% csrf_token %}
+                    <input name="titulo" placeholder="Ej. Revisar cotización final" required>
+                    <textarea name="descripcion" rows="2" placeholder="Qué debe hacerse"></textarea>
+                    <div class="ws-form-pair"><label>Inicio opcional<input type="date" name="fecha_inicio"></label><label>Fecha límite<input type="date" name="fecha_limite"></label></div>
+                    <select name="prioridad">{% for value,label in prioridades_tarea_k86 %}<option value="{{ value }}"{% if value == 'MEDIA' %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+                    <select name="categoria">{% for value,label in categorias_tarea_k86 %}<option value="{{ value }}"{% if value == 'PROVEEDORES' %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+                    <textarea name="notas" rows="2" placeholder="Notas internas"></textarea>
+                    <button>Crear tarea</button>
+                </form>
+            </details>
+            {% endif %}
+        </article>
+        {% endif %}
+
+        <article class="ws-panel ws-k86-card ws-agenda-card">
+            <div class="ws-card-heading"><div><span class="ws-meaning">Tiempo y coordinación</span><h3>Agenda</h3></div><small>Cita = personas coinciden. Actividad = operación. Hito = momento clave.</small></div>
+            {% for actividad in actividades_agenda %}
+            <div class="ws-record ws-agenda-record">
+                <div class="ws-record-title"><strong>{{ actividad.titulo }}</strong><span class="ws-type-pill {{ actividad.tipo|lower }}">{{ actividad.get_tipo_display }}</span></div>
+                <span>{{ actividad.fecha|date:"d/m/Y" }} · {{ actividad.hora_inicio|time:"H:i" }}{% if actividad.hora_fin %}–{{ actividad.hora_fin|time:"H:i" }}{% endif %}</span>
+                {% if actividad.ubicacion %}<small>{{ actividad.ubicacion }}</small>{% endif %}
+                {% if actividad.descripcion %}<p>{{ actividad.descripcion }}</p>{% endif %}
+
+                {% if actividad.tipo == 'CITA' %}
+                <div class="ws-confirmation-list">
+                    {% for participante in actividad.participantes.all %}
+                    <div class="ws-confirmation-person">
+                        <span><b>{{ participante.nombre_visible }}</b><small>{{ participante.get_rol_display }}</small></span>
+                        <span class="ws-confirmation-state {{ participante.estado|lower }}">{{ participante.get_estado_display }}</span>
+                        {% if participante.usuario_id == request.user.id or participante.proveedor_id and participante.proveedor.usuario_id == request.user.id %}
+                            {% if participante.estado == 'PENDIENTE' or participante.estado == 'REPROGRAMAR' %}
+                            <form method="post" action="{% url 'colaboracion_k8712_cita_responder' servicio.id participante.id %}" class="ws-inline-actions ws-confirm-actions">
+                                {% csrf_token %}
+                                <button name="estado" value="CONFIRMADO">Confirmar</button>
+                                <button name="estado" value="NO_ASISTE">No asistiré</button>
+                                <button name="estado" value="REPROGRAMAR">Reprogramar</button>
+                            </form>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                    {% empty %}<small>La cita todavía no tiene participantes asignados.</small>{% endfor %}
+                </div>
+                {% endif %}
+
+                {% if es_operador_workspace %}<form method="post" action="{% url 'colaboracion_k86_desvincular' servicio.id %}" class="ws-inline-actions">{% csrf_token %}<input type="hidden" name="tipo" value="ACTIVIDAD"><input type="hidden" name="registro_id" value="{{ actividad.id }}"><button class="ws-link-button">Desvincular</button></form>{% endif %}
+            </div>
+            {% empty %}<p class="ws-muted">No hay elementos de agenda relacionados.</p>{% endfor %}
+            {% if es_operador_workspace %}
+            <details class="ws-k86-create"><summary>+ Nuevo elemento de agenda</summary>
+                <form method="post" action="{% url 'colaboracion_k86_actividad_crear' servicio.id %}" class="ws-mini-form">
+                    {% csrf_token %}
+                    <select name="tipo">{% for value,label in tipos_actividad_k8712 %}<option value="{{ value }}"{% if value == 'CITA' %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+                    <input name="titulo" placeholder="Ej. Prueba de menú" required>
+                    <textarea name="descripcion" rows="2" placeholder="Descripción"></textarea>
+                    <input type="date" name="fecha" required>
+                    <div class="ws-form-pair"><input type="time" name="hora_inicio" required><input type="time" name="hora_fin"></div>
+                    <input name="ubicacion" placeholder="Ubicación">
+                    <select name="categoria">{% for value,label in categorias_actividad_k86 %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select>
+                    <select name="prioridad">{% for value,label in prioridades_actividad_k86 %}<option value="{{ value }}"{% if value == 'MEDIA' %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+                    <textarea name="notas" rows="2" placeholder="Notas"></textarea>
+                    <button>Crear elemento de agenda</button>
+                </form>
+            </details>
+            {% endif %}
+        </article>
+
+        {% if es_operador_workspace or es_cliente_workspace %}
+        <article class="ws-panel ws-k86-card">
+            <h3>Documentos</h3>
+            {% for documento in documentos_operativos %}
+            <div class="ws-record">
+                <strong>{{ documento.titulo }}</strong>
+                <span>{{ documento.get_tipo_documento_display }}</span>
+                {% if documento.visible_cliente %}<small>Visible para cliente</small>{% endif %}
+                {% if documento.visible_proveedor %}<small>Visible para proveedor</small>{% endif %}
+                <a href="{% url 'secure_documento_evento' documento.id %}" target="_blank" rel="noopener">Abrir archivo</a>
+                {% if es_operador_workspace %}<form method="post" action="{% url 'colaboracion_k86_desvincular' servicio.id %}" class="ws-inline-actions">{% csrf_token %}<input type="hidden" name="tipo" value="DOCUMENTO"><input type="hidden" name="registro_id" value="{{ documento.id }}"><button class="ws-link-button">Desvincular</button></form>{% endif %}
+            </div>
+            {% empty %}<p class="ws-muted">No hay documentos vinculados visibles.</p>{% endfor %}
+            {% if es_operador_workspace %}
+            <details class="ws-k86-create"><summary>+ Subir documento</summary>
+                <form method="post" enctype="multipart/form-data" action="{% url 'colaboracion_k86_documento_crear' servicio.id %}" class="ws-mini-form">
+                    {% csrf_token %}
+                    <input name="titulo" placeholder="Título" required>
+                    <select name="tipo_documento">{% for value,label in tipos_documento_k86 %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select>
+                    <textarea name="descripcion" rows="2" placeholder="Descripción"></textarea>
+                    <input type="file" name="archivo" required>
+                    <label class="ws-check"><input type="checkbox" name="visible_cliente"> Visible para cliente</label>
+                    <label class="ws-check"><input type="checkbox" name="visible_proveedor"> Visible para proveedor</label>
+                    <button>Guardar documento</button>
+                </form>
+            </details>
+            {% endif %}
+        </article>
+        {% endif %}
+
+        {% if es_operador_workspace %}
+        <article class="ws-panel ws-k86-card ws-k86-finance">
+            <h3>Finanzas del servicio</h3>
+            {% for gasto in gastos_operativos %}
+            <div class="ws-record ws-finance-record">
+                <strong>{{ gasto.concepto }}</strong>
+                <span>{{ gasto.get_estado_display }} · objetivo ${{ gasto.monto_objetivo|floatformat:2 }}</span>
+                <small>Pagado ${{ gasto.total_pagado|floatformat:2 }} · saldo ${{ gasto.saldo_pendiente|floatformat:2 }}</small>
+                {% for pago in gasto.pagos.all %}<p class="ws-payment-line">Pago {{ pago.fecha_pago|date:"d/m/Y" }} · ${{ pago.monto|floatformat:2 }} · {{ pago.get_metodo_pago_display }}</p>{% endfor %}
+                <details class="ws-k86-create ws-payment-create"><summary>+ Registrar pago</summary>
+                    <form method="post" enctype="multipart/form-data" action="{% url 'colaboracion_k86_pago_crear' servicio.id %}" class="ws-mini-form">
+                        {% csrf_token %}<input type="hidden" name="gasto_id" value="{{ gasto.id }}">
+                        <input type="number" step="0.01" min="0.01" name="monto" placeholder="Monto" required>
+                        <input type="date" name="fecha_pago">
+                        <select name="metodo_pago">{% for value,label in metodos_pago_k86 %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select>
+                        <input name="referencia" placeholder="Referencia">
+                        <input type="file" name="comprobante">
+                        <textarea name="notas" rows="2" placeholder="Notas"></textarea>
+                        <button>Registrar pago</button>
+                    </form>
+                </details>
+                <form method="post" action="{% url 'colaboracion_k86_desvincular' servicio.id %}" class="ws-inline-actions">{% csrf_token %}<input type="hidden" name="tipo" value="GASTO"><input type="hidden" name="registro_id" value="{{ gasto.id }}"><button class="ws-link-button">Desvincular</button></form>
+            </div>
+            {% empty %}<p class="ws-muted">No hay gastos vinculados.</p>{% endfor %}
+            <details class="ws-k86-create"><summary>+ Nuevo gasto</summary>
+                <form method="post" action="{% url 'colaboracion_k86_gasto_crear' servicio.id %}" class="ws-mini-form">
+                    {% csrf_token %}
+                    <input name="concepto" placeholder="Concepto" required>
+                    <select name="categoria_id" required><option value="">Categoría...</option>{% for categoria in categorias_gasto %}<option value="{{ categoria.id }}">{{ categoria.nombre }}</option>{% endfor %}</select>
+                    <div class="ws-form-pair"><input type="number" step="0.01" min="0" name="monto_estimado" placeholder="Estimado"><input type="number" step="0.01" min="0" name="monto_real" placeholder="Real"></div>
+                    <input type="date" name="fecha_limite">
+                    <textarea name="notas" rows="2" placeholder="Notas internas"></textarea>
+                    <button>Crear gasto vinculado</button>
+                </form>
+            </details>
+        </article>
+
+        <article class="ws-panel ws-k86-card ws-k86-linker">
+            <h3>Vincular registros existentes</h3>
+            <p class="ws-muted">No duplica ni elimina registros; solo los conecta con este servicio.</p>
+            {% if tareas_sin_servicio %}<form method="post" action="{% url 'colaboracion_k86_vincular' servicio.id %}" class="ws-mini-form">{% csrf_token %}<input type="hidden" name="tipo" value="TAREA"><select name="registro_id" required><option value="">Tarea existente...</option>{% for item in tareas_sin_servicio %}<option value="{{ item.id }}">{{ item.titulo }}</option>{% endfor %}</select><button>Vincular tarea</button></form>{% endif %}
+            {% if actividades_sin_servicio %}<form method="post" action="{% url 'colaboracion_k86_vincular' servicio.id %}" class="ws-mini-form">{% csrf_token %}<input type="hidden" name="tipo" value="ACTIVIDAD"><select name="registro_id" required><option value="">Actividad existente...</option>{% for item in actividades_sin_servicio %}<option value="{{ item.id }}">{{ item.fecha|date:"d/m/Y" }} · {{ item.titulo }}</option>{% endfor %}</select><button>Vincular actividad</button></form>{% endif %}
+            {% if documentos_sin_servicio %}<form method="post" action="{% url 'colaboracion_k86_vincular' servicio.id %}" class="ws-mini-form">{% csrf_token %}<input type="hidden" name="tipo" value="DOCUMENTO"><select name="registro_id" required><option value="">Documento existente...</option>{% for item in documentos_sin_servicio %}<option value="{{ item.id }}">{{ item.titulo }}</option>{% endfor %}</select><button>Vincular documento</button></form>{% endif %}
+            {% if gastos_sin_servicio %}<form method="post" action="{% url 'colaboracion_k86_vincular' servicio.id %}" class="ws-mini-form">{% csrf_token %}<input type="hidden" name="tipo" value="GASTO"><select name="registro_id" required><option value="">Gasto existente...</option>{% for item in gastos_sin_servicio %}<option value="{{ item.id }}">{{ item.concepto }}</option>{% endfor %}</select><button>Vincular gasto</button></form>{% endif %}
+            {% if not tareas_sin_servicio and not actividades_sin_servicio and not documentos_sin_servicio and not gastos_sin_servicio %}<p class="ws-muted">No hay registros sin servicio para vincular.</p>{% endif %}
+        </article>
+        {% endif %}
+    </div>
+</section>
+
+</main>
+
+<script>
+(function () {
+    const input = document.getElementById('ws-file-input');
+    const holder = document.getElementById('ws-file-selection');
+    if (!input || !holder) return;
+
+    let seleccion = [];
+
+    function sincronizarInput() {
+        const transfer = new DataTransfer();
+        seleccion.forEach(function (file) { transfer.items.add(file); });
+        input.files = transfer.files;
+    }
+
+    function renderSeleccion() {
+        holder.innerHTML = '';
+        holder.hidden = seleccion.length === 0;
+        seleccion.forEach(function (file, index) {
+            const item = document.createElement('div');
+            item.className = 'ws-selected-file';
+
+            if (file.type && file.type.startsWith('image/')) {
+                const img = document.createElement('img');
+                img.alt = file.name;
+                const objectUrl = URL.createObjectURL(file);
+                img.src = objectUrl;
+                img.onload = function () { URL.revokeObjectURL(objectUrl); };
+                item.appendChild(img);
+            } else {
+                const icon = document.createElement('span');
+                icon.className = 'ws-file-thumb';
+                icon.textContent = file.type === 'application/pdf' ? 'PDF' : 'FILE';
+                item.appendChild(icon);
+            }
+
+            const remove = document.createElement('button');
+            remove.type = 'button';
+            remove.className = 'ws-selected-remove';
+            remove.setAttribute('aria-label', 'Quitar ' + file.name);
+            remove.textContent = '×';
+            remove.addEventListener('click', function () {
+                seleccion.splice(index, 1);
+                sincronizarInput();
+                renderSeleccion();
+            });
+            item.appendChild(remove);
+
+            const name = document.createElement('small');
+            name.textContent = file.name;
+            item.appendChild(name);
+            holder.appendChild(item);
+        });
+    }
+
+    input.addEventListener('change', function () {
+        seleccion = Array.from(input.files || []);
+        renderSeleccion();
+    });
+})();
+
+(function () {
+    const messages = document.querySelector('.ws-messages');
+    if (messages) messages.scrollTop = messages.scrollHeight;
+
+    const composer = document.querySelector('.ws-composer');
+    if (!composer) return;
+    const textarea = composer.querySelector('textarea[name="texto"]');
+    if (!textarea) return;
+    textarea.addEventListener('keydown', function (event) {
+        if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+            event.preventDefault();
+            composer.requestSubmit();
+        }
+    });
+})();
+</script>
+</body>
+</html>

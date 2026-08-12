@@ -5,21 +5,43 @@ export const RSVP_STATUS = Object.freeze({
 });
 
 export function createRsvpPreviewData(overrides = {}) {
-    return {
+    return normalizeRsvpData({
         invitationId: "preview-invitation",
         groupName: "Familia Aldape Sánchez",
-        maxGuests: 4,
-        attending: null,
-        confirmedGuests: 2,
-        comment: "",
-        status: RSVP_STATUS.PENDING,
+        guests: [
+            {
+                id: "preview-1",
+                name: "Diego Aldape",
+                attending: null,
+                personType: "ADULTO",
+                personTypeLabel: "Adulto",
+                menuType: "ADULTO",
+                menuLabel: "Menú adulto",
+            },
+            {
+                id: "preview-2",
+                name: "Fernanda Flores",
+                attending: true,
+                personType: "ADULTO",
+                personTypeLabel: "Adulto",
+                menuType: "ADULTO",
+                menuLabel: "Menú adulto",
+            },
+            {
+                id: "preview-3",
+                name: "Mateo",
+                attending: null,
+                personType: "NINO",
+                personTypeLabel: "Niño",
+                menuType: "INFANTIL",
+                menuLabel: "Menú infantil",
+            },
+        ],
         ...overrides,
-    };
+    });
 }
 
-export function normalizeRsvpData(value = {}) {
-    const maxGuests = clampInteger(value.maxGuests ?? value.cantidadMaxima ?? 1, 1, 50);
-    const confirmedGuests = clampInteger(value.confirmedGuests ?? value.cantidadConfirmada ?? 1, 0, maxGuests);
+export function normalizeRsvpGuest(value = {}, index = 0) {
     const attending = value.attending === true
         ? true
         : value.attending === false
@@ -27,12 +49,34 @@ export function normalizeRsvpData(value = {}) {
             : null;
 
     return {
-        invitationId: String(value.invitationId || value.uuid || "").trim(),
-        groupName: String(value.groupName || value.nombreGrupo || "Invitado").trim() || "Invitado",
-        maxGuests,
-        confirmedGuests,
+        id: String(value.id ?? value.guestId ?? `guest-${index + 1}`),
+        name: String(value.name || value.nombre || `Invitado ${index + 1}`).trim() || `Invitado ${index + 1}`,
         attending,
-        comment: String(value.comment || value.comentario || ""),
+        personType: String(
+            value.personType
+            || value.tipoPersona
+            || ""
+        ).trim(),
+        personTypeLabel: String(
+            value.personTypeLabel
+            || value.tipoPersonaLabel
+            || ""
+        ).trim(),
+        menuType: String(
+            value.menuType
+            || value.tipoMenu
+            || ""
+        ).trim(),
+        menuLabel: String(
+            value.menuLabel
+            || value.menu
+            || ""
+        ).trim(),
+        extraCompanion: Boolean(
+            value.extraCompanion
+            ?? value.esAcompananteExtra
+            ?? false
+        ),
         status: attending === true
             ? RSVP_STATUS.ATTENDING
             : attending === false
@@ -41,22 +85,34 @@ export function normalizeRsvpData(value = {}) {
     };
 }
 
-export function buildRsvpSubmission(form, data = {}) {
-    const attendingRaw = form?.attending ?? form?.asistira ?? null;
+export function normalizeRsvpData(value = {}) {
+    const rawGuests = Array.isArray(value.guests) ? value.guests : [];
+    const guests = rawGuests.map((guest, index) => normalizeRsvpGuest(guest, index));
+
+    return {
+        invitationId: String(value.invitationId || value.uuid || "").trim(),
+        groupName: String(value.groupName || value.nombreGrupo || "Invitado").trim() || "Invitado",
+        groupType: String(value.groupType || value.tipoGrupo || "").trim(),
+        guests,
+        totalGuests: guests.length,
+        confirmedGuests: guests.filter(guest => guest.attending === true).length,
+        respondedGuests: guests.filter(guest => guest.attending !== null).length,
+        pendingGuests: guests.filter(guest => guest.attending === null).length,
+    };
+}
+
+export function buildRsvpSubmission(form = {}, data = {}) {
+    const attendingRaw = form.attending ?? form.asistira ?? null;
     const attending = attendingRaw === true || attendingRaw === "yes" || attendingRaw === "SI"
         ? true
         : attendingRaw === false || attendingRaw === "no" || attendingRaw === "NO"
             ? false
             : null;
-    const maxGuests = clampInteger(data.maxGuests ?? 1, 1, 50);
 
     return {
         invitationId: String(data.invitationId || "").trim(),
+        guestId: String(form.guestId ?? form.invitadoId ?? "").trim(),
         attending,
-        confirmedGuests: attending === true
-            ? clampInteger(form?.confirmedGuests ?? form?.cantidadConfirmada ?? 1, 1, maxGuests)
-            : 0,
-        comment: String(form?.comment ?? form?.comentario ?? "").trim(),
     };
 }
 
@@ -67,10 +123,4 @@ export function resolveInvitationId(context = {}) {
     const pathname = String(context.pathname || globalThis.location?.pathname || "");
     const match = pathname.match(/\/invitacion\/([0-9a-f-]{8,})\/?/i);
     return match?.[1] || "";
-}
-
-function clampInteger(value, min, max) {
-    const number = Number.parseInt(value, 10);
-    if (!Number.isFinite(number)) return min;
-    return Math.min(Math.max(number, min), max);
 }

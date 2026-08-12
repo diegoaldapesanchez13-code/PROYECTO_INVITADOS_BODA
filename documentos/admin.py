@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.utils.html import format_html
+from django.urls import reverse
 
 from .models import DocumentoEvento
 
@@ -13,11 +14,11 @@ class DocumentoEventoAdmin(admin.ModelAdmin):
         'evento',
         'tipo_documento',
         'proveedor',
-        'visible_cliente',
+        'visible_cliente', 'visible_proveedor',
         'fecha_carga',
         'abrir_archivo',
     )
-    list_filter = ('evento', 'tipo_documento', 'visible_cliente', 'proveedor', 'fecha_carga')
+    list_filter = ('evento', 'tipo_documento', 'visible_cliente', 'visible_proveedor', 'proveedor', 'fecha_carga')
     search_fields = (
         'titulo',
         'descripcion',
@@ -38,7 +39,7 @@ class DocumentoEventoAdmin(admin.ModelAdmin):
         'proveedor',
         'descripcion',
         'cargado_por',
-        'visible_cliente',
+        'visible_cliente', 'visible_proveedor',
         'fecha_carga',
     )
 
@@ -47,7 +48,7 @@ class DocumentoEventoAdmin(admin.ModelAdmin):
             return 'Sin archivo'
         return format_html(
             '<a class="admin-action-button small" href="{}" target="_blank" rel="noopener">Abrir</a>',
-            obj.archivo.url,
+            reverse('secure_documento_evento', args=[obj.id]),
         )
 
     abrir_archivo.short_description = 'Archivo'

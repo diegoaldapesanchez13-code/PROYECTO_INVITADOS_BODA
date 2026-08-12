@@ -1,0 +1,237 @@
+[
+  {
+    "path": ".env.example",
+    "sha256": "9a20856ec8be2f30f10dc64dde0a131a3fbbd7671d190edf654a0399a877819f",
+    "size": 840
+  },
+  {
+    "path": ".gitignore",
+    "sha256": "5e869f6c069f83310917ff3c06ddda882e311bda6b5c07d61f4434fb04c03a97",
+    "size": 616
+  },
+  {
+    "path": "ARCHITECTURE.md",
+    "sha256": "08cb625a5e4baa4f5d7058ed65d1a753dfce927b5682bcaaa45bfcbc710a0f28",
+    "size": 4038
+  },
+  {
+    "path": "CHANGELOG.md",
+    "sha256": "e4033deba25c5e42352bc1b6ba216fb64f09f600d90f328bea53e7f875a3cfb2",
+    "size": 32346
+  },
+  {
+    "path": "DIRTEC_EVENT_STUDIO_K8_7_7_STABILITY_AUDIT.md",
+    "sha256": "30bc466841c8b1bf5cb5a440e08f2cb68d925cdb7df94ddadc354909acbaa4ba",
+    "size": 15155
+  },
+  {
+    "path": "LEEME_K8_7_8.txt",
+    "sha256": "292a1d5b70c4a337a4f24c458f8e8ac2da35a9daaa0f0129ee9b6496bf69da3b",
+    "size": 947
+  },
+  {
+    "path": "PRECOMMIT_AUDIT_K8_7_8.md",
+    "sha256": "4c049e693fc12f1e11874c8143b797fbd49c57f4beec320c83db56968561440e",
+    "size": 3353
+  },
+  {
+    "path": "README.md",
+    "sha256": "ec1472d878e2fdf22a306e7fc7a1c519a64a0e876bcbb2aca37b8033bf7d9dc6",
+    "size": 2841
+  },
+  {
+    "path": "colaboracion/services.py",
+    "sha256": "7a53b7981080e86970aa66206a4040be8e00fca011247093aa0e75e03b303fed",
+    "size": 23733
+  },
+  {
+    "path": "colaboracion/templates/colaboracion/workspace_servicio.html",
+    "sha256": "ca4cfaeab93a4e1f3827dfeb3464963e272c7cbc804963ce2bacd02ea9ccd819",
+    "size": 37191
+  },
+  {
+    "path": "colaboracion/tests.py",
+    "sha256": "afa264f3b92efd7872eb3576bb4120973748ee356c1ce52b679ca68aabdd72b5",
+    "size": 2879
+  },
+  {
+    "path": "colaboracion/tests_hotfix_k8_1_1.py",
+    "sha256": "286cc0b04fb47683cf0fa2bdfcd4959d24a5aa0dadeb4195511127af06096bcf",
+    "size": 636
+  },
+  {
+    "path": "colaboracion/urls.py",
+    "sha256": "0da70f2320a5824abf0abef945393ca21a87cd4b445dc0f360fbd8da4289defe",
+    "size": 2574
+  },
+  {
+    "path": "colaboracion/workspace_views.py",
+    "sha256": "ea2433d2546c0d10d59ed2c8a063a9c50f08efed4cf2ba42dd8351e8825e7d7e",
+    "size": 15794
+  },
+  {
+    "path": "config/settings.py",
+    "sha256": "1368a64460d410ac2f9f9a75485622f7a03936448d2fabf6deb5e19d143f9e51",
+    "size": 8119
+  },
+  {
+    "path": "config/urls.py",
+    "sha256": "54285d60762bd4f8d6aca426f73431d5b7a4e609acd2e732f36671c4b711e25a",
+    "size": 1688
+  },
+  {
+    "path": "core/management/__init__.py",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "size": 0
+  },
+  {
+    "path": "core/management/commands/__init__.py",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "size": 0
+  },
+  {
+    "path": "core/management/commands/data_inventory.py",
+    "sha256": "c54093b5998277cf8d88940c622797432fd52729512e1955ed9cd030604e9437",
+    "size": 2246
+  },
+  {
+    "path": "core/management/commands/export_portable_backup.py",
+    "sha256": "a3e9421248871c90b47ac5b4e23630f4d0441f3c0bf4564eaff904399cb3f742",
+    "size": 1142
+  },
+  {
+    "path": "core/management/commands/reset_postgres_sequences.py",
+    "sha256": "258668ec888d294020407e793cd0876c6638655a05b49baf954291914f4739bf",
+    "size": 862
+  },
+  {
+    "path": "core/secure_files.py",
+    "sha256": "a439e7118d8ff5df21e5669b66da1c2230097e0a06d7560da692e1dfc455cf30",
+    "size": 5930
+  },
+  {
+    "path": "core/urls.py",
+    "sha256": "28c6c09168742405f800511a7df8b797efb434cf2002bbc4b81305f5b8ee505c",
+    "size": 2166
+  },
+  {
+    "path": "core/views.py",
+    "sha256": "9e561196a87d4283b312d0aa6d180ad9745486915420c6d96be51168de5bd02a",
+    "size": 4272
+  },
+  {
+    "path": "deploy/DEPLOYMENT_WINDOWS_POSTGRES_HOSTINGER.md",
+    "sha256": "24b2e9ad531d84032c64b1d7efe8c31a92801bfb5e190a11ca0829051d4b5e01",
+    "size": 5968
+  },
+  {
+    "path": "deploy/GIT_RELEASE_K8_7_8.md",
+    "sha256": "f92cb028b7fe85b3a967aab8712f83de616f1405dc8a34dc472451303a15b768",
+    "size": 824
+  },
+  {
+    "path": "deploy/PRODUCTION_CUTOVER_CHECKLIST.md",
+    "sha256": "5b3c12ec938ec2926695d6b842d07b10d55cc37b301ba717ba42913af952bdd0",
+    "size": 2453
+  },
+  {
+    "path": "deploy/windows/Caddyfile.example",
+    "sha256": "7f314df67d3938a6c8128c40c01fc78574c4ff9539c75d60bd0f5e857260c622",
+    "size": 855
+  },
+  {
+    "path": "deploy/windows/backup_current_sqlite.ps1",
+    "sha256": "70e3c611794a6a0d2273d5ac0e5924f319801f19f93461e0b71232d7aa19db61",
+    "size": 859
+  },
+  {
+    "path": "deploy/windows/backup_production.ps1",
+    "sha256": "725c0f9d9ded99a4941e6f11300e762dbed80347ca8f8fe90d72e7ec3d22fc22",
+    "size": 1580
+  },
+  {
+    "path": "deploy/windows/import_to_postgres.ps1",
+    "sha256": "cf04d79ea602ed93eec033aeadb5685d4a7e8de53e4b820e297e879f0a8eda95",
+    "size": 961
+  },
+  {
+    "path": "deploy/windows/load_env.ps1",
+    "sha256": "2db1c9108c79140ff5b0fc9b111b6b3dee3681d8f15045ea1779c41c6ae6ba18",
+    "size": 404
+  },
+  {
+    "path": "deploy/windows/prepare_release.ps1",
+    "sha256": "d0bdc2498cd7a5cd0ddb1d19a770b8190229ca43d021aad3f0d0055549b9ae02",
+    "size": 410
+  },
+  {
+    "path": "deploy/windows/start_waitress.ps1",
+    "sha256": "db9a617135502810b0fb7e1464bbb70e893cec573ff589910dc21335e0e11f86",
+    "size": 366
+  },
+  {
+    "path": "documentos/admin.py",
+    "sha256": "7159a1e1329093b12388e27110726dfacb52cfb6994da9476212ce4130b3bebd",
+    "size": 1603
+  },
+  {
+    "path": "eventos/tests_production_hardening_k878.py",
+    "sha256": "31d77a191e543481f6fe5d2b4c70b5711f2c9a7f29f2bd0cd83190fc92c18ad8",
+    "size": 6206
+  },
+  {
+    "path": "invitaciones/builder/public_views.py",
+    "sha256": "8ec3ddacb3534bb7429d8bb8ab36ec5df10929e69b13ce8a239eb27d21a5ea1e",
+    "size": 7214
+  },
+  {
+    "path": "invitaciones/builder/views.py",
+    "sha256": "801f0da3ab8bc227cf25d1bc631183bf812642cd3b23cceaf7a766b49b4eb9a4",
+    "size": 10509
+  },
+  {
+    "path": "invitaciones/templates/invitaciones/dashboard/partials/_invitados_tabla.html",
+    "sha256": "add4382273360f628d513caf86d4c96cbaea18fb568cf7e8a901dda66859f3b6",
+    "size": 13205
+  },
+  {
+    "path": "invitaciones/templates/invitaciones/dashboard/v3/_documentos.html",
+    "sha256": "06d44b7c966b7e992912cdf63dc605f60b80d59e4ecadac5c2b9745b486565aa",
+    "size": 1482
+  },
+  {
+    "path": "invitaciones/templates/invitaciones/dashboard/v3/_finanzas.html",
+    "sha256": "0fddff625ca9ee540ad7c6fd9d07e3cba768111358b9fc147fa5a0f25482b665",
+    "size": 4678
+  },
+  {
+    "path": "invitaciones/templates/invitaciones/portal_cliente.html",
+    "sha256": "14f523d0a806b7fb8f3d18b7629e10c34e481ada7bf3770f2129ef941345a2ea",
+    "size": 29591
+  },
+  {
+    "path": "invitaciones/templates/invitaciones/portal_proveedor.html",
+    "sha256": "edbf9e7e09a732057672d11a4f800ecf563a2b00db2b5de99980e98593541939",
+    "size": 17829
+  },
+  {
+    "path": "invitaciones/views.py",
+    "sha256": "d5afbbb23ec702c06902f3eaabc6ba991c69696f0615f38707d779ba43be1226",
+    "size": 207880
+  },
+  {
+    "path": "requirements.txt",
+    "sha256": "d4a299031fcdc92b4cf1212783c3136efcc14f95e25857931b125cf9811325de",
+    "size": 134
+  },
+  {
+    "path": "scripts/compare_inventories.py",
+    "sha256": "3954dd2cf89e14db7dd926a7cd92308005e28ce914fe861dba0d074dcc3787f2",
+    "size": 1332
+  },
+  {
+    "path": "scripts/verify_stable_k8_7_8.py",
+    "sha256": "b7e7cd1d2d15b744b6c6f202519b815fc204816f528c8218a42bd656ee9a6037",
+    "size": 840
+  }
+]

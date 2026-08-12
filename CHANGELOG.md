@@ -960,3 +960,18 @@ git add invitaciones/static/invitaciones/js/editor_invitacion.js
 git add invitaciones/static/invitaciones/css/editor_invitacion.css
 git commit -m "Conecta de forma estable la barra de herramientas"
 git push origin v5.3-editor-consolidation
+## K.8.7.8 — Production Baseline & Security Hardening
+
+- autorización explícita de Builder por `EVENT_BUILDER`;
+- portales Cliente/Proveedor endurecidos por relación real;
+- calendario, métricas, mesas y exports protegidos por acción;
+- marcar envío/recordatorio cambia a POST + CSRF;
+- rutas legacy de `ExpedienteServicio` retiradas del URLconf;
+- auditoría de limpieza destructiva en Collaboration Workspace;
+- borrado físico de adjuntos mediante `transaction.on_commit()`;
+- descargas privadas autenticadas `/secure/...`;
+- configuración PostgreSQL por entorno;
+- configuración segura para reverse proxy HTTPS;
+- Waitress/Caddy y scripts de despliegue Windows;
+- backup portable SQLite + media e inventario de migración;
+- documentación de cutover y baseline actualizada.

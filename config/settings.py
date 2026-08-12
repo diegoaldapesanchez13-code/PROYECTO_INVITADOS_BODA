@@ -13,6 +13,8 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 import os
 from pathlib import Path
 
+from django.core.exceptions import ImproperlyConfigured
+
 # Construye rutas en el proyecto. BASE_DIR apunta al directorio raíz del proyecto.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -29,6 +31,12 @@ DEBUG = os.getenv('DJANGO_DEBUG', 'True').lower() == 'true'
 ALLOWED_HOSTS = [host.strip() for host in os.getenv('DJANGO_ALLOWED_HOSTS', '*').split(',') if host.strip()]
 # En desarrollo se permite entrar desde otros dispositivos de la red local, como iPhone.
 
+if not DEBUG:
+    if not os.getenv('DJANGO_SECRET_KEY'):
+        raise ImproperlyConfigured('DJANGO_SECRET_KEY es obligatorio en producción.')
+    if not ALLOWED_HOSTS or '*' in ALLOWED_HOSTS:
+        raise ImproperlyConfigured('DJANGO_ALLOWED_HOSTS debe contener dominios explícitos en producción.')
+
 # Definición de aplicaciones instaladas
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -40,6 +48,7 @@ INSTALLED_APPS = [
     'core.apps.CoreConfig',
     'invitaciones.apps.InvitacionesConfig',
     'organizaciones.apps.OrganizacionesConfig',
+    'eventos.apps.EventosConfig',
     'suscripciones.apps.SuscripcionesConfig',
     'auditoria.apps.AuditoriaConfig',
     'proveedores.apps.ProveedoresConfig',
@@ -54,6 +63,7 @@ INSTALLED_APPS = [
     'documentos.apps.DocumentosConfig',
     'aprobaciones.apps.AprobacionesConfig',
     'notificaciones.apps.NotificacionesConfig',
+    'colaboracion.apps.ColaboracionConfig',
 ]
 # Incluye la aplicación personalizada 'invitaciones' junto con apps de Django.
 
@@ -73,6 +83,10 @@ ROOT_URLCONF = 'config.urls'
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/redirigir/'
 LOGOUT_REDIRECT_URL = '/login/'
+
+AUTHENTICATION_BACKENDS = [
+    'core.auth_backends.UsernameEmailPhoneBackend',
+]
 EMAIL_BACKEND = os.getenv('DJANGO_EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
 # Módulo que define las rutas raíz del proyecto.
 
@@ -95,13 +109,31 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 # Entrada WSGI para despliegues y servidores de producción.
 
-# Configuración de la base de datos SQLite.
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+# Base de datos: SQLite permanece para desarrollo/offline; producción usa PostgreSQL.
+DB_ENGINE = os.getenv('DJANGO_DB_ENGINE', 'sqlite').strip().lower()
+if DB_ENGINE in {'postgres', 'postgresql'}:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.environ['POSTGRES_DB'],
+            'USER': os.environ['POSTGRES_USER'],
+            'PASSWORD': os.environ['POSTGRES_PASSWORD'],
+            'HOST': os.getenv('POSTGRES_HOST', '127.0.0.1'),
+            'PORT': os.getenv('POSTGRES_PORT', '5432'),
+            'CONN_MAX_AGE': int(os.getenv('POSTGRES_CONN_MAX_AGE', '60')),
+            'CONN_HEALTH_CHECKS': True,
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': Path(os.getenv('SQLITE_PATH', BASE_DIR / 'db.sqlite3')),
+        }
+    }
+
+if not DEBUG and DB_ENGINE not in {'postgres', 'postgresql'}:
+    raise ImproperlyConfigured('PostgreSQL es obligatorio cuando DJANGO_DEBUG=False.')
 
 # Validación de contraseñas para los usuarios.
 AUTH_PASSWORD_VALIDATORS = [
@@ -126,10 +158,11 @@ USE_I18N = True
 USE_TZ = True
 
 # Configuración de archivos estáticos.
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Archivos cargados desde el admin: portada, álbum y canción de la invitación.
-MEDIA_URL = 'media/'
+MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 # Llave primaria por defecto para modelos nuevos.
@@ -146,7 +179,54 @@ CSRF_TRUSTED_ORIGINS = [
     if origin.strip()
 ]
 
+# Producción detrás de Caddy/otro reverse proxy HTTPS.
 if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     SECURE_SSL_REDIRECT = os.getenv('DJANGO_SECURE_SSL_REDIRECT', 'True').lower() == 'true'
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    CSRF_COOKIE_SAMESITE = 'Lax'
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_REFERRER_POLICY = 'same-origin'
+    SECURE_HSTS_SECONDS = int(os.getenv('DJANGO_SECURE_HSTS_SECONDS', '0'))
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = (
+        os.getenv('DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS', 'False').lower() == 'true'
+    )
+    SECURE_HSTS_PRELOAD = (
+        os.getenv('DJANGO_SECURE_HSTS_PRELOAD', 'False').lower() == 'true'
+    )
+
+# Logs de aplicación. En producción se escriben también en logs/django.log.
+LOG_DIR = BASE_DIR / 'logs'
+LOG_DIR.mkdir(exist_ok=True)
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{asctime} {levelname} {name} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+        'file': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': LOG_DIR / 'django.log',
+            'maxBytes': 5 * 1024 * 1024,
+            'backupCount': 5,
+            'formatter': 'verbose',
+            'encoding': 'utf-8',
+        },
+    },
+    'root': {
+        'handlers': ['console', 'file'],
+        'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
+    },
+}
+

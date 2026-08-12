@@ -1,6 +1,12 @@
 from django.contrib import admin
 
-from .models import PersonalEvento, Proveedor, ServicioEvento
+from .models import (
+    EtiquetaProveedor,
+    PersonalEvento,
+    Proveedor,
+    ServicioCatalogoProveedor,
+    ServicioEvento,
+)
 
 
 @admin.register(Proveedor)
@@ -68,6 +74,22 @@ class ProveedorAdmin(admin.ModelAdmin):
     )
 
 
+@admin.register(EtiquetaProveedor)
+class EtiquetaProveedorAdmin(admin.ModelAdmin):
+    list_display = ('nombre', 'empresa', 'activa')
+    list_filter = ('empresa', 'activa')
+    search_fields = ('nombre', 'empresa__nombre_comercial')
+
+
+@admin.register(ServicioCatalogoProveedor)
+class ServicioCatalogoProveedorAdmin(admin.ModelAdmin):
+    list_display = ('nombre', 'proveedor', 'empresa', 'categoria', 'costo_referencia', 'precio_referencia_cliente', 'activo')
+    list_filter = ('empresa', 'activo', 'categoria')
+    search_fields = ('nombre', 'descripcion', 'proveedor__nombre_comercial')
+    autocomplete_fields = ('proveedor', 'empresa')
+    filter_horizontal = ('etiquetas',)
+
+
 @admin.register(ServicioEvento)
 class ServicioEventoAdmin(admin.ModelAdmin):
     save_on_top = True
@@ -76,13 +98,16 @@ class ServicioEventoAdmin(admin.ModelAdmin):
         'nombre_servicio',
         'evento',
         'proveedor',
-        'estado',
+        'origen',
+        'modalidad',
+        'estado_comercial',
+        'estado_operativo',
         'fecha_servicio',
         'costo_total',
         'anticipo',
         'saldo_pendiente',
     )
-    list_filter = ('evento', 'estado', 'fecha_servicio', 'proveedor__tipo_proveedor')
+    list_filter = ('evento', 'origen', 'modalidad', 'estado_comercial', 'estado_operativo', 'fecha_servicio', 'proveedor__tipo_proveedor')
     search_fields = (
         'nombre_servicio',
         'descripcion',
@@ -95,7 +120,7 @@ class ServicioEventoAdmin(admin.ModelAdmin):
     readonly_fields = ('saldo_pendiente',)
     fieldsets = (
         ('Evento y proveedor', {
-            'fields': ('evento', 'proveedor', 'estado')
+            'fields': ('evento', 'proveedor', 'servicio_catalogo', 'origen', 'modalidad', 'estado', 'estado_comercial', 'estado_operativo')
         }),
         ('Servicio', {
             'fields': (
@@ -110,6 +135,9 @@ class ServicioEventoAdmin(admin.ModelAdmin):
         ('Pagos', {
             'fields': (
                 'costo_total',
+                'costo_proveedor',
+                'precio_cliente',
+                'ajuste_cliente',
                 'anticipo',
                 'saldo_pendiente',
                 'fecha_limite_pago',
@@ -119,7 +147,7 @@ class ServicioEventoAdmin(admin.ModelAdmin):
             'fields': ('contrato', 'cotizacion', 'comprobante_pago')
         }),
         ('Notas', {
-            'fields': ('notas',)
+            'fields': ('notas', 'notas_internas', 'proveedor_nombre_snapshot', 'catalogo_nombre_snapshot', 'catalogo_descripcion_snapshot')
         }),
     )
 
@@ -163,7 +191,7 @@ class PersonalEventoAdmin(admin.ModelAdmin):
             )
         }),
         ('Notas', {
-            'fields': ('notas',)
+            'fields': ('notas', 'notas_internas', 'proveedor_nombre_snapshot', 'catalogo_nombre_snapshot', 'catalogo_descripcion_snapshot')
         }),
     )
 

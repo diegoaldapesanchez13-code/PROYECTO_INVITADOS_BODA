@@ -1,0 +1,168 @@
+<section class="role-section tab-panel planner-collaboration" id="colaboracion" data-role-panel hidden>
+    <div class="section-header">
+        <div>
+            <span class="eyebrow">Cliente ↔ Planner ↔ Proveedor</span>
+            <h2>Colaboracion comercial</h2>
+            <p class="muted">Tu eres el puente. El cliente nunca ve costo proveedor ni margen; el proveedor nunca ve la propuesta comercial del cliente.</p>
+        </div>
+    </div>
+
+    <div class="planner-collab-list">
+        {% for expediente in expedientes_colaboracion %}
+            <details class="planner-collab-card">
+                <summary>
+                    <div>
+                        <span>{{ expediente.evento }}</span>
+                        <strong>{{ expediente.titulo }}</strong>
+                    </div>
+                    <div>
+                        <span class="pill">{{ expediente.get_categoria_display }}</span>
+                        <span class="pill subtle">{{ expediente.get_estado_display }}</span>
+                    </div>
+                </summary>
+
+                <div class="planner-collab-body">
+                    {% if expediente.servicio_evento %}<p><a class="btn secondary" href="{% url 'colaboracion_workspace_servicio' expediente.servicio_evento.id %}">Abrir workspace del servicio</a></p>{% endif %}
+                    <div class="planner-collab-columns">
+                        <section>
+                            <h3>Canal Cliente ↔ Planner</h3>
+                            <div class="collab-thread compact">
+                                {% for mensaje in expediente.mensajes_cliente_ui %}
+                                    <article class="{% if mensaje.tipo == 'SISTEMA' %}system{% endif %}">
+                                        <div><strong>{% if mensaje.tipo == 'SISTEMA' %}Sistema{% else %}{{ mensaje.autor.get_full_name|default:mensaje.autor.username }}{% endif %}</strong><time>{{ mensaje.fecha|date:"d/m H:i" }}</time></div>
+                                        {% if mensaje.mensaje %}<p>{{ mensaje.mensaje }}</p>{% endif %}
+                                        {% if mensaje.archivo %}<a href="{{ mensaje.archivo.url }}" target="_blank" rel="noopener">Adjunto</a>{% endif %}
+                                    </article>
+                                {% empty %}<p class="muted">Sin mensajes.</p>{% endfor %}
+                            </div>
+                            <form class="collab-message-form" method="post" enctype="multipart/form-data" action="{% url 'colaboracion_enviar_mensaje' expediente.id %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="canal" value="CLIENTE_PLANNER">
+                                <textarea name="mensaje" rows="2" placeholder="Responder al cliente"></textarea>
+                                <input type="file" name="archivo">
+                                <button class="btn" type="submit">Enviar</button>
+                            </form>
+                        </section>
+
+                        <section>
+                            <h3>Canal Planner ↔ Proveedor</h3>
+                            {% if not expediente.proveedor %}
+                                <form class="collab-assign-provider" method="post" action="{% url 'colaboracion_planner_asignar_proveedor' expediente.id %}">
+                                    {% csrf_token %}
+                                    <select name="proveedor_id" required>
+                                        <option value="">Selecciona proveedor</option>
+                                        {% for proveedor in proveedores_autorizados %}
+                                            <option value="{{ proveedor.id }}">{{ proveedor.nombre_comercial }} · {{ proveedor.get_tipo_proveedor_display }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <button class="btn" type="submit">Consultar proveedor</button>
+                                </form>
+                            {% else %}
+                                <div class="collab-provider-lock">
+                                    <span>Proveedor</span>
+                                    <strong>{{ expediente.proveedor.nombre_comercial }}</strong>
+                                </div>
+                            {% endif %}
+
+                            <div class="collab-thread compact">
+                                {% for mensaje in expediente.mensajes_proveedor_ui %}
+                                    <article class="{% if mensaje.tipo == 'SISTEMA' %}system{% endif %}">
+                                        <div><strong>{% if mensaje.tipo == 'SISTEMA' %}Sistema{% else %}{{ mensaje.autor.get_full_name|default:mensaje.autor.username }}{% endif %}</strong><time>{{ mensaje.fecha|date:"d/m H:i" }}</time></div>
+                                        {% if mensaje.mensaje %}<p>{{ mensaje.mensaje }}</p>{% endif %}
+                                        {% if mensaje.archivo %}<a href="{{ mensaje.archivo.url }}" target="_blank" rel="noopener">Adjunto</a>{% endif %}
+                                    </article>
+                                {% empty %}<p class="muted">Sin mensajes.</p>{% endfor %}
+                            </div>
+
+                            {% if expediente.proveedor %}
+                                <form class="collab-message-form" method="post" enctype="multipart/form-data" action="{% url 'colaboracion_enviar_mensaje' expediente.id %}">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="canal" value="PLANNER_PROVEEDOR">
+                                    <textarea name="mensaje" rows="2" placeholder="Escribir al proveedor"></textarea>
+                                    <input type="file" name="archivo">
+                                    <button class="btn" type="submit">Enviar</button>
+                                </form>
+                            {% endif %}
+                        </section>
+                    </div>
+
+                    {% if expediente.cotizaciones_ui %}
+                        <section class="planner-private-finance">
+                            <h3>Cotizaciones proveedor · privado</h3>
+                            {% for cotizacion in expediente.cotizaciones_ui %}
+                                <article>
+                                    <div>
+                                        <strong>v{{ cotizacion.version }} · ${{ cotizacion.costo_proveedor|floatformat:2 }}</strong>
+                                        <span>{{ cotizacion.get_estado_display }}</span>
+                                    </div>
+                                    {% if cotizacion.descripcion %}<p>{{ cotizacion.descripcion }}</p>{% endif %}
+                                    {% if cotizacion.archivo %}<a href="{{ cotizacion.archivo.url }}" target="_blank" rel="noopener">Cotizacion adjunta</a>{% endif %}
+                                    {% if cotizacion.estado == "ENVIADA" %}
+                                        <form method="post" action="{% url 'colaboracion_planner_decidir_cotizacion' cotizacion.id %}">
+                                            {% csrf_token %}
+                                            <input name="comentario" placeholder="Comentario al proveedor">
+                                            <button name="decision" value="ACEPTAR" type="submit">Aceptar</button>
+                                            <button name="decision" value="CAMBIOS" type="submit" class="secondary">Pedir cambios</button>
+                                            <button name="decision" value="RECHAZAR" type="submit" class="danger">Rechazar</button>
+                                        </form>
+                                    {% endif %}
+                                </article>
+                            {% endfor %}
+                        </section>
+                    {% endif %}
+
+                    <section class="planner-client-proposal">
+                            <h3>Propuesta comercial al cliente</h3>
+                            <p class="muted">
+                                Para un adicional necesitas aceptar primero una cotizacion.
+                                Si el servicio ya esta incluido en el paquete, puedes enviarlo
+                                a aprobacion sin generar un cargo adicional.
+                            </p>
+
+                            <form method="post" action="{% url 'colaboracion_planner_enviar_propuesta' expediente.id %}">
+                                {% csrf_token %}
+                                <div class="form-grid">
+                                    <label>Modalidad
+                                        <select name="modalidad">
+                                            <option value="ADICIONAL">Servicio adicional</option>
+                                            <option value="INCLUIDO_PAQUETE">Incluido en paquete</option>
+                                        </select>
+                                    </label>
+                                    <label>Precio cliente<input type="number" step="0.01" min="0" name="precio_cliente" placeholder="Solo para adicional"></label>
+                                    <label class="wide">Referencia de paquete<input name="referencia_paquete" placeholder="Ej. Paquete Diamante · decoracion incluida"></label>
+                                    <label class="wide">Descripcion para cliente<textarea name="descripcion" rows="2"></textarea></label>
+                                </div>
+                                <button class="btn" type="submit">Enviar nueva version al cliente</button>
+                            </form>
+
+                            <div class="planner-proposal-history">
+                                {% for propuesta in expediente.propuestas_ui %}
+                                    <article>
+                                        <div>
+                                            <strong>v{{ propuesta.version }} · {{ propuesta.get_estado_display }}</strong>
+                                            <span>Costo: ${{ propuesta.costo_base_snapshot|floatformat:2 }}</span>
+                                            <span>Margen: ${{ propuesta.margen|floatformat:2 }}</span>
+                                            <span>Cliente: {% if propuesta.modalidad == "INCLUIDO_PAQUETE" %}Incluido{% else %}${{ propuesta.precio_cliente|floatformat:2 }}{% endif %}</span>
+                                        </div>
+                                        {% if propuesta.comentario_cliente %}<p>Cliente: {{ propuesta.comentario_cliente }}</p>{% endif %}
+                                    </article>
+                                {% empty %}<p class="muted">Aun no has enviado propuesta.</p>{% endfor %}
+                            </div>
+                        </section>
+
+                    {% if expediente.propuesta_aprobada_ui and expediente.estado != "CONTRATADO" %}
+                        <form class="planner-confirm-provider" method="post" action="{% url 'colaboracion_planner_confirmar_proveedor' expediente.id %}">
+                            {% csrf_token %}
+                            <button class="btn" type="submit">Confirmar contratacion al proveedor</button>
+                        </form>
+                    {% endif %}
+                </div>
+            </details>
+        {% empty %}
+            <article class="section-card">
+                <strong>No hay solicitudes colaborativas.</strong>
+                <p class="muted">Las solicitudes creadas por clientes apareceran aqui.</p>
+            </article>
+        {% endfor %}
+    </div>
+</section>

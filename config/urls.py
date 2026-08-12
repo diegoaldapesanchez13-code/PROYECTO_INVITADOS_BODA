@@ -19,7 +19,7 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 
-from core.services.permisos import usuario_es_dirtec_operativo
+from core.services.authorization import Actions, usuario_tiene_permiso
 
 
 def dirtec_admin_has_permission(request):
@@ -27,7 +27,10 @@ def dirtec_admin_has_permission(request):
     return bool(
         user.is_active
         and user.is_staff
-        and usuario_es_dirtec_operativo(user)
+        and usuario_tiene_permiso(
+            user,
+            Actions.DJANGO_ADMIN,
+        )
     )
 
 
@@ -38,6 +41,11 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('core.urls')),
     path('suscripcion/', include('suscripciones.urls')),
+    path('colaboracion/', include('colaboracion.urls')),
+    path('presupuesto/', include('presupuesto.urls')),
     # Todas las demás rutas se delegan a la aplicación 'invitaciones'.
     path('', include('invitaciones.urls')),
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

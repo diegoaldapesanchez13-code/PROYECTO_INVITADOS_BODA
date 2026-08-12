@@ -1,8 +1,8 @@
 <section class="catalog-panel operation-manager" id="operacion-gestion" data-subnav-scope="operacion-evento">
     <div class="workspace-header">
         <div>
-            <h2>Gestion operativa del evento</h2>
-            <p class="muted">Administra servicios, tareas, pagos, documentos y aprobaciones sin entrar al admin avanzado.</p>
+            <h2>Operación del evento</h2>
+            <p class="muted">Trabaja por módulo. Solo se muestra la información necesaria para la tarea que estás realizando.</p>
         </div>
         <a class="btn secondary" href="{% url 'mesas_visual' %}?evento={{ evento.id }}">Acomodar mesas</a>
     </div>
@@ -19,29 +19,6 @@
         <button type="button" data-subpanel-button="presupuesto">Pagos <span>{{ gastos_vencidos }}</span></button>
         <button type="button" data-subpanel-button="documentos">Documentos <span>{{ total_documentos_evento }}</span></button>
         <button type="button" data-subpanel-button="aprobaciones">Cliente <span>{{ aprobaciones_pendientes }}</span></button>
-    </div>
-
-    <div class="operation-summary">
-        <article>
-            <span>Buffet</span>
-            <strong>{{ total_adultos }} adultos · {{ total_ninos }} niños</strong>
-            <small>{{ total_catering_evento }} banquete{{ total_catering_evento|pluralize }} registrado{{ total_catering_evento|pluralize }}</small>
-        </article>
-        <article class="{% if proveedores_pendientes %}needs-attention{% endif %}">
-            <span>Proveedores</span>
-            <strong>{{ total_servicios_evento }} servicios</strong>
-            <small>{{ proveedores_pendientes }} pendiente{{ proveedores_pendientes|pluralize }} por cerrar</small>
-        </article>
-        <article class="{% if tareas_vencidas %}needs-attention{% endif %}">
-            <span>Produccion</span>
-            <strong>{{ tareas_pendientes }} tarea{{ tareas_pendientes|pluralize }} activa{{ tareas_pendientes|pluralize }}</strong>
-            <small>{{ tareas_vencidas }} vencida{{ tareas_vencidas|pluralize }}</small>
-        </article>
-        <article class="{% if gastos_vencidos %}needs-attention{% endif %}">
-            <span>Presupuesto</span>
-            <strong>${{ monto_pendiente|floatformat:0 }} pendiente</strong>
-            <small>{{ gastos_vencidos }} pago{{ gastos_vencidos|pluralize }} vencido{{ gastos_vencidos|pluralize }}</small>
-        </article>
     </div>
 
     <div class="operation-panel-grid" data-subpanel="servicios">
@@ -91,6 +68,7 @@
                             <span>{{ servicio.get_estado_display }} - ${{ servicio.costo_total|floatformat:0 }}</span>
                         </div>
                         <p>{{ servicio.proveedor.nombre_comercial|default:"Proveedor por definir" }}{% if servicio.fecha_servicio %} - {{ servicio.fecha_servicio|date:"d/m/Y" }}{% endif %}</p>
+                        <p><a href="{% url 'colaboracion_workspace_servicio' servicio.id %}">Abrir workspace del servicio</a></p>
                         {% if servicio.descripcion %}<p>{{ servicio.descripcion }}</p>{% endif %}
                         <details>
                             <summary>Editar servicio</summary>
@@ -406,8 +384,8 @@
             <div class="design-grid">
                 <label>Proveedor<select name="proveedor_id"><option value="">Sin proveedor</option>{% for proveedor in proveedores_empresa %}<option value="{{ proveedor.id }}">{{ proveedor.nombre_comercial }}</option>{% endfor %}</select></label>
                 <label>Paquete buffet<select name="paquete_buffet_id"><option value="">Sin paquete</option>{% for paquete in paquetes_buffet %}<option value="{{ paquete.id }}">{{ paquete.nombre }}</option>{% endfor %}</select></label>
-                <label>Adultos<input type="number" name="cantidad_adultos_catering" min="0" value="{{ total_adultos }}"></label>
-                <label>Niños<input type="number" name="cantidad_ninos_catering" min="0" value="{{ total_ninos }}"></label>
+                <label>Menús adulto<input type="number" name="cantidad_adultos_catering" min="0" value="{{ total_adultos }}"></label>
+                <label>Menús infantiles<input type="number" name="cantidad_ninos_catering" min="0" value="{{ total_ninos }}"></label>
                 <label>Proveedores<input type="number" name="cantidad_proveedores_catering" min="0" value="0"></label>
                 <label>Precio total<input type="number" name="precio_total_catering" min="0" step="0.01" value="0"></label>
                 <label>Degustacion<input type="date" name="fecha_degustacion_catering"></label>
@@ -688,8 +666,10 @@
                 <label>Categoria
                     <select name="categoria_tarea">{% for valor, texto in categorias_tarea %}<option value="{{ valor }}">{{ texto }}</option>{% endfor %}</select>
                 </label>
-                <label>Inicio<input type="date" name="fecha_inicio_tarea"></label>
-                <label>Limite<input type="date" name="fecha_limite_tarea"></label>
+                <label>Fecha inicio<input type="date" name="fecha_inicio_tarea"></label>
+                <label>Hora inicio<input type="time" name="hora_inicio_tarea"></label>
+                <label>Fecha limite / fin<input type="date" name="fecha_limite_tarea"></label>
+                <label>Hora fin<input type="time" name="hora_fin_tarea"></label>
                 <label>Avance<input type="number" name="porcentaje_avance_tarea" min="0" max="100" value="0"></label>
                 <label class="wide">Descripcion<textarea name="descripcion_tarea" rows="2"></textarea></label>
                 <label>Evidencia<input type="file" name="evidencia_tarea"></label>
@@ -704,7 +684,20 @@
                 {% for tarea in tareas_evento %}
                     <article class="saved-item {% if tarea.esta_vencida %}needs-attention{% endif %}">
                         <div><strong>{{ tarea.titulo }}</strong><span>{{ tarea.get_estado_display }} - {{ tarea.porcentaje_avance }}%</span></div>
-                        <p>{{ tarea.get_categoria_display }}{% if tarea.fecha_limite %} - limite {{ tarea.fecha_limite|date:"d/m/Y" }}{% endif %}{% if tarea.responsable %} - {{ tarea.responsable.get_full_name|default:tarea.responsable.username }}{% endif %}</p>
+                        <p>
+                            {{ tarea.get_categoria_display }}
+                            {% if tarea.fecha_inicio %}
+                                · {{ tarea.fecha_inicio|date:"d/m/Y" }}{% if tarea.hora_inicio %} {{ tarea.hora_inicio|time:"H:i" }}{% endif %}
+                            {% elif tarea.fecha_limite %}
+                                · {{ tarea.fecha_limite|date:"d/m/Y" }}{% if tarea.hora_inicio %} {{ tarea.hora_inicio|time:"H:i" }}{% endif %}
+                            {% endif %}
+                            {% if tarea.hora_fin %}
+                                - {% if tarea.fecha_limite and tarea.fecha_limite != tarea.fecha_inicio %}{{ tarea.fecha_limite|date:"d/m/Y" }} {% endif %}{{ tarea.hora_fin|time:"H:i" }}
+                            {% elif tarea.fecha_limite and tarea.fecha_inicio %}
+                                · limite {{ tarea.fecha_limite|date:"d/m/Y" }}
+                            {% endif %}
+                            {% if tarea.responsable %} · {{ tarea.responsable.get_full_name|default:tarea.responsable.username }}{% endif %}
+                        </p>
                         <details>
                             <summary>Editar tarea</summary>
                             <form class="inline-edit-form" method="post" enctype="multipart/form-data">
@@ -723,8 +716,10 @@
                                     <label>Estado<select name="estado_tarea">{% for valor, texto in estados_tarea %}<option value="{{ valor }}" {% if tarea.estado == valor %}selected{% endif %}>{{ texto }}</option>{% endfor %}</select></label>
                                     <label>Prioridad<select name="prioridad_tarea">{% for valor, texto in prioridades_tarea %}<option value="{{ valor }}" {% if tarea.prioridad == valor %}selected{% endif %}>{{ texto }}</option>{% endfor %}</select></label>
                                     <label>Categoria<select name="categoria_tarea">{% for valor, texto in categorias_tarea %}<option value="{{ valor }}" {% if tarea.categoria == valor %}selected{% endif %}>{{ texto }}</option>{% endfor %}</select></label>
-                                    <label>Inicio<input type="date" name="fecha_inicio_tarea" value="{{ tarea.fecha_inicio|date:'Y-m-d' }}"></label>
-                                    <label>Limite<input type="date" name="fecha_limite_tarea" value="{{ tarea.fecha_limite|date:'Y-m-d' }}"></label>
+                                    <label>Fecha inicio<input type="date" name="fecha_inicio_tarea" value="{{ tarea.fecha_inicio|date:'Y-m-d' }}"></label>
+                                    <label>Hora inicio<input type="time" name="hora_inicio_tarea" value="{{ tarea.hora_inicio|time:'H:i' }}"></label>
+                                    <label>Fecha limite / fin<input type="date" name="fecha_limite_tarea" value="{{ tarea.fecha_limite|date:'Y-m-d' }}"></label>
+                                    <label>Hora fin<input type="time" name="hora_fin_tarea" value="{{ tarea.hora_fin|time:'H:i' }}"></label>
                                     <label>Avance<input type="number" name="porcentaje_avance_tarea" min="0" max="100" value="{{ tarea.porcentaje_avance }}"></label>
                                     <label class="wide">Descripcion<textarea name="descripcion_tarea" rows="2">{{ tarea.descripcion|default_if_none:'' }}</textarea></label>
                                     <label>Evidencia<input type="file" name="evidencia_tarea">{% if tarea.evidencia %}<span class="checkline"><input type="checkbox" name="eliminar_evidencia_tarea"> Quitar</span>{% endif %}</label>

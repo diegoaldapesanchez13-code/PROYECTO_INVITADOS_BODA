@@ -1,0 +1,25 @@
+<section class="tab-panel product-section event-v3-panel" id="tareas" data-tab-panel="tareas" hidden>
+  <div class="product-section-header"><div><span class="product-section-eyebrow">Trabajo pendiente</span><h2>Tareas del evento</h2><p class="muted">Una tarea es algo que alguien debe hacer. No representa una reunión ni un horario de agenda.</p></div></div>
+  <div class="task-definition-note"><b>Regla</b><span>Si varias personas deben coincidir a una hora, crea una <strong>Cita</strong> en Agenda. Si una persona debe completar algo antes de una fecha, crea una <strong>Tarea</strong>.</span></div>
+  <details class="event-v3-create"><summary>+ Nueva tarea</summary>
+    <form class="mini-admin-form" method="post">
+      {% csrf_token %}<input type="hidden" name="accion" value="agregar_tarea_evento"><input type="hidden" name="evento_id" value="{{ evento.id }}"><input type="hidden" name="estado_tarea" value="PENDIENTE"><input type="hidden" name="porcentaje_avance_tarea" value="0">
+      <div class="event-v3-form-grid">
+        <label>Título<input name="titulo_tarea" required placeholder="Ej. Revisar contrato"></label>
+        <label>Responsable<select name="responsable_id"><option value="">Sin asignar</option>{% for usuario in responsables_evento %}<option value="{{ usuario.id }}">{{ usuario.get_full_name|default:usuario.username }}</option>{% endfor %}</select></label>
+        <label>Servicio<select name="servicio_evento_id"><option value="">Evento general</option>{% for servicio in servicios_v3 %}<option value="{{ servicio.id }}">{{ servicio.nombre_servicio }}</option>{% endfor %}</select></label>
+        <label>Inicio opcional<input type="date" name="fecha_inicio_tarea"></label>
+        <label>Fecha límite<input type="date" name="fecha_limite_tarea"></label>
+        <label>Prioridad<select name="prioridad_tarea">{% for value,label in prioridades_tarea %}<option value="{{ value }}"{% if value == 'MEDIA' %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+        <label>Categoría<select name="categoria_tarea">{% for value,label in categorias_tarea %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select></label>
+      </div>
+      <label>Descripción<textarea name="descripcion_tarea" rows="2" placeholder="Qué debe hacerse"></textarea></label>
+      <button class="btn" type="submit">Crear tarea</button>
+    </form>
+  </details>
+  <div class="event-v3-task-list">
+    {% for tarea in tareas_evento_v3 %}
+    <article class="task-v3-row {% if tarea.esta_vencida %}is-overdue{% endif %}"><span class="priority {{ tarea.prioridad|lower }}">{{ tarea.get_prioridad_display }}</span><div><strong>{{ tarea.titulo }}</strong><p>{% if tarea.responsable %}{{ tarea.responsable.get_full_name|default:tarea.responsable.username }}{% else %}Sin responsable{% endif %}{% if tarea.fecha_limite %} · vence {{ tarea.fecha_limite|date:"d/m/Y" }}{% endif %}</p><small><span class="task-role-pill">{{ tarea.responsable_rol_v3|default:"Equipo" }}</span> · {% if tarea.servicio_evento %}<a href="{% url 'colaboracion_workspace_servicio' tarea.servicio_evento.id %}">{{ tarea.servicio_evento.nombre_servicio }}</a>{% else %}Evento general{% endif %}</small></div><div class="task-v3-progress"><span>{{ tarea.get_estado_display }}</span><b>{{ tarea.porcentaje_avance }}%</b></div></article>
+    {% empty %}<p class="empty-state">No hay tareas registradas.</p>{% endfor %}
+  </div>
+</section>

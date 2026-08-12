@@ -1,0 +1,144 @@
+<section
+    class="tab-panel product-section product-summary"
+    id="resumen"
+    data-tab-panel="resumen"
+    data-metrics-url="{{ api_dashboard_url }}"
+    hidden
+>
+    <div class="product-section-header">
+        <div>
+            <span class="product-section-eyebrow">Resumen ejecutivo</span>
+            <h2>Estado del evento</h2>
+            <p class="muted">Lo importante primero: asistencia, buffet, mesas, pagos y pendientes operativos.</p>
+        </div>
+        <div class="actions">
+            {% if editor_invitacion_url %}
+                <a class="btn" href="{{ editor_invitacion_url }}">Abrir Builder</a>
+            {% endif %}
+            {% if preview_grupo %}
+                <a class="btn secondary" href="{% url 'ver_invitacion' preview_grupo.codigo %}" target="_blank">Ver invitación</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="product-kpi-grid">
+        <article class="product-kpi">
+            <span>Personas invitadas</span>
+            <strong>{{ total_lugares }}</strong>
+            <small>{{ total_grupos }} invitaciones / grupos</small>
+        </article>
+        <article class="product-kpi product-kpi--success">
+            <span>Confirmados</span>
+            <strong>{{ total_asistiran }}</strong>
+            <small>{{ porcentaje_asistencia }}% de asistencia</small>
+        </article>
+        <article class="product-kpi {% if total_pendientes %}product-kpi--attention{% endif %}">
+            <span>RSVP pendientes</span>
+            <strong>{{ total_pendientes }}</strong>
+            <small>{{ total_no_asistiran }} no asistirán</small>
+        </article>
+        <article class="product-kpi">
+            <span>Buffet confirmado</span>
+            <strong>{{ total_adultos }} / {{ total_ninos }}</strong>
+            <small>Adulto / infantil</small>
+        </article>
+        <article class="product-kpi {% if invitados_confirmados_sin_mesa %}product-kpi--attention{% endif %}">
+            <span>Sin mesa</span>
+            <strong>{{ invitados_confirmados_sin_mesa }}</strong>
+            <small>Confirmados por acomodar</small>
+        </article>
+        <article class="product-kpi {% if monto_pendiente %}product-kpi--attention{% endif %}">
+            <span>Pendiente por pagar</span>
+            <strong>${{ monto_pendiente|floatformat:0 }}</strong>
+            <small>${{ monto_pagado|floatformat:0 }} pagado</small>
+        </article>
+    </div>
+
+    <section class="product-attention-panel">
+        <div class="product-section-header product-section-header--compact">
+            <div>
+                <h3>Pendientes que requieren atención</h3>
+                <p class="muted">Acciones operativas que pueden afectar el evento.</p>
+            </div>
+        </div>
+
+        <div class="product-attention-grid">
+            <a class="{% if invitados_confirmados_sin_mesa %}needs-attention{% endif %}" href="{% url 'mesas_visual' %}?evento={{ evento.id }}">
+                <strong>{{ invitados_confirmados_sin_mesa }}</strong>
+                <span>Confirmados sin mesa</span>
+                <small>Acomodar personas</small>
+            </a>
+            <button
+                type="button"
+                class="{% if proveedores_pendientes %}needs-attention{% endif %}"
+                data-dashboard-tab="operacion"
+                data-open-operation-subpanel="servicios"
+            >
+                <strong>{{ proveedores_pendientes }}</strong>
+                <span>Proveedores pendientes</span>
+                <small>Revisar servicios</small>
+            </button>
+            <button
+                type="button"
+                class="{% if tareas_vencidas %}needs-attention{% endif %}"
+                data-dashboard-tab="operacion"
+                data-open-operation-subpanel="tareas"
+            >
+                <strong>{{ tareas_vencidas }}</strong>
+                <span>Tareas vencidas</span>
+                <small>Revisar producción</small>
+            </button>
+            <button
+                type="button"
+                class="{% if gastos_vencidos %}needs-attention{% endif %}"
+                data-dashboard-tab="operacion"
+                data-open-operation-subpanel="presupuesto"
+            >
+                <strong>{{ gastos_vencidos }}</strong>
+                <span>Pagos vencidos</span>
+                <small>Revisar presupuesto</small>
+            </button>
+            <button
+                type="button"
+                class="{% if aprobaciones_pendientes %}needs-attention{% endif %}"
+                data-dashboard-tab="operacion"
+                data-open-operation-subpanel="aprobaciones"
+            >
+                <strong>{{ aprobaciones_pendientes }}</strong>
+                <span>Aprobaciones pendientes</span>
+                <small>Revisar cliente</small>
+            </button>
+        </div>
+    </section>
+
+    <section class="charts-panel product-analytics">
+        <div class="product-section-header product-section-header--compact">
+            <div>
+                <h3>Analítica</h3>
+                <p class="muted">Asistencia, buffet, presupuesto, tareas y proveedores desde una sola fuente.</p>
+            </div>
+        </div>
+        <div class="chart-grid">
+            <article class="chart-card">
+                <h3>Invitados</h3>
+                <canvas id="chartInvitados" height="180"></canvas>
+            </article>
+            <article class="chart-card">
+                <h3>Buffet</h3>
+                <canvas id="chartBuffet" height="180"></canvas>
+            </article>
+            <article class="chart-card">
+                <h3>Presupuesto</h3>
+                <canvas id="chartPresupuesto" height="180"></canvas>
+            </article>
+            <article class="chart-card">
+                <h3>Tareas</h3>
+                <canvas id="chartTareas" height="180"></canvas>
+            </article>
+            <article class="chart-card">
+                <h3>Proveedores</h3>
+                <canvas id="chartProveedores" height="180"></canvas>
+            </article>
+        </div>
+    </section>
+</section>

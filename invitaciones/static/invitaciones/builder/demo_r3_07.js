@@ -533,12 +533,30 @@ const status =
     );
 
 
+const builderRuntimeContext =
+    globalThis.__DIRTEC_BUILDER_BOOTSTRAP__
+    || {};
+const eventContext =
+    builderRuntimeContext.event
+    || {};
+const invitationContext =
+    builderRuntimeContext.invitationPreview
+    || {
+        groupName: "Invitación de ejemplo",
+        groupType: "",
+        groupTypeLabel: "Vista previa",
+        totalGuests: 0,
+        confirmedGuests: 0,
+        pendingGuests: 0,
+    };
+
 const previewRoot = document.querySelector("[data-r3-preview]");
 const mobilePreview = new MobilePreview({
     root: previewRoot,
     state,
     assetResolver(assetId) { return assets.resolve(assetId); },
-    invitationContext: { url: globalThis.location?.href || "" },
+    invitationContext,
+    eventContext,
 });
 
 document.querySelector("[data-r3-open-preview]")?.addEventListener("click", () => {
@@ -552,6 +570,8 @@ const renderer =
         assetResolver(assetId) {
             return assets.resolve(assetId);
         },
+        eventContext,
+        invitationContext,
     });
 
 renderer.mount(

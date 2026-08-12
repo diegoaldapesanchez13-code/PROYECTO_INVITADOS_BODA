@@ -1,6 +1,7 @@
 from django.db.models import Q
 
 from core.services.permisos import usuario_es_dirtec_operativo
+from core.services.authorization import Actions, usuario_tiene_permiso
 from organizaciones.models import EmpresaSuscriptora, MembresiaEmpresa
 
 from .models import EventoBoda
@@ -52,27 +53,19 @@ def empresas_ids_por_roles(user, roles):
 
 
 def usuario_puede_gestionar_catalogos(user, empresa):
-    if not user.is_authenticated or not empresa:
-        return False
-    if usuario_es_dirtec(user):
-        return True
-    roles = roles_activos_empresa(user, empresa)
-    if 'ADMIN_EMPRESA' in roles:
-        return True
-    return MembresiaEmpresa.objects.filter(
-        usuario=user,
+    return usuario_tiene_permiso(
+        user,
+        Actions.COMPANY_MANAGE_CATALOGS,
         empresa=empresa,
-        activo=True,
-        puede_gestionar_catalogos=True,
-    ).exists()
+    )
 
 
 def usuario_puede_gestionar_usuarios(user, empresa):
-    if not user.is_authenticated or not empresa:
-        return False
-    if usuario_es_dirtec(user):
-        return True
-    return 'ADMIN_EMPRESA' in roles_activos_empresa(user, empresa)
+    return usuario_tiene_permiso(
+        user,
+        Actions.COMPANY_MANAGE_USERS,
+        empresa=empresa,
+    )
 
 
 def eventos_visibles_usuario(user):

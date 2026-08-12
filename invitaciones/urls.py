@@ -1,9 +1,15 @@
 from django.urls import path
-from . import views
+from . import views, client_guest_views
 from .builder import views as builder_views
 from .builder import public_views as builder_public_views
 
 urlpatterns = [
+    path('cliente/eventos/<int:evento_id>/invitados/grupos/crear/', client_guest_views.crear_grupo_cliente, name='cliente_grupo_crear'),
+    path('cliente/invitados/grupos/<int:grupo_id>/editar/', client_guest_views.editar_grupo_cliente, name='cliente_grupo_editar'),
+    path('cliente/invitados/grupos/<int:grupo_id>/eliminar/', client_guest_views.eliminar_grupo_cliente, name='cliente_grupo_eliminar'),
+    path('cliente/invitados/grupos/<int:grupo_id>/personas/agregar/', client_guest_views.agregar_invitado_cliente, name='cliente_invitado_agregar'),
+    path('cliente/invitados/personas/<int:invitado_id>/editar/', client_guest_views.editar_invitado_cliente, name='cliente_invitado_editar'),
+    path('cliente/invitados/personas/<int:invitado_id>/eliminar/', client_guest_views.eliminar_invitado_cliente, name='cliente_invitado_eliminar'),
     path('', views.inicio, name='inicio'),
     path('dirtec/dashboard/', views.dashboard_dirtec, name='dirtec_dashboard'),
     path('empresa/<slug:empresa_slug>/dashboard/', views.dashboard_empresa_slug, name='empresa_dashboard'),
@@ -14,7 +20,6 @@ urlpatterns = [
     path('portal/cliente/', views.portal_cliente, name='portal_cliente'),
     path('portal/cliente/aprobaciones/<int:aprobacion_id>/responder/', views.responder_aprobacion_cliente, name='responder_aprobacion_cliente'),
     path('portal/proveedor/', views.portal_proveedor, name='portal_proveedor'),
-    path('portal/proveedor/servicios/<int:servicio_id>/actualizar/', views.actualizar_servicio_proveedor, name='actualizar_servicio_proveedor'),
     path('portal/proveedor/documentos/subir/', views.subir_documento_proveedor, name='subir_documento_proveedor'),
     path('dashboard/profesional/', views.dashboard_profesional, name='dashboard_profesional'),
     path('dashboard/dirtec/', views.dashboard_dirtec, name='dashboard_dirtec'),

@@ -4,18 +4,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const calendar = new FullCalendar.Calendar(calendarElement, {
         locale: 'es',
-        initialView: window.innerWidth < 760 ? 'listWeek' : 'dayGridMonth',
+        initialView: window.innerWidth < 760 ? 'listWeek' : 'timeGridWeek',
         height: 'auto',
         headerToolbar: {
             left: 'prev,next today',
             center: 'title',
-            right: 'dayGridMonth,timeGridWeek,listWeek',
+            right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek',
         },
         buttonText: {
             today: 'Hoy',
             month: 'Mes',
             week: 'Semana',
-            list: 'Lista',
+            day: 'Dia',
+            list: 'Agenda',
+        },
+        nowIndicator: true,
+        allDaySlot: true,
+        slotMinTime: '06:00:00',
+        slotMaxTime: '24:00:00',
+        slotDuration: '00:30:00',
+        eventTimeFormat: {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
         },
         events: calendarElement.dataset.eventsUrl,
         eventClick(info) {
@@ -33,6 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 props.ubicacion,
                 props.responsable ? `Resp: ${props.responsable}` : '',
                 props.proveedor ? `Prov: ${props.proveedor}` : '',
+                props.descripcion || '',
             ].filter(Boolean).join(' · ');
 
             if (detail) {

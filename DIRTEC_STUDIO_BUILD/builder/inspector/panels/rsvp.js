@@ -4,26 +4,44 @@ export function rsvpPanel() {
     return [
         group({
             id: "rsvp-content",
-            title: "RSVP",
-            description: "En el editor se muestran datos de ejemplo. En publicación se usan el UUID y los datos reales del SaaS.",
+            title: "RSVP individual",
+            description:
+                "En publicación se cargan las personas reales de la invitación. Cada persona responde Sí o No de forma independiente.",
             fields: [
                 field({ key: "rsvpTitle", label: "Título", path: "content.title", type: "text" }),
                 field({ key: "rsvpDescription", label: "Descripción", path: "content.description", type: "textarea" }),
                 field({ key: "rsvpAcceptLabel", label: "Texto confirmar", path: "content.acceptLabel", type: "text" }),
                 field({ key: "rsvpDeclineLabel", label: "Texto rechazar", path: "content.declineLabel", type: "text" }),
-                field({ key: "rsvpSubmitLabel", label: "Texto enviar", path: "content.submitLabel", type: "text" }),
-                field({ key: "rsvpShowGroup", label: "Mostrar nombre del grupo", path: "content.showGroupName", type: "checkbox" }),
-                field({ key: "rsvpShowLimit", label: "Mostrar cantidad de pases", path: "content.showGuestLimit", type: "checkbox" }),
-                field({ key: "rsvpShowComment", label: "Permitir comentario", path: "content.showComment", type: "checkbox" }),
+                field({ key: "rsvpSubmitLabel", label: "Texto guardar", path: "content.submitLabel", type: "text" }),
+                field({ key: "rsvpShowGroup", label: "Mostrar nombre de invitación", path: "content.showGroupName", type: "checkbox" }),
+                field({ key: "rsvpShowPersonType", label: "Mostrar Adulto / Niño", path: "content.showPersonType", type: "checkbox" }),
+                field({ key: "rsvpShowMenu", label: "Mostrar menú asignado", path: "content.showMenu", type: "checkbox", help: "Solo informativo. El invitado no puede cambiar este valor." }),
+                field({
+                    key: "rsvpDensity",
+                    label: "Densidad",
+                    path: "content.density",
+                    type: "select",
+                    options: [
+                        ["AUTO", "Automática"],
+                        ["COMPACT", "Compacta"],
+                        ["COMFORTABLE", "Cómoda"],
+                    ],
+                    help: "Automática usa una vista más compacta cuando hay varias personas.",
+                }),
             ],
         }),
         group({
             id: "rsvp-preview",
-            title: "Datos de ejemplo",
+            title: "Vista previa",
+            description:
+                "El editor usa un roster de personas de ejemplo. Los nombres y respuestas reales llegan desde Django al publicar.",
             fields: [
-                field({ key: "rsvpPreviewGroup", label: "Nombre del grupo", path: "content.preview.groupName", type: "text" }),
-                field({ key: "rsvpPreviewMax", label: "Pases máximos", path: "content.preview.maxGuests", type: "number", min: 1, max: 50, step: 1 }),
-                field({ key: "rsvpPreviewConfirmed", label: "Asistentes de ejemplo", path: "content.preview.confirmedGuests", type: "number", min: 0, max: 50, step: 1 }),
+                field({
+                    key: "rsvpPreviewGroup",
+                    label: "Nombre del grupo de ejemplo",
+                    path: "content.preview.groupName",
+                    type: "text",
+                }),
             ],
         }),
         group({

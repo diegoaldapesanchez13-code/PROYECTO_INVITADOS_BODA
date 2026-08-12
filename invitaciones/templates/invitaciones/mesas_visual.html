@@ -97,26 +97,18 @@
                                 {% endfor %}
                             </select>
                         </label>
-                        <label>Invitado familiar
+                        <label>Persona
                             <select name="invitado_id">
-                                <option value="">No asignar invitado familiar</option>
+                                <option value="">Selecciona una persona</option>
                                 {% for invitado in invitados_sin_mesa %}
                                     <option value="{{ invitado.id }}">{{ invitado }} · {{ invitado.grupo.nombre_grupo }}</option>
-                                {% endfor %}
-                            </select>
-                        </label>
-                        <label>Invitación personal
-                            <select name="grupo_id">
-                                <option value="">No asignar grupo personal</option>
-                                {% for grupo in grupos_personales_sin_mesa %}
-                                    <option value="{{ grupo.id }}">{{ grupo.nombre_grupo }}</option>
                                 {% endfor %}
                             </select>
                         </label>
                         <label>Número de asiento<input type="number" name="numero_asiento" min="1"></label>
                         <label class="wide">Notas<input type="text" name="notas_asignacion" placeholder="Silla alta, accesibilidad, junto a familia..."></label>
                     </div>
-                    <p class="muted">Para familias se asigna cada integrante por separado. Para invitaciones personales se asigna el grupo completo.</p>
+                    <p class="muted">Cada asiento pertenece a una persona. Personal, familiar y acompañantes usan el mismo sistema.</p>
                     <div class="actions form-actions">
                         <button class="btn" type="submit">Asignar a mesa</button>
                     </div>
@@ -193,11 +185,8 @@
                                 <input type="hidden" name="asignacion_id" value="{{ asignacion.id }}">
                                 <span>
                                     {% if asignacion.numero_asiento %}{{ asignacion.numero_asiento }}. {% endif %}
-                                    {% if asignacion.invitado %}
-                                        {{ asignacion.invitado }}
-                                    {% else %}
-                                        {{ asignacion.grupo_invitacion }}
-                                    {% endif %}
+                                    {{ asignacion.invitado }}
+                                    <small class="muted"> · {{ asignacion.invitado.grupo.nombre_grupo }}</small>
                                 </span>
                                 <button class="text-danger-button" type="submit">Quitar</button>
                             </form>

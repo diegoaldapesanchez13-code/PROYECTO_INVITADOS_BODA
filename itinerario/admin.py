@@ -1,23 +1,32 @@
 from django.contrib import admin
 
-from .models import ActividadItinerario
+from .models import ActividadItinerario, ParticipanteActividad
+
+
+class ParticipanteActividadInline(admin.TabularInline):
+    model = ParticipanteActividad
+    extra = 0
+    autocomplete_fields = ('usuario', 'proveedor')
+    fields = ('rol', 'usuario', 'proveedor', 'nombre_snapshot', 'requerido', 'estado', 'comentario')
 
 
 @admin.register(ActividadItinerario)
 class ActividadItinerarioAdmin(admin.ModelAdmin):
     save_on_top = True
-    autocomplete_fields = ('evento', 'responsable', 'proveedor')
+    autocomplete_fields = ('evento', 'servicio_evento', 'responsable', 'proveedor')
+    inlines = (ParticipanteActividadInline,)
     list_display = (
+        'fecha',
         'hora_inicio',
+        'tipo',
         'titulo',
         'evento',
         'categoria',
         'responsable',
         'proveedor',
-        'prioridad',
         'estado',
     )
-    list_filter = ('evento', 'fecha', 'categoria', 'prioridad', 'estado', 'responsable')
+    list_filter = ('tipo', 'evento', 'fecha', 'categoria', 'prioridad', 'estado', 'responsable')
     search_fields = (
         'titulo',
         'descripcion',
@@ -33,9 +42,9 @@ class ActividadItinerarioAdmin(admin.ModelAdmin):
     date_hierarchy = 'fecha'
     fieldsets = (
         ('Evento', {
-            'fields': ('evento', 'categoria', 'estado', 'prioridad')
+            'fields': ('evento', 'servicio_evento', 'tipo', 'categoria', 'estado', 'prioridad')
         }),
-        ('Actividad', {
+        ('Agenda', {
             'fields': (
                 'titulo',
                 'descripcion',
@@ -54,4 +63,10 @@ class ActividadItinerarioAdmin(admin.ModelAdmin):
         }),
     )
 
-# Register your models here.
+
+@admin.register(ParticipanteActividad)
+class ParticipanteActividadAdmin(admin.ModelAdmin):
+    list_display = ('actividad', 'rol', 'nombre_visible', 'estado', 'requerido', 'respondido_en')
+    list_filter = ('rol', 'estado', 'requerido')
+    autocomplete_fields = ('actividad', 'usuario', 'proveedor')
+    search_fields = ('actividad__titulo', 'usuario__username', 'proveedor__nombre_comercial', 'nombre_snapshot')

@@ -1,91 +1,39 @@
-            {% if es_dirtec %}
-            <div class="quick-grid">
-                <article class="quick-card">
-                    <span>Sobre y portada</span>
-                    <strong>Paleta, sello, logo, música e imagen principal</strong>
-                    <a href="/admin/invitaciones/eventoboda/{{ evento.id }}/change/" target="_blank">Editar en admin DIRTEC</a>
-                </article>
-                <article class="quick-card">
-                    <span>Álbum</span>
-                    <strong>{{ evento.fotos.count }} archivo(s): fotos, GIFs o videos</strong>
-                    <a href="/admin/invitaciones/fotoevento/add/?evento={{ evento.id }}" target="_blank">Agregar foto</a>
-                </article>
-                <article class="quick-card">
-                    <span>Padres y padrinos</span>
-                    <strong>{{ evento.personas_ceremonia.count }} nombre(s)</strong>
-                    <a href="/admin/invitaciones/personaceremonia/add/?evento={{ evento.id }}" target="_blank">Agregar nombre</a>
-                </article>
-                <article class="quick-card">
-                    <span>Mapas y ubicaciones</span>
-                    <strong>Ceremonia, fiesta y HTML de Google Maps</strong>
-                    <a href="/admin/invitaciones/eventoboda/{{ evento.id }}/change/" target="_blank">Editar mapas</a>
-                </article>
-                <article class="quick-card">
-                    <span>Regalos</span>
-                    <strong>{{ evento.regalos.count }} link(s)</strong>
-                    <a href="/admin/invitaciones/enlaceregalo/add/?evento={{ evento.id }}" target="_blank">Agregar regalo</a>
-                </article>
-                <article class="quick-card">
-                    <span>Itinerario operativo</span>
-                    <strong>{{ total_actividades_evento }} actividad(es), {{ actividades_pendientes }} activa(s)</strong>
-                    <a href="/admin/itinerario/actividaditinerario/add/?evento={{ evento.id }}" target="_blank">Agregar actividad</a>
-                </article>
-                <article class="quick-card">
-                    <span>Presupuesto</span>
-                    <strong>{{ total_gastos_evento }} gasto(s), {{ gastos_vencidos }} vencido(s)</strong>
-                    <a href="/admin/presupuesto/gastoevento/add/?evento={{ evento.id }}" target="_blank">Agregar gasto</a>
-                </article>
-                <article class="quick-card">
-                    <span>Tareas y documentos</span>
-                    <strong>{{ tareas_pendientes }} tarea(s), {{ total_documentos_evento }} documento(s)</strong>
-                    <a href="/admin/tareas/tareaevento/add/?evento={{ evento.id }}" target="_blank">Agregar tarea</a>
-                </article>
-            </div>
-            {% else %}
-            <div class="quick-grid">
-                <article class="quick-card">
-                    <span>Diseño</span>
-                    <strong>Paletas, tipografías, portada, música y fondos por sección</strong>
-                    <a href="#personalizacion">Editar diseño</a>
-                </article>
-                <article class="quick-card">
-                    <span>Contenido</span>
-                    <strong>Padres, padrinos, álbum, menú, regalos, mapas e itinerario</strong>
-                    <a href="#operacion">Editar contenido</a>
-                </article>
-                <article class="quick-card">
-                    <span>Invitados</span>
-                    <strong>Invitación personal o familiar, RSVP, buffet y control de lugares</strong>
-                    <a href="#invitados">Gestionar invitados</a>
-                </article>
-                <article class="quick-card">
-                    <span>Calendario</span>
-                    <strong>Actividades, tareas y pagos del evento en vista mensual</strong>
-                    <a href="{% url 'calendario_operativo' %}?evento={{ evento.id }}">Abrir calendario</a>
-                </article>
-                <article class="quick-card">
-                    <span>Mesas</span>
-                    <strong>{{ total_mesas_evento }} mesa(s), {{ invitados_confirmados_sin_mesa }} confirmado(s) sin mesa</strong>
-                    <a href="{% url 'mesas_visual' %}?evento={{ evento.id }}">Ver acomodo</a>
-                </article>
-                <article class="quick-card">
-                    <span>Producción</span>
-                    <strong>{{ total_servicios_evento }} servicio(s), {{ tareas_pendientes }} tarea(s) pendiente(s)</strong>
-                    <a href="#produccion">Revisar operación</a>
-                </article>
-                {% if puede_gestionar_usuarios %}
-                <article class="quick-card">
-                    <span>Usuarios</span>
-                    <strong>Equipo, clientes y permisos de acceso</strong>
-                    <a href="#usuarios">Administrar usuarios</a>
-                </article>
-                {% endif %}
-                {% if preview_grupo %}
-                <article class="quick-card">
-                    <span>Vista previa</span>
-                    <strong>Revisa la invitación como la verá el invitado</strong>
-                    <a href="{% url 'ver_invitacion' preview_grupo.codigo %}" target="_blank">Ver invitación</a>
-                </article>
-                {% endif %}
-            </div>
-            {% endif %}
+<div class="quick-grid product-content-shortcuts">
+    <article class="quick-card">
+        <span>Builder Assets</span>
+        <strong>Imágenes, videos, GIF, audio y decoraciones</strong>
+        {% if editor_invitacion_url %}
+            <a href="{{ editor_invitacion_url }}">Abrir Builder</a>
+        {% endif %}
+    </article>
+
+    <article class="quick-card">
+        <span>Padres y padrinos</span>
+        <strong>{{ evento.personas_ceremonia.count }} registro(s)</strong>
+        <a href="#contenido">Gestionar aquí</a>
+    </article>
+
+    <article class="quick-card">
+        <span>Regalos</span>
+        <strong>{{ evento.regalos.count }} opción(es)</strong>
+        <a href="#contenido">Gestionar aquí</a>
+    </article>
+
+    <article class="quick-card">
+        <span>Itinerario</span>
+        <strong>{{ total_actividades_evento }} actividad(es)</strong>
+        <a href="#contenido">Gestionar aquí</a>
+    </article>
+
+    <article class="quick-card">
+        <span>Mesas</span>
+        <strong>{{ invitados_confirmados_sin_mesa }} confirmado(s) sin mesa</strong>
+        <a href="{% url 'mesas_visual' %}?evento={{ evento.id }}">Abrir mesas</a>
+    </article>
+
+    <article class="quick-card">
+        <span>Calendario</span>
+        <strong>Tareas, actividades y pagos</strong>
+        <a href="{% url 'calendario_operativo' %}?evento={{ evento.id }}">Abrir calendario</a>
+    </article>
+</div>

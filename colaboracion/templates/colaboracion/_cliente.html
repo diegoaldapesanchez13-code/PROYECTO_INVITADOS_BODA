@@ -1,0 +1,144 @@
+<section class="client-section client-collaboration" id="colaboracion">
+    <div class="client-section-heading">
+        <div>
+            <span class="client-eyebrow">Cliente ↔ Planner</span>
+            <h2>Solicitudes y propuestas</h2>
+            <p>Pide un servicio o cambio, conversa con tu planner y aprueba solo la propuesta comercial final.</p>
+        </div>
+    </div>
+
+    <div class="client-workspace-services">
+        {% for servicio in servicios_cliente_workspace %}
+            <a class="client-workspace-service" href="{% url 'colaboracion_workspace_servicio' servicio.id %}?canal=CLIENTE_PLANNER">
+                <div>
+                    <span>{{ servicio.get_estado_operativo_display|default:servicio.get_estado_display }}</span>
+                    <strong>{{ servicio.nombre_servicio }}</strong>
+                    <small>{{ servicio.proveedor_nombre_snapshot|default:servicio.proveedor|default:"Equipo del evento" }}</small>
+                </div>
+                <b>Conversar →</b>
+            </a>
+        {% empty %}
+            <div class="client-empty-inline">
+                <strong>Aun no hay servicios habilitados para tu evento.</strong>
+                <span>Cuando el planner agregue servicios apareceran aqui para conversar en contexto.</span>
+            </div>
+        {% endfor %}
+    </div>
+
+    <details class="collab-create-request">
+        <summary>Nueva solicitud</summary>
+        <form method="post" action="{% url 'colaboracion_cliente_crear_solicitud' %}">
+            {% csrf_token %}
+            <input type="hidden" name="evento_id" value="{{ evento.id }}">
+            <label>Categoria
+                <select name="categoria">
+                    {% for value, label in categorias_solicitud %}
+                        <option value="{{ value }}">{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label>Titulo
+                <input name="titulo" required placeholder="Ej. Quiero una barra de cocteleria">
+            </label>
+            <label class="wide">Que necesitas
+                <textarea name="descripcion" rows="3" placeholder="Describe la idea o lo que quieres revisar con tu planner"></textarea>
+            </label>
+            <button type="submit">Enviar solicitud</button>
+        </form>
+    </details>
+
+    {% if presupuesto_cliente_colaboracion.partidas %}
+        <div class="client-budget-strip">
+            <div>
+                <span>Adicionales aprobados</span>
+                <strong>${{ presupuesto_cliente_colaboracion.total_adicionales|floatformat:2 }}</strong>
+            </div>
+            <div>
+                <span>Incluidos en paquete</span>
+                <strong>{{ presupuesto_cliente_colaboracion.incluidos }}</strong>
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="collab-client-list">
+        {% for expediente in expedientes_colaboracion %}
+            <details class="collab-client-card" {% if forloop.first %}open{% endif %}>
+                <summary>
+                    <div>
+                        <span>{{ expediente.get_categoria_display }}</span>
+                        <strong>{{ expediente.titulo }}</strong>
+                    </div>
+                    <em>{{ expediente.get_estado_display }}</em>
+                </summary>
+
+                <div class="collab-client-body">
+                    {% if expediente.servicio_evento %}<p><a href="{% url 'colaboracion_workspace_servicio' expediente.servicio_evento.id %}?canal=CLIENTE_PLANNER">Abrir workspace del servicio</a></p>{% endif %}
+                    {% if expediente.descripcion %}<p class="collab-description">{{ expediente.descripcion }}</p>{% endif %}
+
+                    <div class="collab-thread">
+                        {% for mensaje in expediente.mensajes_cliente_ui %}
+                            <article class="{% if mensaje.tipo == 'SISTEMA' %}system{% elif mensaje.autor_id == request.user.id %}mine{% endif %}">
+                                <div>
+                                    <strong>{% if mensaje.tipo == 'SISTEMA' %}Sistema{% else %}{{ mensaje.autor.get_full_name|default:mensaje.autor.username }}{% endif %}</strong>
+                                    <time>{{ mensaje.fecha|date:"d/m/Y H:i" }}</time>
+                                </div>
+                                {% if mensaje.mensaje %}<p>{{ mensaje.mensaje }}</p>{% endif %}
+                                {% if mensaje.archivo %}<a href="{{ mensaje.archivo.url }}" target="_blank" rel="noopener">Abrir adjunto</a>{% endif %}
+                            </article>
+                        {% empty %}
+                            <p class="collab-empty">Aun no hay mensajes.</p>
+                        {% endfor %}
+                    </div>
+
+                    <form class="collab-message-form" method="post" enctype="multipart/form-data" action="{% url 'colaboracion_enviar_mensaje' expediente.id %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="canal" value="CLIENTE_PLANNER">
+                        <textarea name="mensaje" rows="2" placeholder="Escribe a tu planner"></textarea>
+                        <input type="file" name="archivo">
+                        <button type="submit">Enviar</button>
+                    </form>
+
+                    {% if expediente.propuestas_cliente_ui %}
+                        <div class="collab-proposal-list client-view">
+                            <h3>Propuestas comerciales</h3>
+                            {% for propuesta in expediente.propuestas_cliente_ui %}
+                                <article>
+                                    <div>
+                                        <span>Version {{ propuesta.version }}</span>
+                                        <strong>
+                                            {% if propuesta.modalidad == "INCLUIDO_PAQUETE" %}
+                                                Incluido en paquete
+                                            {% else %}
+                                                ${{ propuesta.precio_cliente|floatformat:2 }}
+                                            {% endif %}
+                                        </strong>
+                                        <em>{{ propuesta.get_estado_display }}</em>
+                                    </div>
+                                    {% if propuesta.descripcion %}<p>{{ propuesta.descripcion }}</p>{% endif %}
+                                    {% if propuesta.referencia_paquete %}<small>{{ propuesta.referencia_paquete }}</small>{% endif %}
+
+                                    {% if propuesta.estado == "ENVIADA" %}
+                                        <form method="post" action="{% url 'colaboracion_cliente_responder_propuesta' propuesta.id %}">
+                                            {% csrf_token %}
+                                            <textarea name="comentario" rows="2" placeholder="Comentario opcional"></textarea>
+                                            <div>
+                                                <button name="accion" value="APROBAR" type="submit">Aprobar</button>
+                                                <button name="accion" value="CAMBIOS" type="submit" class="secondary">Solicitar cambios</button>
+                                                <button name="accion" value="RECHAZAR" type="submit" class="danger">Rechazar</button>
+                                            </div>
+                                        </form>
+                                    {% endif %}
+                                </article>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </details>
+        {% empty %}
+            <div class="client-empty-inline">
+                <strong>No hay solicitudes todavia.</strong>
+                <span>Puedes crear una cuando necesites revisar un servicio, cambio o idea con tu planner.</span>
+            </div>
+        {% endfor %}
+    </div>
+</section>

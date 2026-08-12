@@ -1,0 +1,24 @@
+K.8.7.7.1 HOTFIX — Collaboration UX regression test
+
+CORRIGE
+- El test de Herramientas del Planner esperaba el botón "Vaciar historial" con un canal vacío.
+- El comportamiento real es intencional: el botón solo aparece cuando hay mensajes.
+
+NUEVO CONTRATO DE PRUEBAS
+1. Canal con 1 mensaje -> muestra "Vaciar historial de este canal".
+2. Canal con 0 mensajes -> muestra Herramientas del Planner, pero NO el botón de vaciado.
+
+NO CAMBIA
+- services.py
+- workspace_views.py
+- urls.py
+- templates
+- CSS/JS
+- modelos
+- base de datos
+- Builder
+
+NO REQUIERE MIGRACIONES.
+
+APLICAR SOBRE K.8.7.7 Y EJECUTAR:
+  python scripts/verify_phase_k8_7_7_1.py

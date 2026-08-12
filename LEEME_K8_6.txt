@@ -1,0 +1,11 @@
+K.8.6 — Agenda / Tasks / Documents / Payments Linking
+
+Copiar el CONTENIDO de K8_6_UPDATE sobre la raíz del MISMO proyecto DIRTEC_EVENT_STUDIO.
+No contiene db.sqlite3, venv, media, .git ni archivos del Builder.
+
+Después ejecutar:
+  py manage.py showmigrations tareas itinerario documentos presupuesto
+  py manage.py migrate
+  python scripts/verify_phase_k8_6.py
+
+Luego realizar MANUAL_TESTS_K8_6.md.

@@ -29,7 +29,11 @@ function createRsvpProvider(bootstrap) {
     const endpoint = bootstrap.endpoints?.rsvp;
     return {
         async load() {
-            const response = await fetch(endpoint, { credentials: "same-origin", headers: { Accept: "application/json" } });
+            const response = await fetch(endpoint, {
+                credentials: "same-origin",
+                cache: "no-store",
+                headers: { Accept: "application/json" },
+            });
             const payload = await response.json();
             if (!response.ok || !payload.ok) throw new Error(payload.error || "No fue posible cargar RSVP.");
             return payload.data;
@@ -65,9 +69,12 @@ const renderer = new UniversalRenderer({
     device: bootstrap.device || "mobile",
     assetResolver,
     invitationContext: {
-        invitationId: bootstrap.invitation?.invitationId,
+        ...(bootstrap.invitation || {}),
+        invitationId:
+            bootstrap.invitation?.invitationId,
         pathname: location.pathname,
     },
+    eventContext: bootstrap.event || {},
     rsvpProvider: createRsvpProvider(bootstrap),
     onInteractionError(error) { console.error("DIRTEC interaction", error); },
     onRsvpError(error) { console.error("DIRTEC RSVP", error); },

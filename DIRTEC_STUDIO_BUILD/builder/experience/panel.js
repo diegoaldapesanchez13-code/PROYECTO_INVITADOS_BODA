@@ -150,7 +150,9 @@ export class ExperiencePanel {
                     label: "Texto de apertura",
                     name: "intro.openLabel",
                     value: experience.intro.openLabel,
-                    onInput: () => this.#commitFromForm(),
+                    onInput: () => this.#commitFromForm({
+                        suppressRender: true,
+                    }),
                 }),
             );
         }
@@ -161,13 +163,17 @@ export class ExperiencePanel {
                     label: "Monograma",
                     name: "intro.envelope.monogram",
                     value: experience.intro.envelope.monogram,
-                    onInput: () => this.#commitFromForm(),
+                    onInput: () => this.#commitFromForm({
+                        suppressRender: true,
+                    }),
                 }),
                 textAreaField({
                     label: "Mensaje",
                     name: "intro.envelope.message",
                     value: experience.intro.envelope.message,
-                    onInput: () => this.#commitFromForm(),
+                    onInput: () => this.#commitFromForm({
+                        suppressRender: true,
+                    }),
                 }),
                 selectField({
                     label: "Fondo",
@@ -619,7 +625,9 @@ export class ExperiencePanel {
                 label: "Volumen",
                 name: "audio.volume",
                 value: experience.audio.volume,
-                onInput: () => this.#commitFromForm(),
+                onInput: () => this.#commitFromForm({
+                        suppressRender: true,
+                    }),
             }),
             checkboxField({
                 label: "Loop",

@@ -1,6 +1,8 @@
 from django.conf import settings
 from django.db import models
+from django.core.exceptions import ValidationError
 from django.utils import timezone
+from datetime import datetime
 from invitaciones.models import validar_documento
 
 
@@ -36,6 +38,14 @@ class TareaEvento(models.Model):
         on_delete=models.CASCADE,
         related_name='tareas_evento',
     )
+    servicio_evento = models.ForeignKey(
+        'proveedores.ServicioEvento',
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='tareas_operativas',
+        help_text='Servicio del evento al que pertenece esta tarea, cuando aplique.',
+    )
     titulo = models.CharField(max_length=160)
     descripcion = models.TextField(blank=True, null=True)
     responsable = models.ForeignKey(
@@ -46,7 +56,9 @@ class TareaEvento(models.Model):
         related_name='tareas_asignadas',
     )
     fecha_inicio = models.DateField(blank=True, null=True)
+    hora_inicio = models.TimeField(blank=True, null=True)
     fecha_limite = models.DateField(blank=True, null=True)
+    hora_fin = models.TimeField(blank=True, null=True)
     prioridad = models.CharField(max_length=20, choices=PRIORIDADES, default='MEDIA')
     estado = models.CharField(max_length=20, choices=ESTADOS, default='PENDIENTE')
     porcentaje_avance = models.PositiveIntegerField(default=0)
@@ -65,12 +77,61 @@ class TareaEvento(models.Model):
         return self.titulo
 
     @property
-    def esta_vencida(self):
-        return (
-            self.estado not in {'COMPLETADA', 'CANCELADA'}
-            and self.fecha_limite
-            and self.fecha_limite < timezone.localdate()
+    def fecha_hora_inicio(self):
+        fecha = self.fecha_inicio or self.fecha_limite
+        if not fecha:
+            return None
+        hora = self.hora_inicio
+        if not hora:
+            return None
+        valor = datetime.combine(fecha, hora)
+        return timezone.make_aware(
+            valor,
+            timezone.get_current_timezone(),
         )
+
+    @property
+    def fecha_hora_fin(self):
+        fecha = self.fecha_limite or self.fecha_inicio
+        if not fecha or not self.hora_fin:
+            return None
+        valor = datetime.combine(fecha, self.hora_fin)
+        return timezone.make_aware(
+            valor,
+            timezone.get_current_timezone(),
+        )
+
+    @property
+    def es_cita_agenda(self):
+        # Retirado en K.8.7.1.2: las citas viven exclusivamente en ActividadItinerario.
+        return False
+
+    @property
+    def esta_vencida(self):
+        if self.estado in {
+            'COMPLETADA',
+            'CANCELADA',
+        }:
+            return False
+
+        if not self.fecha_limite:
+            return False
+
+        return self.fecha_limite < timezone.localdate()
+
+    def clean(self):
+        super().clean()
+        if self.servicio_evento_id and self.evento_id:
+            servicio_evento_id = (
+                getattr(self.servicio_evento, 'evento_id', None)
+                if 'servicio_evento' in self._state.fields_cache
+                else None
+            )
+            if servicio_evento_id is None:
+                from proveedores.models import ServicioEvento
+                servicio_evento_id = ServicioEvento.objects.filter(pk=self.servicio_evento_id).values_list('evento_id', flat=True).first()
+            if servicio_evento_id != self.evento_id:
+                raise ValidationError({'servicio_evento': 'El servicio debe pertenecer al mismo evento que la tarea.'})
 
     def save(self, *args, **kwargs):
         if self.estado == 'COMPLETADA':

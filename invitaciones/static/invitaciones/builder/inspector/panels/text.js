@@ -7,6 +7,12 @@ import {
     FONT_OPTIONS,
 } from "../../typography/fonts.js";
 
+import {
+    DATA_BINDING_SOURCES,
+    EVENT_BINDING_FIELDS,
+    defaultFieldForSource,
+} from "../../data_bindings/index.js";
+
 export function textPanel() {
     return [
         group({
@@ -31,6 +37,61 @@ export function textPanel() {
                         ["h3", "Título H3"],
                         ["span", "Span"],
                     ],
+                }),
+            ],
+        }),
+
+        group({
+            id: "data-binding",
+            title: "Datos dinámicos",
+            description:
+                "Vincula este texto a datos reales del evento. El texto manual queda como respaldo.",
+            visibleWhen: ({ node }) =>
+                node?.content?.binding?.source
+                !== "COUNTDOWN",
+            fields: [
+                field({
+                    key: "bindingSource",
+                    label: "Origen",
+                    type: "select",
+                    path: "content.binding.source",
+                    options: [
+                        [DATA_BINDING_SOURCES.MANUAL, "Manual"],
+                        [DATA_BINDING_SOURCES.EVENT, "Evento"],
+                    ],
+                    onChange: ({
+                        current,
+                        value,
+                        inspector,
+                    }) => {
+                        const source = String(value || "MANUAL");
+                        const fieldValue =
+                            defaultFieldForSource(source);
+
+                        queueMicrotask(
+                            () => inspector.refresh()
+                        );
+
+                        return {
+                            content: {
+                                ...(current.content || {}),
+                                binding: {
+                                    source,
+                                    field: fieldValue,
+                                },
+                            },
+                        };
+                    },
+                }),
+                field({
+                    key: "eventBindingField",
+                    label: "Dato del evento",
+                    type: "select",
+                    path: "content.binding.field",
+                    options: EVENT_BINDING_FIELDS,
+                    visibleWhen: ({ node }) =>
+                        node?.content?.binding?.source
+                        === DATA_BINDING_SOURCES.EVENT,
                 }),
             ],
         }),

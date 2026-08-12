@@ -8,7 +8,14 @@ export const PREVIEW_DEVICES = Object.freeze({
 });
 
 export class MobilePreview {
-    constructor({ root, state, assetResolver, rsvpProvider = null, invitationContext = {} }) {
+    constructor({
+        root,
+        state,
+        assetResolver,
+        rsvpProvider = null,
+        invitationContext = {},
+        eventContext = {},
+    }) {
         if (!(root instanceof Element)) throw new TypeError("root inválido para MobilePreview.");
         this.root = root;
         this.state = state;
@@ -21,6 +28,7 @@ export class MobilePreview {
             assetResolver,
             rsvpProvider,
             invitationContext,
+            eventContext,
             onInteractionError: (error) => console.error("Preview interaction error", error),
         });
         this.bind();

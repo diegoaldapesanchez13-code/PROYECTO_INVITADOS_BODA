@@ -6,8 +6,8 @@ from .models import AsignacionMesa, Mesa
 class AsignacionMesaInline(admin.TabularInline):
     model = AsignacionMesa
     extra = 4
-    autocomplete_fields = ('invitado', 'grupo_invitacion')
-    fields = ('invitado', 'grupo_invitacion', 'numero_asiento', 'notas')
+    autocomplete_fields = ('invitado',)
+    fields = ('invitado', 'numero_asiento', 'notas')
 
 
 @admin.register(Mesa)
@@ -50,7 +50,7 @@ class MesaAdmin(admin.ModelAdmin):
             )
         }),
         ('Plano visual', {
-            'description': 'Estos valores preparan la futura vista visual de acomodo.',
+            'description': 'Posición y tamaño de la mesa dentro del plano visual.',
             'fields': (
                 'posicion_x',
                 'posicion_y',
@@ -71,20 +71,17 @@ class MesaAdmin(admin.ModelAdmin):
 @admin.register(AsignacionMesa)
 class AsignacionMesaAdmin(admin.ModelAdmin):
     save_on_top = True
-    autocomplete_fields = ('mesa', 'invitado', 'grupo_invitacion')
-    list_display = ('mesa', 'persona_asignada', 'numero_asiento')
+    autocomplete_fields = ('mesa', 'invitado')
+    list_display = ('mesa', 'invitado', 'grupo', 'numero_asiento')
     list_filter = ('mesa__evento', 'mesa')
     search_fields = (
         'mesa__nombre',
         'invitado__nombre',
         'invitado__apellidos',
-        'grupo_invitacion__nombre_grupo',
+        'invitado__grupo__nombre_grupo',
     )
-    fields = ('mesa', 'invitado', 'grupo_invitacion', 'numero_asiento', 'notas')
+    fields = ('mesa', 'invitado', 'numero_asiento', 'notas')
 
-    def persona_asignada(self, obj):
-        return obj.invitado or obj.grupo_invitacion
-
-    persona_asignada.short_description = 'Persona o grupo'
-
-# Register your models here.
+    @admin.display(description='Invitación')
+    def grupo(self, obj):
+        return obj.invitado.grupo

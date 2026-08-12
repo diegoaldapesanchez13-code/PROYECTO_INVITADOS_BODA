@@ -4,118 +4,447 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portal del cliente</title>
-    <link rel="stylesheet" href="{% static 'invitaciones/css/dashboard.css' %}">
+    <title>{% if evento %}{{ evento }}{% else %}Mi evento{% endif %} | Portal Cliente</title>
+    <link rel="stylesheet" href="{% static 'invitaciones/css/portal_cliente_v3.css' %}">
 </head>
 <body>
-    <div class="wrapper">
-        <div class="topbar">
-            <h1>Portal del cliente</h1>
-            <div class="actions">
-                <a href="/">Inicio</a>
-                <form method="post" action="{% url 'logout' %}">
-                    {% csrf_token %}
-                    <button class="btn secondary" type="submit">Salir</button>
-                </form>
+<div class="client-portal-shell">
+    <header class="client-header">
+        <div class="client-brand">
+            <span>{{ evento.empresa.nombre_comercial|default:"DIRTEC Event Studio" }}</span>
+            <strong>Mi evento</strong>
+        </div>
+        <div class="client-user">
+            <div><span>Hola</span><strong>{{ request.user.get_full_name|default:request.user.username }}</strong></div>
+            <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button type="submit">Cerrar sesión</button></form>
+        </div>
+    </header>
+
+    {% if messages %}
+    <div class="client-message-stack">{% for message in messages %}<div class="client-notice {{ message.tags }}">{{ message }}</div>{% endfor %}</div>
+    {% endif %}
+
+    {% if not evento %}
+    <main class="client-empty-page">
+        <div class="client-empty-card">
+            <span class="client-eyebrow">Tu cuenta está lista</span>
+            <h1>Aún no tienes un evento asignado</h1>
+            <p>Cuando la empresa te asigne un evento, aquí encontrarás tus próximos pasos y la información compartida contigo.</p>
+        </div>
+    </main>
+    {% else %}
+
+    <section class="client-event-hero">
+        <div class="client-event-copy">
+            <span class="client-eyebrow">{{ contexto_evento.tipo }}</span>
+            <h1>{{ evento }}</h1>
+            <div class="client-event-meta">
+                {% if contexto_evento.fecha_principal %}<span>{{ contexto_evento.fecha_principal|date:"d \d\e F \d\e Y · H:i" }}</span>{% endif %}
+                {% if contexto_evento.sede %}<span>{{ contexto_evento.sede }}</span>{% endif %}
+                {% if contexto_evento.planner %}<span>Planner: {{ contexto_evento.planner }}</span>{% endif %}
             </div>
         </div>
+        <div class="client-event-switch">
+            {% if eventos|length > 1 %}
+            <form method="get">
+                <label for="client-event-select">Cambiar evento</label>
+                <select id="client-event-select" name="evento" onchange="this.form.submit()">
+                    {% for item in eventos %}<option value="{{ item.id }}" {% if item.id == evento.id %}selected{% endif %}>{{ item }}</option>{% endfor %}
+                </select>
+            </form>
+            {% else %}<span>Estado</span><strong>{{ contexto_evento.estado }}</strong>{% endif %}
+        </div>
+    </section>
 
-        <section class="event-panel">
-            <div>
-                {% if evento %}
-                    <h2 class="event-title">{{ evento }}</h2>
-                    <p class="muted">{{ evento.fecha_fiesta|date:"d/m/Y h:i A" }} · {{ evento.lugar_fiesta }}</p>
-                    <p class="muted">{{ evento.descripcion|default:"Resumen privado del avance del evento." }}</p>
-                {% else %}
-                    <h2 class="event-title">Sin eventos asignados</h2>
-                    <p class="muted">Tu usuario aun no tiene eventos asociados.</p>
+    <nav class="client-nav" aria-label="Navegación del evento">
+        <a href="#inicio">Inicio{% if cliente_acciones_total_v3 %}<b>{{ cliente_acciones_total_v3 }}</b>{% endif %}</a>
+        <a href="#servicios">Servicios</a>
+        <a href="#agenda">Agenda{% if cliente_citas_pendientes_v3 %}<b>{{ cliente_citas_pendientes_v3 }}</b>{% endif %}</a>
+        <a href="#tareas">Tareas{% if cliente_tareas_pendientes_v3 %}<b>{{ cliente_tareas_pendientes_v3 }}</b>{% endif %}</a>
+        <a href="#documentos">Documentos</a>
+        <a href="#pagos">Pagos{% if cliente_pagos_total_v3 %}<b>{{ cliente_pagos_total_v3 }}</b>{% endif %}</a>
+        <a href="#invitados">Invitados</a>
+        <a href="#invitacion">Invitación</a>
+    </nav>
+
+    <main class="client-content">
+        <section class="client-section" id="inicio">
+            <div class="client-section-heading">
+                <div><span class="client-eyebrow">Tu atención</span><h2>Lo que necesitas hacer</h2><p>Primero aparecen decisiones, propuestas, citas y tareas que esperan algo de ti.</p></div>
+                {% if cliente_acciones_total_v3 %}<span class="client-heading-badge">{{ cliente_acciones_total_v3 }}</span>{% endif %}
+            </div>
+
+            {% if cliente_acciones_v3 %}
+            <div class="client-action-grid">
+                {% for accion in cliente_acciones_v3 %}
+                <article class="client-action-card" data-kind="{{ accion.tipo }}">
+                    <div><span>{{ accion.tipo }}</span><strong>{{ accion.titulo }}</strong></div>
+                    <p>{{ accion.detalle }}</p>
+                    <small>{{ accion.servicio }}</small>
+                    <a href="{{ accion.url }}">{{ accion.cta }} →</a>
+                </article>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="client-all-good"><strong>Todo al día</strong><span>No tienes decisiones, confirmaciones o tareas pendientes en este momento.</span></div>
+            {% endif %}
+
+            <div class="client-summary-grid">
+                <article class="client-summary-card"><span>Aprobaciones</span><strong>{{ cliente_aprobaciones_pendientes_v3 }}</strong><small>Esperando tu decisión</small></article>
+                <article class="client-summary-card"><span>Propuestas</span><strong>{{ cliente_propuestas_pendientes_v3 }}</strong><small>Esperando tu respuesta</small></article>
+                <article class="client-summary-card"><span>Citas</span><strong>{{ cliente_citas_pendientes_v3 }}</strong><small>Por confirmar</small></article>
+                <article class="client-summary-card"><span>Tareas</span><strong>{{ cliente_tareas_pendientes_v3 }}</strong><small>Asignadas a ti</small></article>
+            </div>
+            <div class="client-privacy-note"><strong>Tu información está separada de la operación interna</strong><span>Aquí no se muestran costos de proveedores, márgenes, cotizaciones del proveedor, notas privadas ni tareas del equipo.</span></div>
+        </section>
+
+        <section class="client-section" id="servicios">
+            <div class="client-section-heading"><div><span class="client-eyebrow">Tus servicios</span><h2>Servicios del evento</h2><p>Cada servicio tiene un espacio de conversación Cliente ↔ Planner. Solo verás información destinada a ti.</p></div></div>
+            <div class="client-service-grid">
+                {% for item in cliente_servicios_v3 %}
+                <article class="client-service-card {% if item.requiere_accion %}attention{% endif %}">
+                    <div class="client-service-head"><div><span>{{ item.estado }}</span><strong>{{ item.nombre }}</strong></div>{% if item.requiere_accion %}<b>Requiere tu atención</b>{% endif %}</div>
+                    <p>{{ item.detalle }}</p>
+                    <small>{{ item.proveedor }}</small>
+                    <a href="{{ item.url }}">Abrir servicio y conversación →</a>
+                </article>
+                {% empty %}
+                <div class="client-empty-inline"><strong>Aún no hay servicios habilitados.</strong><span>Cuando el planner agregue servicios aparecerán aquí.</span></div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="client-section" id="agenda">
+            <div class="client-section-heading"><div><span class="client-eyebrow">Próximamente</span><h2>Agenda</h2><p>Las citas requieren tu confirmación. Las actividades e hitos son fechas informativas del evento.</p></div></div>
+            <div class="client-agenda-list">
+                {% for item in cliente_agenda_v3 %}
+                <article class="client-agenda-card">
+                    <div class="client-date"><strong>{{ item.objeto.fecha|date:"d" }}</strong><span>{{ item.objeto.fecha|date:"M" }}</span></div>
+                    <div class="client-agenda-copy">
+                        <div><span>{{ item.objeto.get_tipo_display }}</span><strong>{{ item.objeto.titulo }}</strong></div>
+                        <p>{{ item.objeto.hora_inicio|time:"H:i" }}{% if item.objeto.hora_fin %}–{{ item.objeto.hora_fin|time:"H:i" }}{% endif %}{% if item.objeto.ubicacion %} · {{ item.objeto.ubicacion }}{% endif %}</p>
+                        <small>{{ item.servicio }}</small>
+                    </div>
+                    {% if item.participacion %}
+                    <div class="client-confirm-box">
+                        <strong>{{ item.participacion.get_estado_display }}</strong>
+                        {% if item.participacion.estado == "PENDIENTE" or item.participacion.estado == "REPROGRAMAR" %}
+                        {% if item.objeto.servicio_evento_id %}
+                        <form method="post" action="{% url 'colaboracion_k8712_cita_responder' item.objeto.servicio_evento_id item.participacion.id %}">
+                            {% csrf_token %}
+                            <button name="estado" value="CONFIRMADO">Confirmar</button>
+                            <button name="estado" value="REPROGRAMAR" class="secondary">Reprogramar</button>
+                            <button name="estado" value="NO_ASISTE" class="danger">No asistiré</button>
+                        </form>
+                        {% else %}
+                        <form method="post" action="{% url 'colaboracion_k8712_cita_evento_responder' item.participacion.id %}">
+                            {% csrf_token %}
+                            <button name="estado" value="CONFIRMADO">Confirmar</button>
+                            <button name="estado" value="REPROGRAMAR" class="secondary">Reprogramar</button>
+                            <button name="estado" value="NO_ASISTE" class="danger">No asistiré</button>
+                        </form>
+                        {% endif %}
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </article>
+                {% empty %}<div class="client-empty-inline"><strong>No hay próximas actividades compartidas.</strong><span>Las citas y fechas importantes aparecerán aquí.</span></div>{% endfor %}
+            </div>
+        </section>
+
+        <section class="client-section" id="tareas">
+            <div class="client-section-heading"><div><span class="client-eyebrow">Pendientes personales</span><h2>Tareas</h2><p>Una tarea es algo que debes hacer antes de una fecha; no es una cita.</p></div><span class="client-heading-badge">{{ cliente_tareas_pendientes_v3 }}</span></div>
+            <div class="client-task-list">
+                {% for tarea in cliente_tareas_v3 %}
+                <article><div><span>{{ tarea.get_prioridad_display }}</span><strong>{{ tarea.titulo }}</strong></div>{% if tarea.descripcion %}<p>{{ tarea.descripcion }}</p>{% endif %}<small>{% if tarea.fecha_limite %}Vence {{ tarea.fecha_limite|date:"d/m/Y" }}{% else %}Sin fecha límite{% endif %}{% if tarea.servicio_evento %} · {{ tarea.servicio_evento.nombre_servicio }}{% endif %}</small></article>
+                {% empty %}<div class="client-empty-inline"><strong>No tienes tareas pendientes.</strong><span>Las tareas asignadas directamente a ti aparecerán aquí.</span></div>{% endfor %}
+            </div>
+        </section>
+
+        <section class="client-section" id="documentos">
+            <div class="client-section-heading"><div><span class="client-eyebrow">Compartidos contigo</span><h2>Documentos</h2><p>Solo aparecen archivos que el equipo marcó como visibles para cliente.</p></div><span class="client-heading-badge">{{ cliente_documentos_total_v3 }}</span></div>
+            <div class="client-document-grid">
+                {% for documento in cliente_documentos_v3 %}
+                <a class="client-document-card" href="{% url 'secure_documento_evento' documento.id %}" target="_blank" rel="noopener">
+                    <div class="client-document-icon">DOC</div><div><span>{{ documento.get_tipo_documento_display }}</span><strong>{{ documento.titulo }}</strong>{% if documento.servicio_evento %}<small>{{ documento.servicio_evento.nombre_servicio }}</small>{% endif %}</div><b>Abrir</b>
+                </a>
+                {% empty %}<div class="client-empty-inline"><strong>No hay documentos compartidos.</strong><span>Los archivos visibles para ti aparecerán aquí.</span></div>{% endfor %}
+            </div>
+        </section>
+
+        <section class="client-section" id="pagos">
+            <div class="client-section-heading">
+                <div>
+                    <span class="client-eyebrow">Pagos del evento</span>
+                    <h2>Pagos a la empresa</h2>
+                    <p>Registra un pago realizado a la empresa o planner del evento y adjunta la foto o PDF del comprobante.</p>
+                </div>
+                <span class="client-heading-badge">{{ cliente_pagos_total_v3 }}</span>
+            </div>
+
+            <details class="client-payment-create">
+                <summary>+ Reportar un pago</summary>
+                <form method="post" enctype="multipart/form-data" action="{% url 'pago_cliente_evento_registrar' evento.id %}">
+                    {% csrf_token %}
+                    <label>Concepto
+                        <input type="text" name="concepto" maxlength="160" placeholder="Ej. Anticipo, mensualidad, liquidación">
+                    </label>
+                    <label>Servicio relacionado (opcional)
+                        <select name="servicio_evento_id">
+                            <option value="">Pago general del evento</option>
+                            {% for item in cliente_servicios_pago_v3 %}
+                                <option value="{{ item.objeto.id }}">{{ item.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <label>Monto
+                        <input type="number" name="monto" min="0.01" step="0.01" required placeholder="0.00">
+                    </label>
+                    <label>Fecha del pago
+                        <input type="date" name="fecha_pago" required>
+                    </label>
+                    <label>Método
+                        <select name="metodo_pago">
+                            {% for valor, texto in metodos_pago_cliente_v3 %}<option value="{{ valor }}">{{ texto }}</option>{% endfor %}
+                        </select>
+                    </label>
+                    <label>Referencia
+                        <input type="text" name="referencia" maxlength="120" placeholder="Folio, referencia o concepto">
+                    </label>
+                    <label class="wide">Comprobante
+                        <input type="file" name="comprobante" accept="image/jpeg,image/png,image/webp,application/pdf,.pdf" required>
+                        <small>Foto JPG/PNG/WEBP o PDF.</small>
+                    </label>
+                    <label class="wide">Comentario
+                        <textarea name="comentario_cliente" rows="2" placeholder="Comentario opcional para la empresa/planner"></textarea>
+                    </label>
+                    <button type="submit">Enviar comprobante</button>
+                </form>
+            </details>
+
+            <div class="client-payment-list">
+                {% for pago in cliente_pagos_v3 %}
+                <article class="client-payment-card" data-status="{{ pago.estado }}">
+                    <a class="client-payment-proof" href="{% url 'secure_pago_cliente_comprobante' pago.id %}" target="_blank" rel="noopener">
+                        {% if pago.comprobante_es_imagen %}<img src="{% url 'secure_pago_cliente_comprobante' pago.id %}" alt="Comprobante de pago" loading="lazy">{% else %}<span>PDF</span>{% endif %}
+                    </a>
+                    <div class="client-payment-copy">
+                        <div><span>{{ pago.concepto|default:"Pago del evento" }}</span><strong>${{ pago.monto|floatformat:2 }}</strong></div>
+                        <p>{{ pago.get_metodo_pago_display }} · {{ pago.fecha_pago|date:"d/m/Y" }}{% if pago.referencia %} · Ref. {{ pago.referencia }}{% endif %}</p>
+                        {% if pago.servicio_evento %}<small>{{ pago.servicio_evento.nombre_servicio }}</small>{% endif %}
+                        {% if pago.comentario_cliente %}<p>{{ pago.comentario_cliente }}</p>{% endif %}
+                        {% if pago.comentario_equipo %}<div class="client-team-reply"><b>Respuesta del equipo</b><span>{{ pago.comentario_equipo }}</span></div>{% endif %}
+                    </div>
+                    <em>{{ pago.get_estado_display }}</em>
+                </article>
+                {% empty %}
+                <div class="client-empty-inline"><strong>Aún no has reportado pagos.</strong><span>Cuando subas un comprobante podrás consultar aquí si la empresa/planner ya lo revisó.</span></div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="client-section" id="invitados">
+            <div class="client-section-heading">
+                <div>
+                    <span class="client-eyebrow">Invitados y RSVP</span>
+                    <h2>Gestiona tus invitaciones</h2>
+                    <p>Crea grupos, agrega personas, revisa respuestas y comparte cada enlace individual.</p>
+                </div>
+                <span class="client-heading-badge">{{ cliente_grupos_total_v3 }}</span>
+            </div>
+
+            <div class="client-guest-summary">
+                <article><span>Personas</span><strong>{{ cliente_invitados_metricas_v3.total_personas }}</strong></article>
+                <article><span>Confirmados</span><strong>{{ cliente_invitados_metricas_v3.confirmados }}</strong></article>
+                <article><span>Pendientes</span><strong>{{ cliente_invitados_metricas_v3.pendientes }}</strong></article>
+                <article><span>No asisten</span><strong>{{ cliente_invitados_metricas_v3.no_asisten }}</strong></article>
+                {% if cliente_capacidad_limitada_v3 %}
+                <article><span>Disponibles</span><strong>{{ cliente_lugares_disponibles_v3 }}</strong><small>de {{ cliente_capacidad_v3 }} contratados</small></article>
                 {% endif %}
             </div>
 
-            <form method="get">
-                <label for="evento">Evento</label>
-                <select id="evento" name="evento" onchange="this.form.submit()">
-                    {% for item in eventos %}
-                        <option value="{{ item.id }}" {% if evento and item.id == evento.id %}selected{% endif %}>{{ item }}</option>
-                    {% empty %}
-                        <option>Sin eventos</option>
-                    {% endfor %}
-                </select>
-            </form>
-        </section>
+            <details class="client-guest-create">
+                <summary>+ Crear nueva invitación</summary>
+                <form method="post" action="{% url 'cliente_grupo_crear' evento.id %}">
+                    {% csrf_token %}
+                    <label>Nombre de invitación / familia
+                        <input type="text" name="nombre_grupo" maxlength="100" required placeholder="Ej. Familia Flores">
+                    </label>
+                    <label>Tipo
+                        <select name="tipo_grupo" data-client-group-type>
+                            {% for value,label in cliente_tipos_invitacion_v3 %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+                        </select>
+                    </label>
+                    <label>Teléfono
+                        <input type="text" name="telefono_contacto" maxlength="20" placeholder="WhatsApp">
+                    </label>
+                    <label>Correo
+                        <input type="email" name="correo_contacto">
+                    </label>
+                    <label class="wide client-family-members">Integrantes de la familia
+                        <textarea name="integrantes" rows="5" placeholder="Una persona por línea&#10;María Flores&#10;Juan Flores"></textarea>
+                        <small>Para invitación familiar agrega al menos una persona. En invitación personal el nombre principal se crea automáticamente.</small>
+                    </label>
+                    <label class="client-check wide">
+                        <input type="checkbox" name="permitir_acompanantes_extra" data-client-extra-toggle>
+                        Permitir acompañantes adicionales
+                    </label>
+                    <label data-client-extra-field>Cantidad de acompañantes autorizados
+                        <input type="number" name="cantidad_extra_permitida" min="0" value="0">
+                    </label>
+                    <button type="submit">Crear invitación</button>
+                </form>
+            </details>
 
-        {% if evento %}
-        <section class="stats">
-            <div class="stat"><strong>{{ total_lugares }}</strong><span>Lugares</span></div>
-            <div class="stat"><strong>{{ total_confirmados }}</strong><span>Confirmados</span></div>
-            <div class="stat"><strong>{{ total_pendientes }}</strong><span>Pendientes</span></div>
-            <div class="stat"><strong>${{ total_gasto|floatformat:0 }}</strong><span>Total evento</span></div>
-            <div class="stat"><strong>${{ total_pagado|floatformat:0 }}</strong><span>Pagado</span></div>
-            <div class="stat"><strong>${{ saldo|floatformat:0 }}</strong><span>Saldo</span></div>
-            <div class="stat"><strong>{{ aprobaciones_pendientes }}</strong><span>Aprobaciones pendientes</span></div>
-        </section>
-
-        <section class="portal-grid">
-            <article class="portal-panel">
-                <h2>Aprobaciones</h2>
-                <div class="portal-list">
-                    {% for aprobacion in aprobaciones %}
-                        <div class="approval-item">
-                            <strong>{{ aprobacion.titulo }}</strong>
-                            <span>{{ aprobacion.get_tipo_display }} · {{ aprobacion.get_estado_display }}</span>
-                            {% if aprobacion.descripcion %}
-                                <small>{{ aprobacion.descripcion }}</small>
-                            {% endif %}
-                            {% if aprobacion.comentario %}
-                                <small>Comentario: {{ aprobacion.comentario }}</small>
-                            {% endif %}
-                            {% if aprobacion.estado == 'PENDIENTE' %}
-                                <form method="post" action="{% url 'responder_aprobacion_cliente' aprobacion.id %}" class="approval-form">
-                                    {% csrf_token %}
-                                    <textarea name="comentario" rows="2" placeholder="Comentario opcional"></textarea>
-                                    <div class="actions">
-                                        <button class="btn" type="submit" name="accion" value="aprobar">Aprobar</button>
-                                        <button class="btn secondary" type="submit" name="accion" value="cambios">Pedir cambios</button>
-                                        <button class="btn danger" type="submit" name="accion" value="rechazar">Rechazar</button>
-                                    </div>
-                                </form>
-                            {% endif %}
+            <div class="client-guest-list">
+                {% for item in cliente_grupos_v3 %}
+                <article class="client-guest-card">
+                    <div class="client-guest-head">
+                        <div>
+                            <span>{{ item.objeto.get_tipo_display }}</span>
+                            <strong>{{ item.objeto.nombre_grupo }}</strong>
+                            <small>{{ item.total }} lugar(es) · {{ item.confirmados }} confirmado(s) · {{ item.pendientes }} pendiente(s)</small>
                         </div>
-                    {% empty %}
-                        <p class="muted">No hay aprobaciones registradas.</p>
-                    {% endfor %}
-                </div>
-            </article>
+                        <em>{{ item.objeto.get_estado_envio_display }}</em>
+                    </div>
 
-            <article class="portal-panel">
-                <h2>Tareas activas</h2>
-                <div class="portal-list">
-                    {% for tarea in tareas %}
-                        <span>
-                            <strong>{{ tarea.titulo }}</strong>
-                            <small>{{ tarea.get_prioridad_display }} · {{ tarea.get_estado_display }}{% if tarea.fecha_limite %} · {{ tarea.fecha_limite|date:"d/m/Y" }}{% endif %}</small>
-                        </span>
-                    {% empty %}
-                        <p class="muted">No hay tareas activas.</p>
-                    {% endfor %}
-                </div>
-            </article>
+                    <div class="client-guest-actions">
+                        <a href="{{ item.link }}" target="_blank" rel="noopener">Ver invitación</a>
+                        <button type="button" data-copy-link="{{ item.link }}">Copiar enlace</button>
+                        <a href="{{ item.whatsapp }}" target="_blank" rel="noopener">WhatsApp</a>
+                    </div>
 
-            <article class="portal-panel">
-                <h2>Documentos visibles</h2>
-                <div class="portal-list">
-                    {% for documento in documentos %}
-                        <a href="{{ documento.archivo.url }}" target="_blank" rel="noopener">
-                            <strong>{{ documento.titulo }}</strong>
-                            <span>{{ documento.get_tipo_documento_display }} · {{ documento.fecha_carga|date:"d/m/Y" }}</span>
-                        </a>
-                    {% empty %}
-                        <p class="muted">No hay documentos visibles por ahora.</p>
-                    {% endfor %}
-                </div>
-            </article>
+                    <div class="client-roster">
+                        {% for invitado in item.nominales %}
+                        <div class="client-person-row">
+                            <div>
+                                <strong>{{ invitado }}</strong>
+                                <span>{{ invitado.get_tipo_persona_display }}</span>
+                            </div>
+                            <div class="client-rsvp-state">
+                                {% if invitado.asistira is True %}<b class="yes">Confirmó</b>
+                                {% elif invitado.asistira is False %}<b class="no">No asiste</b>
+                                {% else %}<b>Pendiente</b>{% endif %}
+                            </div>
+                            <details>
+                                <summary>Editar</summary>
+                                <form method="post" action="{% url 'cliente_invitado_editar' invitado.id %}">
+                                    {% csrf_token %}
+                                    <input type="text" name="nombre" value="{{ invitado.nombre }}" required>
+                                    <input type="text" name="apellidos" value="{{ invitado.apellidos|default:'' }}" placeholder="Apellidos">
+                                    <select name="tipo_persona">
+                                        <option value="ADULTO" {% if invitado.tipo_persona == "ADULTO" %}selected{% endif %}>Adulto</option>
+                                        <option value="NINO" {% if invitado.tipo_persona == "NINO" %}selected{% endif %}>Niño</option>
+                                    </select>
+                                    <input type="text" name="telefono" value="{{ invitado.telefono|default:'' }}" placeholder="Teléfono">
+                                    <input type="email" name="correo" value="{{ invitado.correo|default:'' }}" placeholder="Correo">
+                                    <button type="submit">Guardar</button>
+                                </form>
+                                {% if item.objeto.es_familiar %}
+                                <form method="post" action="{% url 'cliente_invitado_eliminar' invitado.id %}" onsubmit="return confirm('¿Eliminar a esta persona?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="danger">Eliminar persona</button>
+                                </form>
+                                {% endif %}
+                            </details>
+                        </div>
+                        {% endfor %}
+
+                        {% for invitado in item.extras %}
+                        <div class="client-person-row extra">
+                            <div><strong>{{ invitado.nombre }}</strong><span>Acompañante autorizado</span></div>
+                            <div class="client-rsvp-state">
+                                {% if invitado.asistira is True %}<b class="yes">Confirmó</b>
+                                {% elif invitado.asistira is False %}<b class="no">No asiste</b>
+                                {% else %}<b>Pendiente</b>{% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    {% if item.objeto.es_familiar %}
+                    <details class="client-add-person">
+                        <summary>+ Agregar persona a esta familia</summary>
+                        <form method="post" action="{% url 'cliente_invitado_agregar' item.objeto.id %}">
+                            {% csrf_token %}
+                            <input type="text" name="nombre" required placeholder="Nombre">
+                            <input type="text" name="apellidos" placeholder="Apellidos">
+                            <select name="tipo_persona"><option value="ADULTO">Adulto</option><option value="NINO">Niño</option></select>
+                            <input type="text" name="telefono" placeholder="Teléfono">
+                            <input type="email" name="correo" placeholder="Correo">
+                            <button type="submit">Agregar</button>
+                        </form>
+                    </details>
+                    {% endif %}
+
+                    <details class="client-guest-edit">
+                        <summary>Editar invitación</summary>
+                        <form method="post" action="{% url 'cliente_grupo_editar' item.objeto.id %}">
+                            {% csrf_token %}
+                            <label>Nombre<input type="text" name="nombre_grupo" value="{{ item.objeto.nombre_grupo }}" required></label>
+                            <label>Teléfono<input type="text" name="telefono_contacto" value="{{ item.objeto.telefono_contacto|default:'' }}"></label>
+                            <label>Correo<input type="email" name="correo_contacto" value="{{ item.objeto.correo_contacto|default:'' }}"></label>
+                            <label class="client-check"><input type="checkbox" name="permitir_acompanantes_extra" {% if item.objeto.permitir_acompanantes_extra %}checked{% endif %}> Permitir acompañantes extra</label>
+                            <label>Cantidad extra<input type="number" name="cantidad_extra_permitida" min="0" value="{{ item.objeto.cantidad_extra_permitida }}"></label>
+                            <button type="submit">Guardar cambios</button>
+                        </form>
+                        <form method="post" action="{% url 'cliente_grupo_eliminar' item.objeto.id %}" onsubmit="return confirm('¿Eliminar esta invitación completa?');">
+                            {% csrf_token %}
+                            <button type="submit" class="danger">Eliminar invitación</button>
+                        </form>
+                    </details>
+                </article>
+                {% empty %}
+                <div class="client-empty-inline"><strong>Aún no tienes invitaciones creadas.</strong><span>Crea la primera para comenzar a compartirla.</span></div>
+                {% endfor %}
+            </div>
         </section>
-        {% endif %}
-    </div>
+
+        <section class="client-section" id="invitacion">
+            <div class="client-section-heading">
+                <div>
+                    <span class="client-eyebrow">Mi invitación</span>
+                    <h2>{% if invitacion_publicada %}Invitación publicada{% else %}Invitación en preparación{% endif %}</h2>
+                    <p>El diseño de la invitación y la gestión de invitados son funciones separadas. Aquí compartes los enlaces ya generados para tus grupos.</p>
+                </div>
+            </div>
+            <div class="client-invitation-status">
+                <article>
+                    <span>Estado</span>
+                    <strong>{% if invitacion_publicada %}Publicada{% else %}En preparación{% endif %}</strong>
+                    {% if invitacion_publicada_en %}<small>Última publicación {{ invitacion_publicada_en|date:"d/m/Y H:i" }}</small>{% endif %}
+                </article>
+                <article>
+                    <span>Invitaciones únicas</span>
+                    <strong>{{ cliente_grupos_total_v3 }}</strong>
+                    <small>Cada grupo conserva su propio UUID y RSVP.</small>
+                </article>
+            </div>
+            <div class="client-invitation-help">
+                <strong>Compartir no modifica el diseño</strong>
+                <span>Los botones de WhatsApp y copiar enlace usan la invitación pública de cada grupo. Builder permanece separado de esta gestión.</span>
+            </div>
+        </section>
+
+        <script>
+        document.addEventListener("click", async function (event) {
+            const button = event.target.closest("[data-copy-link]");
+            if (!button) return;
+            const link = button.dataset.copyLink;
+            try {
+                await navigator.clipboard.writeText(link);
+                const original = button.textContent;
+                button.textContent = "Copiado";
+                setTimeout(() => button.textContent = original, 1400);
+            } catch (error) {
+                window.prompt("Copia este enlace:", link);
+            }
+        });
+        </script>
+    </main>
+
+    <footer class="client-footer"><span>{{ evento.empresa.nombre_comercial|default:"DIRTEC Event Studio" }}</span><span>Portal privado del evento</span></footer>
+    {% endif %}
+</div>
 </body>
 </html>

@@ -10,6 +10,20 @@ assert.deepEqual(renderer.calculateCountdownValues(now - 1000, now), [0, 0, 0, 0
 assert.ok(Number.isFinite(renderer.resolveCountdownTimestamp("2030-01-01T12:00")));
 assert.ok(Number.isNaN(renderer.resolveCountdownTimestamp("")));
 
+renderer.options = {
+    eventContext: {
+        eventDate: "2030-01-01T08:00:00Z",
+        ceremonyDate: "2030-01-01T12:00:00Z",
+        receptionDate: "2030-01-01T18:00:00Z",
+    },
+};
+assert.equal(
+    renderer.resolveCountdownTarget({
+        content: { targetSource: "RECEPTION" },
+    }),
+    Date.parse("2030-01-01T18:00:00Z"),
+);
+
 const source = fs.readFileSync(new URL("../renderer/renderer.js", import.meta.url), "utf8");
 const preview = fs.readFileSync(new URL("../preview/mobile_preview.js", import.meta.url), "utf8");
 assert.match(source, /startCountdownTicker\(\)/);

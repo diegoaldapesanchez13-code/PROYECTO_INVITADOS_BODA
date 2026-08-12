@@ -1,12 +1,12 @@
-﻿        <section class="table-panel tab-panel" id="invitados" data-tab-panel="invitados" hidden>
-            <div class="workspace-header">
-                <div>
-                    <h2>Invitados y confirmaciones</h2>
-                    <p class="muted">Crea invitaciones personales o familiares, agrega integrantes y copia links sin salir del dashboard.</p>
-                </div>
-            </div>
+<section class="tab-panel product-section guest-dashboard-panel" id="invitados" data-tab-panel="invitados" hidden>
+    <div class="workspace-header guest-workspace-header">
+        <div>
+            <span class="eyebrow">Personas y RSVP</span>
+            <h2>Invitados y confirmaciones</h2>
+            <p class="muted">El link pertenece al grupo; RSVP, buffet y mesa pertenecen a cada persona.</p>
+        </div>
+    </div>
 
-            {% include "invitaciones/dashboard/partials/_invitados_crear_grupo.html" %}
-
-            {% include "invitaciones/dashboard/partials/_invitados_tabla.html" %}
-        </section>
+    {% include "invitaciones/dashboard/partials/_invitados_crear_grupo.html" %}
+    {% include "invitaciones/dashboard/partials/_invitados_tabla.html" %}
+</section>

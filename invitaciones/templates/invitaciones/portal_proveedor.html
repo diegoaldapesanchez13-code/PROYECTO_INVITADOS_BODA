@@ -4,155 +4,266 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portal del proveedor</title>
-    <link rel="stylesheet" href="{% static 'invitaciones/css/dashboard.css' %}">
+    <title>{% if proveedor %}{{ proveedor.nombre_comercial }}{% else %}Proveedor{% endif %} | Portal</title>
+    <link rel="stylesheet" href="{% static 'invitaciones/css/portal_proveedor_v3.css' %}">
 </head>
 <body>
-    <div class="wrapper">
-        <div class="topbar">
-            <h1>Portal del proveedor</h1>
-            <div class="actions">
-                <a href="/">Inicio</a>
-                <form method="post" action="{% url 'logout' %}">
-                    {% csrf_token %}
-                    <button class="btn secondary" type="submit">Salir</button>
-                </form>
+<div class="provider-shell">
+    <header class="provider-header">
+        <div class="provider-brand">
+            <span>{{ evento.empresa.nombre_comercial|default:"DIRTEC Event Studio" }}</span>
+            <strong>Portal Proveedor</strong>
+        </div>
+        <div class="provider-user">
+            <div><span>Cuenta</span><strong>{{ request.user.get_full_name|default:request.user.username }}</strong></div>
+            <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button type="submit">Cerrar sesión</button></form>
+        </div>
+    </header>
+
+    {% if messages %}<div class="provider-message-stack">{% for message in messages %}<div class="provider-notice {{ message.tags }}">{{ message }}</div>{% endfor %}</div>{% endif %}
+
+    {% if not proveedor %}
+    <main class="provider-empty-page">
+        <section class="provider-empty-card">
+            <span class="provider-eyebrow">Cuenta de proveedor</span>
+            <h1>Tu usuario aún no está vinculado a un proveedor activo</h1>
+            <p>La empresa debe vincular tu cuenta antes de mostrar servicios.</p>
+        </section>
+    </main>
+    {% elif not evento %}
+    <main class="provider-empty-page">
+        <section class="provider-empty-card">
+            <span class="provider-eyebrow">{{ proveedor.get_tipo_proveedor_display }}</span>
+            <h1>{{ proveedor.nombre_comercial }}</h1>
+            <p>No tienes servicios asignados a eventos en este momento.</p>
+        </section>
+    </main>
+    {% else %}
+
+    <section class="provider-event-hero">
+        <div>
+            <span class="provider-eyebrow">{{ proveedor.get_tipo_proveedor_display }}</span>
+            <h1>{{ proveedor.nombre_comercial }}</h1>
+            <p>{{ evento }}</p>
+            <div class="provider-event-meta">
+                {% if evento.fecha_fiesta %}<span>{{ evento.fecha_fiesta|date:"d \d\e F \d\e Y · H:i" }}</span>{% endif %}
+                {% if evento.lugar_fiesta %}<span>{{ evento.lugar_fiesta }}</span>{% endif %}
             </div>
         </div>
-
-        <section class="event-panel">
-            <div>
-                {% if proveedor %}
-                    <h2 class="event-title">{{ proveedor.nombre_comercial }}</h2>
-                    <p class="muted">{{ proveedor.get_tipo_proveedor_display }} · {{ proveedor.nombre_contacto|default:"Sin contacto" }}</p>
-                    {% if evento %}
-                        <p class="muted">{{ evento }} · {{ evento.fecha_fiesta|date:"d/m/Y h:i A" }}</p>
-                    {% endif %}
-                {% else %}
-                    <h2 class="event-title">Sin perfil de proveedor</h2>
-                    <p class="muted">Tu usuario no esta vinculado a un proveedor activo.</p>
-                {% endif %}
-            </div>
-
+        <div class="provider-event-switch">
+            {% if eventos|length > 1 %}
             <form method="get">
-                <label for="evento">Evento</label>
-                <select id="evento" name="evento" onchange="this.form.submit()">
-                    {% for item in eventos %}
-                        <option value="{{ item.id }}" {% if evento and item.id == evento.id %}selected{% endif %}>{{ item }}</option>
-                    {% empty %}
-                        <option>Sin eventos</option>
-                    {% endfor %}
+                <label for="provider-event-select">Evento</label>
+                <select id="provider-event-select" name="evento" onchange="this.form.submit()">
+                    {% for item in eventos %}<option value="{{ item.id }}" {% if item.id == evento.id %}selected{% endif %}>{{ item }}</option>{% endfor %}
                 </select>
             </form>
-        </section>
+            {% else %}<span>Evento asignado</span><strong>{{ evento.get_estado_display }}</strong>{% endif %}
+        </div>
+    </section>
 
-        {% if proveedor and evento %}
-        <section class="stats">
-            <div class="stat"><strong>{{ total_servicios }}</strong><span>Servicios</span></div>
-            <div class="stat"><strong>{{ servicios_pendientes }}</strong><span>Activos</span></div>
-            <div class="stat"><strong>${{ saldo_pendiente|floatformat:0 }}</strong><span>Saldo pendiente</span></div>
-        </section>
+    <nav class="provider-nav">
+        <a href="#inicio">Inicio{% if provider_acciones_total_v3 %}<b>{{ provider_acciones_total_v3 }}</b>{% endif %}</a>
+        <a href="#servicios">Servicios</a>
+        <a href="#cotizaciones">Cotizaciones</a>
+        <a href="#agenda">Agenda{% if provider_citas_pendientes_v3 %}<b>{{ provider_citas_pendientes_v3 }}</b>{% endif %}</a>
+        <a href="#tareas">Tareas{% if provider_tareas_total_v3 %}<b>{{ provider_tareas_total_v3 }}</b>{% endif %}</a>
+        <a href="#documentos">Documentos</a>
+        <a href="#pagos">Pagos</a>
+    </nav>
 
-        <section class="portal-grid">
-            <article class="portal-panel wide">
-                <h2>Servicios contratados</h2>
-                <div class="portal-list">
-                    {% for servicio in servicios %}
-                        <div class="provider-service">
-                            <strong>{{ servicio.nombre_servicio }}</strong>
-                            <span>{{ servicio.get_estado_display }}{% if servicio.fecha_servicio %} · {{ servicio.fecha_servicio|date:"d/m/Y" }}{% endif %}{% if servicio.hora_inicio %} · {{ servicio.hora_inicio|time:"H:i" }}{% endif %}</span>
-                            <small>{{ servicio.lugar|default:"Lugar por confirmar" }} · Saldo ${{ servicio.saldo_pendiente|floatformat:0 }}</small>
-                            <form method="post" action="{% url 'actualizar_servicio_proveedor' servicio.id %}" class="provider-action-form">
-                                {% csrf_token %}
-                                <label>
-                                    Estado
-                                    <select name="estado">
-                                        {% for valor, texto in estados_servicio %}
-                                            <option value="{{ valor }}" {% if servicio.estado == valor %}selected{% endif %}>{{ texto }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </label>
-                                <label>
-                                    Nota para el planner
-                                    <textarea name="nota" rows="2" placeholder="Ej. Cotizacion enviada, servicio confirmado, requerimos acceso..."></textarea>
-                                </label>
-                                <div class="actions">
-                                    <button class="btn" type="submit">Actualizar servicio</button>
-                                </div>
-                            </form>
-                        </div>
-                    {% empty %}
-                        <p class="muted">No hay servicios registrados para este evento.</p>
-                    {% endfor %}
+    <main class="provider-content">
+        <section class="provider-section" id="inicio">
+            <div class="provider-section-heading">
+                <div>
+                    <span class="provider-eyebrow">Tu trabajo</span>
+                    <h2>Lo que necesitas hacer</h2>
+                    <p>Solo aparecen acciones relacionadas con tus propios servicios.</p>
                 </div>
-            </article>
+                {% if provider_acciones_total_v3 %}<span class="provider-heading-badge">{{ provider_acciones_total_v3 }}</span>{% endif %}
+            </div>
 
-            <article class="portal-panel wide">
-                <h2>Subir documento</h2>
-                <form method="post" action="{% url 'subir_documento_proveedor' %}" enctype="multipart/form-data" class="provider-upload-form">
+            {% if provider_acciones_v3 %}
+            <div class="provider-action-grid">
+                {% for accion in provider_acciones_v3 %}
+                <article class="provider-action-card" data-kind="{{ accion.tipo }}">
+                    <div><span>{{ accion.tipo }}</span><strong>{{ accion.titulo }}</strong></div>
+                    <p>{{ accion.detalle }}</p>
+                    <small>{{ accion.servicio.nombre_servicio }}</small>
+                    <a href="{{ accion.url }}">{{ accion.cta }} →</a>
+                </article>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="provider-all-good"><strong>Todo al día</strong><span>No tienes cotizaciones, citas o tareas esperando respuesta.</span></div>
+            {% endif %}
+
+            <div class="provider-summary-grid">
+                <article><span>Servicios</span><strong>{{ provider_servicios_total_v3 }}</strong><small>Asignados en este evento</small></article>
+                <article><span>Citas</span><strong>{{ provider_citas_pendientes_v3 }}</strong><small>Por confirmar</small></article>
+                <article><span>Tareas</span><strong>{{ provider_tareas_total_v3 }}</strong><small>Asignadas a tu usuario</small></article>
+                <article><span>Documentos</span><strong>{{ provider_documentos_total_v3 }}</strong><small>Compartidos contigo</small></article>
+            </div>
+
+            <div class="provider-scope-note">
+                <strong>Tu portal está aislado</strong>
+                <span>No puedes ver clientes, invitados, otros proveedores, Builder, precio cobrado al cliente, margen, notas internas ni conversaciones Cliente ↔ Planner.</span>
+            </div>
+        </section>
+
+        <section class="provider-section" id="servicios">
+            <div class="provider-section-heading">
+                <div><span class="provider-eyebrow">Alcance asignado</span><h2>Mis servicios</h2><p>La operación detallada y la conversación viven dentro del workspace de cada servicio.</p></div>
+            </div>
+            <div class="provider-service-grid">
+                {% for item in provider_servicios_v3 %}
+                <article class="provider-service-card">
+                    <div class="provider-service-head">
+                        <div><span>{{ item.estado }}</span><strong>{{ item.nombre }}</strong></div>
+                        {% if item.citas_pendientes or item.tareas_pendientes %}<b>{{ item.citas_pendientes|add:item.tareas_pendientes }} pendiente(s)</b>{% endif %}
+                    </div>
+                    <div class="provider-service-facts">
+                        <span><b>Fecha</b>{{ item.fecha|date:"d/m/Y"|default:"Por definir" }}</span>
+                        <span><b>Horario</b>{% if item.hora_inicio %}{{ item.hora_inicio|time:"H:i" }}{% else %}Por definir{% endif %}{% if item.hora_fin %}–{{ item.hora_fin|time:"H:i" }}{% endif %}</span>
+                        <span><b>Lugar</b>{{ item.lugar|default:"Por definir" }}</span>
+                    </div>
+                    {% if item.cotizacion %}
+                    <div class="provider-service-quote"><span>Última cotización</span><strong>v{{ item.cotizacion.version }} · {{ item.cotizacion.get_estado_display }}</strong></div>
+                    {% endif %}
+                    <a href="{{ item.url }}">Abrir workspace Planner ↔ Proveedor →</a>
+                </article>
+                {% empty %}<div class="provider-empty-inline"><strong>No hay servicios asignados.</strong></div>{% endfor %}
+            </div>
+        </section>
+
+        <section class="provider-section" id="cotizaciones">
+            <div class="provider-section-heading">
+                <div><span class="provider-eyebrow">Propuesta económica</span><h2>Cotizaciones</h2><p>Las versiones son por servicio. El cliente no ve tus costos ni estas cotizaciones.</p></div>
+            </div>
+            <div class="provider-quote-list">
+                {% for item in provider_servicios_v3 %}
+                <article class="provider-quote-card">
+                    <div class="provider-quote-head">
+                        <div><span>{{ item.nombre }}</span>{% if item.cotizacion %}<strong>v{{ item.cotizacion.version }} · ${{ item.cotizacion.costo_proveedor|floatformat:2 }}</strong>{% else %}<strong>Sin cotización</strong>{% endif %}</div>
+                        {% if item.cotizacion %}<em>{{ item.cotizacion.get_estado_display }}</em>{% endif %}
+                    </div>
+                    {% if item.cotizacion and item.cotizacion.respuesta_planner %}<p class="provider-planner-note"><b>Respuesta del Planner:</b> {{ item.cotizacion.respuesta_planner }}</p>{% endif %}
+                    {% if item.cotizacion and item.cotizacion.archivo %}<a href="{% url 'secure_cotizacion_servicio' item.cotizacion.id %}" target="_blank" rel="noopener">Abrir archivo actual</a>{% endif %}
+                    <details>
+                        <summary>{% if item.cotizacion %}Enviar nueva versión{% else %}Enviar cotización{% endif %}</summary>
+                        <form method="post" enctype="multipart/form-data" action="{% url 'colaboracion_k85_cotizacion_crear' item.objeto.id %}">
+                            {% csrf_token %}
+                            <label>Monto<input type="number" name="costo_proveedor" min="0" step="0.01" required></label>
+                            <label>Vigencia<input type="date" name="vigencia"></label>
+                            <label class="wide">Descripción<textarea name="descripcion" rows="2"></textarea></label>
+                            <label class="wide">Archivo<input type="file" name="archivo" accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.webp"></label>
+                            <button type="submit">Enviar nueva versión</button>
+                        </form>
+                    </details>
+                </article>
+                {% empty %}<div class="provider-empty-inline"><strong>No hay servicios que cotizar.</strong></div>{% endfor %}
+            </div>
+        </section>
+
+        <section class="provider-section" id="agenda">
+            <div class="provider-section-heading">
+                <div><span class="provider-eyebrow">Coordinación</span><h2>Agenda</h2><p>Las citas requieren tu respuesta; las actividades muestran únicamente trabajo asignado a tu proveedor.</p></div>
+            </div>
+            <div class="provider-agenda-list">
+                {% for item in provider_agenda_v3 %}
+                <article class="provider-agenda-card">
+                    <div class="provider-date"><strong>{{ item.actividad.fecha|date:"d" }}</strong><span>{{ item.actividad.fecha|date:"M" }}</span></div>
+                    <div class="provider-agenda-copy">
+                        <div><span>{{ item.actividad.get_tipo_display }}</span><strong>{{ item.actividad.titulo }}</strong></div>
+                        <p>{{ item.actividad.hora_inicio|time:"H:i" }}{% if item.actividad.hora_fin %}–{{ item.actividad.hora_fin|time:"H:i" }}{% endif %}{% if item.actividad.ubicacion %} · {{ item.actividad.ubicacion }}{% endif %}</p>
+                        <small>{{ item.servicio.nombre_servicio }}</small>
+                    </div>
+                    {% if item.participacion %}
+                    <div class="provider-confirm">
+                        <strong>{{ item.participacion.get_estado_display }}</strong>
+                        {% if item.participacion.estado == "PENDIENTE" or item.participacion.estado == "REPROGRAMAR" %}
+                        <form method="post" action="{% url 'colaboracion_k8712_cita_responder' item.servicio.id item.participacion.id %}">
+                            {% csrf_token %}
+                            <button name="estado" value="CONFIRMADO">Confirmar</button>
+                            <button name="estado" value="REPROGRAMAR" class="secondary">Reprogramar</button>
+                            <button name="estado" value="NO_ASISTE" class="danger">No asistiré</button>
+                        </form>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </article>
+                {% empty %}<div class="provider-empty-inline"><strong>No hay agenda próxima para tus servicios.</strong></div>{% endfor %}
+            </div>
+        </section>
+
+        <section class="provider-section" id="tareas">
+            <div class="provider-section-heading"><div><span class="provider-eyebrow">Pendientes</span><h2>Tareas</h2><p>Solo se muestran tareas asignadas a tu usuario y vinculadas a uno de tus servicios.</p></div></div>
+            <div class="provider-task-list">
+                {% for tarea in provider_tareas_v3 %}
+                <article class="{% if tarea.esta_vencida %}overdue{% endif %}">
+                    <div><span>{{ tarea.get_prioridad_display }}</span><strong>{{ tarea.titulo }}</strong></div>
+                    {% if tarea.descripcion %}<p>{{ tarea.descripcion }}</p>{% endif %}
+                    <small>{{ tarea.servicio_evento.nombre_servicio }}{% if tarea.fecha_limite %} · vence {{ tarea.fecha_limite|date:"d/m/Y" }}{% endif %}</small>
+                </article>
+                {% empty %}<div class="provider-empty-inline"><strong>No tienes tareas pendientes.</strong></div>{% endfor %}
+            </div>
+        </section>
+
+        <section class="provider-section" id="documentos">
+            <div class="provider-section-heading">
+                <div><span class="provider-eyebrow">Archivos compartidos</span><h2>Documentos</h2><p>Solo aparecen archivos marcados por el equipo como visibles para proveedor o que tú mismo subiste.</p></div>
+                <span class="provider-heading-badge">{{ provider_documentos_total_v3 }}</span>
+            </div>
+
+            {% if provider_servicios_v3 %}
+            <details class="provider-upload">
+                <summary>+ Subir documento</summary>
+                <form method="post" action="{% url 'subir_documento_proveedor' %}" enctype="multipart/form-data">
                     {% csrf_token %}
-                    <input type="hidden" name="evento_id" value="{{ evento.id }}">
-                    <div class="design-grid">
-                        <label>
-                            Tipo
-                            <select name="tipo_documento">
-                                {% for valor, texto in tipos_documento %}
-                                    <option value="{{ valor }}">{{ texto }}</option>
-                                {% endfor %}
-                            </select>
-                        </label>
-                        <label>
-                            Titulo
-                            <input type="text" name="titulo" placeholder="Cotizacion, comprobante, contrato...">
-                        </label>
-                        <label class="wide">
-                            Archivo
-                            <input type="file" name="archivo" required>
-                        </label>
-                        <label class="wide">
-                            Descripcion
-                            <textarea name="descripcion" rows="2" placeholder="Detalle opcional para el planner"></textarea>
-                        </label>
-                        <label class="toggle-field">
-                            <input type="checkbox" name="visible_cliente">
-                            Visible para cliente
-                        </label>
-                    </div>
-                    <div class="actions form-actions">
-                        <button class="btn" type="submit">Subir documento</button>
-                    </div>
+                    <label>Servicio<select name="servicio_evento_id" required>{% for item in provider_servicios_v3 %}<option value="{{ item.objeto.id }}">{{ item.nombre }}</option>{% endfor %}</select></label>
+                    <label>Tipo<select name="tipo_documento">{% for value,label in provider_tipos_documento_v3 %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select></label>
+                    <label class="wide">Título<input type="text" name="titulo"></label>
+                    <label class="wide">Archivo<input type="file" name="archivo" required></label>
+                    <label class="wide">Descripción<textarea name="descripcion" rows="2"></textarea></label>
+                    <button type="submit">Compartir con Planner/Empresa</button>
                 </form>
-            </article>
+            </details>
+            {% endif %}
 
-            <article class="portal-panel">
-                <h2>Actividades</h2>
-                <div class="portal-list">
-                    {% for actividad in actividades %}
-                        <span>
-                            <strong>{{ actividad.titulo }}</strong>
-                            <small>{{ actividad.fecha|date:"d/m/Y" }} · {{ actividad.hora_inicio|time:"H:i" }} · {{ actividad.get_estado_display }}</small>
-                        </span>
-                    {% empty %}
-                        <p class="muted">No hay actividades asignadas.</p>
-                    {% endfor %}
-                </div>
-            </article>
-
-            <article class="portal-panel">
-                <h2>Documentos</h2>
-                <div class="portal-list">
-                    {% for documento in documentos %}
-                        <a href="{{ documento.archivo.url }}" target="_blank" rel="noopener">
-                            <strong>{{ documento.titulo }}</strong>
-                            <span>{{ documento.get_tipo_documento_display }} · {{ documento.fecha_carga|date:"d/m/Y" }}</span>
-                        </a>
-                    {% empty %}
-                        <p class="muted">No hay documentos cargados.</p>
-                    {% endfor %}
-                </div>
-            </article>
+            <div class="provider-document-grid">
+                {% for documento in provider_documentos_v3 %}
+                <a href="{% url 'secure_documento_evento' documento.id %}" target="_blank" rel="noopener">
+                    <div class="provider-doc-icon">DOC</div>
+                    <div><span>{{ documento.get_tipo_documento_display }}</span><strong>{{ documento.titulo }}</strong><small>{{ documento.servicio_evento.nombre_servicio }}</small></div>
+                    <b>Abrir</b>
+                </a>
+                {% empty %}<div class="provider-empty-inline"><strong>No hay documentos compartidos contigo.</strong></div>{% endfor %}
+            </div>
         </section>
-        {% endif %}
-    </div>
+
+        <section class="provider-section" id="pagos">
+            <div class="provider-section-heading">
+                <div><span class="provider-eyebrow">Empresa → Proveedor</span><h2>Pagos de tus servicios</h2><p>Esta sección muestra únicamente compromisos y pagos de la empresa relacionados con tu proveedor. Nunca incluye pagos del cliente ni precios cobrados al cliente.</p></div>
+            </div>
+            <div class="provider-payment-summary">
+                <article><span>Total asociado</span><strong>${{ provider_total_comprometido_v3|floatformat:2 }}</strong></article>
+                <article><span>Pagado</span><strong>${{ provider_total_pagado_v3|floatformat:2 }}</strong></article>
+                <article><span>Pendiente</span><strong>${{ provider_saldo_v3|floatformat:2 }}</strong></article>
+            </div>
+            <div class="provider-payment-list">
+                {% for item in provider_pagos_v3 %}
+                <article>
+                    <div><span>{% if item.servicio %}{{ item.servicio.nombre_servicio }}{% else %}{{ item.gasto.concepto }}{% endif %}</span><strong>${{ item.objeto.monto|floatformat:2 }}</strong></div>
+                    <p>{{ item.objeto.fecha_pago|date:"d/m/Y" }} · {{ item.objeto.get_metodo_pago_display }}{% if item.objeto.referencia %} · {{ item.objeto.referencia }}{% endif %}</p>
+                    {% if item.objeto.comprobante %}<a href="{% url 'secure_pago_operativo_comprobante' item.objeto.id %}" target="_blank" rel="noopener">Ver comprobante</a>{% endif %}
+                </article>
+                {% empty %}<div class="provider-empty-inline"><strong>No hay pagos registrados para tus servicios.</strong></div>{% endfor %}
+            </div>
+        </section>
+    </main>
+
+    <footer class="provider-footer"><span>{{ evento.empresa.nombre_comercial|default:"DIRTEC Event Studio" }}</span><span>Portal privado de proveedor</span></footer>
+    {% endif %}
+</div>
 </body>
 </html>

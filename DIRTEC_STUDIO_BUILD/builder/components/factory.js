@@ -253,12 +253,11 @@ function createDefinition(type, common) {
                     declineLabel: "No podré asistir",
                     submitLabel: "Enviar confirmación",
                     showGroupName: true,
-                    showGuestLimit: true,
-                    showComment: true,
+                    showPersonType: true,
+                    showMenu: true,
+                    density: "AUTO",
                     preview: {
                         groupName: "Familia Aldape Sánchez",
-                        maxGuests: 4,
-                        confirmedGuests: 2,
                     },
                 },
                 style: {
@@ -430,9 +429,12 @@ function countdownParentDefinition(common) {
         width: 88,
         height: 18,
         content: {
+            targetSource: "RECEPTION",
             targetDate: "",
             values: [120, 12, 34, 56],
             labels: ["Días", "Horas", "Minutos", "Segundos"],
+            presentation: "CARDS",
+            showLabels: true,
             compositeVersion: 1,
         },
         style: {

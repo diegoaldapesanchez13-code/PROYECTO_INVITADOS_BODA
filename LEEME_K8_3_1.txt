@@ -1,0 +1,38 @@
+DIRTEC EVENT STUDIO — K.8.3.1 DOMAIN FINANCIAL SEMANTICS
+
+BASELINE REQUERIDA:
+DIRTEC_EVENT_STUDIO_K8_2.zip que Diego confirmo funcional.
+
+ESTE PAQUETE ES UNA ACTUALIZACION DEL MISMO PROYECTO.
+NO contiene db.sqlite3, venv, media, .git ni Builder.
+
+COPIAR el contenido de esta carpeta sobre la RAIZ ACTUAL del proyecto,
+donde se encuentra manage.py, permitiendo combinar carpetas y reemplazar
+solo los archivos incluidos en este paquete.
+
+ARCHIVOS NUEVOS:
+- proveedores/tests_k831.py
+- proveedores/migrations/0009_financial_semantics_k831.py
+- scripts/verify_phase_k8_3_1.py
+- PHASE_K8_3_1_DOMAIN_FINANCIAL_SEMANTICS_REPORT.md
+
+ARCHIVOS REEMPLAZADOS:
+- proveedores/models.py
+- paquetes/services.py
+- paquetes/tests_k83.py
+
+NO SE TOCA:
+- db.sqlite3
+- venv
+- media
+- Builder / DIRTEC_STUDIO_BUILD
+- templates y CSS/JS de invitaciones
+
+DESPUES DE COPIAR:
+1) activar el venv habitual
+2) py manage.py showmigrations proveedores
+3) py manage.py migrate
+4) python scripts/verify_phase_k8_3_1.py
+
+Resultado esperado:
+K.8.3.1 verification: OK

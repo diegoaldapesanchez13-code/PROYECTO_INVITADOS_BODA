@@ -1,0 +1,44 @@
+DIRTEC EVENT STUDIO - K.8.3
+Package Snapshot & Service Materialization
+
+BASE REQUERIDA:
+K.8.2 estable.
+
+IMPORTANTE:
+- NO crear otra venv.
+- NO crear otro proyecto Django.
+- NO reemplazar db.sqlite3.
+- NO reemplazar media/.
+- NO tocar Builder.
+
+ARCHIVOS A REEMPLAZAR:
+1. paquetes/models.py
+2. paquetes/admin.py
+3. proveedores/models.py
+
+ARCHIVOS NUEVOS:
+4. paquetes/services.py
+5. paquetes/tests_k83.py
+6. paquetes/migrations/0003_package_snapshot_materialization_k83.py
+7. proveedores/migrations/0008_package_materialization_k83.py
+8. PHASE_K8_3_PACKAGE_SNAPSHOT_MATERIALIZATION_REPORT.md
+
+COPIA:
+Extrae este ZIP directamente dentro de:
+C:\Users\diego\Documents\DIRTEC_EVENT_STUDIO_K8_2\DIRTEC_EVENT_STUDIO
+
+y acepta reemplazar SOLO los archivos indicados.
+
+DESPUES, con la MISMA venv activada:
+
+python manage.py check
+python manage.py makemigrations --check --dry-run
+python manage.py migrate
+python manage.py test paquetes.tests paquetes.tests_k83 proveedores.tests_event_domain_k82
+
+Si todos pasan, prueba el admin -> Paquetes asignados a eventos.
+K.8.3 agrega dos acciones:
+- Capturar snapshot contractual
+- Materializar servicios del paquete
+
+No ejecutes makemigrations normal si el dry-run dice "No changes detected".

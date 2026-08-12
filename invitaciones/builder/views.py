@@ -10,9 +10,11 @@ from django.views.decorators.http import require_http_methods, require_POST
 from django.middleware.csrf import get_token
 
 from core.services.auditoria import registrar_auditoria
-from invitaciones.models import AssetInvitacion, DisenoInvitacion, VersionDisenoInvitacion
-from invitaciones.permissions import eventos_visibles_usuario
+from core.services.authorization import Actions, usuario_puede_evento
+from invitaciones.models import AssetInvitacion, DisenoInvitacion, Grupoinvitacion, VersionDisenoInvitacion
 
+from .event_context import serializar_contexto_evento
+from .invitation_context import serializar_contexto_invitacion
 from .assets import (
     asset_esta_referenciado,
     crear_asset_builder,
@@ -34,10 +36,12 @@ LOGIN_URL = "/login/"
 
 
 def _evento_visible(request, evento_id):
-    return get_object_or_404(
-        eventos_visibles_usuario(request.user),
-        id=evento_id,
-    )
+    from invitaciones.models import EventoBoda
+    evento = get_object_or_404(EventoBoda.objects.select_related('empresa'), id=evento_id)
+    if not usuario_puede_evento(request.user, evento, Actions.EVENT_BUILDER):
+        from django.core.exceptions import PermissionDenied
+        raise PermissionDenied('No tienes permiso para usar Builder en este evento.')
+    return evento
 
 
 def _json_body(request):
@@ -52,6 +56,14 @@ def editor(request, evento_id):
     evento = _evento_visible(request, evento_id)
     diseno = obtener_diseno_builder(evento, request.user)
 
+    preview_group = (
+        Grupoinvitacion.objects
+        .filter(evento=evento)
+        .prefetch_related("invitados")
+        .order_by("nombre_grupo", "id")
+        .first()
+    )
+
     bootstrap = {
         "eventId": evento.id,
         "schemaVersion": 4,
@@ -60,6 +72,11 @@ def editor(request, evento_id):
         "revision": diseno.builder_revision,
         "csrfToken": get_token(request),
         "initialAssets": listar_assets_builder(evento),
+        "event": serializar_contexto_evento(evento),
+        "invitationPreview": serializar_contexto_invitacion(
+            preview_group,
+            include_guests=True,
+        ),
         "endpoints": {
             "document": reverse("builder_document_api", args=[evento.id]),
             "publish": reverse("builder_publish_api", args=[evento.id]),

@@ -1,0 +1,18 @@
+K.8.7.4.1 CORREGIDO — Pagos Cliente -> Empresa/Planner
+
+NO usar el paquete anterior Cliente -> Proveedor.
+
+Copiar el contenido de K8_7_4_1_CORRECTED_UPDATE sobre el mismo proyecto.
+
+Antes de migrar:
+  py manage.py showmigrations presupuesto
+
+Debe aparecer pendiente:
+  0004_pago_cliente_evento_k8741
+
+Luego:
+  py manage.py migrate
+  python scripts/verify_phase_k8_7_4_1.py
+
+Si ya aplicaste la migración del paquete equivocado `0004_pago_cliente_servicio_k8741`,
+NO apliques este paquete todavía; avísame para darte la migración de sustitución segura.

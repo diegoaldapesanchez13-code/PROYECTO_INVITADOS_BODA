@@ -603,12 +603,17 @@ export class UniversalInspector {
                 currentValue ?? "";
         }
 
+        const liveInputTypes = new Set([
+            "text",
+            "textarea",
+            "range",
+            "color",
+        ]);
+
         const eventName =
-            definition.type === "text"
-            || definition.type
-                === "textarea"
-            ? "input"
-            : "change";
+            liveInputTypes.has(definition.type)
+                ? "input"
+                : "change";
 
         control.addEventListener(
             eventName,

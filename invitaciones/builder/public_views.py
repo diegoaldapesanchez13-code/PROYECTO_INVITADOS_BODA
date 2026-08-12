@@ -1,5 +1,6 @@
 import json
 
+from django.db import transaction
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
@@ -8,8 +9,10 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.clickjacking import xframe_options_sameorigin
 
-from invitaciones.models import DisenoInvitacion, Grupoinvitacion
+from invitaciones.models import DisenoInvitacion, Grupoinvitacion, Invitado
 from .assets import listar_assets_builder
+from .event_context import serializar_contexto_evento
+from .invitation_context import serializar_contexto_invitacion
 from .services import BUILDER_BUILD_VERSION, snapshot_documento
 
 
@@ -26,28 +29,80 @@ def _puede_ver_borrador(request, evento):
         return False
     if getattr(user, "is_superuser", False):
         return True
-    # El editor ya aplica aislamiento por empresa. Para preview público
-    # conservamos una regla estricta y no exponemos borrador a invitados.
     try:
-        from invitaciones.permissions import eventos_visibles_usuario
-        return eventos_visibles_usuario(user).filter(pk=evento.pk).exists()
+        from core.services.authorization import Actions, usuario_puede_evento
+        return usuario_puede_evento(user, evento, Actions.EVENT_BUILDER)
     except Exception:
         return False
 
 
+def _invitados_frescos(grupo):
+    """Return the current RSVP roster directly from the database.
+
+    `grupo` can carry a prefetched `invitados` cache. Public RSVP updates a
+    person through a locked queryset, so reusing that cache after the write can
+    expose stale attendance values. RSVP summaries must therefore read a fresh
+    queryset.
+    """
+    return list(
+        Invitado.objects
+        .filter(grupo_id=grupo.pk)
+        .order_by("orden", "id")
+    )
+
+
 def _rsvp_payload(grupo):
-    max_guests = max(int(grupo.total_lugares or grupo.cantidad_maxima or 1), 1)
-    confirmed = grupo.cantidad_confirmada
-    if confirmed is None:
-        confirmed = grupo.lugares_asistiran if grupo.asistira is not None else 1
-    return {
-        "invitationId": str(grupo.codigo),
-        "groupName": grupo.nombre_grupo,
-        "maxGuests": max_guests,
-        "attending": grupo.asistira,
-        "confirmedGuests": min(max(int(confirmed or 0), 0), max_guests),
-        "comment": grupo.comentario or "",
-    }
+    invitados = _invitados_frescos(grupo)
+    return serializar_contexto_invitacion(
+        grupo,
+        invitados=invitados,
+        include_guests=True,
+    )
+
+
+def _sync_group_legacy_summary(grupo):
+    """Keep legacy group reporting coherent while Invitado remains authority.
+
+    These fields are compatibility aggregates only. The individual `Invitado`
+    rows are the source of truth for RSVP.
+    """
+    invitados = _invitados_frescos(grupo)
+    total = len(invitados)
+    yes_count = sum(
+        1
+        for invitado in invitados
+        if invitado.asistira is True
+    )
+    responded = sum(
+        1
+        for invitado in invitados
+        if invitado.asistira is not None
+    )
+    pending = total - responded
+
+    grupo.cantidad_confirmada = yes_count
+    grupo.confirmado = total > 0 and pending == 0
+    grupo.fecha_confirmacion = (
+        timezone.now()
+        if responded
+        else None
+    )
+
+    if total == 0:
+        grupo.asistira = None
+    elif pending:
+        # Partial family/personal roster response cannot be represented by the
+        # old tri-state group field without losing information.
+        grupo.asistira = None
+    else:
+        grupo.asistira = yes_count > 0
+
+    grupo.save(update_fields=[
+        "cantidad_confirmada",
+        "confirmado",
+        "fecha_confirmacion",
+        "asistira",
+    ])
 
 
 @xframe_options_sameorigin
@@ -57,7 +112,10 @@ def public_invitation(request, codigo):
     evento = grupo.evento
     diseno = DisenoInvitacion.objects.filter(evento=evento).first()
 
-    preview = request.GET.get("preview") == "1" and _puede_ver_borrador(request, evento)
+    preview = (
+        request.GET.get("preview") == "1"
+        and _puede_ver_borrador(request, evento)
+    )
     document = {}
     if diseno:
         document = (
@@ -84,56 +142,120 @@ def public_invitation(request, codigo):
         "assets": listar_assets_builder(evento),
         "device": "mobile",
         "preview": preview,
+        "event": serializar_contexto_evento(evento),
         "invitation": _rsvp_payload(grupo),
         "endpoints": {
-            "rsvp": reverse("builder_public_rsvp_api", args=[grupo.codigo]),
+            "rsvp": reverse(
+                "builder_public_rsvp_api",
+                args=[grupo.codigo],
+            ),
         },
     }
-    return render(request, "invitaciones/builder/public_invitation.html", {
-        "evento": evento,
-        "grupo": grupo,
-        "builder_public_bootstrap": bootstrap,
-        "builder_build_version": BUILDER_BUILD_VERSION,
-    })
+
+    return render(
+        request,
+        "invitaciones/builder/public_invitation.html",
+        {
+            "evento": evento,
+            "grupo": grupo,
+            "builder_public_bootstrap": bootstrap,
+            "builder_build_version": BUILDER_BUILD_VERSION,
+        },
+    )
 
 
 @require_http_methods(["GET", "POST"])
 def public_rsvp_api(request, codigo):
     grupo = _grupo(codigo)
+
     if request.method == "GET":
-        return JsonResponse({"ok": True, "data": _rsvp_payload(grupo)})
+        return JsonResponse({
+            "ok": True,
+            "data": _rsvp_payload(grupo),
+        })
 
     try:
-        payload = json.loads(request.body.decode("utf-8") or "{}")
+        payload = json.loads(
+            request.body.decode("utf-8")
+            or "{}"
+        )
     except json.JSONDecodeError:
-        return JsonResponse({"ok": False, "error": "Solicitud JSON inválida."}, status=400)
+        return JsonResponse(
+            {
+                "ok": False,
+                "error": "Solicitud JSON inválida.",
+            },
+            status=400,
+        )
 
     attending = payload.get("attending")
     if attending not in (True, False):
-        return JsonResponse({"ok": False, "error": "Selecciona si asistirás."}, status=400)
+        return JsonResponse(
+            {
+                "ok": False,
+                "error": "Selecciona si asistirás.",
+            },
+            status=400,
+        )
 
-    max_guests = max(int(grupo.total_lugares or grupo.cantidad_maxima or 1), 1)
+    guest_id = payload.get("guestId")
     try:
-        confirmed = int(payload.get("confirmedGuests", 1 if attending else 0))
+        guest_id = int(guest_id)
     except (TypeError, ValueError):
-        confirmed = 1 if attending else 0
-    confirmed = min(max(confirmed, 1 if attending else 0), max_guests) if attending else 0
+        return JsonResponse(
+            {
+                "ok": False,
+                "error": "Invitado inválido.",
+            },
+            status=400,
+        )
 
-    grupo.asistira = attending
-    grupo.cantidad_confirmada = confirmed
-    grupo.comentario = str(payload.get("comment") or "").strip()[:5000]
-    grupo.confirmado = True
-    grupo.fecha_confirmacion = timezone.now()
+    with transaction.atomic():
+        # Security boundary: a person can only be updated through the UUID of
+        # the group that owns that person.
+        invitado = (
+            Invitado.objects
+            .select_for_update()
+            .filter(
+                pk=guest_id,
+                grupo_id=grupo.id,
+            )
+            .first()
+        )
 
-    # Mantiene coherencia de métricas existentes. En grupos con personas
-    # individuales no inventamos quién asistirá: el Builder V3 confirma el grupo.
-    if grupo.es_personal and not grupo.invitados.exists():
-        grupo.acompanantes_adultos = max(confirmed - 1, 0) if attending else 0
-        grupo.acompanantes_ninos = 0
+        if invitado is None:
+            return JsonResponse(
+                {
+                    "ok": False,
+                    "error": (
+                        "El invitado no pertenece "
+                        "a esta invitación."
+                    ),
+                },
+                status=404,
+            )
 
-    grupo.save()
+        invitado.asistira = attending
+        invitado.fecha_confirmacion = timezone.now()
+        invitado.save(
+            update_fields=[
+                "asistira",
+                "fecha_confirmacion",
+            ]
+        )
+
+        # Important: this reads a fresh DB roster and does not reuse the
+        # prefetched cache created by `_grupo`.
+        _sync_group_legacy_summary(grupo)
+
+    # Return a fresh payload so the browser immediately sees the committed
+    # state of every person.
+    grupo = _grupo(codigo)
+
     return JsonResponse({
         "ok": True,
-        "message": "Confirmación guardada.",
+        "message": (
+            f"Respuesta de {invitado.nombre} guardada."
+        ),
         "data": _rsvp_payload(grupo),
     })

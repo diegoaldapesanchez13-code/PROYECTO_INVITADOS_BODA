@@ -1,0 +1,53 @@
+<section class="tab-panel product-section event-v3-panel" id="resumen" data-tab-panel="resumen" data-metrics-url="{{ api_dashboard_url }}" hidden>
+  <div class="product-section-header">
+    <div>
+      <span class="product-section-eyebrow">Centro operativo</span>
+      <h2>Resumen del evento</h2>
+      <p class="muted">Prioridades, próximos compromisos y estado real del evento. Sin mezclar edición de invitación con operación.</p>
+    </div>
+    <div class="actions">
+      <button class="btn" type="button" data-dashboard-tab="servicios">Ver servicios</button>
+      <a class="btn secondary" href="{% url 'calendario_operativo' %}?evento={{ evento.id }}">Calendario completo</a>
+    </div>
+  </div>
+
+  <div class="event-v3-kpis">
+    <article><span>Evento</span><strong>{% if dias_evento_v3 is not None %}{% if dias_evento_v3 >= 0 %}{{ dias_evento_v3 }} días{% else %}Finalizado{% endif %}{% else %}Sin fecha{% endif %}</strong><small>{{ evento.fecha_fiesta|date:"d M Y" }}</small></article>
+    <article><span>Servicios activos</span><strong>{{ servicios_activos_v3 }}</strong><small>{{ total_servicios_evento }} registrados</small></article>
+    <article class="{% if tareas_vencidas_v3 %}is-alert{% endif %}"><span>Tareas vencidas</span><strong>{{ tareas_vencidas_v3|length }}</strong><small>{{ tareas_pendientes }} pendientes</small></article>
+    <article class="{% if aprobaciones_servicio_pendientes_v3 %}is-warning{% endif %}"><span>Aprobaciones</span><strong>{{ aprobaciones_servicio_pendientes_v3 }}</strong><small>esperando cliente</small></article>
+    <article class="{% if invitados_confirmados_sin_mesa %}is-warning{% endif %}"><span>Confirmados sin mesa</span><strong>{{ invitados_confirmados_sin_mesa }}</strong><small>{{ total_asistiran }} confirmados</small></article>
+    <article class="{% if saldo_operativo_v3 %}is-warning{% endif %}"><span>Saldo operativo</span><strong>${{ saldo_operativo_v3|floatformat:0 }}</strong><small>${{ pagos_operativos_total_v3|floatformat:0 }} pagado</small></article>
+  </div>
+
+  <div class="event-v3-two-col">
+    <section class="event-v3-card">
+      <div class="event-v3-card__head"><div><span>Requiere atención</span><h3>Qué atender primero</h3></div></div>
+      {% if atencion_v3 %}
+        <div class="event-v3-attention-list">
+          {% for item in atencion_v3 %}
+          <button type="button" class="attention-row {{ item.nivel }}" data-dashboard-tab="{{ item.tab }}">
+            <b>{{ item.cantidad }}</b><span><strong>{{ item.titulo }}</strong><small>{{ item.detalle }}</small></span><i>→</i>
+          </button>
+          {% endfor %}
+        </div>
+      {% else %}<p class="empty-state">No hay alertas críticas en este momento.</p>{% endif %}
+    </section>
+
+    <section class="event-v3-card">
+      <div class="event-v3-card__head"><div><span>Próximos</span><h3>Agenda inmediata</h3></div><button type="button" class="text-action" data-dashboard-tab="agenda">Ver agenda</button></div>
+      <div class="event-v3-timeline compact">
+        {% for actividad in actividades_proximas_v3|slice:":5" %}
+          <article><time>{{ actividad.fecha|date:"d M" }}<small>{{ actividad.hora_inicio|time:"H:i" }}</small></time><div><strong>{{ actividad.titulo }}</strong><small>{% if actividad.servicio_evento %}{{ actividad.servicio_evento.nombre_servicio }}{% else %}Evento general{% endif %}</small></div></article>
+        {% empty %}<p class="empty-state">No hay actividades próximas registradas.</p>{% endfor %}
+      </div>
+    </section>
+  </div>
+
+  <div class="event-v3-quick-grid">
+    <button type="button" data-dashboard-tab="servicios"><span>Servicios</span><strong>{{ total_servicios_evento }}</strong><small>Operación por proveedor</small></button>
+    <button type="button" data-dashboard-tab="tareas"><span>Tareas</span><strong>{{ tareas_pendientes }}</strong><small>Pendientes del evento</small></button>
+    <button type="button" data-dashboard-tab="documentos"><span>Documentos</span><strong>{{ total_documentos_evento }}</strong><small>Generales y por servicio</small></button>
+    <button type="button" data-dashboard-tab="invitados"><span>Invitados</span><strong>{{ total_asistiran }}/{{ total_lugares }}</strong><small>Confirmados / lugares</small></button>
+  </div>
+</section>

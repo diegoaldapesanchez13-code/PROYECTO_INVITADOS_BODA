@@ -1,0 +1,79 @@
+<section class="provider-section provider-collaboration" id="colaboracion">
+    <div class="provider-section-heading">
+        <div>
+            <span class="provider-eyebrow">Proveedor ↔ Planner</span>
+            <h2>Cotizaciones y conversacion</h2>
+            <p>Hablas directamente con el planner. La propuesta comercial y el margen al cliente permanecen fuera de tu portal.</p>
+        </div>
+    </div>
+
+    <div class="provider-collab-list">
+        {% for expediente in expedientes_colaboracion %}
+            <details class="provider-collab-card">
+                <summary>
+                    <div>
+                        <span>{{ expediente.get_categoria_display }}</span>
+                        <strong>{{ expediente.titulo }}</strong>
+                    </div>
+                    <em>{{ expediente.get_estado_display }}</em>
+                </summary>
+
+                <div class="provider-collab-body">
+                    {% if expediente.servicio_evento %}<p><a href="{% url 'colaboracion_workspace_servicio' expediente.servicio_evento.id %}?canal=PLANNER_PROVEEDOR">Abrir workspace del servicio</a></p>{% endif %}
+                    {% if expediente.descripcion %}<p>{{ expediente.descripcion }}</p>{% endif %}
+
+                    <div class="provider-collab-thread">
+                        {% for mensaje in expediente.mensajes_proveedor_ui %}
+                            <article class="{% if mensaje.tipo == 'SISTEMA' %}system{% elif mensaje.autor_id == request.user.id %}mine{% endif %}">
+                                <div>
+                                    <strong>{% if mensaje.tipo == 'SISTEMA' %}Sistema{% else %}{{ mensaje.autor.get_full_name|default:mensaje.autor.username }}{% endif %}</strong>
+                                    <time>{{ mensaje.fecha|date:"d/m/Y H:i" }}</time>
+                                </div>
+                                {% if mensaje.mensaje %}<p>{{ mensaje.mensaje }}</p>{% endif %}
+                                {% if mensaje.archivo %}<a href="{{ mensaje.archivo.url }}" target="_blank" rel="noopener">Adjunto</a>{% endif %}
+                            </article>
+                        {% empty %}<p class="provider-empty-inline">Aun no hay mensajes.</p>{% endfor %}
+                    </div>
+
+                    <form class="provider-collab-message" method="post" enctype="multipart/form-data" action="{% url 'colaboracion_enviar_mensaje' expediente.id %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="canal" value="PLANNER_PROVEEDOR">
+                        <textarea name="mensaje" rows="2" placeholder="Escribe al planner"></textarea>
+                        <input type="file" name="archivo">
+                        <button type="submit">Enviar mensaje</button>
+                    </form>
+
+                    <div class="provider-quote-history">
+                        <h3>Mis cotizaciones</h3>
+                        {% for cotizacion in expediente.cotizaciones_ui %}
+                            <article>
+                                <div>
+                                    <strong>v{{ cotizacion.version }} · ${{ cotizacion.costo_proveedor|floatformat:2 }}</strong>
+                                    <span>{{ cotizacion.get_estado_display }}</span>
+                                </div>
+                                {% if cotizacion.respuesta_planner %}<p>Planner: {{ cotizacion.respuesta_planner }}</p>{% endif %}
+                                {% if cotizacion.archivo %}<a href="{{ cotizacion.archivo.url }}" target="_blank" rel="noopener">Abrir archivo</a>{% endif %}
+                            </article>
+                        {% empty %}<p>No has enviado cotizaciones.</p>{% endfor %}
+                    </div>
+
+                    <details class="provider-new-quote">
+                        <summary>Enviar nueva cotizacion</summary>
+                        <form method="post" enctype="multipart/form-data" action="{% url 'colaboracion_proveedor_cotizar' expediente.id %}">
+                            {% csrf_token %}
+                            <label>Costo al planner<input type="number" step="0.01" min="0" name="costo_proveedor" required></label>
+                            <label>Vigencia<input type="date" name="vigencia"></label>
+                            <label class="wide">Descripcion<textarea name="descripcion" rows="3" placeholder="Alcance, condiciones, alternativas..."></textarea></label>
+                            <label class="wide">Cotizacion adjunta<input type="file" name="archivo"></label>
+                            <button type="submit">Enviar cotizacion</button>
+                        </form>
+                    </details>
+                </div>
+            </details>
+        {% empty %}
+            <div class="provider-empty-inline">
+                <strong>No tienes solicitudes de cotizacion en este evento.</strong>
+            </div>
+        {% endfor %}
+    </div>
+</section>

@@ -99,25 +99,15 @@ class GrupoInvitacionForm(forms.ModelForm):
         model = Grupoinvitacion
         fields = '__all__'
         widgets = {
-            'cantidad_maxima': forms.NumberInput(attrs={'min': 1}),
             'cantidad_extra_permitida': forms.NumberInput(attrs={'min': 0}),
-            'acompanantes_adultos': forms.NumberInput(attrs={'min': 0}),
-            'acompanantes_ninos': forms.NumberInput(attrs={'min': 0}),
-            'cantidad_confirmada': forms.NumberInput(attrs={'min': 0}),
-            'comentario': forms.Textarea(attrs={'rows': 3}),
-            'restricciones_alimentarias': forms.Textarea(attrs={'rows': 3}),
-            'alergias': forms.Textarea(attrs={'rows': 3}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         ayudas = {
-            'tipo': 'Personal: una persona principal con acompanantes permitidos. Familiar: agrega cada invitado por nombre abajo.',
-            'cantidad_maxima': 'Para familiar sirve como referencia; el control real son los invitados nombrados.',
-            'cantidad_extra_permitida': 'Solo para invitacion personal. Es el numero maximo de acompanantes que podra elegir.',
-            'mesa': 'Mesa sugerida para todo el grupo. En familiar tambien puedes ajustar mesa por invitado.',
-            'restricciones_alimentarias': 'Usalo para invitaciones personales o para notas generales de una familia.',
-            'alergias': 'Ayuda a coordinar buffet y cocina.',
+            'tipo': 'Personal: una persona titular. Familiar: agrupación de personas nombradas.',
+            'cantidad_extra_permitida': 'Cantidad de acompañantes adicionales autorizados por el organizador.',
+            'permitir_acompanantes_extra': 'Actívalo solo cuando el organizador autorice acompañantes sin nombre previo.',
         }
         for campo, ayuda in ayudas.items():
             if campo in self.fields:
@@ -586,19 +576,18 @@ class EventoBodaAdmin(admin.ModelAdmin):
 
 class InvitadoInline(admin.TabularInline):
     model = Invitado
-    extra = 4
+    extra = 0
     fields = (
         'nombre',
         'apellidos',
         'tipo_persona',
-        'menu_infantil',
+        'menu_asignado',
         'asistira',
-        'mesa',
-        'restricciones_alimentarias',
-        'alergias',
-        'comentario',
+        'fecha_confirmacion',
+        'es_acompanante_extra',
         'orden',
     )
+    readonly_fields = ('fecha_confirmacion',)
 
 
 @admin.register(Grupoinvitacion)
@@ -609,56 +598,52 @@ class GrupoInvitacionAdmin(admin.ModelAdmin):
         'nombre_grupo',
         'evento',
         'tipo',
-        'total_lugares',
-        'adultos_confirmados',
-        'ninos_confirmados',
-        'mesa',
-        'estado_asistencia',
-        'confirmado',
+        'personas',
+        'confirmados',
+        'pendientes',
         'vista_previa_invitacion',
         'fecha_creacion',
     )
-    list_filter = ('evento', 'tipo', 'confirmado', 'asistira')
-    search_fields = ('nombre_grupo', 'telefono_contacto', 'mesa')
-    readonly_fields = ('codigo', 'fecha_creacion', 'vista_previa_invitacion')
+    list_filter = ('evento', 'tipo', 'estado_envio')
+    search_fields = (
+        'nombre_grupo',
+        'telefono_contacto',
+        'correo_contacto',
+        'invitados__nombre',
+        'invitados__apellidos',
+    )
+    readonly_fields = (
+        'codigo',
+        'fecha_creacion',
+        'vista_previa_invitacion',
+        'personas',
+        'confirmados',
+        'pendientes',
+    )
     inlines = [InvitadoInline]
 
     fieldsets = (
-        ('1. Invitacion', {
+        ('1. Invitación', {
             'fields': (
                 'evento',
                 'nombre_grupo',
                 'tipo',
-                'cantidad_maxima',
-                'cantidad_extra_permitida',
                 'telefono_contacto',
                 'correo_contacto',
-                'mesa',
+                'permitir_acompanantes_extra',
+                'cantidad_extra_permitida',
                 'codigo',
                 'fecha_creacion',
             )
         }),
-        ('2. Vista previa y link', {
-            'fields': (
-                'vista_previa_invitacion',
-            )
+        ('2. Resumen por persona', {
+            'description': 'La asistencia, Adulto/Niño y buffet pertenecen a cada persona del listado inferior.',
+            'fields': ('personas', 'confirmados', 'pendientes')
         }),
-        ('3. Confirmacion personal', {
-            'description': 'Estos campos se usan principalmente cuando el tipo es PERSONAL.',
-            'fields': (
-                'confirmado',
-                'asistira',
-                'acompanantes_adultos',
-                'acompanantes_ninos',
-                'cantidad_confirmada',
-                'requiere_menu_infantil',
-                'restricciones_alimentarias',
-                'alergias',
-                'comentario',
-                'fecha_confirmacion',
-            )
+        ('3. Vista previa y link', {
+            'fields': ('vista_previa_invitacion',)
         }),
-        ('4. Envios', {
+        ('4. Envíos', {
             'fields': (
                 'estado_envio',
                 'fecha_ultimo_envio',
@@ -667,35 +652,28 @@ class GrupoInvitacionAdmin(admin.ModelAdmin):
         }),
     )
 
-    def get_inline_instances(self, request, obj=None):
-        if obj and obj.es_personal:
-            return []
-        return super().get_inline_instances(request, obj)
+    @admin.display(description='Personas')
+    def personas(self, obj):
+        return obj.total_personas_v2 if obj and obj.pk else 0
 
-    def estado_asistencia(self, obj):
-        if obj.lugares_asistiran:
-            return f'{obj.lugares_asistiran} asistiran'
-        if obj.lugares_no_asistiran:
-            return 'No asistiran'
-        return 'Pendiente'
+    @admin.display(description='Confirmados')
+    def confirmados(self, obj):
+        return obj.confirmados_v2 if obj and obj.pk else 0
 
-    estado_asistencia.short_description = 'Asistencia'
+    @admin.display(description='Pendientes')
+    def pendientes(self, obj):
+        return obj.pendientes_v2 if obj and obj.pk else 0
 
     def vista_previa_invitacion(self, obj):
         if not obj or not obj.pk:
-            return 'Guarda el grupo para generar su link.'
-
+            return 'Guarda la invitación para generar su link.'
         url = reverse('ver_invitacion', args=[obj.codigo])
         return format_html(
-            '<a class="admin-action-button" href="{}" target="_blank" rel="noopener">Abrir invitacion</a>',
+            '<a class="admin-action-button" href="{}" target="_blank" rel="noopener">Abrir invitación</a>',
             url,
         )
 
-    vista_previa_invitacion.short_description = 'Invitacion'
-
-    class Media:
-        css = {'all': ('invitaciones/css/admin.css',)}
-        js = ('invitaciones/js/admin_grupo.js',)
+    vista_previa_invitacion.short_description = 'Invitación'
 
 
 @admin.register(FotoEvento)

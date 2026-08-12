@@ -468,3 +468,202 @@
 .r3-page[data-r3-editable="1"] .r3-rsvp textarea,
 .r3-page[data-r3-editable="1"] .r3-rsvp button,
 .r3-page[data-r3-editable="1"] .r3-rsvp label { pointer-events: none; }
+
+
+/* PHASE R.3 — Individual RSVP V2 */
+.r3-rsvp__people {
+    display: grid;
+    gap: 12px;
+    width: 100%;
+}
+
+.r3-rsvp__person {
+    display: grid;
+    gap: 10px;
+    width: 100%;
+    padding: 14px;
+    border: 1px solid color-mix(in srgb, var(--r3-rsvp-accent) 22%, transparent);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, .92);
+    box-sizing: border-box;
+}
+
+.r3-rsvp__person-header {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.r3-rsvp__person-name {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.r3-rsvp__person-state {
+    flex: 0 0 auto;
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: #f4f1e8;
+    font-size: .72rem;
+    font-weight: 800;
+}
+
+.r3-rsvp__person-state[data-state="ATTENDING"] {
+    background: #e9f6ed;
+    color: #24643b;
+}
+
+.r3-rsvp__person-state[data-state="NOT_ATTENDING"] {
+    background: #f9ecea;
+    color: #8b3c35;
+}
+
+.r3-rsvp__question {
+    font-size: .86rem;
+    font-weight: 700;
+}
+
+.r3-rsvp__person .r3-rsvp__choices {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.r3-rsvp__person .r3-rsvp__choice {
+    min-width: 0;
+}
+
+.r3-rsvp__person .r3-rsvp__submit {
+    width: 100%;
+}
+
+@media (max-width: 420px) {
+    .r3-rsvp__person .r3-rsvp__choices {
+        grid-template-columns: 1fr;
+    }
+
+    .r3-rsvp__person-header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+}
+
+
+/* PHASE J.1 — Countdown presentation modes */
+.r3-node--countdown[data-r3-countdown-presentation="PLAIN"]
+> .r3-node--card {
+    border-color: transparent !important;
+    border-width: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+.r3-node--countdown[data-r3-countdown-show-labels="0"]
+[data-r3-countdown-role="label"] {
+    display: none !important;
+}
+
+
+/* PHASE J.1.1 — Adaptive RSVP roster */
+.r3-rsvp {
+    min-height: 0;
+    overflow: hidden;
+}
+
+.r3-rsvp__people {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+    padding-right: 2px;
+}
+
+.r3-rsvp__identity {
+    display: grid;
+    gap: 5px;
+    min-width: 0;
+}
+
+.r3-rsvp__badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.r3-rsvp__badge {
+    display: inline-flex;
+    align-items: center;
+    min-height: 20px;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--r3-rsvp-accent) 10%, white);
+    color: color-mix(in srgb, var(--r3-rsvp-accent) 88%, #222);
+    font-size: .66rem;
+    font-weight: 800;
+    line-height: 1.15;
+}
+
+.r3-rsvp__badge[data-kind="menu"] {
+    background: #f5f1e7;
+    color: #6c5d35;
+}
+
+.r3-rsvp[data-r3-rsvp-density="COMPACT"] {
+    gap: 8px;
+    padding: 14px;
+}
+
+.r3-rsvp[data-r3-rsvp-density="COMPACT"] .r3-rsvp__title {
+    font-size: 1.08rem;
+}
+
+.r3-rsvp[data-r3-rsvp-density="COMPACT"] .r3-rsvp__description {
+    font-size: .78rem;
+    line-height: 1.35;
+}
+
+.r3-rsvp[data-r3-rsvp-density="COMPACT"] .r3-rsvp__people {
+    gap: 8px;
+}
+
+.r3-rsvp[data-r3-rsvp-density="COMPACT"] .r3-rsvp__person {
+    gap: 7px;
+    padding: 10px;
+    border-radius: 10px;
+}
+
+.r3-rsvp[data-r3-rsvp-density="COMPACT"] .r3-rsvp__person-name {
+    font-size: .88rem;
+    line-height: 1.2;
+}
+
+.r3-rsvp[data-r3-rsvp-density="COMPACT"] .r3-rsvp__question {
+    font-size: .76rem;
+}
+
+.r3-rsvp[data-r3-rsvp-density="COMPACT"] .r3-rsvp__choice {
+    padding: 7px 8px;
+    border-radius: 10px;
+    font-size: .76rem;
+}
+
+.r3-rsvp[data-r3-rsvp-density="COMPACT"] .r3-rsvp__submit {
+    padding: 8px 12px;
+    font-size: .78rem;
+}
+
+@media (max-width: 420px) {
+    .r3-rsvp {
+        padding: 14px;
+    }
+
+    .r3-rsvp__person-header {
+        gap: 7px;
+    }
+
+    .r3-rsvp__person-state {
+        align-self: flex-start;
+    }
+}

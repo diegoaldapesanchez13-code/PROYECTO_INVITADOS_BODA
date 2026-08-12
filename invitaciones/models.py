@@ -310,7 +310,10 @@ class EventoBoda(models.Model):
 
     @property
     def numero_invitados_confirmados(self):
-        return sum(grupo.lugares_asistiran for grupo in self.grupos.all())
+        return Invitado.objects.filter(
+            grupo__evento=self,
+            asistira=True,
+        ).count()
 
     def obtener_paleta(self, codigo=None):
         codigo = codigo or self.paleta_colores
@@ -1121,6 +1124,10 @@ class Grupoinvitacion(models.Model):
     tipo = models.CharField(max_length=10, choices=TIPO_INVITACION)
     cantidad_maxima = models.IntegerField(default=1)
     cantidad_extra_permitida = models.PositiveIntegerField(default=0)
+    permitir_acompanantes_extra = models.BooleanField(
+        default=False,
+        help_text='Solo el organizador habilita acompañantes adicionales sin nombre conocido.',
+    )
     confirmado = models.BooleanField(default=False)
     asistira = models.BooleanField(null=True, blank=True)
     cantidad_confirmada = models.PositiveIntegerField(blank=True, null=True)
@@ -1160,70 +1167,91 @@ class Grupoinvitacion(models.Model):
         return self.tipo == 'FAMILIAR'
 
     @property
-    def total_lugares(self):
-        if self.es_personal:
-            invitados_count = self.invitados.count() if self.pk else 0
-            if invitados_count:
-                return 1 + invitados_count
-            return 1 + self.cantidad_extra_permitida
-        invitados_count = self.invitados.count() if self.pk else 0
-        return invitados_count or self.cantidad_maxima
+    def invitados_nominales(self):
+        if not self.pk:
+            return Invitado.objects.none()
+        return self.invitados.filter(es_acompanante_extra=False)
 
     @property
-    def lugares_asistiran(self):
-        if self.es_personal:
-            if self.asistira is not True:
-                return 0
-            invitados_count = self.invitados.count() if self.pk else 0
-            if invitados_count:
-                return 1 + self.invitados.filter(asistira=True).count()
-            return 1 + self.acompanantes_adultos + self.acompanantes_ninos
+    def acompanantes_extra(self):
+        if not self.pk:
+            return Invitado.objects.none()
+        return self.invitados.filter(es_acompanante_extra=True)
+
+    @property
+    def cantidad_acompanantes_autorizados(self):
+        # During R.1 the numeric legacy field remains the compatibility source.
+        # R.2 will make the enable/disable toggle set this value explicitly.
+        return max(int(self.cantidad_extra_permitida or 0), 0)
+
+    @property
+    def total_personas_v2(self):
+        if not self.pk:
+            return 0
+        return self.invitados.count()
+
+    @property
+    def confirmados_v2(self):
+        if not self.pk:
+            return 0
         return self.invitados.filter(asistira=True).count()
 
     @property
-    def lugares_no_asistiran(self):
-        if self.es_personal:
-            invitados_count = self.invitados.count() if self.pk else 0
-            if invitados_count:
-                principal = 1 if self.asistira is False else 0
-                return principal + self.invitados.filter(asistira=False).count()
-            if self.asistira is False:
-                return self.total_lugares
-            if self.asistira is True:
-                return max(self.total_lugares - self.lugares_asistiran, 0)
-            return 0
-        return self.invitados.filter(asistira=False).count()
-
-    @property
-    def lugares_pendientes(self):
-        if self.es_personal:
-            invitados_count = self.invitados.count() if self.pk else 0
-            if invitados_count:
-                principal = 1 if self.asistira is None else 0
-                return principal + self.invitados.filter(asistira__isnull=True).count()
-            if self.asistira is None:
-                return self.total_lugares
+    def pendientes_v2(self):
+        if not self.pk:
             return 0
         return self.invitados.filter(asistira__isnull=True).count()
 
     @property
-    def adultos_confirmados(self):
+    def total_lugares(self):
+        invitados_count = self.invitados.count() if self.pk else 0
+        if invitados_count:
+            return invitados_count
         if self.es_personal:
-            invitados_count = self.invitados.count() if self.pk else 0
-            if invitados_count:
-                principal = 1 if self.asistira is True else 0
-                return principal + self.invitados.filter(asistira=True, tipo_persona='ADULTO').count()
-            return (1 + self.acompanantes_adultos) if self.asistira is True else 0
-        return self.invitados.filter(asistira=True, tipo_persona='ADULTO').count()
+            return 1 + self.cantidad_acompanantes_autorizados
+        return self.cantidad_maxima
+
+    @property
+    def lugares_asistiran(self):
+        invitados_count = self.invitados.count() if self.pk else 0
+        if invitados_count:
+            return self.invitados.filter(asistira=True).count()
+        if self.es_personal and self.asistira is True:
+            return 1 + self.acompanantes_adultos + self.acompanantes_ninos
+        return 0
+
+    @property
+    def lugares_no_asistiran(self):
+        invitados_count = self.invitados.count() if self.pk else 0
+        if invitados_count:
+            return self.invitados.filter(asistira=False).count()
+        if self.es_personal and self.asistira is False:
+            return self.total_lugares
+        return 0
+
+    @property
+    def lugares_pendientes(self):
+        invitados_count = self.invitados.count() if self.pk else 0
+        if invitados_count:
+            return self.invitados.filter(asistira__isnull=True).count()
+        if self.es_personal and self.asistira is None:
+            return self.total_lugares
+        return self.cantidad_maxima if self.es_familiar else 0
+
+    @property
+    def adultos_confirmados(self):
+        invitados_count = self.invitados.count() if self.pk else 0
+        if invitados_count:
+            return self.invitados.filter(asistira=True, tipo_persona='ADULTO').count()
+        return (1 + self.acompanantes_adultos) if self.es_personal and self.asistira is True else 0
 
     @property
     def ninos_confirmados(self):
-        if self.es_personal:
-            invitados_count = self.invitados.count() if self.pk else 0
-            if invitados_count:
-                return self.invitados.filter(asistira=True, tipo_persona='NINO').count()
-            return self.acompanantes_ninos if self.asistira is True else 0
-        return self.invitados.filter(asistira=True, tipo_persona='NINO').count()
+        invitados_count = self.invitados.count() if self.pk else 0
+        if invitados_count:
+            return self.invitados.filter(asistira=True, tipo_persona='NINO').count()
+        return self.acompanantes_ninos if self.es_personal and self.asistira is True else 0
+
 
 
 class Invitado(models.Model):
@@ -1231,12 +1259,24 @@ class Invitado(models.Model):
         ('ADULTO', 'Adulto'),
         ('NINO', 'Niño'),
     ]
+    TIPO_MENU = [
+        ('SEGUN_TIPO', 'Según tipo de persona'),
+        ('ADULTO', 'Menú adulto'),
+        ('INFANTIL', 'Menú infantil'),
+    ]
     grupo = models.ForeignKey(Grupoinvitacion, on_delete=models.CASCADE, related_name='invitados')
     nombre = models.CharField(max_length=100)
     apellidos = models.CharField(max_length=120, blank=True, null=True)
     telefono = models.CharField(max_length=30, blank=True, null=True)
     correo = models.EmailField(blank=True, null=True)
     tipo_persona = models.CharField(max_length=10, choices=TIPO_PERSONA, default='ADULTO')
+    es_acompanante_extra = models.BooleanField(default=False)
+    menu_asignado = models.CharField(
+        max_length=12,
+        choices=TIPO_MENU,
+        default='SEGUN_TIPO',
+        help_text='Decisión interna del organizador. El invitado no modifica este valor.',
+    )
     asistira = models.BooleanField(null=True, blank=True)
     comentario = models.TextField(blank=True, null=True)
     restricciones_alimentarias = models.TextField(blank=True, null=True)
@@ -1249,6 +1289,14 @@ class Invitado(models.Model):
 
     class Meta:
         ordering = ['orden', 'id']
+
+    @property
+    def menu_buffet_efectivo(self):
+        if self.menu_asignado == 'ADULTO':
+            return 'ADULTO'
+        if self.menu_asignado == 'INFANTIL':
+            return 'INFANTIL'
+        return 'INFANTIL' if self.tipo_persona == 'NINO' else 'ADULTO'
 
     def __str__(self):
         if self.apellidos:

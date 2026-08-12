@@ -1,27 +1,78 @@
-function copiarLink(linkId) {
+async function copiarLink(linkId) {
     const element = document.getElementById(linkId);
     if (!element) return;
 
-    navigator.clipboard.writeText(element.innerText.trim());
+    const value = element.innerText.trim();
+    let copied = false;
+
+    try {
+        if (navigator.clipboard?.writeText) {
+            await navigator.clipboard.writeText(value);
+            copied = true;
+        }
+    } catch (_) {
+        copied = false;
+    }
+
+    if (!copied) {
+        const fallback = document.createElement('textarea');
+        fallback.value = value;
+        fallback.setAttribute('readonly', '');
+        fallback.style.position = 'fixed';
+        fallback.style.opacity = '0';
+        document.body.append(fallback);
+        fallback.select();
+        copied = document.execCommand('copy');
+        fallback.remove();
+    }
+
+    const button = document.querySelector(
+        `[data-copy-link-target="${CSS.escape(linkId)}"]`
+    );
+    if (button) {
+        const original = button.textContent;
+        button.textContent = copied ? 'Link copiado' : 'No se pudo copiar';
+        setTimeout(() => {
+            button.textContent = original;
+        }, 1600);
+    }
 }
 
 const tabByTarget = {
-    personalizacion: 'diseno',
-    operacion: 'contenido',
-    indicadores: 'operacion',
-    produccion: 'operacion',
-    graficas: 'operacion',
+    resumen: 'resumen',
+    invitacion: 'invitacion',
+    personalizacion: 'invitacion',
+    diseno: 'invitacion',
+    contenido: 'contenido',
+    servicios: 'servicios',
+    agenda: 'agenda',
+    tareas: 'tareas',
+    finanzas: 'finanzas',
+    documentos: 'documentos',
     invitados: 'invitados',
+    operacion: 'operacion',
+    produccion: 'resumen',
+    indicadores: 'resumen',
+    graficas: 'resumen',
     usuarios: 'usuarios',
 };
 
-function activarTabDashboard(tabName) {
+function activarTabDashboard(tabName, options = {}) {
     const tabs = document.querySelectorAll('[data-dashboard-tab]');
     const panels = document.querySelectorAll('[data-tab-panel]');
     if (!tabName || !tabs.length || !panels.length) return;
 
+    const exists = Array.from(panels).some(
+        (panel) => panel.dataset.tabPanel === tabName
+    );
+    if (!exists) {
+        tabName = 'resumen';
+    }
+
     tabs.forEach((tab) => {
-        tab.classList.toggle('active', tab.dataset.dashboardTab === tabName);
+        const active = tab.dataset.dashboardTab === tabName;
+        tab.classList.toggle('active', active);
+        tab.setAttribute('aria-current', active ? 'page' : 'false');
     });
 
     panels.forEach((panel) => {
@@ -30,21 +81,27 @@ function activarTabDashboard(tabName) {
 
     localStorage.setItem('dashboardTab', tabName);
 
-    if (tabName === 'operacion') {
-        cargarGraficasDashboard().catch(() => {});
+    if (options.updateHash !== false) {
+        const nextHash = `#${tabName}`;
+        if (window.location.hash !== nextHash) {
+            history.replaceState(null, '', nextHash);
+        }
+    }
+
+    if (tabName === 'resumen') {
+        requestAnimationFrame(() => {
+            cargarGraficasDashboard().catch(() => {});
+        });
     }
 }
 
 function activarTabDesdeHash() {
     const target = window.location.hash.replace('#', '');
-    if (tabByTarget[target]) {
-        activarTabDashboard(tabByTarget[target]);
-        setTimeout(() => {
-            document.getElementById(target)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 40);
-        return true;
-    }
-    return false;
+    const tab = tabByTarget[target];
+    if (!tab) return false;
+
+    activarTabDashboard(tab, { updateHash: false });
+    return true;
 }
 
 function crearGrafica(canvasId, tipo, labels, values, colors) {
@@ -208,12 +265,83 @@ function enablePreviewRefresh() {
     });
 }
 
+
+function enableGuestWorkspaceControls() {
+    const syncExtraToggle = (toggle) => {
+        const form = toggle.closest('form');
+        const field = form?.querySelector('[data-guest-extra-count]');
+        const input = field?.querySelector('input[name="cantidad_extra_permitida"]');
+        if (!field) return;
+        field.hidden = !toggle.checked;
+        if (!toggle.checked && input) input.value = '0';
+    };
+
+    document.querySelectorAll('[data-guest-extra-toggle]').forEach((toggle) => {
+        if (toggle.dataset.guestToggleReady) return;
+        toggle.dataset.guestToggleReady = 'true';
+        toggle.addEventListener('change', () => syncExtraToggle(toggle));
+        syncExtraToggle(toggle);
+    });
+
+    document.querySelectorAll('[data-guest-create-form]').forEach((form) => {
+        const type = form.querySelector('[data-guest-group-type]');
+        const members = form.querySelector('[data-family-members]');
+        const nameLabel = form.querySelector('[data-guest-name-label]');
+        if (!type || type.dataset.guestTypeReady) return;
+        type.dataset.guestTypeReady = 'true';
+
+        const syncType = () => {
+            const familiar = type.value === 'FAMILIAR';
+            if (members) members.hidden = !familiar;
+            if (nameLabel) {
+                nameLabel.textContent = familiar
+                    ? 'Nombre del grupo familiar'
+                    : 'Nombre de la persona';
+            }
+        };
+
+        type.addEventListener('change', syncType);
+        syncType();
+    });
+}
+
+
+function openOperationSubpanel(target) {
+    if (!target) return;
+
+    activarTabDashboard('operacion');
+
+    const scope = document.querySelector(
+        '[data-subnav-scope="operacion-evento"]'
+    );
+    if (!scope) return;
+
+    activateSubpanel(scope, target);
+    requestAnimationFrame(() => {
+        scope.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start',
+        });
+    });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     enablePasswordToggles();
     enablePreviewRefresh();
+    enableGuestWorkspaceControls();
 
     document.querySelectorAll('[data-dashboard-tab]').forEach((tab) => {
-        tab.addEventListener('click', () => activarTabDashboard(tab.dataset.dashboardTab));
+        tab.addEventListener('click', () => {
+            const operationTarget =
+                tab.dataset.openOperationSubpanel;
+            if (operationTarget) {
+                openOperationSubpanel(operationTarget);
+                return;
+            }
+            activarTabDashboard(
+                tab.dataset.dashboardTab
+            );
+        });
     });
 
     document.querySelectorAll('form[data-confirm]').forEach((form) => {
@@ -254,7 +382,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     if (!activarTabDesdeHash()) {
-        activarTabDashboard(localStorage.getItem('dashboardTab') || 'diseno');
+        activarTabDashboard(localStorage.getItem('dashboardTab') || 'resumen');
     }
 
     window.addEventListener('hashchange', activarTabDesdeHash);

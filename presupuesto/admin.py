@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import CategoriaGasto, GastoEvento, PagoEvento
+from .models import CategoriaGasto, GastoEvento, PagoEvento, PagoClienteEvento
 
 
 class PagoEventoInline(admin.TabularInline):
@@ -81,3 +81,10 @@ class PagoEventoAdmin(admin.ModelAdmin):
     date_hierarchy = 'fecha_pago'
 
 # Register your models here.
+
+
+@admin.register(PagoClienteEvento)
+class PagoClienteEventoAdmin(admin.ModelAdmin):
+    list_display = ('evento', 'concepto', 'monto', 'fecha_pago', 'estado', 'registrado_por', 'revisado_por')
+    list_filter = ('estado', 'metodo_pago', 'fecha_pago', 'evento')
+    search_fields = ('evento__nombre_evento', 'concepto', 'referencia', 'comentario_cliente', 'comentario_equipo')

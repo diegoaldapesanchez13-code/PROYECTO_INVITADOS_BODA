@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from django.core.exceptions import ValidationError
 from invitaciones.models import validar_documento
 
 
@@ -23,6 +24,14 @@ class DocumentoEvento(models.Model):
         on_delete=models.CASCADE,
         related_name='documentos_evento',
     )
+    servicio_evento = models.ForeignKey(
+        'proveedores.ServicioEvento',
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='documentos_operativos',
+        help_text='Servicio del evento al que corresponde el documento, cuando aplique.',
+    )
     tipo_documento = models.CharField(max_length=30, choices=TIPOS, default='OTRO')
     titulo = models.CharField(max_length=160)
     archivo = models.FileField(upload_to='documentos/eventos/', validators=[validar_documento])
@@ -43,6 +52,7 @@ class DocumentoEvento(models.Model):
         related_name='documentos_cargados',
     )
     visible_cliente = models.BooleanField(default=False)
+    visible_proveedor = models.BooleanField(default=False)
 
     class Meta:
         ordering = ['evento', '-fecha_carga']
@@ -51,5 +61,19 @@ class DocumentoEvento(models.Model):
 
     def __str__(self):
         return self.titulo
+
+    def clean(self):
+        super().clean()
+        if self.servicio_evento_id and self.evento_id:
+            servicio_evento_id = (
+                getattr(self.servicio_evento, 'evento_id', None)
+                if 'servicio_evento' in self._state.fields_cache
+                else None
+            )
+            if servicio_evento_id is None:
+                from proveedores.models import ServicioEvento
+                servicio_evento_id = ServicioEvento.objects.filter(pk=self.servicio_evento_id).values_list('evento_id', flat=True).first()
+            if servicio_evento_id != self.evento_id:
+                raise ValidationError({'servicio_evento': 'El servicio debe pertenecer al mismo evento que el documento.'})
 
 # Create your models here.

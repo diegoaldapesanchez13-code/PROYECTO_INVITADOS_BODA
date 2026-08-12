@@ -1,0 +1,32 @@
+K.8.7.8.3 — GLOBAL TEST CONTRACT MODERNIZATION
+
+Aplicar DESPUÉS de:
+- K.8.7.8
+- K.8.7.8.1
+- K.8.7.8.2
+
+DIAGNÓSTICO
+El gate funcional crítico ya avanza al gate global.
+Los fallos mostrados pertenecen principalmente a contratos PRE-K8:
+renderer HTML antiguo, editor anterior, Portal Proveedor anterior,
+Portal Cliente anterior y navegación Dashboard V2.
+
+CORRECCIÓN
+- Se conservan activas las pruebas vigentes.
+- Se marcan explícitamente 52 contratos PRE-K8 como retirados.
+- No se retira completo DashboardReportesTests.
+- Se actualizan cuatro assertions V2 -> V3.
+
+NO REQUIERE MIGRACIONES.
+NO TOCA BUILDER.
+NO TOCA DATOS.
+NO MODIFICA PRODUCCIÓN.
+
+EJECUTAR:
+  python scripts/verify_hotfix_k8_7_8_3.py
+
+Si termina OK:
+  python scripts/verify_stable_k8_7_8.py
+
+No hacer commit/tag/push hasta obtener:
+  K.8.7.8 STABLE GATE: OK

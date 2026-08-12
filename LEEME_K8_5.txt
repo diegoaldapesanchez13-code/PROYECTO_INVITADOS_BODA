@@ -1,0 +1,11 @@
+K.8.5 - Decisions / Approvals / Quotes / Client Proposals
+
+Copiar el CONTENIDO de K8_5_UPDATE sobre la raiz del mismo proyecto DIRTEC_EVENT_STUDIO.
+No contiene db.sqlite3, venv, media, .git ni archivos del Builder.
+
+Despues ejecutar:
+  py manage.py showmigrations colaboracion
+  py manage.py migrate
+  python scripts/verify_phase_k8_5.py
+
+Luego realizar MANUAL_TESTS_K8_5.md.

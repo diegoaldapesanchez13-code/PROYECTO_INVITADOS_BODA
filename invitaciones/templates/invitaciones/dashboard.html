@@ -1,127 +1,66 @@
-﻿{% load static %}
+{% load static %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard de Invitaciones</title>
+    <title>{% if evento %}{{ evento }} · {% endif %}DIRTEC Event Studio</title>
     <link rel="stylesheet" href="{% static 'invitaciones/css/dashboard.css' %}">
 </head>
 <body>
-    <div class="wrapper">
-        <div class="topbar">
-            <h1>{% if empresa_dashboard %}{{ empresa_dashboard.nombre_comercial }}{% else %}Dashboard de Eventos{% endif %}</h1>
-            <div class="actions">
-                <a href="/">Inicio</a>
-                {% if es_dirtec %}<a href="/admin/">Admin DIRTEC</a>{% endif %}
-                <a href="{% url 'portal_cliente' %}">Portal cliente</a>
-                <a href="{% url 'portal_proveedor' %}">Portal proveedor</a>
-                {% if evento %}
-                    <a href="{% url 'exportar_excel' %}?evento={{ evento.id }}">Exportar Excel</a>
-                    <a href="{% url 'exportar_resumen_evento' %}?evento={{ evento.id }}">Resumen Excel</a>
-                {% endif %}
-                <form method="post" action="{% url 'logout' %}">
-                    {% csrf_token %}
-                    <button class="btn secondary" type="submit">Cerrar sesión</button>
-                </form>
-            </div>
+<div class="wrapper product-dashboard event-dashboard-v3">
+    <header class="topbar product-topbar">
+        <div class="product-brand"><span class="product-brand__eyebrow">DIRTEC Event Studio</span><h1>{% if empresa_dashboard %}{{ empresa_dashboard.nombre_comercial }}{% else %}Gestión de eventos{% endif %}</h1></div>
+        <div class="actions product-global-actions">
+            <a class="btn secondary" href="/">Inicio</a>
+            {% if es_dirtec %}<a class="btn secondary" href="/admin/">Admin DIRTEC</a>{% endif %}
+            <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="btn secondary" type="submit">Cerrar sesión</button></form>
         </div>
+    </header>
 
-        {% if messages %}
-            <section class="message-stack">
-                {% for message in messages %}
-                    <div class="notice {{ message.tags }}">{{ message }}</div>
-                {% endfor %}
-            </section>
-        {% endif %}
+    {% if messages %}<section class="message-stack" aria-live="polite">{% for message in messages %}<div class="notice {{ message.tags }}">{{ message }}</div>{% endfor %}</section>{% endif %}
 
-        <div class="dashboard-shell">
-        <aside class="sidebar">
-            <strong>Control del evento</strong>
-            <a href="#resumen">Resumen</a>
-            <a href="#indicadores">Indicadores</a>
-            <a href="#produccion">Producción</a>
-            <a href="#graficas">Gráficas</a>
-            <a href="#personalizacion">Invitación</a>
-            <a href="#operacion">Operación</a>
-            <a href="#invitados">Invitados</a>
-            {% if puede_gestionar_usuarios %}<a href="#usuarios">Usuarios</a>{% endif %}
-            {% if evento %}
-                <a href="{% url 'calendario_operativo' %}?evento={{ evento.id }}">Calendario</a>
-                <a href="{% url 'mesas_visual' %}?evento={{ evento.id }}">Mesas</a>
-            {% endif %}
-            <a href="{% url 'portal_cliente' %}">Portal cliente</a>
-            <a href="{% url 'portal_proveedor' %}">Portal proveedor</a>
-            {% if es_dirtec %}<a href="/admin/">Admin DIRTEC</a>{% endif %}
+    <section class="event-panel product-event-context event-v3-context">
+        <div>{% if evento %}<span class="product-section-eyebrow">Evento activo</span><h2 class="event-title">{{ evento }}</h2><p class="muted">{% if evento.empresa %}{{ evento.empresa.nombre_comercial }} · {% endif %}{% if evento.sede %}{{ evento.sede.nombre }} · {% endif %}{{ evento.fecha_fiesta|date:"d/m/Y h:i A" }}{% if evento.lugar_fiesta %} · {{ evento.lugar_fiesta }}{% endif %}</p>{% else %}<span class="product-section-eyebrow">Configuración</span><h2 class="event-title">Selecciona o crea un evento</h2>{% endif %}</div>
+        <form method="get" class="event-selector-form product-event-selector">
+            {% if es_dirtec and empresas_dashboard %}<label for="empresa">Empresa</label><select id="empresa" name="empresa" onchange="this.form.submit()">{% for empresa in empresas_dashboard %}<option value="{{ empresa.id }}" {% if empresa_dashboard and empresa.id == empresa_dashboard.id %}selected{% endif %}>{{ empresa.nombre_comercial }}</option>{% endfor %}</select>{% endif %}
+            <label for="evento">Evento</label><select id="evento" name="evento" onchange="this.form.submit()">{% for item in eventos %}<option value="{{ item.id }}" {% if evento and item.id == evento.id %}selected{% endif %}>{{ item }}{% if item.activo %} · Activo{% endif %}</option>{% endfor %}</select>
+        </form>
+    </section>
+
+    {% if evento %}
+    <div class="dashboard-shell product-shell event-v3-shell">
+        <aside class="sidebar product-sidebar event-v3-sidebar" aria-label="Navegación del evento">
+            <div class="product-sidebar__heading"><span>Evento</span><strong>{{ evento.participante_principal }}</strong></div>
+            <nav class="product-nav event-v3-nav">
+                <button type="button" data-dashboard-tab="resumen"><span>01</span><div><strong>Resumen</strong><small>Prioridades y próximos</small></div></button>
+                <button type="button" data-dashboard-tab="servicios"><span>02</span><div><strong>Servicios</strong><small>Operación por servicio</small></div></button>
+                <button type="button" data-dashboard-tab="agenda"><span>03</span><div><strong>Agenda</strong><small>Fechas y compromisos</small></div></button>
+                <button type="button" data-dashboard-tab="tareas"><span>04</span><div><strong>Tareas</strong><small>Responsables y avance</small></div></button>
+                {% if puede_ver_finanzas_dashboard_v3 %}<button type="button" data-dashboard-tab="finanzas"><span>05</span><div><strong>Finanzas</strong><small>Contrato, extras y costos</small></div></button>{% endif %}
+                <button type="button" data-dashboard-tab="documentos"><span>06</span><div><strong>Documentos</strong><small>Evento y servicios</small></div></button>
+                <button type="button" data-dashboard-tab="invitados"><span>07</span><div><strong>Invitados</strong><small>Personas y RSVP</small></div></button>
+                <button type="button" data-dashboard-tab="invitacion"><span>08</span><div><strong>Invitación</strong><small>Estado y Builder</small></div></button>
+                {% if puede_gestionar_usuarios %}<button type="button" data-dashboard-tab="usuarios"><span>09</span><div><strong>Equipo</strong><small>Usuarios y permisos</small></div></button>{% endif %}
+            </nav>
+            <div class="product-sidebar__utilities event-v3-utilities"><span>Accesos especializados</span><a href="{% url 'mesas_visual' %}?evento={{ evento.id }}">Mesas</a><a href="{% url 'calendario_operativo' %}?evento={{ evento.id }}">Calendario</a><a href="{% url 'portal_cliente' %}?evento={{ evento.id }}">Portal cliente</a><a href="{% url 'portal_proveedor' %}?evento={{ evento.id }}">Portal proveedor</a></div>
         </aside>
 
-        <main class="dashboard-main">
-        <section class="event-panel" id="resumen">
-            <div>
-                {% if evento %}
-                    <h2 class="event-title">{{ evento }}</h2>
-                    <p class="muted">
-                        {% if evento.empresa %}{{ evento.empresa.nombre_comercial }} · {% endif %}
-                        {% if evento.sede %}{{ evento.sede.nombre }} · {% endif %}
-                        {{ evento.fecha_fiesta|date:"d/m/Y h:i A" }} · {{ evento.lugar_fiesta }}
-                    </p>
-                    <p class="muted">Gestiona evento, invitación, invitados, producción, proveedores y paquetes desde este dashboard profesional.</p>
-                    <div class="actions" style="margin-top:12px;">
-                        {% if preview_grupo %}
-                            <a href="{% url 'ver_invitacion' preview_grupo.codigo %}" target="_blank">Vista previa como invitado</a>
-                        {% else %}
-                            <a href="#invitados">Crear grupo para vista previa</a>
-                        {% endif %}
-                        {% if es_dirtec %}<a href="/admin/invitaciones/eventoboda/{{ evento.id }}/change/" target="_blank">Editar en admin DIRTEC</a>{% endif %}
-                    </div>
-                {% else %}
-                    <h2 class="event-title">Sin evento creado</h2>
-                    <p class="muted">Crea un evento desde el dashboard profesional para comenzar a organizar invitaciones.</p>
-                {% endif %}
-            </div>
-
-            <form method="get" class="event-selector-form">
-                {% if empresas_dashboard %}
-                    <label for="empresa">Empresa</label>
-                    <select id="empresa" name="empresa" onchange="this.form.submit()">
-                        {% for empresa in empresas_dashboard %}
-                            <option value="{{ empresa.id }}" {% if empresa_dashboard and empresa.id == empresa_dashboard.id %}selected{% endif %}>{{ empresa.nombre_comercial }}</option>
-                        {% endfor %}
-                    </select>
-                {% endif %}
-                <label for="evento">Evento</label>
-                <select id="evento" name="evento" onchange="this.form.submit()">
-                    {% for item in eventos %}
-                        <option value="{{ item.id }}" {% if evento and item.id == evento.id %}selected{% endif %}>
-                            {{ item }}{% if item.activo %} · Activo{% endif %}
-                        </option>
-                    {% endfor %}
-                </select>
-            </form>
-        </section>
-
-        {% if evento %}
-        <div class="dashboard-tabs" role="tablist" aria-label="Secciones del dashboard">
-            <button type="button" class="active" data-dashboard-tab="diseno">Diseño</button>
-            <button type="button" data-dashboard-tab="contenido">Contenido</button>
-            <button type="button" data-dashboard-tab="operacion">Operación</button>
-            <button type="button" data-dashboard-tab="invitados">Invitados</button>
-            {% if puede_gestionar_usuarios %}
-                <button type="button" data-dashboard-tab="usuarios">Usuarios</button>
-            {% endif %}
-        </div>
-
-        {% include "invitaciones/dashboard/partials/_tab_diseno.html" %}
-        {% include "invitaciones/dashboard/partials/_tab_contenido.html" %}
-        {% include "invitaciones/dashboard/partials/_tab_usuarios.html" %}
-        {% include "invitaciones/dashboard/partials/_tab_operacion.html" %}
-        {% include "invitaciones/dashboard/partials/_tab_invitados.html" %}
-        {% endif %}
+        <main class="dashboard-main product-main event-v3-main">
+            {% include "invitaciones/dashboard/v3/_resumen.html" %}
+            {% include "invitaciones/dashboard/v3/_servicios.html" %}
+            {% include "invitaciones/dashboard/v3/_agenda.html" %}
+            {% include "invitaciones/dashboard/v3/_tareas.html" %}
+            {% if puede_ver_finanzas_dashboard_v3 %}{% include "invitaciones/dashboard/v3/_finanzas.html" %}{% endif %}
+            {% include "invitaciones/dashboard/v3/_documentos.html" %}
+            {% include "invitaciones/dashboard/partials/_tab_invitados.html" %}
+            {% include "invitaciones/dashboard/v3/_invitacion.html" %}
+            {% if puede_gestionar_usuarios %}{% include "invitaciones/dashboard/partials/_tab_usuarios.html" %}{% endif %}
         </main>
-        </div>
     </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="{% static 'invitaciones/js/dashboard.js' %}"></script>
+    {% endif %}
+</div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{% static 'invitaciones/js/dashboard.js' %}"></script>
 </body>
 </html>

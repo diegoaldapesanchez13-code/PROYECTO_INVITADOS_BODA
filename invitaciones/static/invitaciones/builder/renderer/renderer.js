@@ -31,6 +31,10 @@ import {
     InteractionEngine,
 } from "../interaction/index.js";
 
+import {
+    resolveDataBoundText,
+} from "../data_bindings/index.js";
+
 export class UniversalRenderer {
     constructor(options = {}) {
         this.options = {
@@ -42,6 +46,7 @@ export class UniversalRenderer {
             assetResolver: null,
             rsvpProvider: null,
             invitationContext: {},
+            eventContext: {},
             onRsvpResult: null,
             onRsvpError: null,
             interactionEngine:
@@ -666,6 +671,13 @@ export class UniversalRenderer {
                 element.dataset.r3Gallery = "1";
                 break;
 
+            case NODE_TYPES.COUNTDOWN:
+                this.applyCountdownPresentation(
+                    element,
+                    node
+                );
+                break;
+
             case NODE_TYPES.RSVP:
                 this.applyRsvpContent(element, node);
                 break;
@@ -679,10 +691,44 @@ export class UniversalRenderer {
         }
     }
 
+    applyCountdownPresentation(
+        element,
+        node
+    ) {
+        const presentation = String(
+            node.content?.presentation
+            || "CARDS"
+        ).toUpperCase();
+
+        element.dataset.r3CountdownPresentation =
+            presentation === "PLAIN"
+                ? "PLAIN"
+                : "CARDS";
+
+        element.dataset.r3CountdownShowLabels =
+            node.content?.showLabels === false
+                ? "0"
+                : "1";
+    }
+
     applyRsvpContent(element, node) {
         const content = node.content || {};
-        const preview = normalizeRsvpData(createRsvpPreviewData(content.preview || {}));
-        const invitationId = resolveInvitationId(this.options.invitationContext || {});
+        const invitationContext =
+            this.options.invitationContext
+            || {};
+        const runtimePreview =
+            Array.isArray(invitationContext.guests)
+            && invitationContext.guests.length
+                ? invitationContext
+                : createRsvpPreviewData(
+                    content.preview || {}
+                );
+        const preview = normalizeRsvpData(
+            runtimePreview
+        );
+        const invitationId = resolveInvitationId(
+            invitationContext
+        );
         const provider = this.options.rsvpProvider;
 
         element.replaceChildren();
@@ -690,7 +736,19 @@ export class UniversalRenderer {
         element.style.setProperty("--r3-rsvp-accent", node.style?.accentColor || "#526043");
 
         const renderForm = (rawData) => {
-            const data = normalizeRsvpData({ ...rawData, invitationId: rawData?.invitationId || invitationId });
+            const data = normalizeRsvpData({
+                ...rawData,
+                invitationId: rawData?.invitationId || invitationId,
+            });
+            const configuredDensity = String(
+                content.density || "AUTO"
+            ).toUpperCase();
+            element.dataset.r3RsvpDensity =
+                configuredDensity === "AUTO"
+                    ? (data.guests.length >= 4
+                        ? "COMPACT"
+                        : "COMFORTABLE")
+                    : configuredDensity;
             element.replaceChildren();
 
             const title = element.ownerDocument.createElement("h3");
@@ -699,103 +757,162 @@ export class UniversalRenderer {
 
             const description = element.ownerDocument.createElement("p");
             description.className = "r3-rsvp__description";
-            description.textContent = content.description || "Tu respuesta nos ayuda a preparar cada detalle.";
+            description.textContent =
+                content.description
+                || "Cada persona puede confirmar su asistencia de forma individual.";
 
-            const form = element.ownerDocument.createElement("form");
-            form.className = "r3-rsvp__form";
+            element.append(title, description);
 
             if (content.showGroupName !== false) {
                 const group = element.ownerDocument.createElement("strong");
                 group.className = "r3-rsvp__group";
                 group.textContent = data.groupName;
-                form.append(group);
+                element.append(group);
             }
 
-            if (content.showGuestLimit !== false) {
-                const limit = element.ownerDocument.createElement("small");
-                limit.className = "r3-rsvp__limit";
-                limit.textContent = `Invitación válida para ${data.maxGuests} ${data.maxGuests === 1 ? "persona" : "personas"}`;
-                form.append(limit);
+            if (!data.guests.length) {
+                const empty = element.ownerDocument.createElement("p");
+                empty.className = "r3-rsvp__status";
+                empty.textContent = "Esta invitación todavía no tiene personas asignadas.";
+                element.append(empty);
+                return;
             }
 
-            const choices = element.ownerDocument.createElement("div");
-            choices.className = "r3-rsvp__choices";
-            for (const [value, label] of [["yes", content.acceptLabel || "Sí asistiré"], ["no", content.declineLabel || "No podré asistir"]]) {
-                const choice = element.ownerDocument.createElement("label");
-                choice.className = "r3-rsvp__choice";
-                const input = element.ownerDocument.createElement("input");
-                input.type = "radio";
-                input.name = `rsvp-attending-${node.id}`;
-                input.value = value;
-                input.checked = value === "yes" ? data.attending === true : data.attending === false;
-                const text = element.ownerDocument.createElement("span");
-                text.textContent = label;
-                choice.append(input, text);
-                choices.append(choice);
-            }
-            form.append(choices);
+            const list = element.ownerDocument.createElement("div");
+            list.className = "r3-rsvp__people";
 
-            const count = element.ownerDocument.createElement("input");
-            count.className = "r3-rsvp__count";
-            count.type = "number";
-            count.min = "1";
-            count.max = String(data.maxGuests);
-            count.value = String(Math.max(1, data.confirmedGuests || 1));
-            count.setAttribute("aria-label", "Cantidad de asistentes");
-            form.append(count);
+            for (const guest of data.guests) {
+                const form = element.ownerDocument.createElement("form");
+                form.className = "r3-rsvp__person";
+                form.dataset.rsvpGuestId = guest.id;
 
-            let comment = null;
-            if (content.showComment !== false) {
-                comment = element.ownerDocument.createElement("textarea");
-                comment.className = "r3-rsvp__comment";
-                comment.rows = 3;
-                comment.placeholder = "Comentario opcional";
-                comment.value = data.comment || "";
-                form.append(comment);
-            }
+                const personHeader = element.ownerDocument.createElement("div");
+                personHeader.className = "r3-rsvp__person-header";
 
-            const submit = element.ownerDocument.createElement("button");
-            submit.className = "r3-rsvp__submit";
-            submit.type = "submit";
-            submit.textContent = content.submitLabel || "Enviar confirmación";
-            form.append(submit);
+                const identity = element.ownerDocument.createElement("div");
+                identity.className = "r3-rsvp__identity";
 
-            const status = element.ownerDocument.createElement("div");
-            status.className = "r3-rsvp__status";
-            status.setAttribute("aria-live", "polite");
-            form.append(status);
+                const name = element.ownerDocument.createElement("strong");
+                name.className = "r3-rsvp__person-name";
+                name.textContent = guest.name;
+                identity.append(name);
 
-            form.addEventListener("submit", async (event) => {
-                event.preventDefault();
-                if (this.options.editable) return;
-                const selected = form.querySelector(`input[name="rsvp-attending-${node.id}"]:checked`);
-                const payload = buildRsvpSubmission({
-                    attending: selected?.value || null,
-                    confirmedGuests: count.value,
-                    comment: comment?.value || "",
-                }, data);
+                const badges = element.ownerDocument.createElement("div");
+                badges.className = "r3-rsvp__badges";
 
-                if (!provider?.submit) {
-                    status.textContent = "Vista previa: la confirmación se enviará al publicar la invitación.";
-                    this.options.onRsvpResult?.({ node, payload, preview: true });
-                    return;
+                if (content.showPersonType !== false && guest.personTypeLabel) {
+                    const typeBadge = element.ownerDocument.createElement("span");
+                    typeBadge.className = "r3-rsvp__badge";
+                    typeBadge.dataset.kind = "person";
+                    typeBadge.textContent = guest.personTypeLabel;
+                    badges.append(typeBadge);
                 }
 
-                submit.disabled = true;
-                status.textContent = "Enviando…";
-                try {
-                    const result = await provider.submit(payload, { node, document: this.document, invitationId });
-                    status.textContent = result?.message || "Confirmación guardada.";
-                    this.options.onRsvpResult?.({ node, payload, result });
-                } catch (error) {
-                    status.textContent = "No se pudo guardar la confirmación.";
-                    this.options.onRsvpError?.(error, { node, payload });
-                } finally {
-                    submit.disabled = false;
+                if (content.showMenu !== false && guest.menuLabel) {
+                    const menuBadge = element.ownerDocument.createElement("span");
+                    menuBadge.className = "r3-rsvp__badge";
+                    menuBadge.dataset.kind = "menu";
+                    menuBadge.textContent = guest.menuLabel;
+                    badges.append(menuBadge);
                 }
-            });
 
-            element.append(title, description, form);
+                if (badges.childElementCount) {
+                    identity.append(badges);
+                }
+
+                const state = element.ownerDocument.createElement("span");
+                state.className = "r3-rsvp__person-state";
+                state.textContent = guest.attending === true
+                    ? "Confirmado"
+                    : guest.attending === false
+                        ? "No asiste"
+                        : "Pendiente";
+                state.dataset.state = guest.status;
+
+                personHeader.append(identity, state);
+
+                const question = element.ownerDocument.createElement("span");
+                question.className = "r3-rsvp__question";
+                question.textContent = "¿Asistirás?";
+
+                const choices = element.ownerDocument.createElement("div");
+                choices.className = "r3-rsvp__choices";
+                const inputName = `rsvp-attending-${node.id}-${guest.id}`;
+
+                for (const [value, label] of [
+                    ["yes", content.acceptLabel || "Sí asistiré"],
+                    ["no", content.declineLabel || "No asistiré"],
+                ]) {
+                    const choice = element.ownerDocument.createElement("label");
+                    choice.className = "r3-rsvp__choice";
+
+                    const input = element.ownerDocument.createElement("input");
+                    input.type = "radio";
+                    input.name = inputName;
+                    input.value = value;
+                    input.checked = value === "yes"
+                        ? guest.attending === true
+                        : guest.attending === false;
+
+                    const text = element.ownerDocument.createElement("span");
+                    text.textContent = label;
+                    choice.append(input, text);
+                    choices.append(choice);
+                }
+
+                const submit = element.ownerDocument.createElement("button");
+                submit.className = "r3-rsvp__submit";
+                submit.type = "submit";
+                submit.textContent = content.submitLabel || "Guardar respuesta";
+
+                const status = element.ownerDocument.createElement("div");
+                status.className = "r3-rsvp__status";
+                status.setAttribute("aria-live", "polite");
+
+                form.append(personHeader, question, choices, submit, status);
+
+                form.addEventListener("submit", async (event) => {
+                    event.preventDefault();
+                    if (this.options.editable) return;
+
+                    const selected = form.querySelector(`input[name="${inputName}"]:checked`);
+                    if (!selected) {
+                        status.textContent = "Selecciona una respuesta.";
+                        return;
+                    }
+
+                    const payload = buildRsvpSubmission({
+                        guestId: guest.id,
+                        attending: selected.value,
+                    }, data);
+
+                    if (!provider?.submit) {
+                        status.textContent = "Vista previa: la respuesta se guardará al publicar.";
+                        this.options.onRsvpResult?.({ node, payload, preview: true });
+                        return;
+                    }
+
+                    submit.disabled = true;
+                    status.textContent = "Guardando…";
+                    try {
+                        const result = await provider.submit(
+                            payload,
+                            { node, document: this.document, invitationId }
+                        );
+                        const nextData = result?.data || data;
+                        renderForm(nextData);
+                        this.options.onRsvpResult?.({ node, payload, result });
+                    } catch (error) {
+                        status.textContent = "No se pudo guardar la respuesta.";
+                        this.options.onRsvpError?.(error, { node, payload });
+                        submit.disabled = false;
+                    }
+                });
+
+                list.append(form);
+            }
+
+            element.append(list);
         };
 
         renderForm(preview);
@@ -1056,7 +1173,7 @@ export class UniversalRenderer {
 
         const hasActiveCountdown = [...this.nodeMap.values()].some((node) => {
             if (node.type !== NODE_TYPES.COUNTDOWN || !node.visible) return false;
-            return Number.isFinite(this.resolveCountdownTimestamp(node.content?.targetDate));
+            return Number.isFinite(this.resolveCountdownTarget(node));
         });
 
         if (!hasActiveCountdown) {
@@ -1089,7 +1206,7 @@ export class UniversalRenderer {
             .filter((node) => node.type === NODE_TYPES.COUNTDOWN && node.visible);
 
         for (const countdown of countdowns) {
-            const target = this.resolveCountdownTimestamp(countdown.content?.targetDate);
+            const target = this.resolveCountdownTarget(countdown);
             if (!Number.isFinite(target)) continue;
 
             const values = this.calculateCountdownValues(target, now);
@@ -1112,6 +1229,32 @@ export class UniversalRenderer {
                 element.textContent = String(values[unitIndex]);
             }
         }
+    }
+
+    resolveCountdownTarget(node) {
+        const content = node?.content || {};
+        const configuredSource = String(
+            content.targetSource || ""
+        ).toUpperCase();
+
+        // Preserve old documents: before R.6 a countdown only knew targetDate.
+        // If that value exists and no source was stored, it remains CUSTOM.
+        const source = configuredSource
+            || (content.targetDate ? "CUSTOM" : "RECEPTION");
+
+        const eventContext =
+            this.options.eventContext || {};
+
+        const valueBySource = {
+            EVENT: eventContext.eventDate,
+            CEREMONY: eventContext.ceremonyDate,
+            RECEPTION: eventContext.receptionDate,
+            CUSTOM: content.targetDate,
+        };
+
+        return this.resolveCountdownTimestamp(
+            valueBySource[source]
+        );
     }
 
     resolveCountdownTimestamp(value) {
@@ -1147,9 +1290,29 @@ export class UniversalRenderer {
 
     resolveTextContent(node) {
         const binding = node.content?.binding;
+        const fallback =
+            node.content?.text || "";
+
+        if (
+            binding?.source
+            && binding.source !== "COUNTDOWN"
+        ) {
+            return resolveDataBoundText(
+                binding,
+                {
+                    eventContext:
+                        this.options.eventContext
+                        || {},
+                    invitationContext:
+                        this.options.invitationContext
+                        || {},
+                    fallback,
+                }
+            );
+        }
 
         if (binding?.source !== "COUNTDOWN") {
-            return node.content?.text || "";
+            return fallback;
         }
 
         const countdown = this.findAncestorByType(
@@ -1158,7 +1321,7 @@ export class UniversalRenderer {
         );
 
         if (!countdown) {
-            return node.content?.text || "";
+            return fallback;
         }
 
         const unitIndex = {
@@ -1169,11 +1332,14 @@ export class UniversalRenderer {
         }[binding.unit];
 
         if (unitIndex === undefined) {
-            return node.content?.text || "";
+            return fallback;
         }
 
         if (binding.role === "label") {
-            return String(node.content?.text ?? "");
+            return String(
+                node.content?.text
+                ?? ""
+            );
         }
 
         return String(

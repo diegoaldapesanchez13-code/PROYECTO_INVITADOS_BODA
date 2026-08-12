@@ -1,29 +1,55 @@
-﻿            <form class="mini-admin-form" method="post">
-                {% csrf_token %}
-                <input type="hidden" name="accion" value="agregar_grupo">
-                <input type="hidden" name="evento_id" value="{{ evento.id }}">
-                <h3>Crear invitación</h3>
-                <div class="design-grid">
-                    <label>
-                        Tipo
-                        <select name="tipo_grupo">
-                            {% for valor, texto in tipos_invitacion %}
-                                <option value="{{ valor }}">{{ texto }}</option>
-                            {% endfor %}
-                        </select>
-                    </label>
-                    <label>Nombre o familia<input type="text" name="nombre_grupo" placeholder="Carlos Ramírez o Familia Pérez"></label>
-                    <label>Teléfono<input type="text" name="telefono_contacto" placeholder="WhatsApp"></label>
-                    <label>Correo<input type="text" name="correo_contacto" placeholder="correo@ejemplo.com"></label>
-                    <label>Mesa<input type="text" name="mesa" placeholder="Mesa 4"></label>
-                    <label>Acompañantes permitidos<input type="number" name="cantidad_extra_permitida" min="0" value="0"></label>
-                    <label>Cupo familiar estimado<input type="number" name="cantidad_maxima" min="1" value="1"></label>
-                    <label class="wide">
-                        Integrantes familiares
-                        <textarea name="invitados_familia" placeholder="Un invitado por línea. Ejemplo: Ana Pérez | Adulto&#10;Sofía Pérez | Niño"></textarea>
-                    </label>
-                </div>
-                <div class="actions form-actions">
-                    <button class="btn" type="submit">Crear invitación</button>
-                </div>
-            </form>
+<form class="guest-create-card" method="post" data-guest-create-form>
+    {% csrf_token %}
+    <input type="hidden" name="accion" value="agregar_grupo">
+    <input type="hidden" name="evento_id" value="{{ evento.id }}">
+
+    <div class="guest-create-card__heading">
+        <div>
+            <span class="eyebrow">Nueva invitación</span>
+            <h3>Crear grupo o invitación personal</h3>
+            <p class="muted">El grupo identifica el link. Cada persona se administrará y confirmará de forma individual.</p>
+        </div>
+    </div>
+
+    <div class="guest-form-grid">
+        <label>
+            Tipo
+            <select name="tipo_grupo" data-guest-group-type>
+                {% for valor, texto in tipos_invitacion %}
+                    <option value="{{ valor }}">{{ texto }}</option>
+                {% endfor %}
+            </select>
+        </label>
+
+        <label class="guest-form-grid__wide">
+            <span data-guest-name-label>Nombre de la persona</span>
+            <input type="text" name="nombre_grupo" placeholder="Ej. Carlos Ramírez" required>
+        </label>
+
+        <label>Teléfono de contacto<input type="text" name="telefono_contacto" placeholder="WhatsApp"></label>
+        <label>Correo<input type="email" name="correo_contacto" placeholder="correo@ejemplo.com"></label>
+
+        <label class="guest-extra-toggle guest-form-grid__wide">
+            <input type="checkbox" name="permitir_acompanantes_extra" data-guest-extra-toggle>
+            <span>
+                <strong>Autorizar acompañantes adicionales</strong>
+                <small>Solo el organizador controla estos lugares. Puede quedar desactivado.</small>
+            </span>
+        </label>
+
+        <label data-guest-extra-count hidden>
+            Cantidad autorizada
+            <input type="number" name="cantidad_extra_permitida" min="0" value="0">
+        </label>
+
+        <label class="guest-form-grid__wide" data-family-members hidden>
+            Integrantes iniciales <span class="muted">(opcional)</span>
+            <textarea name="invitados_familia" rows="4" placeholder="Un integrante por línea. Ejemplo:&#10;Ana Pérez | Adulto&#10;Sofía Pérez | Niño"></textarea>
+            <small class="muted">También podrás agregarlos después desde la tarjeta de la familia.</small>
+        </label>
+    </div>
+
+    <div class="actions form-actions">
+        <button class="btn" type="submit">Crear invitación</button>
+    </div>
+</form>

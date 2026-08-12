@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from django.db import models
 
 
@@ -91,6 +92,14 @@ class PaqueteEvento(models.Model):
     estado = models.CharField(max_length=20, choices=ESTADOS, default='PROPUESTO')
     notas = models.TextField(blank=True, null=True)
 
+    # K.8.3: snapshot contractual congelado del paquete maestro. Una vez
+    # generado, cambios posteriores en PaqueteBoda/ServicioPaquete no alteran
+    # el acuerdo historico del evento.
+    snapshot_paquete = models.JSONField(default=dict, blank=True)
+    snapshot_generado_en = models.DateTimeField(blank=True, null=True)
+    materializado_en = models.DateTimeField(blank=True, null=True)
+    materializacion_version = models.PositiveIntegerField(default=1)
+
     class Meta:
         ordering = ['evento', 'estado', 'paquete__nombre']
         verbose_name = 'Paquete asignado al evento'
@@ -99,10 +108,27 @@ class PaqueteEvento(models.Model):
     def __str__(self):
         return f'{self.paquete} - {self.evento}'
 
+    def clean(self):
+        super().clean()
+        if not self.evento_id or not self.paquete_id:
+            return
+        evento_empresa_id = getattr(self.evento, 'empresa_id', None)
+        paquete_empresa_id = getattr(self.paquete, 'empresa_id', None)
+        if evento_empresa_id and paquete_empresa_id and evento_empresa_id != paquete_empresa_id:
+            raise ValidationError(
+                {'paquete': 'El paquete debe pertenecer a la misma empresa del evento.'}
+            )
+
     def save(self, *args, **kwargs):
         if not self.total:
             base = self.precio_acordado or self.paquete.precio_base
             self.total = base - self.descuento
         super().save(*args, **kwargs)
 
-# Create your models here.
+    @property
+    def tiene_snapshot(self):
+        return bool(self.snapshot_paquete)
+
+    @property
+    def esta_materializado(self):
+        return self.materializado_en is not None

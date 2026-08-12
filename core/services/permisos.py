@@ -25,28 +25,13 @@ def empresas_del_usuario(user):
 
 
 def empresa_principal_usuario(user):
-    empresa = empresas_del_usuario(user).first()
-    if empresa:
-        return empresa
+    if not getattr(user, 'is_authenticated', False):
+        return None
+    if usuario_es_dirtec_operativo(user):
+        return empresas_del_usuario(user).first()
 
-    from invitaciones.models import EventoBoda
-    from proveedores.models import Proveedor
-
-    evento_cliente = EventoBoda.objects.filter(
-        clientes=user,
-        empresa__isnull=False,
-        empresa__activo=True,
-    ).select_related('empresa').first()
-    if evento_cliente:
-        return evento_cliente.empresa
-
-    proveedor = Proveedor.objects.filter(
-        usuario=user,
-        empresa__isnull=False,
-        empresa__activo=True,
-        activo=True,
-    ).select_related('empresa').first()
-    return proveedor.empresa if proveedor else None
+    from core.services.tenant_context import resolver_tenant_usuario
+    return resolver_tenant_usuario(user).empresa
 
 
 def roles_usuario_empresa(user, empresa):

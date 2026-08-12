@@ -68,15 +68,6 @@ class AsignacionMesa(models.Model):
     invitado = models.ForeignKey(
         'invitaciones.Invitado',
         on_delete=models.CASCADE,
-        blank=True,
-        null=True,
-        related_name='asignaciones_mesa',
-    )
-    grupo_invitacion = models.ForeignKey(
-        'invitaciones.Grupoinvitacion',
-        on_delete=models.CASCADE,
-        blank=True,
-        null=True,
         related_name='asignaciones_mesa',
     )
     numero_asiento = models.PositiveIntegerField(blank=True, null=True)
@@ -86,36 +77,44 @@ class AsignacionMesa(models.Model):
         ordering = ['mesa', 'numero_asiento', 'id']
         verbose_name = 'Asignacion de mesa'
         verbose_name_plural = 'Asignaciones de mesa'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['invitado'],
+                name='mesas_un_invitado_una_mesa',
+            ),
+        ]
 
     def __str__(self):
-        persona = self.invitado or self.grupo_invitacion
-        return f'{persona} en {self.mesa}'
+        return f'{self.invitado} en {self.mesa}'
 
     def clean(self):
-        if bool(self.invitado) == bool(self.grupo_invitacion):
-            raise ValidationError('Asigna un invitado familiar o un grupo personal, solo uno.')
+        if not self.invitado_id:
+            raise ValidationError('Selecciona una persona.')
 
-        if self.invitado and self.invitado.grupo.evento_id != self.mesa.evento_id:
-            raise ValidationError('El invitado pertenece a otro evento.')
+        if (
+            self.invitado_id
+            and self.mesa_id
+            and self.invitado.grupo.evento_id != self.mesa.evento_id
+        ):
+            raise ValidationError('La persona pertenece a otro evento.')
 
-        if self.grupo_invitacion and self.grupo_invitacion.evento_id != self.mesa.evento_id:
-            raise ValidationError('El grupo pertenece a otro evento.')
-
-        if self.grupo_invitacion and not self.grupo_invitacion.es_personal:
-            raise ValidationError('Para grupos familiares asigna cada invitado por separado.')
-
-        asignaciones = self.mesa.asignaciones.exclude(pk=self.pk) if self.mesa_id else AsignacionMesa.objects.none()
+        asignaciones = (
+            self.mesa.asignaciones.exclude(pk=self.pk)
+            if self.mesa_id
+            else AsignacionMesa.objects.none()
+        )
         if self.mesa_id and asignaciones.count() >= self.mesa.capacidad:
             raise ValidationError('La mesa ya alcanzo su capacidad.')
 
-        if self.invitado and AsignacionMesa.objects.exclude(pk=self.pk).filter(invitado=self.invitado).exists():
-            raise ValidationError('Este invitado ya tiene mesa asignada.')
-
-        if self.grupo_invitacion and AsignacionMesa.objects.exclude(pk=self.pk).filter(grupo_invitacion=self.grupo_invitacion).exists():
-            raise ValidationError('Este grupo personal ya tiene mesa asignada.')
+        if (
+            self.invitado_id
+            and AsignacionMesa.objects
+            .exclude(pk=self.pk)
+            .filter(invitado_id=self.invitado_id)
+            .exists()
+        ):
+            raise ValidationError('Esta persona ya tiene mesa asignada.')
 
     def save(self, *args, **kwargs):
         self.full_clean()
         super().save(*args, **kwargs)
-
-# Create your models here.

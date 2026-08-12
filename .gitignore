@@ -44,3 +44,13 @@ htmlcov/
 *.tmp
 *.swp
 *~
+
+# Production/local secrets and generated deployment data
+.env.production
+.env.server
+backups/
+staticfiles/
+logs/
+*.dump
+*.fixture.json
+migration_inventory_*.json

@@ -1,0 +1,28 @@
+# Sustituye eventos.tudominio.com y las rutas C:\DIRTEC_EVENT_STUDIO\...
+eventos.tudominio.com {
+    encode zstd gzip
+
+    route {
+        # Nunca servir directamente archivos privados. Se entregan por /secure/* tras autorización Django.
+        @privateMedia path \
+            /media/documentos/* \
+            /media/presupuesto/* \
+            /media/colaboracion/* \
+            /media/proveedores/* \
+            /media/tareas/*
+        respond @privateMedia 404
+
+        handle_path /static/* {
+            root * C:\DIRTEC_EVENT_STUDIO\staticfiles
+            file_server
+        }
+
+        # Medios públicos de invitaciones (portadas, álbum, fondos, assets Builder publicados, etc.).
+        handle_path /media/* {
+            root * C:\DIRTEC_EVENT_STUDIO\media
+            file_server
+        }
+
+        reverse_proxy 127.0.0.1:8001
+    }
+}
