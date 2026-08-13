@@ -642,7 +642,6 @@ inspector =
 
         onNodeUpdated() {
             autoLayout.applyAll();
-            inspector.refresh();
         },
 
         onStatus(message) {

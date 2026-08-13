@@ -109,6 +109,12 @@ export class CanvasSelectionEngine {
             return null;
         }
 
+        if (this.selectedNodeId === node.id) {
+            this.#resolveSelectedElement();
+            this.refreshOverlay();
+            return node;
+        }
+
         this.selectedNodeId = node.id;
         this.state.selectNode(node.id);
         this.#resolveSelectedElement();
