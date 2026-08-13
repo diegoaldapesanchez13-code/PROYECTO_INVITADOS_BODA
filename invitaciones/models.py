@@ -8,9 +8,9 @@ import uuid
 import re
 
 
-MAX_IMAGE_SIZE_MB = 8
+MAX_IMAGE_SIZE_MB = 40
 MAX_VIDEO_SIZE_MB = 80
-MAX_AUDIO_SIZE_MB = 20
+MAX_AUDIO_SIZE_MB = 40
 MAX_DOCUMENT_SIZE_MB = 25
 IMAGE_EXTENSIONS = {'jpg', 'jpeg', 'png', 'webp', 'gif'}
 VIDEO_EXTENSIONS = {'mp4', 'webm', 'ogg', 'mov', 'm4v'}
