@@ -1,0 +1,296 @@
+# K9 Migration Strategy
+
+Estado: estrategia aditiva. No ejecutar migraciones en K9.0.
+
+## Reglas de compatibilidad
+
+- No borrar modelos actuales.
+- No renombrar tablas actuales.
+- No renombrar `EventoBoda`.
+- No renombrar `PaqueteBoda`.
+- No renombrar `WEDDING_PLANNER` ni `wedding_planner`.
+- No hacer reemplazos globales.
+- No romper snapshots/materializacion K8.
+- Cada transicion debe estar cubierta por tests antes de activar UI productiva.
+
+## Estrategia general
+
+1. Agregar modelos/campos nuevos.
+2. Agregar services/adapters que lean K8 y K9.
+3. Crear tests de compatibilidad.
+4. Poblar datos opcionalmente con data migrations reversibles o comandos offline.
+5. Activar UI por fases.
+6. Deprecar legacy solo cuando no haya dependencias vivas.
+
+## Catalogo
+
+Fase recomendada: K9.2.
+
+Crear app nueva `catalogo/` es la alternativa preferida por bajo acoplamiento y mejor testabilidad.
+
+Alternativas:
+
+- A) `catalogo/`: clara, pequena, reusable por empresa, evita mezclar costo proveedor con descripcion comercial. Riesgo: nuevos imports y migraciones.
+- B) extender `proveedores`: menos archivos nuevos, pero refuerza el error conceptual de que el servicio pertenece al proveedor.
+- C) app `servicios/`: semanticamente amplia, pero puede confundirse con `ServicioEvento`.
+
+Decision recomendada: `catalogo/`.
+
+Modelo futuro:
+
+- `ServicioCatalogo`;
+- media opcional;
+- admin por empresa;
+- constraints por empresa/nombre si aplica;
+- permisos por tenant.
+
+## Puente catalogo-proveedor
+
+Fase recomendada: K9.3.
+
+No eliminar `ServicioCatalogoProveedor`. Usarlo como legacy/adaptador.
+
+Nuevo puente conceptual:
+
+- `servicio_catalogo`;
+- `proveedor`;
+- costo_referencia opcional;
+- precio_referencia_cliente opcional solo informativo;
+- activo;
+- notas privadas;
+- etiquetas.
+
+Migracion de datos:
+
+1. Por cada `ServicioCatalogoProveedor`, crear o asociar `ServicioCatalogo` por empresa/nombre/categoria.
+2. Crear puente proveedor-servicio.
+3. Mantener el registro legacy apuntando o mapeado hasta retirar dependencias.
+4. Tests de tenant: proveedor y catalogo deben pertenecer a la misma empresa.
+
+## Paquetes
+
+Fase recomendada: K9.4.
+
+Agregar campos aditivos a paquete o crear version comercial:
+
+- `precio_adulto`;
+- `precio_nino`;
+- `cargo_fijo`;
+- `capacidad_minima_recomendada`;
+- `capacidad_maxima_recomendada`;
+- `duracion_evento`;
+- media comercial.
+
+No retirar:
+
+- `precio_base`;
+- `numero_personas_incluidas`;
+- `ServicioPaquete`.
+
+Compatibilidad:
+
+- Si paquete es v1, calcular con `precio_base`/`precio_acordado`.
+- Si paquete es v2, calcular con adulto/nino/cargo fijo.
+- Vistas legacy siguen leyendo campos v1 hasta su fase.
+
+## Servicios del paquete
+
+Fase recomendada: K9.4 o K9.6 segun alcance.
+
+Crear `PaqueteServicio` aditivo o evolucionar con FK opcional a catalogo.
+
+Plan seguro:
+
+1. Agregar modelo nuevo `PaqueteServicio`.
+2. Mantener `ServicioPaquete`.
+3. Crear adapter `iter_lineas_paquete(paquete)` que emita lineas normalizadas desde ambos.
+4. Migrar datos legacy a nuevo modelo con clave estable.
+5. Materializacion v2 usa lineas normalizadas.
+6. Lectores v1 siguen con `ServicioPaquete`.
+
+Evitar duplicados:
+
+- usar clave origen estable;
+- conservar `paquete_evento` y origen legacy;
+- en v2 usar constraint por contrato/linea_origen si se agrega modelo intermedio.
+
+## Snapshot v1 -> v2
+
+Actual:
+
+- `PaqueteEvento.snapshot_paquete` v1.
+- `MATERIALIZACION_VERSION = 1`.
+- `materializacion_version` en `PaqueteEvento`.
+
+Objetivo:
+
+- v1 legacy K8: reconstruible siempre.
+- v2 K9: snapshot comercial del contrato completo.
+
+Ubicacion recomendada:
+
+- `ContratoEvento.snapshot_comercial` para el contrato aceptado;
+- campo `snapshot_version` aditivo si se requiere;
+- conservar `PaqueteEvento.snapshot_paquete` para K8.
+
+Contenido v2:
+
+- `version`: 2;
+- paquete snapshot;
+- sede snapshot;
+- adultos/ninos;
+- tarifas adulto/nino/cargo fijo;
+- incluidos;
+- adicionales;
+- cortesias;
+- descuentos;
+- total;
+- condiciones;
+- lineas con origen y claves estables;
+- metadata de calculo.
+
+Lectores:
+
+- `leer_contrato_publico(snapshot)` soporta v1/v2.
+- `leer_contrato_interno(snapshot)` soporta v1/v2.
+- Nunca modificar snapshot firmado salvo crear nueva version de contrato.
+
+## Materializacion v2
+
+Fase recomendada: K9.6.
+
+Preservar de v1:
+
+- snapshot contractual;
+- idempotencia;
+- no duplicar `ServicioEvento`;
+- conservar datos aunque desaparezca master;
+- `precio_incluido`/valor comercial hacia `valor_contratado`;
+- costo proveedor inicia separado.
+
+Evolucion:
+
+- `MATERIALIZACION_VERSION = 2` cuando exista snapshot K9.
+- Materializar incluidos, adicionales y cortesias.
+- `CORTESIA` con `cargo_adicional_cliente = 0`.
+- Adicionales con snapshot de tarifa.
+- Servicios sin proveedor permitido.
+- Prestacion por definir o interna sin proveedor ficticio.
+
+## Proveedor post-contrato
+
+Fase recomendada: K9.6-K9.7.
+
+`ServicioEvento.proveedor` ya acepta `null`.
+
+Agregar solo si hace falta:
+
+- `prestacion_tipo`: `EMPRESA`, `PROVEEDOR`, `POR_DEFINIR`.
+- `proveedor_asignado_en`;
+- `proveedor_asignado_por`.
+
+Reglas:
+
+- Asignar proveedor no cambia `valor_contratado`.
+- Cambiar `costo_proveedor` o `GastoEvento` no cambia contrato.
+- Proveedor solo ve servicios asignados a el.
+
+## Finanzas
+
+Fase recomendada: K9.7.
+
+No crear segundo sistema.
+
+Adaptaciones:
+
+- `ContratoEvento` o service financiero calcula monto contratado/saldo cliente desde snapshot.
+- `PagoClienteEvento` aplica contra evento/contrato, no contra proveedor.
+- `GastoEvento` registra costo operativo, con `servicio_evento` opcional.
+- `PagoEvento` registra pagos de empresa a costos/proveedores.
+
+Reportes:
+
+- ingreso contratado;
+- pagos cliente recibidos;
+- saldo cliente;
+- costos estimados/reales;
+- pagos operativos;
+- saldo proveedor/costo;
+- margen interno solo para Empresa/Planner autorizado/DIRTEC.
+
+## CRUD operativo
+
+Fase recomendada: K9.8.
+
+Auditoria actual:
+
+- servicios, tareas, gastos, pagos y documentos tienen crear/editar/eliminar en dashboard legacy;
+- workspace tiene eliminar/limpiar/archivar en mensajes/temas/referencias;
+- citas viven en `ActividadItinerario`;
+- varias eliminaciones son fisicas y tambien borran archivos.
+
+Estrategia:
+
+- distinguir crear/editar/eliminar/cancelar/archivar por entidad;
+- preferir `cancelar` o `archivar` cuando haya historial contractual/operativo;
+- mantener hard delete solo para errores de captura antes de contrato o datos sin auditoria requerida;
+- definir permisos por `Actions.EVENT_OPERATIONS`, cliente/proveedor y autor/responsable.
+
+## Login/logout
+
+Fase recomendada: K9.1.
+
+Actual:
+
+- `LoginCentralView` hereda `LoginView`.
+- `LOGIN_REDIRECT_URL = /redirigir/`.
+- `LogoutView(next_page='login')`.
+- No se observo override de `get_success_url` que valide `next` contra el usuario autenticado.
+
+Politica objetivo:
+
+- logout -> login neutral;
+- login -> dashboard por rol;
+- `next` solo si el usuario nuevo esta autorizado para ese destino.
+
+Implementacion futura:
+
+- descartar `next` por defecto tras logout;
+- validar `next` con resolved view + objeto o endpoint permitido;
+- si falla, redirigir a `/redirigir/`;
+- limpiar contexto de tenant/evento en sesion si existe.
+
+## Landing, terminologia y branding
+
+Fase recomendada: K9.9.
+
+Landing actual es legacy visible. Cambios futuros solo visibles, sin renombres internos automaticos.
+
+Terminologia:
+
+- clasificar apariciones como visible, codigo, modelo, URL, migracion, test o documentacion;
+- cambiar copy visible primero;
+- nombres internos requieren estrategia de migracion.
+
+Branding multiempresa:
+
+- usar `EmpresaSuscriptora.logotipo` y `colores_marca`;
+- agregar portada/hero/control de encabezados si se aprueba;
+- no permitir CSS arbitrario.
+
+## Builder mobile
+
+Fase recomendada: K9.10.
+
+No modificar Builder en K9.0.
+
+Objetivo:
+
+- conservar desktop actual;
+- mobile con canvas principal;
+- assets/layers/inspector como drawer o bottom sheet;
+- toolbar tactil;
+- `safe-area`;
+- `100dvh`;
+- sin overflow horizontal;
+- shortcuts sin interceptar inputs/textarea/select/contenteditable.
