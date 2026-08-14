@@ -1,0 +1,56 @@
+{% extends "catalogo/base.html" %}
+
+{% block title %}{{ servicio.nombre }} | Catalogo{% endblock %}
+{% block heading %}{{ servicio.nombre }}{% endblock %}
+
+{% block content %}
+<section class="catalog-detail">
+    <article class="detail-main">
+        <div class="hero-media">
+            {% if servicio.imagen_principal %}
+                <img src="{% url 'catalogo_servicio_imagen' empresa.slug servicio.id %}" alt="">
+            {% else %}
+                <span>{{ servicio.nombre|first }}</span>
+            {% endif %}
+        </div>
+        <div class="detail-copy">
+            <span>{{ servicio.get_categoria_display }}</span>
+            <h2>{{ servicio.nombre }}</h2>
+            <p>{{ servicio.descripcion|default:"Sin descripcion registrada." }}</p>
+            <dl>
+                <div><dt>Unidad</dt><dd>{{ servicio.get_unidad_display }}</dd></div>
+                <div><dt>Estado</dt><dd>{% if servicio.activo %}Activo{% else %}Inactivo{% endif %}</dd></div>
+            </dl>
+            {% if puede_gestionar %}
+                <div class="detail-actions">
+                    <a class="btn" href="{% url 'catalogo_servicio_update' empresa.slug servicio.id %}">Editar</a>
+                    <form method="post" action="{% url 'catalogo_servicio_toggle' empresa.slug servicio.id %}">
+                        {% csrf_token %}
+                        <button class="btn secondary" type="submit">{% if servicio.activo %}Desactivar{% else %}Activar{% endif %}</button>
+                    </form>
+                </div>
+            {% endif %}
+        </div>
+    </article>
+    <aside class="detail-side">
+        <div class="section-heading compact"><div><span>Referencias</span><h2>Archivos</h2></div></div>
+        <div class="file-list">
+            {% for archivo in archivos %}
+                <a href="{% url 'catalogo_archivo_download' empresa.slug servicio.id archivo.id %}" target="_blank" rel="noopener">
+                    <strong>{{ archivo.titulo|default:archivo.get_tipo_display }}</strong>
+                    <span>{{ archivo.get_tipo_display }}</span>
+                </a>
+            {% empty %}
+                <p class="empty">Sin archivos de referencia.</p>
+            {% endfor %}
+        </div>
+        {% if puede_gestionar %}
+            <form class="catalog-form compact-form" method="post" enctype="multipart/form-data" action="{% url 'catalogo_archivo_create' empresa.slug servicio.id %}">
+                {% csrf_token %}
+                {{ archivo_form.as_p }}
+                <button class="btn" type="submit">Agregar archivo</button>
+            </form>
+        {% endif %}
+    </aside>
+</section>
+{% endblock %}

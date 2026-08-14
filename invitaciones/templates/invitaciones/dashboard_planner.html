@@ -53,6 +53,9 @@
                 {% if planner_proximo_evento_v3 %}
                     <a class="secondary" href="{% url 'dashboard' %}?evento={{ planner_proximo_evento_v3.id }}">Abrir próximo evento</a>
                 {% endif %}
+                {% if empresa_actual %}
+                    <a class="secondary" href="{% url 'catalogo_servicio_list' empresa_actual.slug %}">Catalogo</a>
+                {% endif %}
             </div>
         </section>
 

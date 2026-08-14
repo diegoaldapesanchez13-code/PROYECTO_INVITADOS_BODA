@@ -19,6 +19,7 @@ class SaasSubscriptionMiddleware:
         '/empresa/',
         '/cliente/',
         '/proveedor/',
+        '/catalogo/',
         '/colaboracion/',
         '/presupuesto/',
         '/dashboard/',

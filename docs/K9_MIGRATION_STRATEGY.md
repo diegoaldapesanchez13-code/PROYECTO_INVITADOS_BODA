@@ -24,7 +24,7 @@ Estado: estrategia aditiva. No ejecutar migraciones en K9.0.
 
 ## Catalogo
 
-Fase recomendada: K9.2.
+Fase implementada: K9.2.
 
 Crear app nueva `catalogo/` es la alternativa preferida por bajo acoplamiento y mejor testabilidad.
 
@@ -34,15 +34,27 @@ Alternativas:
 - B) extender `proveedores`: menos archivos nuevos, pero refuerza el error conceptual de que el servicio pertenece al proveedor.
 - C) app `servicios/`: semanticamente amplia, pero puede confundirse con `ServicioEvento`.
 
-Decision recomendada: `catalogo/`.
+Decision aplicada: `catalogo/`.
 
-Modelo futuro:
+Modelos implementados:
 
 - `ServicioCatalogo`;
-- media opcional;
+- `ServicioCatalogoArchivo`;
+- media opcional validada con los validadores existentes y almacenada fuera de `MEDIA_ROOT`;
 - admin por empresa;
-- constraints por empresa/nombre si aplica;
-- permisos por tenant.
+- constraint `empresa` + `nombre` y validacion case-insensitive en `clean()`;
+- permisos por tenant usando `Actions.COMPANY_MANAGE_CATALOGS`;
+- migracion aditiva `catalogo/migrations/0001_initial.py`.
+
+Decision R2: como K9.2 aun no esta versionada ni desplegada, la migracion local `0001_initial.py` se mantiene limpia e incluye el storage privado de catalogo desde el inicio. No se crea `0002` y no se alteran migraciones K8.
+
+Storage R2:
+
+- `PRIVATE_MEDIA_ROOT` separado fisicamente de `MEDIA_ROOT`;
+- sin `PRIVATE_MEDIA_URL`;
+- `ServicioCatalogo.imagen_principal` y `ServicioCatalogoArchivo.archivo` usan `PrivateCatalogoStorage`;
+- Caddy/Nginx futuro no debe servir `PRIVATE_MEDIA_ROOT`;
+- las vistas Django autorizadas son la unica puerta de acceso.
 
 ## Puente catalogo-proveedor
 

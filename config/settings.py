@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'eventos.apps.EventosConfig',
     'suscripciones.apps.SuscripcionesConfig',
     'auditoria.apps.AuditoriaConfig',
+    'catalogo.apps.CatalogoConfig',
     'proveedores.apps.ProveedoresConfig',
     'catering.apps.CateringConfig',
     'paquetes.apps.PaquetesConfig',
@@ -164,6 +165,7 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 # Archivos cargados desde el admin: portada, álbum y canción de la invitación.
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+PRIVATE_MEDIA_ROOT = Path(os.getenv('PRIVATE_MEDIA_ROOT', BASE_DIR / 'private_media'))
 
 # Llave primaria por defecto para modelos nuevos.
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
@@ -229,4 +231,3 @@ LOGGING = {
         'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
     },
 }
-

@@ -24,6 +24,7 @@ No corregir en K9.0. Documentar para K9.1.
 | Django admin | `admin.site.has_permission` usa `Actions.DJANGO_ADMIN`. | Conservar reservado a DIRTEC. |
 | IDs directos | Tests K8 cubren varios 403/404. | Agregar contrato/propuesta/catalogo. |
 | Archivos privados | `secure_files.py` centraliza descargas. | Unificar fallbacks proveedor. |
+| Media comercial catalogo | K9.2 guarda `ServicioCatalogo.imagen_principal` y `ServicioCatalogoArchivo.archivo` en `PRIVATE_MEDIA_ROOT`. | No servir `PRIVATE_MEDIA_ROOT` por Caddy/Nginx; acceso solo por vistas Django autorizadas. |
 
 ## SaaS middleware
 
@@ -49,6 +50,14 @@ Cambio recomendado K9.1:
 - tests GET y POST con empresa suspendida.
 
 ## Secure files
+
+K9.2: la media comercial privada del catalogo no se sirve por `MEDIA_URL`.
+
+- `ServicioCatalogo.imagen_principal` y `ServicioCatalogoArchivo.archivo` usan storage privado bajo `PRIVATE_MEDIA_ROOT`.
+- Las plantillas de catalogo no usan `.url` de los `FileField`.
+- Las descargas pasan por vistas autorizadas de `catalogo/` y `FileResponse`.
+- En desarrollo, `DEBUG=True` solo publica `MEDIA_ROOT`; los archivos de catalogo quedan fuera de esa raiz.
+- En produccion, `PRIVATE_MEDIA_ROOT` no debe montarse como ruta publica del servidor web.
 
 Helpers centrales:
 

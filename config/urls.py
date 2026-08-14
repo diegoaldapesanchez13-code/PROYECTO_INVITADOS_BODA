@@ -41,6 +41,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('core.urls')),
     path('suscripcion/', include('suscripciones.urls')),
+    path('catalogo/', include('catalogo.urls')),
     path('colaboracion/', include('colaboracion.urls')),
     path('presupuesto/', include('presupuesto.urls')),
     # Todas las demás rutas se delegan a la aplicación 'invitaciones'.

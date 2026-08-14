@@ -755,6 +755,7 @@
                 </div>
             </div>
             <div class="module-tabs" role="tablist" aria-label="Catalogos de operacion">
+                <a class="btn secondary" href="{% url 'catalogo_servicio_list' empresa.slug %}">Servicios generales</a>
                 <button type="button" data-subpanel-button="sedes">Sedes</button>
                 <button type="button" data-subpanel-button="paquetes">Paquetes</button>
             </div>
@@ -797,6 +798,7 @@
                 <span>Solo lectura</span>
                 <strong>Catalogos protegidos</strong>
                 <p class="muted">Puedes consultar sedes, proveedores y paquetes. Los cambios al catalogo general los realiza un administrador o un usuario con permiso de catalogos.</p>
+                <a class="btn secondary" href="{% url 'catalogo_servicio_list' empresa.slug %}">Consultar servicios generales</a>
             </article>
             {% endif %}
 

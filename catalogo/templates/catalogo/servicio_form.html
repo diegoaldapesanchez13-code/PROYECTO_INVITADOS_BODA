@@ -1,0 +1,23 @@
+{% extends "catalogo/base.html" %}
+
+{% block title %}{% if modo == "crear" %}Nuevo servicio{% else %}Editar servicio{% endif %} | Catalogo{% endblock %}
+{% block heading %}{% if modo == "crear" %}Nuevo servicio{% else %}Editar servicio{% endif %}{% endblock %}
+
+{% block content %}
+<section class="catalog-section narrow">
+    <div class="section-heading">
+        <div>
+            <span>Servicio</span>
+            <h2>{% if modo == "crear" %}Agregar al catalogo{% else %}Actualizar ficha{% endif %}</h2>
+        </div>
+    </div>
+    <form class="catalog-form" method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <div class="form-actions">
+            <button class="btn" type="submit">Guardar</button>
+            <a class="btn secondary" href="{% if servicio %}{% url 'catalogo_servicio_detail' empresa.slug servicio.id %}{% else %}{% url 'catalogo_servicio_list' empresa.slug %}{% endif %}">Cancelar</a>
+        </div>
+    </form>
+</section>
+{% endblock %}

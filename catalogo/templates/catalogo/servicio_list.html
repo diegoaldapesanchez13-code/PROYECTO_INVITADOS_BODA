@@ -1,0 +1,63 @@
+{% extends "catalogo/base.html" %}
+
+{% block title %}Catalogo de servicios | DIRTEC{% endblock %}
+{% block heading %}Catalogo de servicios{% endblock %}
+
+{% block content %}
+<section class="catalog-section">
+    <div class="section-heading">
+        <div>
+            <span>Servicios</span>
+            <h2>Que ofrece la empresa</h2>
+        </div>
+        {% if puede_gestionar %}
+            <a class="btn" href="{% url 'catalogo_servicio_create' empresa.slug %}">Nuevo servicio</a>
+        {% endif %}
+    </div>
+    <form class="catalog-filters" method="get">
+        <label>Buscar<input type="search" name="q" value="{{ busqueda }}" placeholder="Nombre o descripcion"></label>
+        <label>Categoria
+            <select name="categoria">
+                <option value="">Todas</option>
+                {% for valor, texto in categorias %}<option value="{{ valor }}" {% if categoria == valor %}selected{% endif %}>{{ texto }}</option>{% endfor %}
+            </select>
+        </label>
+        <label>Estado
+            <select name="estado">
+                <option value="">Todos</option>
+                <option value="activo" {% if estado == "activo" %}selected{% endif %}>Activos</option>
+                <option value="inactivo" {% if estado == "inactivo" %}selected{% endif %}>Inactivos</option>
+            </select>
+        </label>
+        <button class="btn secondary" type="submit">Filtrar</button>
+    </form>
+    <div class="service-grid">
+        {% for servicio in servicios %}
+            <a class="service-card" href="{% url 'catalogo_servicio_detail' empresa.slug servicio.id %}">
+                <div class="thumb">
+                    {% if servicio.imagen_principal %}
+                        <img src="{% url 'catalogo_servicio_imagen' empresa.slug servicio.id %}" alt="">
+                    {% else %}
+                        <span>{{ servicio.nombre|first }}</span>
+                    {% endif %}
+                </div>
+                <div>
+                    <span>{{ servicio.get_categoria_display }} · {{ servicio.get_unidad_display }}</span>
+                    <strong>{{ servicio.nombre }}</strong>
+                    <p>{{ servicio.descripcion|default:"Sin descripcion"|truncatechars:110 }}</p>
+                    <small class="{% if servicio.activo %}ok{% else %}muted{% endif %}">{% if servicio.activo %}Activo{% else %}Inactivo{% endif %}</small>
+                </div>
+            </a>
+        {% empty %}
+            <p class="empty">No hay servicios con esos filtros.</p>
+        {% endfor %}
+    </div>
+    {% if page_obj.paginator.num_pages > 1 %}
+        <nav class="pagination">
+            {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}&q={{ busqueda }}&categoria={{ categoria }}&estado={{ estado }}">Anterior</a>{% endif %}
+            <span>{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+            {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}&q={{ busqueda }}&categoria={{ categoria }}&estado={{ estado }}">Siguiente</a>{% endif %}
+        </nav>
+    {% endif %}
+</section>
+{% endblock %}

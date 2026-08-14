@@ -60,15 +60,22 @@ Tests propuestos:
 
 ## K9.2 Catalogo
 
-Tests propuestos:
+Tests implementados en `catalogo.tests_k92`:
 
 - empresa crea servicio catalogo propio;
 - nombre duplicado dentro de empresa se valida segun constraint;
 - misma denominacion permitida en otra empresa si se decide;
 - admin empresa no ve catalogo de otra empresa;
-- planner sin permiso de catalogo no administra si se mantiene regla actual;
+- planner puede consultar catalogo de su empresa;
+- cliente y proveedor no administran catalogo;
 - servicio catalogo no exige costo ni precio cliente;
-- media/PDF respeta validadores.
+- media/PDF respeta validadores;
+- imagen/PDF de catalogo se guardan fuera de `MEDIA_ROOT`;
+- media comercial privada del catalogo no se sirve por `MEDIA_URL`;
+- vistas autorizadas permiten descarga a Empresa/DIRTEC/Planner mismo tenant y bloquean otro tenant, cliente y proveedor;
+- empresa suspendida no accede a `/catalogo/`;
+- POST no puede forzar `empresa` ajena;
+- desactivar preserva el registro.
 
 ## K9.3 Proveedor-servicio
 

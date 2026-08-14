@@ -64,23 +64,34 @@ Version corta solicitada:
 
 Objetivo: cada `EmpresaSuscriptora` tendra su propio catalogo maestro que representa que existe, no cuanto cuesta.
 
-Modelo conceptual futuro: `ServicioCatalogo`.
+Modelo implementado en K9.2: `catalogo.ServicioCatalogo`.
 
-Campos recomendados:
+Campos actuales:
 
 - `empresa`;
 - `nombre`;
 - `categoria`;
 - `descripcion`;
-- `unidad_orientativa`;
+- `unidad`;
 - `activo`;
-- `orden`;
 - `imagen_principal`;
-- `galeria`;
-- `pdf_catalogo`;
-- timestamps/auditoria si el patron local lo permite.
+- `created_at`;
+- `updated_at`.
+
+Archivos asociados implementados en K9.2: `catalogo.ServicioCatalogoArchivo`.
+
+- `servicio`;
+- `tipo` (`IMAGEN` o `PDF`);
+- `archivo`;
+- `titulo`;
+- `orden`;
+- `created_at`.
 
 Regla: el catalogo general no debe exigir costo proveedor ni precio cliente.
+
+Regla tenant: `empresa` se deriva del contexto de ruta validado; no se toma de POST. La desactivacion es logica con `activo=False`, sin borrado fisico.
+
+Regla de media privada: `imagen_principal` y `ServicioCatalogoArchivo.archivo` usan storage privado bajo `PRIVATE_MEDIA_ROOT`; no se sirven por `MEDIA_URL`. El acceso ocurre solo mediante vistas autorizadas del modulo `catalogo/`.
 
 Ejemplos: DJ de lujo, Banquete 2, Meseros, Capitan de meseros, Valet parking, Planta de luz, Decoracion floral, Mesa de postres, Alcohol, Coctel de bienvenida, Carpa, Manteleria, Letras Hollywood, Camara 360, Sala lounge, Trasnochado.
 

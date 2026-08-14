@@ -1,0 +1,31 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Catalogo | DIRTEC{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'catalogo/css/catalogo.css' %}">
+</head>
+<body>
+<div class="catalog-shell">
+    <header class="catalog-topbar">
+        <div>
+            <span>DIRTEC Event Studio</span>
+            <h1>{% block heading %}Catalogo general{% endblock %}</h1>
+            <p>{{ empresa.nombre_comercial }}</p>
+        </div>
+        <nav>
+            <a href="{% url 'catalogo_servicio_list' empresa.slug %}">Catalogo</a>
+            {% if dashboard_url %}<a href="{{ dashboard_url }}">Dashboard</a>{% endif %}
+        </nav>
+    </header>
+    {% if messages %}
+        <section class="catalog-messages">
+            {% for message in messages %}<div class="notice {{ message.tags }}">{{ message }}</div>{% endfor %}
+        </section>
+    {% endif %}
+    {% block content %}{% endblock %}
+</div>
+</body>
+</html>
