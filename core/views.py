@@ -1,12 +1,18 @@
+from urllib.parse import parse_qs, urlsplit
+
 from django.contrib.auth.views import LoginView
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
 from django.shortcuts import redirect
+from django.urls import Resolver404, resolve
+from django.utils.http import url_has_allowed_host_and_scheme
 
 from core.services.auditoria import registrar_auditoria
+from core.services.authorization import Actions, usuario_puede_evento
 from core.services.permisos import empresa_principal_usuario, roles_usuario_empresa, usuario_es_dirtec_operativo
 from core.services.suscripciones import evaluar_suscripcion_empresa
+from organizaciones.models import EmpresaSuscriptora
 
 
 LOGIN_FAILURE_LIMIT = 10
@@ -25,9 +31,99 @@ def _login_failure_count(request):
     return int(cache.get(_login_throttle_key(request), 0) or 0)
 
 
+def _usuario_es_cliente(user):
+    empresa = empresa_principal_usuario(user)
+    return (
+        'CLIENTE' in roles_usuario_empresa(user, empresa)
+        or user.eventos_cliente.exists()
+    )
+
+
+def _usuario_es_proveedor(user):
+    empresa = empresa_principal_usuario(user)
+    return (
+        'PROVEEDOR' in roles_usuario_empresa(user, empresa)
+        or hasattr(user, 'perfil_proveedor')
+    )
+
+
+def _usuario_puede_dashboard_empresa(user, empresa_slug, roles_permitidos):
+    empresa = EmpresaSuscriptora.objects.filter(slug=empresa_slug).first()
+    if not empresa:
+        return False
+    return bool(roles_usuario_empresa(user, empresa).intersection(roles_permitidos))
+
+
+def _next_query_autorizada(user, split_url):
+    if not split_url.query:
+        return True
+    query = parse_qs(split_url.query)
+    if set(query) != {'evento'} or len(query['evento']) != 1:
+        return False
+    try:
+        evento_id = int(query['evento'][0])
+    except (TypeError, ValueError):
+        return False
+    from invitaciones.models import EventoBoda
+
+    evento = EventoBoda.objects.filter(id=evento_id).select_related('empresa').first()
+    return usuario_puede_evento(user, evento, Actions.EVENT_VIEW)
+
+
+def _next_autorizado_para_usuario(user, redirect_to, request):
+    if not redirect_to or not url_has_allowed_host_and_scheme(
+        redirect_to,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure(),
+    ):
+        return False
+
+    split_url = urlsplit(redirect_to)
+    if not _next_query_autorizada(user, split_url):
+        return False
+    path = split_url.path
+    try:
+        match = resolve(path)
+    except Resolver404:
+        return False
+
+    url_name = match.url_name
+    if url_name == 'redirigir_por_rol':
+        return True
+    if url_name in {'dirtec_dashboard', 'dashboard_dirtec'}:
+        return usuario_es_dirtec_operativo(user)
+    if url_name in {'cliente_dashboard', 'portal_cliente'}:
+        return _usuario_es_cliente(user)
+    if url_name in {'proveedor_dashboard', 'portal_proveedor'}:
+        return _usuario_es_proveedor(user)
+    if url_name in {'empresa_dashboard', 'dashboard_empresa'}:
+        empresa_slug = match.kwargs.get('empresa_slug')
+        if not empresa_slug:
+            empresa = empresa_principal_usuario(user)
+            return bool(
+                empresa
+                and roles_usuario_empresa(user, empresa).intersection({'ADMIN_EMPRESA', 'VENTAS'})
+            )
+        return _usuario_puede_dashboard_empresa(user, empresa_slug, {'ADMIN_EMPRESA', 'VENTAS'})
+    if url_name in {'planner_dashboard_empresa', 'planner_dashboard_empresa_alias', 'dashboard_planner'}:
+        empresa_slug = match.kwargs.get('empresa_slug')
+        if not empresa_slug:
+            empresa = empresa_principal_usuario(user)
+            return bool(empresa and 'WEDDING_PLANNER' in roles_usuario_empresa(user, empresa))
+        return _usuario_puede_dashboard_empresa(user, empresa_slug, {'WEDDING_PLANNER'})
+    return False
+
+
 class LoginCentralView(LoginView):
     template_name = 'core/login.html'
     redirect_authenticated_user = True
+
+    def get_redirect_url(self):
+        redirect_to = super().get_redirect_url()
+        user = getattr(self, '_usuario_login_exitoso', None) or self.request.user
+        if _next_autorizado_para_usuario(user, redirect_to, self.request):
+            return redirect_to
+        return ''
 
     def post(self, request, *args, **kwargs):
         if _login_failure_count(request) >= LOGIN_FAILURE_LIMIT:
@@ -61,6 +157,7 @@ class LoginCentralView(LoginView):
         return super().form_invalid(form)
 
     def form_valid(self, form):
+        self._usuario_login_exitoso = form.get_user()
         cache.delete(_login_throttle_key(self.request))
         response = super().form_valid(form)
         registrar_auditoria(

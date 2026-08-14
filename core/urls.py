@@ -13,7 +13,7 @@ urlpatterns = [
     path('secure/adjuntos/<int:adjunto_id>/', secure_files.adjunto_workspace, name='secure_adjunto_workspace'),
     path('secure/tareas/<int:tarea_id>/evidencia/', secure_files.evidencia_tarea, name='secure_evidencia_tarea'),
     path('login/', LoginCentralView.as_view(), name='login'),
-    path('logout/', auth_views.LogoutView.as_view(next_page='login'), name='logout'),
+    path('logout/', auth_views.LogoutView.as_view(next_page='login', redirect_field_name=None), name='logout'),
     path('redirigir/', redirigir_por_rol, name='redirigir_por_rol'),
     path(
         'password-reset/',

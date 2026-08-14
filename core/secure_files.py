@@ -52,6 +52,17 @@ def _es_proveedor_servicio(user, servicio):
     )
 
 
+def _es_proveedor_directo_recurso(user, proveedor, evento):
+    return bool(
+        getattr(user, "is_authenticated", False)
+        and proveedor
+        and proveedor.activo
+        and proveedor.usuario_id == user.id
+        and proveedor.empresa_id == evento.empresa_id
+        and usuario_tiene_permiso(user, Actions.PROVIDER_PORTAL, empresa=evento.empresa)
+    )
+
+
 @login_required
 def documento_evento(request, documento_id):
     documento = get_object_or_404(
@@ -72,7 +83,7 @@ def documento_evento(request, documento_id):
         servicio = documento.servicio_evento
         if servicio and _es_proveedor_servicio(request.user, servicio):
             permitido = True
-        elif documento.proveedor_id and documento.proveedor.usuario_id == request.user.id:
+        elif not servicio and _es_proveedor_directo_recurso(request.user, documento.proveedor, evento):
             permitido = True
     if not permitido:
         raise PermissionDenied("No tienes permiso para descargar este documento.")
@@ -100,14 +111,20 @@ def pago_operativo_comprobante(request, pago_id):
             "gasto__evento",
             "gasto__evento__empresa",
             "gasto__proveedor",
+            "gasto__servicio_evento__evento",
+            "gasto__servicio_evento__evento__empresa",
             "gasto__servicio_evento__proveedor",
         ),
         pk=pago_id,
     )
     evento = pago.gasto.evento
     permitido = usuario_puede_evento(request.user, evento, Actions.EVENT_OPERATIONS)
-    if not permitido and pago.gasto.proveedor_id:
-        permitido = pago.gasto.proveedor.usuario_id == request.user.id
+    if not permitido:
+        servicio = pago.gasto.servicio_evento
+        if servicio:
+            permitido = _es_proveedor_servicio(request.user, servicio)
+        elif pago.gasto.proveedor_id:
+            permitido = _es_proveedor_directo_recurso(request.user, pago.gasto.proveedor, evento)
     if not permitido:
         raise PermissionDenied("No tienes permiso para ver este comprobante.")
     return _file_response(pago.comprobante)
