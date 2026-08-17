@@ -1,0 +1,64 @@
+{% extends "catalogo/base.html" %}
+
+{% block title %}Servicios de {{ proveedor.nombre_comercial }} | Catalogo{% endblock %}
+{% block heading %}Servicios que ofrece{% endblock %}
+
+{% block content %}
+<section class="catalog-section">
+    <div class="section-heading">
+        <div>
+            <span>Proveedor</span>
+            <h2>{{ proveedor.nombre_comercial }}</h2>
+            <p class="muted">{{ proveedor.get_tipo_proveedor_display }} · {% if proveedor.activo %}Activo{% else %}Inactivo{% endif %}</p>
+        </div>
+        <a class="btn secondary" href="{% url 'catalogo_servicio_list' empresa.slug %}">Catalogo general</a>
+    </div>
+
+    <form class="catalog-filters compact-filters" method="get">
+        <label>Buscar<input type="search" name="q" value="{{ busqueda }}" placeholder="Servicio o nota"></label>
+        <button class="btn secondary" type="submit">Filtrar</button>
+    </form>
+
+    <div class="relation-list">
+        {% for relacion in relaciones %}
+            <article class="relation-item">
+                <div>
+                    <span>{{ relacion.servicio_catalogo.get_categoria_display }} · {{ relacion.servicio_catalogo.get_unidad_display }}</span>
+                    <strong>{{ relacion.servicio_catalogo.nombre }}</strong>
+                    <p>{{ relacion.notas|default:relacion.servicio_catalogo.descripcion|default:"Sin notas"|truncatechars:120 }}</p>
+                    <small class="{% if relacion.activo %}ok{% else %}muted{% endif %}">{% if relacion.activo %}Activo{% else %}Inactivo{% endif %}</small>
+                </div>
+                <div class="relation-actions">
+                    <a class="btn secondary" href="{% url 'catalogo_servicio_detail' empresa.slug relacion.servicio_catalogo.id %}">Ver servicio</a>
+                    {% if puede_gestionar %}
+                        <form method="post" action="{% url 'catalogo_proveedor_servicio_toggle' empresa.slug proveedor.id relacion.id %}">
+                            {% csrf_token %}
+                            <button class="btn secondary" type="submit">{% if relacion.activo %}Desactivar{% else %}Activar{% endif %}</button>
+                        </form>
+                    {% endif %}
+                </div>
+            </article>
+        {% empty %}
+            <p class="empty">Este proveedor todavia no tiene servicios del catalogo K9 asociados.</p>
+        {% endfor %}
+    </div>
+</section>
+
+{% if puede_gestionar %}
+<section class="catalog-section narrow">
+    <div class="section-heading">
+        <div>
+            <span>Catalogo K9</span>
+            <h2>Agregar servicios</h2>
+        </div>
+    </div>
+    <form class="catalog-form" method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <div class="form-actions">
+            <button class="btn" type="submit">Asociar servicios</button>
+        </div>
+    </form>
+</section>
+{% endif %}
+{% endblock %}

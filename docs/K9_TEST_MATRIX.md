@@ -79,14 +79,20 @@ Tests implementados en `catalogo.tests_k92`:
 
 ## K9.3 Proveedor-servicio
 
-Tests propuestos:
+Tests implementados en `catalogo.tests_k93`:
 
 - proveedor ofrece multiples servicios;
 - servicio es ofrecido por multiples proveedores;
 - puente rechaza tenant cruzado;
+- proveedor sin empresa rechaza catalogo K9;
+- empresa gestiona relaciones propias;
+- planner lee y no gestiona;
+- cliente/proveedor no administran;
+- DIRTEC accede segun autorizacion central;
+- helpers excluyen proveedor, servicio o relacion inactiva;
 - `Proveedor.tipo_proveedor` sigue funcionando en vistas legacy;
-- adaptador desde `ServicioCatalogoProveedor` mantiene datos historicos;
-- proveedor inactivo no aparece como opcion operativa.
+- `ServicioCatalogoProveedor` mantiene datos historicos;
+- `ServicioEvento` actual no se rompe.
 
 ## K9.4 Motor comercial
 

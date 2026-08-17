@@ -53,4 +53,24 @@
         {% endif %}
     </aside>
 </section>
+
+<section class="catalog-section">
+    <div class="section-heading compact"><div><span>Red de servicio</span><h2>Proveedores que lo ofrecen</h2></div></div>
+    <div class="relation-list">
+        {% for relacion in proveedores_servicio %}
+            <article class="relation-item">
+                <div>
+                    <span>{{ relacion.proveedor.get_tipo_proveedor_display }}</span>
+                    <strong>{{ relacion.proveedor.nombre_comercial }}</strong>
+                    <p>{{ relacion.notas|default:relacion.proveedor.descripcion|default:"Sin notas"|truncatechars:120 }}</p>
+                </div>
+                <div class="relation-actions">
+                    <a class="btn secondary" href="{% url 'catalogo_proveedor_servicios' empresa.slug relacion.proveedor.id %}">Ver proveedor</a>
+                </div>
+            </article>
+        {% empty %}
+            <p class="empty">Aun no hay proveedores asociados a este servicio.</p>
+        {% endfor %}
+    </div>
+</section>
 {% endblock %}

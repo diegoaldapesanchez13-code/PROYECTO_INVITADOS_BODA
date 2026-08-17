@@ -18,6 +18,7 @@ img{max-width:100%;display:block}
 .section-heading{display:flex;justify-content:space-between;gap:16px;align-items:center;margin-bottom:16px}
 .section-heading.compact{margin-bottom:10px}
 .catalog-filters{display:grid;grid-template-columns:minmax(180px,1fr) 190px 150px auto;gap:12px;align-items:end;margin-bottom:18px}
+.catalog-filters.compact-filters{grid-template-columns:minmax(180px,1fr) auto}
 label{display:grid;gap:6px;color:var(--muted);font-size:.86rem;font-weight:700}
 input,select,textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:#fff;color:var(--text)}
 textarea{resize:vertical}
@@ -37,6 +38,12 @@ dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:16
 dt{color:var(--muted);font-size:.8rem;font-weight:800;text-transform:uppercase}dd{margin:4px 0 0}
 .file-list{display:grid;gap:8px;margin-bottom:14px}
 .file-list a{display:flex;justify-content:space-between;gap:10px;border:1px solid var(--line);border-radius:8px;padding:10px;background:#fff}
+.relation-list{display:grid;gap:10px}
+.relation-item{display:flex;justify-content:space-between;gap:14px;border:1px solid var(--line);border-radius:8px;padding:12px;background:#fff}
+.relation-item span{color:var(--muted);font-size:.78rem;font-weight:800;text-transform:uppercase}
+.relation-item strong{display:block;margin:5px 0}
+.relation-item p{margin:0 0 8px;color:var(--muted)}
+.relation-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start;justify-content:flex-end}
 .catalog-form{display:grid;gap:12px}
 .catalog-form p{display:grid;gap:6px;margin:0}
 .catalog-form ul.errorlist{margin:0;padding-left:18px;color:var(--warn)}
@@ -47,7 +54,9 @@ dt{color:var(--muted);font-size:.8rem;font-weight:800;text-transform:uppercase}d
 @media (max-width:760px){
   .catalog-shell{padding:14px}
   .catalog-topbar,.section-heading{display:grid}
-  .catalog-filters,.catalog-detail,.detail-main{grid-template-columns:1fr}
+  .catalog-filters,.catalog-filters.compact-filters,.catalog-detail,.detail-main{grid-template-columns:1fr}
+  .relation-item{display:grid}
+  .relation-actions{justify-content:flex-start}
   .service-card{grid-template-columns:72px 1fr}
   .thumb{width:72px;height:72px}
   .hero-media{min-height:210px}

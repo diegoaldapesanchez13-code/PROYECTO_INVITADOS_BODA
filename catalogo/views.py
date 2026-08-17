@@ -10,10 +10,16 @@ from django.views.decorators.http import require_POST
 from core.services.permisos import roles_usuario_empresa, usuario_es_dirtec_operativo
 from core.services.tenant_context import validar_slug_tenant
 from core.secure_files import _file_response
+from proveedores.models import Proveedor
 
-from .forms import ServicioCatalogoArchivoForm, ServicioCatalogoForm
-from .models import ServicioCatalogo, ServicioCatalogoArchivo
-from .services import puede_gestionar_catalogo, puede_ver_catalogo
+from .forms import ProveedorServiciosCatalogoForm, ServicioCatalogoArchivoForm, ServicioCatalogoForm
+from .models import ProveedorServicioCatalogo, ServicioCatalogo, ServicioCatalogoArchivo
+from .services import (
+    puede_gestionar_catalogo,
+    puede_ver_catalogo,
+    proveedores_disponibles_para_servicio,
+    relaciones_proveedor_servicio_qs,
+)
 
 
 def _catalogo_context(request, empresa_slug):
@@ -26,6 +32,10 @@ def _catalogo_context(request, empresa_slug):
 
 def _servicios_empresa(empresa):
     return ServicioCatalogo.objects.filter(empresa=empresa).prefetch_related('archivos')
+
+
+def _proveedor_empresa(empresa, proveedor_id):
+    return get_object_or_404(Proveedor.objects.select_related('empresa'), empresa=empresa, pk=proveedor_id)
 
 
 def _dashboard_url(user, empresa):
@@ -100,6 +110,7 @@ def servicio_detail(request, empresa_slug, servicio_id):
             servicio=servicio,
             archivos=servicio.archivos.all(),
             archivo_form=ServicioCatalogoArchivoForm(),
+            proveedores_servicio=proveedores_disponibles_para_servicio(servicio),
             puede_gestionar=puede_gestionar_catalogo(request.user, empresa),
         ),
     )
@@ -189,3 +200,69 @@ def archivo_download(request, empresa_slug, servicio_id, archivo_id):
     servicio = get_object_or_404(_servicios_empresa(context.empresa), pk=servicio_id)
     archivo = get_object_or_404(ServicioCatalogoArchivo, pk=archivo_id, servicio=servicio)
     return _file_response(archivo.archivo)
+
+
+@login_required(login_url='/login/')
+def proveedor_servicios(request, empresa_slug, proveedor_id):
+    context = _catalogo_context(request, empresa_slug)
+    empresa = context.empresa
+    proveedor = _proveedor_empresa(empresa, proveedor_id)
+    puede_gestionar = puede_gestionar_catalogo(request.user, empresa)
+
+    if request.method == 'POST':
+        if not puede_gestionar:
+            raise PermissionDenied('No tienes permiso para modificar servicios del proveedor.')
+        form = ProveedorServiciosCatalogoForm(request.POST, proveedor=proveedor)
+        if form.is_valid():
+            notas = form.cleaned_data.get('notas') or ''
+            total = 0
+            for servicio in form.cleaned_data['servicios']:
+                relacion, _ = ProveedorServicioCatalogo.objects.update_or_create(
+                    proveedor=proveedor,
+                    servicio_catalogo=servicio,
+                    defaults={'activo': True, 'notas': notas},
+                )
+                relacion.full_clean()
+                total += 1
+            messages.success(request, f'Servicios asociados: {total}.')
+            return redirect('catalogo_proveedor_servicios', empresa_slug=empresa.slug, proveedor_id=proveedor.id)
+    else:
+        form = ProveedorServiciosCatalogoForm(proveedor=proveedor)
+
+    relaciones = relaciones_proveedor_servicio_qs(empresa).filter(proveedor=proveedor)
+    busqueda = (request.GET.get('q') or '').strip()
+    if busqueda:
+        relaciones = relaciones.filter(
+            Q(servicio_catalogo__nombre__icontains=busqueda)
+            | Q(servicio_catalogo__descripcion__icontains=busqueda)
+            | Q(notas__icontains=busqueda)
+        )
+
+    return render(
+        request,
+        'catalogo/proveedor_servicios.html',
+        _template_context(
+            request,
+            empresa,
+            proveedor=proveedor,
+            relaciones=relaciones,
+            form=form,
+            busqueda=busqueda,
+            puede_gestionar=puede_gestionar,
+        ),
+    )
+
+
+@login_required(login_url='/login/')
+@require_POST
+def proveedor_servicio_toggle(request, empresa_slug, proveedor_id, relacion_id):
+    context = _catalogo_context(request, empresa_slug)
+    empresa = context.empresa
+    if not puede_gestionar_catalogo(request.user, empresa):
+        raise PermissionDenied('No tienes permiso para cambiar servicios del proveedor.')
+    proveedor = _proveedor_empresa(empresa, proveedor_id)
+    relacion = get_object_or_404(relaciones_proveedor_servicio_qs(empresa), proveedor=proveedor, pk=relacion_id)
+    relacion.activo = not relacion.activo
+    relacion.save(update_fields=['activo', 'updated_at'])
+    messages.success(request, 'Relacion activada.' if relacion.activo else 'Relacion desactivada.')
+    return redirect('catalogo_proveedor_servicios', empresa_slug=empresa.slug, proveedor_id=proveedor.id)

@@ -130,3 +130,59 @@ class ServicioCatalogoArchivo(models.Model):
             nombre = getattr(self.archivo, 'name', '') or ''
             if not nombre.lower().endswith('.pdf'):
                 raise ValidationError({'archivo': 'PDF: formato no permitido. Usa: pdf.'})
+
+
+class ProveedorServicioCatalogo(models.Model):
+    proveedor = models.ForeignKey(
+        'proveedores.Proveedor',
+        on_delete=models.PROTECT,
+        related_name='servicios_catalogo_k9',
+    )
+    servicio_catalogo = models.ForeignKey(
+        ServicioCatalogo,
+        on_delete=models.PROTECT,
+        related_name='proveedores_servicio_catalogo',
+    )
+    activo = models.BooleanField(default=True)
+    notas = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['proveedor', 'servicio_catalogo__nombre']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['proveedor', 'servicio_catalogo'],
+                name='cat_prov_servicio_catalogo_unico',
+            ),
+        ]
+        indexes = [
+            models.Index(fields=['proveedor', 'activo'], name='cat_prov_srv_prov_act_idx'),
+            models.Index(fields=['servicio_catalogo', 'activo'], name='cat_prov_srv_cat_act_idx'),
+        ]
+        verbose_name = 'Servicio ofrecido por proveedor'
+        verbose_name_plural = 'Servicios ofrecidos por proveedor'
+
+    def __str__(self):
+        return f'{self.proveedor} ofrece {self.servicio_catalogo}'
+
+    @property
+    def empresa(self):
+        return self.servicio_catalogo.empresa if self.servicio_catalogo_id else None
+
+    def clean(self):
+        super().clean()
+        if not self.proveedor_id:
+            raise ValidationError({'proveedor': 'La relacion debe tener proveedor.'})
+        if not self.servicio_catalogo_id:
+            raise ValidationError({'servicio_catalogo': 'La relacion debe tener servicio de catalogo.'})
+        if not self.proveedor.empresa_id:
+            raise ValidationError({'proveedor': 'El proveedor debe pertenecer a una empresa para usar catalogo K9.'})
+        if self.proveedor.empresa_id != self.servicio_catalogo.empresa_id:
+            raise ValidationError({
+                'servicio_catalogo': 'El servicio debe pertenecer a la misma empresa del proveedor.'
+            })
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)

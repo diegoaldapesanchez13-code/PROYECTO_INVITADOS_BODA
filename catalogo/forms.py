@@ -40,3 +40,26 @@ class ServicioCatalogoArchivoForm(forms.ModelForm):
             instance.save()
             self.save_m2m()
         return instance
+
+
+class ProveedorServiciosCatalogoForm(forms.Form):
+    servicios = forms.ModelMultipleChoiceField(
+        queryset=ServicioCatalogo.objects.none(),
+        required=True,
+        label='Servicios del catalogo',
+        widget=forms.SelectMultiple(attrs={'size': 8}),
+    )
+    notas = forms.CharField(
+        required=False,
+        label='Notas internas',
+        widget=forms.Textarea(attrs={'rows': 2}),
+    )
+
+    def __init__(self, *args, proveedor=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.proveedor = proveedor
+        if proveedor and proveedor.empresa_id:
+            self.fields['servicios'].queryset = ServicioCatalogo.objects.filter(
+                empresa_id=proveedor.empresa_id,
+                activo=True,
+            ).order_by('categoria', 'nombre')

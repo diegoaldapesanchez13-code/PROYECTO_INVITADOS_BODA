@@ -58,26 +58,29 @@ Storage R2:
 
 ## Puente catalogo-proveedor
 
-Fase recomendada: K9.3.
+Fase implementada: K9.3.
 
 No eliminar `ServicioCatalogoProveedor`. Usarlo como legacy/adaptador.
 
-Nuevo puente conceptual:
+Modelo puente implementado en `catalogo/`:
 
 - `servicio_catalogo`;
 - `proveedor`;
-- costo_referencia opcional;
-- precio_referencia_cliente opcional solo informativo;
 - activo;
-- notas privadas;
-- etiquetas.
+- notas;
+- timestamps.
+
+Decision K9.3: no agregar costo/precio al puente. La relacion expresa que el proveedor puede prestar el servicio; costos reales siguen en operacion/evento posterior.
+
+Tenant:
+
+- `proveedor.empresa` debe existir;
+- `proveedor.empresa` debe coincidir con `servicio_catalogo.empresa`;
+- constraint unico `proveedor` + `servicio_catalogo`.
 
 Migracion de datos:
 
-1. Por cada `ServicioCatalogoProveedor`, crear o asociar `ServicioCatalogo` por empresa/nombre/categoria.
-2. Crear puente proveedor-servicio.
-3. Mantener el registro legacy apuntando o mapeado hasta retirar dependencias.
-4. Tests de tenant: proveedor y catalogo deben pertenecer a la misma empresa.
+No se ejecuta migracion masiva desde `ServicioCatalogoProveedor` en K9.3. La convivencia K8/K9 queda testeada: legacy sigue funcionando y `ServicioEvento.servicio_catalogo` no cambia.
 
 ## Paquetes
 

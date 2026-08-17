@@ -96,7 +96,7 @@ Estado: borrador K9.0, documental, sin cambios de negocio.
 ## 5. Que hay que crear
 
 - App `catalogo/` con `ServicioCatalogo` por empresa implementada en K9.2.
-- Modelo puente futuro `ServicioCatalogoProveedor` generalizado o nuevo puente `ProveedorServicioCatalogo`.
+- Modelo puente `ProveedorServicioCatalogo` implementado en K9.3 para relacionar proveedor con catalogo general.
 - Modelo/servicio comercial de propuesta testeable.
 - Snapshot contractual K9 v2, sin reemplazar v1.
 - DTOs de contrato/propuesta para vistas de Empresa, Planner, Cliente, Proveedor y DIRTEC.
@@ -214,7 +214,7 @@ Reglas:
 
 - K9.1: seguridad y pruebas de borde (`/colaboracion/`, `/presupuesto/`, `next`, secure files).
 - K9.2: app `catalogo/`, modelo `ServicioCatalogo` por empresa y archivos IMAGEN/PDF.
-- K9.3: puente catalogo-proveedor y adaptadores desde `ServicioCatalogoProveedor`.
+- K9.3: puente `ProveedorServicioCatalogo` catalogo-proveedor y convivencia con `ServicioCatalogoProveedor`.
 - K9.4: motor comercial de propuesta, DTOs y pricing adulto/nino/fijo/adicionales.
 - K9.5: contrato snapshot v2 y vistas de contrato por rol.
 - K9.6: materializacion v2 hacia `ServicioEvento` con cortesias.
@@ -227,7 +227,7 @@ Reglas:
 
 - K9.1: `core/middleware.py`, `core/views.py`, `core/secure_files.py`, tests de `core`, `colaboracion`, `presupuesto`.
 - K9.2: nueva app `catalogo/`, modelos, admin, migracion aditiva `0001_initial`, vistas tenant-aware y tests.
-- K9.3: modelos puente, services/adapters, admin, tests de tenant.
+- K9.3: modelo puente `ProveedorServicioCatalogo`, UI de servicios del proveedor, helpers, admin, migracion aditiva y tests de tenant.
 - K9.4: `paquetes/services.py` o nuevo `comercial/services.py`, DTOs, tests de pricing.
 - K9.5: `eventos/models.py`, `eventos/services.py`, templates de contrato por rol.
 - K9.6: `paquetes/services.py`, `proveedores/models.py`, tests de materializacion.

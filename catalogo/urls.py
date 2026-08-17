@@ -12,4 +12,6 @@ urlpatterns = [
     path('<slug:empresa_slug>/servicios/<int:servicio_id>/archivos/agregar/', views.archivo_create, name='catalogo_archivo_create'),
     path('<slug:empresa_slug>/servicios/<int:servicio_id>/imagen/', views.servicio_imagen, name='catalogo_servicio_imagen'),
     path('<slug:empresa_slug>/servicios/<int:servicio_id>/archivos/<int:archivo_id>/', views.archivo_download, name='catalogo_archivo_download'),
+    path('<slug:empresa_slug>/proveedores/<int:proveedor_id>/servicios/', views.proveedor_servicios, name='catalogo_proveedor_servicios'),
+    path('<slug:empresa_slug>/proveedores/<int:proveedor_id>/servicios/<int:relacion_id>/estado/', views.proveedor_servicio_toggle, name='catalogo_proveedor_servicio_toggle'),
 ]

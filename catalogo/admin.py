@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import ServicioCatalogo, ServicioCatalogoArchivo
+from .models import ProveedorServicioCatalogo, ServicioCatalogo, ServicioCatalogoArchivo
 
 
 class ServicioCatalogoArchivoInline(admin.TabularInline):
@@ -23,3 +23,15 @@ class ServicioCatalogoArchivoAdmin(admin.ModelAdmin):
     list_filter = ('tipo', 'servicio__empresa')
     search_fields = ('titulo', 'servicio__nombre', 'servicio__empresa__nombre_comercial')
     autocomplete_fields = ('servicio',)
+
+
+@admin.register(ProveedorServicioCatalogo)
+class ProveedorServicioCatalogoAdmin(admin.ModelAdmin):
+    list_display = ('proveedor', 'servicio_catalogo', 'empresa', 'activo', 'updated_at')
+    list_filter = ('servicio_catalogo__empresa', 'activo')
+    search_fields = (
+        'proveedor__nombre_comercial',
+        'servicio_catalogo__nombre',
+        'servicio_catalogo__empresa__nombre_comercial',
+    )
+    autocomplete_fields = ('proveedor', 'servicio_catalogo')

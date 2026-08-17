@@ -97,7 +97,20 @@ Ejemplos: DJ de lujo, Banquete 2, Meseros, Capitan de meseros, Valet parking, Pl
 
 ## Proveedores
 
-Regla futura: un proveedor ofrece muchos servicios y un servicio puede tener muchos proveedores.
+Regla K9.3: un proveedor ofrece muchos servicios y un servicio puede tener muchos proveedores mediante `catalogo.ProveedorServicioCatalogo`.
+
+`ProveedorServicioCatalogo` representa capacidad de prestacion, no precio ni asignacion a evento.
+
+Campos actuales:
+
+- `proveedor`;
+- `servicio_catalogo`;
+- `activo`;
+- `notas`;
+- `created_at`;
+- `updated_at`.
+
+Regla tenant: `proveedor.empresa` debe existir y coincidir con `servicio_catalogo.empresa`. Un proveedor legacy sin empresa no puede usar el catalogo K9 hasta corregir su tenant.
 
 No eliminar aun:
 
@@ -111,6 +124,8 @@ Clasificacion K9.0:
 - Adaptable: `ServicioCatalogoProveedor` como fuente historica para migrar al puente catalogo-proveedor.
 - Legacy a deprecar: `Proveedor.tipo_proveedor` como definicion principal de lo que ofrece.
 - No tocar todavia: nombres `WEDDING_PLANNER`, `wedding_planner`, `visible_para_wedding_planners`.
+
+K9.3 no migra automaticamente `ServicioCatalogoProveedor`; lo conserva como fuente historica legacy con costo/precio de referencia. `Proveedor.tipo_proveedor` sigue disponible como clasificacion legacy, pero no decide que servicios puede ofrecer el proveedor.
 
 Prestacion futura en `ServicioEvento`:
 
