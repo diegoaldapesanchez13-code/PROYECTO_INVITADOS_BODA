@@ -1,0 +1,47 @@
+{% extends "paquetes/base.html" %}
+{% block title %}Paquetes comerciales | DIRTEC{% endblock %}
+{% block heading %}Paquetes comerciales{% endblock %}
+{% block content %}
+<section class="pkg-section">
+    <div class="section-heading">
+        <div>
+            <span>Catalogo comercial</span>
+            <h2>Paquetes</h2>
+        </div>
+        {% if puede_gestionar %}
+            <a class="btn" href="{% url 'paquetes_paquete_create' empresa.slug %}">Nuevo paquete</a>
+        {% endif %}
+    </div>
+    <form class="pkg-filters" method="get">
+        <label>Buscar
+            <input type="search" name="q" value="{{ busqueda }}" placeholder="Nombre o descripcion">
+        </label>
+        <label>Estado
+            <select name="estado">
+                <option value="">Todos</option>
+                <option value="activo" {% if estado == "activo" %}selected{% endif %}>Activos</option>
+                <option value="inactivo" {% if estado == "inactivo" %}selected{% endif %}>Inactivos</option>
+            </select>
+        </label>
+        <button class="btn secondary" type="submit">Filtrar</button>
+    </form>
+    <div class="pkg-grid">
+        {% for paquete in paquetes %}
+            <article class="pkg-card">
+                <div>
+                    <span>{% if paquete.activo %}Activo{% else %}Inactivo{% endif %}</span>
+                    <h3><a href="{% url 'paquetes_paquete_detail' empresa.slug paquete.id %}">{{ paquete.nombre }}</a></h3>
+                    <p>{{ paquete.descripcion|default:"Sin descripcion" }}</p>
+                </div>
+                <dl>
+                    <div><dt>Adulto</dt><dd>${{ paquete.precio_adulto|default:"0.00" }}</dd></div>
+                    <div><dt>Nino</dt><dd>{% if paquete.precio_nino != None %}${{ paquete.precio_nino }}{% else %}Sin tarifa{% endif %}</dd></div>
+                    <div><dt>Fijo</dt><dd>${{ paquete.cargo_fijo }}</dd></div>
+                </dl>
+            </article>
+        {% empty %}
+            <p class="empty">No hay paquetes para mostrar.</p>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

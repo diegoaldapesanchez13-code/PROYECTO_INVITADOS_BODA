@@ -96,7 +96,7 @@ Tests implementados en `catalogo.tests_k93`:
 
 ## K9.4 Motor comercial
 
-Tests propuestos:
+Tests implementados en `paquetes.tests_k94`:
 
 - base adulto/nino/fijo;
 - paquete sin precio nino usa regla definida;
@@ -109,6 +109,18 @@ Tests propuestos:
 - adicional `MANUAL`;
 - descuento no deja total negativo salvo politica explicita;
 - DTO no depende de template.
+- adicional manual sin catalogo;
+- cortesias visibles con cargo cliente cero;
+- Empresa A no ve propuesta B;
+- Empresa A no usa paquete B;
+- Planner no usa evento no asignado;
+- Cliente y proveedor no administran propuestas;
+- POST no fuerza tenant;
+- paquete inactivo no puede seleccionarse para nueva propuesta;
+- servicio catalogo inactivo no se agrega como nueva linea;
+- modificar paquete maestro no corrompe desglose persistido;
+- legacy `PaqueteBoda`, `ServicioPaquete` y snapshot K8 siguen funcionando;
+- media privada de paquete queda fuera de `MEDIA_ROOT` y se descarga por vista autorizada.
 
 ## K9.5 Contrato y visibilidad
 
@@ -156,6 +168,7 @@ Tests propuestos:
 
 Tests propuestos:
 
+- editar, cancelar, archivar y eliminar tienen rutas/servicios semanticamente separados;
 - eliminar servicio contratado bloqueado o convertido a cancelar;
 - gasto con pagos no se elimina fisicamente;
 - documento historico se archiva si aplica;
@@ -175,6 +188,50 @@ Tests propuestos:
 - botones volver usan destino por rol;
 - branding tenant muestra logo/colores controlados;
 - password reset renderiza sin filtrar existencia de usuario.
+
+## Requisitos transversales futuros
+
+### Invitados / RSVP
+
+Tests propuestos:
+
+- invitado bloqueado conserva historico;
+- invitado bloqueado no cuenta como activo;
+- invitado bloqueado no aparece en pendientes;
+- invitado bloqueado no entra en mesas;
+- invitado bloqueado no recibe comunicaciones;
+- invitado bloqueado puede reactivarse;
+- eliminacion fisica solo permitida si no hay historial relevante;
+- dashboard, filtros y exportaciones usan la misma service/query layer;
+- dashboard muestra total activos, confirmados si, confirmados no, pendientes y bloqueados/historico;
+- cada KPI del dashboard filtra la lista correspondiente.
+
+### Branding por empresa
+
+Tests propuestos:
+
+- DIRTEC configura logo, portada/hero, imagen encabezado, color principal y color secundario;
+- Empresa, Planner, Cliente y Proveedor reciben branding consistente del tenant;
+- login/portal aplica branding cuando corresponda;
+- tenant no puede inyectar CSS arbitrario.
+
+### Auditoria
+
+Tests propuestos:
+
+- cambio en contrato registra quien, que y cuando;
+- cambio en servicio registra estado anterior/nuevo cuando aplique;
+- cambio en paquete registra auditoria;
+- cambio en invitado registra auditoria;
+- accion operativa relevante registra auditoria.
+
+### Estados comerciales
+
+Tests propuestos:
+
+- propuesta transiciona por `BORRADOR`, `PROPUESTA`, `EN REVISION`, `ACEPTADO`, `CONTRATADO`, `CANCELADO`;
+- propuesta puede cambiar antes de aceptarse;
+- contrato aceptado queda congelado y no cambia por modificaciones posteriores de propuesta/catalogo/paquete.
 
 ## K9.10 Builder mobile
 

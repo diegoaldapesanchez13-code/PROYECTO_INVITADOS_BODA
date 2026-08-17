@@ -1,0 +1,58 @@
+{% extends "paquetes/base.html" %}
+{% block title %}{{ paquete.nombre }} | DIRTEC{% endblock %}
+{% block heading %}{{ paquete.nombre }}{% endblock %}
+{% block content %}
+<section class="pkg-detail">
+    <div class="pkg-main">
+        <div>
+            <span>{% if paquete.activo %}Activo{% else %}Inactivo{% endif %}</span>
+            <h2>{{ paquete.nombre }}</h2>
+            <p>{{ paquete.descripcion|default:"Sin descripcion comercial." }}</p>
+        </div>
+        <dl>
+            <div><dt>Adulto</dt><dd>${{ paquete.precio_adulto|default:"0.00" }}</dd></div>
+            <div><dt>Nino</dt><dd>{% if paquete.precio_nino != None %}${{ paquete.precio_nino }}{% else %}Sin tarifa{% endif %}</dd></div>
+            <div><dt>Cargo fijo</dt><dd>${{ paquete.cargo_fijo }}</dd></div>
+            <div><dt>Capacidad</dt><dd>{{ paquete.capacidad_minima_recomendada|default:"-" }} - {{ paquete.capacidad_maxima_recomendada|default:"-" }}</dd></div>
+            <div><dt>Duracion</dt><dd>{{ paquete.duracion_evento|default:"-" }} h</dd></div>
+        </dl>
+        <div class="form-actions">
+            {% if puede_gestionar %}
+                <a class="btn" href="{% url 'paquetes_paquete_update' empresa.slug paquete.id %}">Editar</a>
+            {% endif %}
+            {% if paquete.portada %}
+                <a class="btn secondary" href="{% url 'paquetes_paquete_portada' empresa.slug paquete.id %}">Portada</a>
+            {% endif %}
+            {% if paquete.pdf_comercial %}
+                <a class="btn secondary" href="{% url 'paquetes_paquete_pdf' empresa.slug paquete.id %}">PDF</a>
+            {% endif %}
+        </div>
+    </div>
+    <aside class="pkg-side">
+        <h3>Servicios incluidos</h3>
+        <div class="line-list">
+            {% for item in paquete.servicios_catalogo_k9.all %}
+                <article class="line-item">
+                    <strong>{{ item.servicio_catalogo.nombre }}</strong>
+                    <span>{{ item.cantidad }} / orden {{ item.orden }}</span>
+                    {% if item.notas %}<p>{{ item.notas }}</p>{% endif %}
+                </article>
+            {% empty %}
+                <p class="empty">Sin servicios K9 incluidos.</p>
+            {% endfor %}
+        </div>
+        {% if puede_gestionar %}
+            <form class="pkg-form compact-form" method="post" action="{% url 'paquetes_servicio_create' empresa.slug paquete.id %}">
+                {% csrf_token %}
+                {{ servicio_form.as_p }}
+                <button class="btn" type="submit">Agregar servicio</button>
+            </form>
+            <form class="pkg-form compact-form" method="post" enctype="multipart/form-data" action="{% url 'paquetes_media_create' empresa.slug paquete.id %}">
+                {% csrf_token %}
+                {{ media_form.as_p }}
+                <button class="btn secondary" type="submit">Agregar media</button>
+            </form>
+        {% endif %}
+    </aside>
+</section>
+{% endblock %}

@@ -55,6 +55,7 @@
                 {% endif %}
                 {% if empresa_actual %}
                     <a class="secondary" href="{% url 'catalogo_servicio_list' empresa_actual.slug %}">Catalogo</a>
+                    <a class="secondary" href="{% url 'paquetes_paquete_list' empresa_actual.slug %}">Paquetes</a>
                 {% endif %}
             </div>
         </section>
@@ -339,6 +340,7 @@
                         {% endif %}
                         <div class="planner-v3-event-links">
                             <a href="{% url 'dashboard' %}?evento={{ evento.id }}">Abrir evento</a>
+                            <a href="{% url 'paquetes_propuesta_nueva' empresa_actual.slug evento.id %}">Propuesta</a>
                             <a href="{% url 'dashboard' %}?evento={{ evento.id }}#servicios">Servicios</a>
                             <a href="{% url 'dashboard' %}?evento={{ evento.id }}#agenda">Agenda</a>
                             <a href="{% url 'dashboard' %}?evento={{ evento.id }}#tareas">Tareas</a>

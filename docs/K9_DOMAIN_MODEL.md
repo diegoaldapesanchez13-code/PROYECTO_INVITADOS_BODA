@@ -139,7 +139,7 @@ No crear proveedor ficticio para servicios internos. La asignacion de proveedor 
 
 El paquete vende una oferta, no ejecuta operacion.
 
-Campos futuros recomendados para paquete:
+Campos K9.4 implementados de forma aditiva en `PaqueteBoda`:
 
 - empresa;
 - nombre;
@@ -151,10 +151,9 @@ Campos futuros recomendados para paquete:
 - capacidad_maxima_recomendada;
 - duracion_evento;
 - portada;
-- galeria;
+- media comercial asociada mediante `PaqueteMediaComercial`;
 - pdf_comercial;
 - activo;
-- version/comercial si se requiere.
 
 Capacidad debe iniciar como advertencia/recomendacion, no bloqueo duro.
 
@@ -164,11 +163,17 @@ Formula base objetivo:
 base = adultos * precio_adulto + ninos * precio_nino + cargo_fijo
 ```
 
+Decision K9.4 sobre tarifa infantil: si una propuesta tiene ninos y el paquete no tiene `precio_nino`, el motor genera advertencia explicita y no inventa `precio_nino = precio_adulto`.
+
+Compatibilidad: si un paquete no usa tarifas K9, el motor puede leer `precio_base` como paquete legacy y emite advertencia de compatibilidad.
+
+Portada, PDF comercial y media de paquete usan storage privado bajo `PRIVATE_MEDIA_ROOT`; no se sirven por `MEDIA_URL`.
+
 ## Servicios del paquete
 
-Actual: `ServicioPaquete(tipo_servicio, descripcion, cantidad, precio_incluido)`.
+Actual legacy: `ServicioPaquete(tipo_servicio, descripcion, cantidad, precio_incluido)`.
 
-Futuro conceptual: `PaqueteServicio`.
+Implementado K9.4: `PaqueteServicio`.
 
 Campos:
 
@@ -185,7 +190,7 @@ Campos:
 Compatibilidad:
 
 - mantener `ServicioPaquete` hasta migracion probada;
-- mapear `tipo_servicio` a categoria/nombre temporal;
+- el DTO de propuesta puede emitir lineas normalizadas desde `PaqueteServicio` K9 y desde `ServicioPaquete` legacy;
 - conservar snapshots v1;
 - nunca duplicar `ServicioEvento` al re-materializar;
 - soportar masters eliminados via snapshot.
@@ -223,6 +228,18 @@ DTO minimo sugerido:
 - advertencias;
 - version_calculo.
 
+Implementado K9.4: `PropuestaEvento` guarda propuesta editable con empresa, evento, sede, adultos, ninos, paquete, descuento, estado, notas comerciales, creador/modificador y ultimo desglose calculado. Ese desglose no es snapshot contractual definitivo.
+
+Estados K9.4:
+
+- `BORRADOR`;
+- `PROPUESTA`;
+- `EN_REVISION`;
+- `ACEPTADO`;
+- `CANCELADO`.
+
+`CONTRATADO` queda fuera de K9.4 y pertenece a K9.5.
+
 ## Adicionales
 
 Un adicional puede venir de catalogo o ser manual del evento.
@@ -235,6 +252,8 @@ Modos de precio:
 - `POR_PERSONA`;
 - `POR_UNIDAD`;
 - `MANUAL`.
+
+Implementado K9.4: los adicionales viven en `PropuestaLinea` con `tipo=ADICIONAL`, `servicio_catalogo` opcional, nombre manual, descripcion, modo, tarifa, cantidad, subtotal y snapshot de linea para la propuesta.
 
 El contrato debe guardar snapshot de la tarifa usada:
 
@@ -259,6 +278,8 @@ Una cortesia:
 - puede generar costo operativo;
 - se materializa como `ServicioEvento`;
 - no es lo mismo que incluido.
+
+Implementado K9.4: una cortesia vive en `PropuestaLinea` con `tipo=CORTESIA`; aparece en el DTO y siempre tiene cargo cliente cero. Puede conservar valor informativo.
 
 ## Contrato de evento
 
@@ -329,6 +350,84 @@ Preservar:
 - `PLANNER_PROVEEDOR`;
 - `INTERNO`;
 - permisos existentes de canal.
+
+## Invitados y RSVP
+
+Fase posterior debe definir centralmente los estados:
+
+- `ACTIVO`;
+- `BLOQUEADO/ARCHIVADO`;
+- `HISTORICO`.
+
+Regla para invitado bloqueado:
+
+- conserva historico;
+- deja de contar como invitado activo;
+- no entra en pendientes;
+- no entra en mesas;
+- no recibe comunicaciones;
+- puede reactivarse.
+
+La eliminacion fisica solo debe permitirse para registros sin historial relevante.
+
+Las estadisticas de invitados deben venir de una unica service/query layer reutilizada por dashboard, filtros, exportaciones y demas modulos.
+
+Dashboard futuro minimo:
+
+- total activos;
+- confirmados si;
+- confirmados no;
+- pendientes;
+- bloqueados/historico.
+
+Cada KPI debe poder actuar como filtro.
+
+## Branding por empresa
+
+Fase posterior controlada por DIRTEC debe permitir configurar:
+
+- logo;
+- portada/hero;
+- imagen encabezado;
+- color principal;
+- color secundario.
+
+El branding debe aplicarse de forma consistente a Empresa, Planner, Cliente, Proveedor y login/portal cuando corresponda.
+
+No se permite CSS arbitrario por tenant.
+
+## CRUD operativo y conservacion historica
+
+El dominio operativo debe distinguir:
+
+- `EDITAR`;
+- `CANCELAR`;
+- `ARCHIVAR`;
+- `ELIMINAR`.
+
+Servicios, tareas, citas, documentos y gastos con historial no deben borrarse fisicamente a ciegas.
+
+## Auditoria transversal
+
+Requisito futuro para contratos, servicios, paquetes, invitados y acciones operativas relevantes:
+
+- quien modifico;
+- que modifico;
+- cuando;
+- estado anterior/nuevo cuando aplique.
+
+## Estados comerciales
+
+Flujo comercial futuro:
+
+- `BORRADOR`;
+- `PROPUESTA`;
+- `EN REVISION`;
+- `ACEPTADO`;
+- `CONTRATADO`;
+- `CANCELADO`.
+
+Una propuesta puede cambiar. Un contrato aceptado queda congelado.
 
 ## Visibilidad contractual
 

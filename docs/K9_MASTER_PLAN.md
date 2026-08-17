@@ -210,12 +210,45 @@ Reglas:
 - No hacer reemplazos globales.
 - Mantener K8 hasta que K9 este cubierto por tests.
 
-## 16. Plan por fases
+## 16. Requisitos transversales futuros aprobados
+
+### Invitados / RSVP
+
+- Debe existir una definicion central posterior para estados `ACTIVO`, `BLOQUEADO/ARCHIVADO` e `HISTORICO`.
+- Un invitado bloqueado conserva historico, deja de contar como activo, no entra en pendientes, no entra en mesas, no recibe comunicaciones y puede reactivarse.
+- La eliminacion fisica solo debe permitirse para registros sin historial relevante.
+- Las estadisticas deben venir de una unica service/query layer reutilizada por dashboard, filtros, exportaciones y demas modulos.
+- Dashboard futuro minimo: total activos, confirmados si, confirmados no, pendientes y bloqueados/historico.
+- Cada KPI del dashboard debe poder actuar como filtro.
+
+### Branding por empresa
+
+- Fase posterior controlada por DIRTEC: logo, portada/hero, imagen encabezado, color principal y color secundario.
+- Debe aplicarse de forma consistente a Empresa, Planner, Cliente, Proveedor y login/portal cuando corresponda.
+- No se permite CSS arbitrario por tenant.
+
+### CRUD operativo
+
+- Distinguir semanticamente `EDITAR`, `CANCELAR`, `ARCHIVAR` y `ELIMINAR`.
+- Servicios, tareas, citas, documentos y gastos con historial no deben borrarse fisicamente a ciegas.
+
+### Auditoria
+
+- Requisito transversal futuro: registrar quien modifico, que modifico, cuando, y estado anterior/nuevo cuando aplique.
+- Debe cubrir contratos, servicios, paquetes, invitados y acciones operativas relevantes.
+
+### Estados comerciales
+
+- Flujo futuro: `BORRADOR`, `PROPUESTA`, `EN REVISION`, `ACEPTADO`, `CONTRATADO`, `CANCELADO`.
+- Una propuesta puede cambiar.
+- Un contrato aceptado queda congelado.
+
+## 17. Plan por fases
 
 - K9.1: seguridad y pruebas de borde (`/colaboracion/`, `/presupuesto/`, `next`, secure files).
 - K9.2: app `catalogo/`, modelo `ServicioCatalogo` por empresa y archivos IMAGEN/PDF.
 - K9.3: puente `ProveedorServicioCatalogo` catalogo-proveedor y convivencia con `ServicioCatalogoProveedor`.
-- K9.4: motor comercial de propuesta, DTOs y pricing adulto/nino/fijo/adicionales.
+- K9.4: motor comercial de propuesta, DTOs y pricing adulto/nino/fijo/adicionales implementado en `paquetes`.
 - K9.5: contrato snapshot v2 y vistas de contrato por rol.
 - K9.6: materializacion v2 hacia `ServicioEvento` con cortesias.
 - K9.7: presupuesto/reportes integrados sin duplicar finanzas.
@@ -223,12 +256,12 @@ Reglas:
 - K9.9: landing, terminologia visible, branding multiempresa y navegacion contextual.
 - K9.10: Builder mobile y shortcuts, separado del dominio comercial.
 
-## 17. Archivos previstos por fase
+## 18. Archivos previstos por fase
 
 - K9.1: `core/middleware.py`, `core/views.py`, `core/secure_files.py`, tests de `core`, `colaboracion`, `presupuesto`.
 - K9.2: nueva app `catalogo/`, modelos, admin, migracion aditiva `0001_initial`, vistas tenant-aware y tests.
 - K9.3: modelo puente `ProveedorServicioCatalogo`, UI de servicios del proveedor, helpers, admin, migracion aditiva y tests de tenant.
-- K9.4: `paquetes/services.py` o nuevo `comercial/services.py`, DTOs, tests de pricing.
+- K9.4: `paquetes/models.py`, `paquetes/forms.py`, `paquetes/services.py`, `paquetes/views.py`, templates de propuesta/paquetes, media privada y tests de pricing.
 - K9.5: `eventos/models.py`, `eventos/services.py`, templates de contrato por rol.
 - K9.6: `paquetes/services.py`, `proveedores/models.py`, tests de materializacion.
 - K9.7: `presupuesto/`, dashboards, reportes.
@@ -236,11 +269,11 @@ Reglas:
 - K9.9: templates publicos/dashboards y copy visible.
 - K9.10: Builder static/templates y tests visuales/manuales.
 
-## 18. Tests por fase
+## 19. Tests por fase
 
 Ver `docs/K9_TEST_MATRIX.md`.
 
-## 19. Riesgo de regresion
+## 20. Riesgo de regresion
 
 - Alto: seguridad de tenant, `ServicioEvento`, materializacion, pagos y visibilidad.
 - Medio: paquetes y propuesta comercial.
@@ -248,7 +281,7 @@ Ver `docs/K9_TEST_MATRIX.md`.
 - Bajo si se aisla: landing, copy visible y documentacion.
 - Builder mobile debe ir aislado para no afectar desktop.
 
-## 20. Criterios de aceptacion
+## 21. Criterios de aceptacion
 
 - K8 sigue pasando tests existentes.
 - K9 no rompe snapshots v1 ni materializacion v1.
@@ -258,7 +291,7 @@ Ver `docs/K9_TEST_MATRIX.md`.
 - Contrato aceptado no se recalcula por cambios posteriores de costo proveedor.
 - Nuevas migraciones son aditivas y reversibles en fase.
 
-## 21. Documentacion creada/modificada
+## 22. Documentacion creada/modificada
 
 - `docs/K9_MASTER_PLAN.md`
 - `docs/K9_DOMAIN_MODEL.md`
@@ -266,7 +299,7 @@ Ver `docs/K9_TEST_MATRIX.md`.
 - `docs/K9_SECURITY_MATRIX.md`
 - `docs/K9_TEST_MATRIX.md`
 
-## 22. Git diff esperado
+## 23. Git diff esperado
 
 K9.0 solo debe agregar/modificar documentacion en `docs/`.
 

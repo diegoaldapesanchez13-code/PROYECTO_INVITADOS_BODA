@@ -84,9 +84,9 @@ No se ejecuta migracion masiva desde `ServicioCatalogoProveedor` en K9.3. La con
 
 ## Paquetes
 
-Fase recomendada: K9.4.
+Fase implementada: K9.4.
 
-Agregar campos aditivos a paquete o crear version comercial:
+Campos aditivos agregados a `PaqueteBoda`:
 
 - `precio_adulto`;
 - `precio_nino`;
@@ -94,7 +94,8 @@ Agregar campos aditivos a paquete o crear version comercial:
 - `capacidad_minima_recomendada`;
 - `capacidad_maxima_recomendada`;
 - `duracion_evento`;
-- media comercial.
+- `portada`;
+- `pdf_comercial`.
 
 No retirar:
 
@@ -107,20 +108,22 @@ Compatibilidad:
 - Si paquete es v1, calcular con `precio_base`/`precio_acordado`.
 - Si paquete es v2, calcular con adulto/nino/cargo fijo.
 - Vistas legacy siguen leyendo campos v1 hasta su fase.
+- Media comercial usa storage privado compartido con catalogo K9.2.
+- Migracion aditiva creada: `paquetes/migrations/0004_paqueteboda_capacidad_maxima_recomendada_and_more.py`.
 
 ## Servicios del paquete
 
-Fase recomendada: K9.4 o K9.6 segun alcance.
+Fase implementada en alcance comercial K9.4.
 
-Crear `PaqueteServicio` aditivo o evolucionar con FK opcional a catalogo.
+Modelo `PaqueteServicio` aditivo creado con FK a `ServicioCatalogo`.
 
 Plan seguro:
 
 1. Agregar modelo nuevo `PaqueteServicio`.
 2. Mantener `ServicioPaquete`.
-3. Crear adapter `iter_lineas_paquete(paquete)` que emita lineas normalizadas desde ambos.
-4. Migrar datos legacy a nuevo modelo con clave estable.
-5. Materializacion v2 usa lineas normalizadas.
+3. Emitir lineas normalizadas desde ambos en el DTO comercial.
+4. No ejecutar migracion masiva de datos legacy en K9.4.
+5. Materializacion v2 queda pendiente para K9.6.
 6. Lectores v1 siguen con `ServicioPaquete`.
 
 Evitar duplicados:

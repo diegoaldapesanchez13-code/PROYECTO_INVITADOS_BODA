@@ -1,0 +1,15 @@
+{% extends "paquetes/base.html" %}
+{% block title %}{% if modo == "crear" %}Nuevo paquete{% else %}Editar paquete{% endif %} | DIRTEC{% endblock %}
+{% block heading %}{% if modo == "crear" %}Nuevo paquete{% else %}Editar paquete{% endif %}{% endblock %}
+{% block content %}
+<section class="pkg-section narrow">
+    <form class="pkg-form" method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <div class="form-actions">
+            <button class="btn" type="submit">Guardar</button>
+            <a class="btn secondary" href="{% url 'paquetes_paquete_list' empresa.slug %}">Volver</a>
+        </div>
+    </form>
+</section>
+{% endblock %}

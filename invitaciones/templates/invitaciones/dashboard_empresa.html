@@ -111,7 +111,10 @@
                             <div class="event-workspace-date"><strong>{{ evento.fecha_fiesta|date:"d"|default:"--" }}</strong><span>{{ evento.fecha_fiesta|date:"M Y"|default:"Sin fecha" }}</span></div>
                             <div class="company-event-title-v3"><div><h3>{{ evento }}</h3><span class="pill subtle">{{ evento.get_estado_display }}</span></div><p>{{ evento.sede.nombre|default:evento.lugar_fiesta|default:"Sede por definir" }}</p><small>Planner: {% if evento.wedding_planner %}{{ evento.wedding_planner.get_full_name|default:evento.wedding_planner.username }}{% else %}Sin asignar{% endif %}</small></div>
                             <div class="company-event-health-v3"><span><strong>{{ card.servicios }}</strong> servicios</span><span><strong>{{ card.acciones_cliente }}</strong> cliente</span><span><strong>{{ card.acciones_proveedor }}</strong> proveedor</span><span class="{% if card.tareas_vencidas %}danger-text{% endif %}"><strong>{{ card.tareas_vencidas }}</strong> vencidas</span><span><strong>{{ card.confirmaciones_pendientes }}</strong> confirmaciones</span></div>
-                            <a class="event-primary-action" href="{% url 'dashboard' %}?evento={{ evento.id }}">Abrir evento<small>Workspace Event-Centric</small></a>
+                            <div class="event-primary-stack">
+                                <a class="event-primary-action" href="{% url 'dashboard' %}?evento={{ evento.id }}">Abrir evento<small>Workspace Event-Centric</small></a>
+                                <a class="event-primary-action secondary" href="{% url 'paquetes_propuesta_nueva' empresa.slug evento.id %}">Propuesta<small>Motor comercial K9</small></a>
+                            </div>
                         </div>
                         <details class="event-settings"><summary>Administrar ficha del evento</summary>
                             <form class="mini-form nested-form" method="post">{% csrf_token %}<input type="hidden" name="accion" value="editar_evento"><input type="hidden" name="empresa_id" value="{{ empresa.id }}"><input type="hidden" name="evento_id" value="{{ evento.id }}">
@@ -757,6 +760,7 @@
             </div>
             <div class="module-tabs" role="tablist" aria-label="Catalogos de operacion">
                 <a class="btn secondary" href="{% url 'catalogo_servicio_list' empresa.slug %}">Servicios generales</a>
+                <a class="btn secondary" href="{% url 'paquetes_paquete_list' empresa.slug %}">Paquetes K9</a>
                 <button type="button" data-subpanel-button="sedes">Sedes</button>
                 <button type="button" data-subpanel-button="paquetes">Paquetes</button>
             </div>

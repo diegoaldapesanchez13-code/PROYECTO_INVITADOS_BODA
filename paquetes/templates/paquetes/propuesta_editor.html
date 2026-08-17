@@ -1,0 +1,106 @@
+{% extends "paquetes/base.html" %}
+{% block title %}Propuesta comercial | DIRTEC{% endblock %}
+{% block heading %}Propuesta comercial{% endblock %}
+{% block content %}
+<section class="proposal-layout">
+    <div class="pkg-main">
+        <div class="section-heading compact">
+            <div>
+                <span>{{ evento.titulo_evento }}</span>
+                <h2>Datos comerciales</h2>
+            </div>
+        </div>
+        <form class="pkg-form" method="post">
+            {% csrf_token %}
+            <input type="hidden" name="accion" value="guardar_propuesta">
+            {{ form.as_p }}
+            <button class="btn" type="submit">Guardar propuesta</button>
+        </form>
+
+        {% if propuesta and linea_form %}
+            <div class="section-heading compact stack-top">
+                <div>
+                    <span>Adicionales y cortesias</span>
+                    <h2>Agregar linea</h2>
+                </div>
+            </div>
+            <form class="pkg-form" method="post">
+                {% csrf_token %}
+                <input type="hidden" name="accion" value="agregar_linea">
+                {{ linea_form.as_p }}
+                <button class="btn secondary" type="submit">Agregar linea</button>
+            </form>
+        {% endif %}
+    </div>
+
+    <aside class="pkg-side sticky-total">
+        <h3>Total</h3>
+        {% if dto %}
+            <div class="total-box">
+                <span>Subtotal base</span>
+                <strong>${{ dto.subtotal_base }}</strong>
+            </div>
+            <div class="total-box">
+                <span>Subtotal</span>
+                <strong>${{ dto.subtotal }}</strong>
+            </div>
+            <div class="total-box">
+                <span>Descuento</span>
+                <strong>${{ dto.descuento }}</strong>
+            </div>
+            <div class="total-box grand">
+                <span>Total</span>
+                <strong>${{ dto.total }}</strong>
+            </div>
+            {% if dto.advertencias %}
+                <div class="warnings">
+                    {% for warning in dto.advertencias %}<p>{{ warning }}</p>{% endfor %}
+                </div>
+            {% endif %}
+            <h3>Incluidos</h3>
+            <div class="line-list">
+                {% for item in dto.lineas_incluidas %}
+                    <article class="line-item">
+                        <strong>{{ item.nombre }}</strong>
+                        <span>{{ item.cantidad }}</span>
+                    </article>
+                {% empty %}
+                    <p class="empty">Sin incluidos.</p>
+                {% endfor %}
+            </div>
+            <h3>Adicionales</h3>
+            <div class="line-list">
+                {% for item in dto.lineas_adicionales %}
+                    <article class="line-item">
+                        <strong>{{ item.nombre }}</strong>
+                        <span>{{ item.modo_precio }} / ${{ item.subtotal }}</span>
+                        <form method="post" action="{% url 'paquetes_propuesta_linea_toggle' empresa.slug evento.id propuesta.id item.linea_id %}">
+                            {% csrf_token %}
+                            <button class="text-btn" type="submit">Retirar</button>
+                        </form>
+                    </article>
+                {% empty %}
+                    <p class="empty">Sin adicionales.</p>
+                {% endfor %}
+            </div>
+            <h3>Cortesias</h3>
+            <div class="line-list">
+                {% for item in dto.lineas_cortesia %}
+                    <article class="line-item">
+                        <strong>{{ item.nombre }}</strong>
+                        <span>Cargo cliente $0.00</span>
+                        <form method="post" action="{% url 'paquetes_propuesta_linea_toggle' empresa.slug evento.id propuesta.id item.linea_id %}">
+                            {% csrf_token %}
+                            <button class="text-btn" type="submit">Retirar</button>
+                        </form>
+                    </article>
+                {% empty %}
+                    <p class="empty">Sin cortesias.</p>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="empty">Guarda los datos para calcular la propuesta.</p>
+        {% endif %}
+    </aside>
+</section>
+{% endblock %}
