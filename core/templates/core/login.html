@@ -1,44 +1,152 @@
 {% load static %}
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DIRTEC | Acceso</title>
-    <link rel="stylesheet" href="{% static 'core/css/public_auth.css' %}">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light">
+    <meta name="robots" content="noindex,nofollow">
+    <title>Iniciar sesión | DIRTEC Event Studio</title>
+    <link rel="stylesheet" href="{% static 'core/app/tokens.css' %}">
+    <link rel="stylesheet" href="{% static 'core/app/forms.css' %}">
+    <link rel="stylesheet" href="{% static 'core/app/auth.css' %}">
 </head>
-<body>
-<main class="auth-page">
-    <section class="auth-panel">
-        <div class="auth-brand">
-            <span>DIRTEC</span>
-            <h1>Plataforma de eventos</h1>
-            <p>Acceso profesional para empresas, wedding planners, clientes y proveedores.</p>
+<body class="auth-body">
+<a class="auth-skip-link" href="#auth-form">Ir al formulario</a>
+
+<main class="auth-layout">
+    <section class="auth-visual" aria-label="DIRTEC Event Studio">
+        <div class="auth-visual__glow auth-visual__glow--one"></div>
+        <div class="auth-visual__glow auth-visual__glow--two"></div>
+
+        <div class="auth-visual__brand">
+            <div class="auth-product-mark" aria-hidden="true">D</div>
+            <div>
+                <span class="auth-kicker">DIRTEC</span>
+                <strong>Event Studio</strong>
+            </div>
         </div>
 
-        <form class="auth-card" method="post">
-            {% csrf_token %}
-            <span class="eyebrow">Inicio de sesion</span>
-            <h2>Entrar al dashboard</h2>
-            {% if form.errors %}
-                <p class="form-error">Usuario, correo o teléfono o contrasena incorrectos. Verifica tus datos o contacta a DIRTEC.</p>
-            {% endif %}
-            <label>
-                Usuario
-                <input type="text" name="{{ form.username.name }}" autocomplete="username" required autofocus>
-            </label>
-            <label>
-                Contrasena
-                <input type="password" name="{{ form.password.name }}" autocomplete="current-password" required>
-            </label>
-            <button type="submit">Ingresar</button>
-            <a class="plain-link" href="{% url 'password_reset' %}">Recuperar contrasena</a>
-        </form>
+        <div class="auth-visual__content">
+            <span class="auth-kicker">Gestión de eventos</span>
+            <h1>Todo tu evento,<br>en un solo lugar.</h1>
+            <p>
+                Planeación, invitados, servicios, proveedores, finanzas e invitación
+                conectados dentro de un mismo workspace.
+            </p>
+        </div>
+
+        <div class="auth-visual__footer">
+            <span>DIRTEC Event Studio</span>
+            <span>Software para operación profesional de eventos</span>
+        </div>
     </section>
-    <aside class="auth-support">
-        <span>Soporte</span>
-        <p>Si tu empresa aparece vencida, suspendida o bloqueada, tus datos permanecen guardados. DIRTEC puede reactivar el acceso al registrar la renovacion.</p>
-    </aside>
+
+    <section class="auth-form-panel">
+        <div class="auth-mobile-brand" aria-hidden="true">
+            <div class="auth-product-mark">D</div>
+            <div>
+                <span class="auth-kicker">DIRTEC</span>
+                <strong>Event Studio</strong>
+            </div>
+        </div>
+
+        <div class="auth-card" id="auth-form">
+            <div class="auth-card__header">
+                <span class="auth-kicker">Bienvenido</span>
+                <h2>Inicia sesión</h2>
+                <p>Ingresa con las credenciales asignadas a tu cuenta.</p>
+            </div>
+
+            {% if messages %}
+                <div class="auth-alert-stack" aria-live="polite">
+                    {% for message in messages %}
+                        <div class="auth-alert auth-alert--{{ message.tags|default:'info' }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            {% if form.non_field_errors or form.errors %}
+                <div class="auth-alert auth-alert--error" role="alert">
+                    No pudimos iniciar sesión. Revisa tu usuario y contraseña e inténtalo nuevamente.
+                </div>
+            {% endif %}
+
+            <form method="post" class="auth-form" novalidate>
+                {% csrf_token %}
+                {% if next %}
+                    <input type="hidden" name="next" value="{{ next }}">
+                {% endif %}
+
+                <div class="auth-field">
+                    <label for="id_username">Usuario</label>
+                    <input
+                        class="auth-input"
+                        id="id_username"
+                        name="{{ form.username.name }}"
+                        type="text"
+                        value="{{ form.username.value|default:'' }}"
+                        autocomplete="username"
+                        autocapitalize="none"
+                        spellcheck="false"
+                        required
+                        autofocus
+                    >
+                    {% if form.username.errors %}
+                        <div class="auth-field__error">{{ form.username.errors|striptags }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="auth-field">
+                    <div class="auth-label-row">
+                        <label for="id_password">Contraseña</label>
+                        <a href="{% url 'password_reset' %}">¿Olvidaste tu contraseña?</a>
+                    </div>
+
+                    <div class="auth-password">
+                        <input
+                            class="auth-input auth-input--password"
+                            id="id_password"
+                            name="{{ form.password.name }}"
+                            type="password"
+                            autocomplete="current-password"
+                            required
+                        >
+                        <button
+                            class="auth-password__toggle"
+                            type="button"
+                            data-password-toggle="id_password"
+                            aria-label="Mostrar contraseña"
+                            aria-pressed="false"
+                        >
+                            <span data-password-toggle-text>Mostrar</span>
+                        </button>
+                    </div>
+                    {% if form.password.errors %}
+                        <div class="auth-field__error">{{ form.password.errors|striptags }}</div>
+                    {% endif %}
+                </div>
+
+                <button class="auth-submit" type="submit" data-auth-submit>
+                    <span data-submit-label>Iniciar sesión</span>
+                    <span class="auth-spinner" aria-hidden="true"></span>
+                </button>
+            </form>
+
+            <div class="auth-help">
+                <span>¿Problemas para acceder?</span>
+                <p>Contacta al administrador de tu empresa o al equipo de DIRTEC.</p>
+            </div>
+        </div>
+
+        <footer class="auth-legal">
+            <span>DIRTEC Event Studio</span>
+            <span aria-hidden="true">•</span>
+            <span>Acceso seguro</span>
+        </footer>
+    </section>
 </main>
+
+<script src="{% static 'core/app/auth.js' %}" defer></script>
 </body>
 </html>

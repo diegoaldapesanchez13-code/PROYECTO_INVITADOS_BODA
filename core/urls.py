@@ -2,6 +2,7 @@ from django.contrib.auth import views as auth_views
 from django.urls import path
 
 from .views import LoginCentralView, redirigir_por_rol
+from .app_shell_views import app_shell_preview
 from . import secure_files
 
 
@@ -15,6 +16,7 @@ urlpatterns = [
     path('login/', LoginCentralView.as_view(), name='login'),
     path('logout/', auth_views.LogoutView.as_view(next_page='login', redirect_field_name=None), name='logout'),
     path('redirigir/', redirigir_por_rol, name='redirigir_por_rol'),
+    path('app-preview/', app_shell_preview, name='app_shell_preview'),
     path(
         'password-reset/',
         auth_views.PasswordResetView.as_view(

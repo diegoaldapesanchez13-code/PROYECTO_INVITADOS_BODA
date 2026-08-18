@@ -1,0 +1,96 @@
+{% extends "core/app/base.html" %}
+{% load static %}
+
+{% block title %}Foundation Preview | DIRTEC Event Studio{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'core/app/shell_preview.css' %}">
+{% endblock %}
+
+{% block topbar_actions %}
+<a class="app-button app-button--secondary app-preview__desktop-action" href="{{ preview.primary_url }}">
+    {{ preview.primary_label }}
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="app-preview">
+    <section class="app-preview__hero">
+        <div>
+            <span class="app-preview__eyebrow">{{ app_context.role_label }}</span>
+            <h1>{{ preview.title }}</h1>
+            <p>{{ preview.text }}</p>
+        </div>
+
+        <div class="app-preview__brand-card">
+            <span>Identidad activa</span>
+            <strong>{{ brand_context.company_name|default:"DIRTEC Event Studio" }}</strong>
+            <div class="app-preview__swatches" aria-label="Colores de marca">
+                <i style="background: var(--brand-primary)"></i>
+                <i style="background: var(--brand-secondary)"></i>
+                <i style="background: var(--brand-accent)"></i>
+            </div>
+        </div>
+    </section>
+
+    <section class="app-preview__kpis" aria-label="Vista previa de componentes">
+        <article class="app-card app-kpi">
+            <span class="app-kpi__label">Eventos activos</span>
+            <strong class="app-kpi__value">12</strong>
+            <span class="app-muted">Ejemplo visual</span>
+        </article>
+        <article class="app-card app-kpi">
+            <span class="app-kpi__label">Requieren atención</span>
+            <strong class="app-kpi__value">4</strong>
+            <span class="app-badge app-badge--warning">Pendientes</span>
+        </article>
+        <article class="app-card app-kpi">
+            <span class="app-kpi__label">Próximo evento</span>
+            <strong class="app-kpi__value">14 Nov</strong>
+            <span class="app-muted">Responsive foundation</span>
+        </article>
+    </section>
+
+    <section class="app-preview__grid">
+        <article class="app-card">
+            <div class="app-preview__section-heading">
+                <div>
+                    <span class="app-preview__eyebrow">Navegación por rol</span>
+                    <h2>Una misma shell, distinto contexto</h2>
+                </div>
+            </div>
+
+            <div class="app-preview__nav-list">
+                {% for item in navigation.items %}
+                <a href="{{ item.url }}">
+                    <span aria-hidden="true">{{ item.icon }}</span>
+                    <div>
+                        <strong>{{ item.label }}</strong>
+                        <small>{{ item.url }}</small>
+                    </div>
+                    <span aria-hidden="true">→</span>
+                </a>
+                {% empty %}
+                <p class="app-muted">No hay navegación disponible para esta cuenta.</p>
+                {% endfor %}
+            </div>
+        </article>
+
+        <aside class="app-card app-preview__principles">
+            <span class="app-preview__eyebrow">R1C</span>
+            <h2>Lo que ya queda definido</h2>
+            <ul>
+                <li>Navegación derivada de rol y tenant.</li>
+                <li>Brand context central reutilizable.</li>
+                <li>Sidebar desktop y navegación mobile.</li>
+                <li>La UI no sustituye permisos del backend.</li>
+                <li>Empresa y Planner están preparados para compartir Event Workspace.</li>
+            </ul>
+        </aside>
+    </section>
+
+    <a class="app-button app-button--primary app-preview__mobile-action" href="{{ preview.primary_url }}">
+        {{ preview.primary_label }}
+    </a>
+</div>
+{% endblock %}
