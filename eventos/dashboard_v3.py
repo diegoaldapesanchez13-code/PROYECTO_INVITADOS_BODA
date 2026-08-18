@@ -207,8 +207,9 @@ def construir_contexto_dashboard_evento_v3(
         fecha_evento = fecha_evento.date()
     dias_evento = (fecha_evento - hoy).days if fecha_evento else None
 
+    servicios_base_v3 = ServicioEvento.objects.filter(evento=evento)
     servicios_v3 = list(
-        ServicioEvento.objects.filter(evento=evento)
+        servicios_base_v3.filter(archivado_en__isnull=True)
         .select_related('proveedor', 'paquete_evento')
         .annotate(
             tareas_pendientes_v3=Count(
@@ -229,6 +230,12 @@ def construir_contexto_dashboard_evento_v3(
         )
         .order_by('estado_operativo', 'fecha_servicio', 'nombre_servicio')
     )
+    servicios_historial_v3 = list(
+        servicios_base_v3.filter(archivado_en__isnull=False)
+        .select_related('proveedor', 'paquete_evento')
+        .order_by('-archivado_en', 'nombre_servicio')
+    )
+    servicios_gestion_v3 = servicios_v3 + servicios_historial_v3
     _enriquecer_servicios(servicios_v3, evento, hoy)
 
     servicios_activos = sum(1 for s in servicios_v3 if s.estado_operativo not in {'COMPLETADO', 'CANCELADO'})
@@ -243,16 +250,23 @@ def construir_contexto_dashboard_evento_v3(
     ).count()
 
     tareas_evento_v3 = list(
-        tareas_evento.select_related('responsable', 'servicio_evento')
+        tareas_evento.filter(archivado_en__isnull=True).select_related('responsable', 'servicio_evento')
         .order_by('estado', 'fecha_limite', 'prioridad', 'titulo')
     )
+    tareas_historial_v3 = list(
+        tareas_evento.filter(archivado_en__isnull=False)
+        .select_related('responsable', 'servicio_evento')
+        .order_by('-archivado_en', 'titulo')
+    )
     _marcar_rol_tareas(tareas_evento_v3, evento)
+    _marcar_rol_tareas(tareas_historial_v3, evento)
+    tareas_gestion_v3 = tareas_evento_v3 + tareas_historial_v3
     tareas_activas = [t for t in tareas_evento_v3 if t.estado not in {'COMPLETADA', 'CANCELADA'}]
     tareas_vencidas_v3 = [t for t in tareas_activas if t.esta_vencida]
     tareas_proximas_v3 = [t for t in tareas_activas if t.fecha_limite][:8]
 
     actividades_base = list(
-        actividades_evento.exclude(estado__in=['COMPLETADA', 'CANCELADA'])
+        actividades_evento.filter(archivado_en__isnull=True).exclude(estado__in=['COMPLETADA', 'CANCELADA'])
         .filter(fecha__gte=hoy)
         .select_related('servicio_evento', 'proveedor', 'responsable')
         .prefetch_related('participantes__usuario', 'participantes__proveedor')
@@ -261,6 +275,11 @@ def construir_contexto_dashboard_evento_v3(
     citas_v3 = [a for a in actividades_base if a.tipo == 'CITA']
     itinerario_v3 = [a for a in actividades_base if a.tipo in {'ACTIVIDAD', 'HITO'}]
     citas_pendientes_confirmacion_v3 = sum(a.confirmaciones_pendientes for a in citas_v3)
+    actividades_historial_v3 = list(
+        actividades_evento.filter(Q(archivado_en__isnull=False) | Q(estado='CANCELADA'))
+        .select_related('servicio_evento', 'proveedor', 'responsable')
+        .order_by('-fecha', '-hora_inicio')[:50]
+    )
 
     gastos_vencidos_v3 = [g for g in gastos_evento if g.esta_vencido]
     resumen_financiero = obtener_resumen_financiero_evento(evento)
@@ -272,8 +291,9 @@ def construir_contexto_dashboard_evento_v3(
         if pago.estado in {'PENDIENTE', 'OBSERVADO'}
     ]
 
-    documentos_generales = documentos_evento.filter(servicio_evento__isnull=True).order_by('-fecha_carga')
-    documentos_servicio = documentos_evento.filter(servicio_evento__isnull=False).select_related('servicio_evento').order_by('servicio_evento__nombre_servicio', '-fecha_carga')
+    documentos_generales = documentos_evento.filter(servicio_evento__isnull=True, archivado_en__isnull=True).order_by('-fecha_carga')
+    documentos_servicio = documentos_evento.filter(servicio_evento__isnull=False, archivado_en__isnull=True).select_related('servicio_evento').order_by('servicio_evento__nombre_servicio', '-fecha_carga')
+    documentos_archivados_v3 = documentos_evento.filter(archivado_en__isnull=False).select_related('servicio_evento').order_by('-archivado_en', '-fecha_carga')
 
     atencion = []
     if tareas_vencidas_v3:
@@ -297,15 +317,20 @@ def construir_contexto_dashboard_evento_v3(
         'dashboard_v3': True,
         'dias_evento_v3': dias_evento,
         'servicios_v3': servicios_v3,
+        'servicios_gestion_v3': servicios_gestion_v3,
+        'servicios_historial_v3': servicios_historial_v3,
         'servicios_activos_v3': servicios_activos,
         'servicios_incidencia_v3': servicios_incidencia,
         'aprobaciones_servicio_pendientes_v3': aprobaciones_servicio_pendientes,
         'propuestas_cliente_pendientes_v3': propuestas_cliente_pendientes,
         'tareas_evento_v3': tareas_evento_v3,
+        'tareas_gestion_v3': tareas_gestion_v3,
+        'tareas_historial_v3': tareas_historial_v3,
         'tareas_vencidas_v3': tareas_vencidas_v3,
         'tareas_proximas_v3': tareas_proximas_v3,
         'citas_v3': citas_v3,
         'itinerario_v3': itinerario_v3,
+        'actividades_historial_v3': actividades_historial_v3,
         'citas_pendientes_confirmacion_v3': citas_pendientes_confirmacion_v3,
         'actividades_proximas_v3': actividades_base[:10],
         'gastos_vencidos_v3': gastos_vencidos_v3,
@@ -321,6 +346,7 @@ def construir_contexto_dashboard_evento_v3(
         'resumen_financiero_v3': resumen_financiero,
         'documentos_generales_v3': documentos_generales,
         'documentos_servicio_v3': documentos_servicio,
+        'documentos_archivados_v3': documentos_archivados_v3,
         'tipos_agenda_v3': ActividadItinerario.TIPOS,
         'categorias_agenda_v3': ActividadItinerario.CATEGORIAS,
         'prioridades_agenda_v3': ActividadItinerario.PRIORIDADES,

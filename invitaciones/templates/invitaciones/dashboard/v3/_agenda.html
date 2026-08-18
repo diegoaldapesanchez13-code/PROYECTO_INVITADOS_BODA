@@ -1,61 +1,7 @@
 <section class="tab-panel product-section event-v3-panel" id="agenda" data-tab-panel="agenda" hidden>
-  <div class="product-section-header">
-    <div><span class="product-section-eyebrow">Agenda del evento</span><h2>Citas e itinerario</h2><p class="muted">Una cita requiere que personas coincidan y confirmen. Una actividad es trabajo calendarizado. Un hito es un momento clave del evento.</p></div>
-    <a class="btn secondary" href="{% url 'calendario_operativo' %}?evento={{ evento.id }}">Calendario completo</a>
-  </div>
-
-  <details class="event-v3-create"><summary>+ Nuevo elemento de agenda</summary>
-    <form class="mini-admin-form" method="post">
-      {% csrf_token %}<input type="hidden" name="accion" value="agregar_actividad_agenda_v3"><input type="hidden" name="evento_id" value="{{ evento.id }}">
-      <div class="event-v3-form-grid">
-        <label>Tipo<select name="tipo_agenda">{% for value,label in tipos_agenda_v3 %}<option value="{{ value }}"{% if value == 'CITA' %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
-        <label>Título<input name="titulo_agenda" required placeholder="Ej. Prueba de menú"></label>
-        <label>Servicio<select name="servicio_evento_id"><option value="">Evento general</option>{% for servicio in servicios_v3 %}<option value="{{ servicio.id }}">{{ servicio.nombre_servicio }}</option>{% endfor %}</select></label>
-        <label>Fecha<input type="date" name="fecha_agenda" required></label>
-        <label>Hora inicio<input type="time" name="hora_inicio_agenda" required></label>
-        <label>Hora fin<input type="time" name="hora_fin_agenda"></label>
-        <label>Ubicación<input name="ubicacion_agenda"></label>
-        <label>Categoría<select name="categoria_agenda">{% for value,label in categorias_agenda_v3 %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select></label>
-        <label>Prioridad<select name="prioridad_agenda">{% for value,label in prioridades_agenda_v3 %}<option value="{{ value }}"{% if value == 'MEDIA' %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
-      </div>
-      <label>Descripción<textarea name="descripcion_agenda" rows="2"></textarea></label>
-      <button class="btn" type="submit">Agregar a agenda</button>
-    </form>
-  </details>
-
-  <div class="agenda-definition-grid">
-    <article><b>Cita</b><span>Prueba de menú, visita, reunión o montaje con asistentes.</span></article>
-    <article><b>Actividad</b><span>Trabajo operacional con fecha/hora, sin confirmación individual.</span></article>
-    <article><b>Hito</b><span>Ceremonia, recepción, cena o momento importante del evento.</span></article>
-  </div>
-
-  <section class="event-v3-agenda-block">
-    <div class="event-v3-card__head"><div><span>Coordinación</span><h3>Próximas citas</h3></div><strong>{{ citas_pendientes_confirmacion_v3 }} confirmaciones pendientes</strong></div>
-    <div class="event-v3-appointments">
-      {% for actividad in citas_v3 %}
-      <article class="appointment-v3-card">
-        <time><b>{{ actividad.fecha|date:"d M" }}</b><small>{{ actividad.hora_inicio|time:"H:i" }}{% if actividad.hora_fin %}–{{ actividad.hora_fin|time:"H:i" }}{% endif %}</small></time>
-        <div class="appointment-v3-main">
-          <div><span class="ws-type-pill cita">Cita</span><strong>{{ actividad.titulo }}</strong></div>
-          <p>{% if actividad.ubicacion %}{{ actividad.ubicacion }} · {% endif %}{% if actividad.servicio_evento %}<a href="{% url 'colaboracion_workspace_servicio' actividad.servicio_evento.id %}">{{ actividad.servicio_evento.nombre_servicio }}</a>{% else %}Evento general{% endif %}</p>
-          <div class="appointment-v3-participants">
-            {% for participante in actividad.participantes.all %}
-            <span class="{{ participante.estado|lower }}"><b>{{ participante.nombre_visible }}</b><small>{{ participante.get_rol_display }} · {{ participante.get_estado_display }}</small></span>
-            {% empty %}<span><b>Sin participantes</b><small>Agrega participantes desde el workspace.</small></span>{% endfor %}
-          </div>
-        </div>
-        <div class="appointment-v3-status"><b>{{ actividad.confirmaciones_pendientes }}</b><span>pendientes</span><small>{{ actividad.get_estado_display }}</small></div>
-      </article>
-      {% empty %}<p class="empty-state">No hay citas próximas.</p>{% endfor %}
-    </div>
-  </section>
-
-  <section class="event-v3-agenda-block">
-    <div class="event-v3-card__head"><div><span>Ejecución</span><h3>Itinerario y actividades</h3></div></div>
-    <div class="event-v3-timeline">
-      {% for actividad in itinerario_v3 %}
-      <article class="{% if actividad.estado == 'RETRASADA' %}is-alert{% endif %}"><time>{{ actividad.fecha|date:"d M Y" }}<small>{{ actividad.hora_inicio|time:"H:i" }}{% if actividad.hora_fin %}–{{ actividad.hora_fin|time:"H:i" }}{% endif %}</small></time><div><div class="timeline-title"><span class="ws-type-pill {{ actividad.tipo|lower }}">{{ actividad.get_tipo_display }}</span><strong>{{ actividad.titulo }}</strong></div><p>{{ actividad.get_categoria_display }}{% if actividad.ubicacion %} · {{ actividad.ubicacion }}{% endif %}</p><small>{% if actividad.servicio_evento %}<a href="{% url 'colaboracion_workspace_servicio' actividad.servicio_evento.id %}">{{ actividad.servicio_evento.nombre_servicio }}</a>{% else %}Evento general{% endif %} · {{ actividad.get_estado_display }}</small></div></article>
-      {% empty %}<p class="empty-state">No hay actividades o hitos próximos.</p>{% endfor %}
-    </div>
-  </section>
+  <div class="product-section-header"><div><span class="product-section-eyebrow">Agenda del evento</span><h2>Citas e itinerario</h2><p class="muted">Cancela o archiva actividades sin destruir su historial.</p></div><a class="btn secondary" href="{% url 'calendario_operativo' %}?evento={{ evento.id }}">Calendario completo</a></div>
+  <details class="event-v3-create"><summary>+ Nuevo elemento de agenda</summary><form class="mini-admin-form" method="post">{% csrf_token %}<input type="hidden" name="accion" value="agregar_actividad_agenda_v3"><input type="hidden" name="evento_id" value="{{ evento.id }}"><div class="event-v3-form-grid"><label>Tipo<select name="tipo_agenda">{% for value,label in tipos_agenda_v3 %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select></label><label>Título<input name="titulo_agenda" required></label><label>Servicio<select name="servicio_evento_id"><option value="">Evento general</option>{% for servicio in servicios_v3 %}<option value="{{ servicio.id }}">{{ servicio.nombre_servicio }}</option>{% endfor %}</select></label><label>Fecha<input type="date" name="fecha_agenda" required></label><label>Hora inicio<input type="time" name="hora_inicio_agenda" required></label><label>Hora fin<input type="time" name="hora_fin_agenda"></label><label>Ubicación<input name="ubicacion_agenda"></label><label>Categoría<select name="categoria_agenda">{% for value,label in categorias_agenda_v3 %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select></label><label>Prioridad<select name="prioridad_agenda">{% for value,label in prioridades_agenda_v3 %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select></label></div><label>Descripción<textarea name="descripcion_agenda" rows="2"></textarea></label><button class="btn" type="submit">Agregar a agenda</button></form></details>
+  <section class="event-v3-agenda-block"><div class="event-v3-card__head"><div><span>Coordinación</span><h3>Próximas citas</h3></div><strong>{{ citas_pendientes_confirmacion_v3 }} confirmaciones pendientes</strong></div><div class="event-v3-appointments">{% for actividad in citas_v3 %}<article class="appointment-v3-card"><time><b>{{ actividad.fecha|date:"d M" }}</b><small>{{ actividad.hora_inicio|time:"H:i" }}</small></time><div class="appointment-v3-main"><div><span class="ws-type-pill cita">Cita</span><strong>{{ actividad.titulo }}</strong></div><p>{% if actividad.ubicacion %}{{ actividad.ubicacion }} · {% endif %}{% if actividad.servicio_evento %}<a href="{% url 'colaboracion_workspace_servicio' actividad.servicio_evento.id %}">{{ actividad.servicio_evento.nombre_servicio }}</a>{% else %}Evento general{% endif %}</p><div class="lifecycle-actions"><form method="post" action="{% url 'eventos_actividad_cancelar' evento.empresa.slug actividad.id %}" data-confirm="Cancelar esta cita?">{% csrf_token %}<input type="hidden" name="motivo" value="Cancelada desde dashboard"><button class="text-action" type="submit">Cancelar</button></form><form method="post" action="{% url 'eventos_actividad_archivar' evento.empresa.slug actividad.id %}">{% csrf_token %}<button class="text-action danger-text" type="submit">Archivar</button></form></div></div><div class="appointment-v3-status"><b>{{ actividad.confirmaciones_pendientes }}</b><span>pendientes</span><small>{{ actividad.get_estado_display }}</small></div></article>{% empty %}<p class="empty-state">No hay citas próximas.</p>{% endfor %}</div></section>
+  <section class="event-v3-agenda-block"><div class="event-v3-card__head"><div><span>Ejecución</span><h3>Itinerario y actividades</h3></div></div><div class="event-v3-timeline">{% for actividad in itinerario_v3 %}<article><time>{{ actividad.fecha|date:"d M Y" }}<small>{{ actividad.hora_inicio|time:"H:i" }}</small></time><div><div class="timeline-title"><span class="ws-type-pill {{ actividad.tipo|lower }}">{{ actividad.get_tipo_display }}</span><strong>{{ actividad.titulo }}</strong></div><p>{{ actividad.get_categoria_display }}{% if actividad.ubicacion %} · {{ actividad.ubicacion }}{% endif %}</p><div class="lifecycle-actions"><form method="post" action="{% url 'eventos_actividad_cancelar' evento.empresa.slug actividad.id %}" data-confirm="Cancelar esta actividad?">{% csrf_token %}<input type="hidden" name="motivo" value="Cancelada desde dashboard"><button class="text-action" type="submit">Cancelar</button></form><form method="post" action="{% url 'eventos_actividad_archivar' evento.empresa.slug actividad.id %}">{% csrf_token %}<button class="text-action danger-text" type="submit">Archivar</button></form></div></div></article>{% empty %}<p class="empty-state">No hay actividades próximas.</p>{% endfor %}</div></section>
+  {% if actividades_historial_v3 %}<section class="event-v3-card lifecycle-history"><div class="event-v3-card__head"><div><span>Histórico</span><h3>Agenda cancelada o archivada</h3></div></div><div class="event-v3-simple-list">{% for actividad in actividades_historial_v3 %}<div class="is-archived"><strong>{{ actividad.titulo }}</strong><span>{{ actividad.fecha|date:"d/m/Y" }} · {% if actividad.archivado_en %}Archivada{% else %}{{ actividad.get_estado_display }}{% endif %}</span>{% if actividad.archivado_en %}<form method="post" action="{% url 'eventos_actividad_desarchivar' evento.empresa.slug actividad.id %}">{% csrf_token %}<button class="text-action" type="submit">Restaurar</button></form>{% elif actividad.estado == 'CANCELADA' %}<form method="post" action="{% url 'eventos_actividad_archivar' evento.empresa.slug actividad.id %}">{% csrf_token %}<button class="text-action danger-text" type="submit">Archivar</button></form>{% endif %}</div>{% endfor %}</div></section>{% endif %}
 </section>

@@ -107,13 +107,12 @@
                                 </div>
                                 <button class="btn" type="submit">Guardar servicio</button>
                             </form>
-                            <form method="post" data-confirm="Esta accion eliminara el servicio del evento. Deseas continuar?">
-                                {% csrf_token %}
-                                <input type="hidden" name="accion" value="eliminar_servicio_evento">
-                                <input type="hidden" name="evento_id" value="{{ evento.id }}">
-                                <input type="hidden" name="servicio_id" value="{{ servicio.id }}">
-                                <button class="btn danger" type="submit">Eliminar servicio</button>
-                            </form>
+                            {% if servicio.archivado_en %}
+                            <form method="post" action="{% url 'eventos_servicio_desarchivar' evento.empresa.slug servicio.id %}">{% csrf_token %}<button class="btn secondary" type="submit">Restaurar servicio</button></form>
+                            {% else %}
+                            {% if not servicio.cancelado_en and servicio.estado_operativo != 'CANCELADO' %}<form method="post" action="{% url 'eventos_servicio_cancelar' evento.empresa.slug servicio.id %}" data-confirm="Cancelar este servicio sin borrar su historial?">{% csrf_token %}<input type="hidden" name="motivo" value="Cancelado desde dashboard"><button class="btn secondary" type="submit">Cancelar servicio</button></form>{% endif %}
+                            <form method="post" action="{% url 'eventos_servicio_archivar' evento.empresa.slug servicio.id %}" data-confirm="Archivar este servicio?">{% csrf_token %}<button class="btn danger" type="submit">Archivar servicio</button></form>
+                            {% endif %}
                         </details>
                     </article>
                 {% empty %}
@@ -727,13 +726,7 @@
                                 </div>
                                 <button class="btn" type="submit">Guardar tarea</button>
                             </form>
-                            <form method="post" data-confirm="Eliminar esta tarea?">
-                                {% csrf_token %}
-                                <input type="hidden" name="accion" value="eliminar_tarea_evento">
-                                <input type="hidden" name="evento_id" value="{{ evento.id }}">
-                                <input type="hidden" name="tarea_id" value="{{ tarea.id }}">
-                                <button class="btn danger" type="submit">Eliminar tarea</button>
-                            </form>
+                            {% if tarea.archivado_en %}<form method="post" action="{% url 'eventos_tarea_desarchivar' evento.empresa.slug tarea.id %}">{% csrf_token %}<button class="btn secondary" type="submit">Restaurar tarea</button></form>{% else %}{% if not tarea.cancelado_en and tarea.estado != 'CANCELADA' %}<form method="post" action="{% url 'eventos_tarea_cancelar' evento.empresa.slug tarea.id %}" data-confirm="Cancelar esta tarea?">{% csrf_token %}<input type="hidden" name="motivo" value="Cancelada desde dashboard"><button class="btn secondary" type="submit">Cancelar tarea</button></form>{% endif %}<form method="post" action="{% url 'eventos_tarea_archivar' evento.empresa.slug tarea.id %}">{% csrf_token %}<button class="btn danger" type="submit">Archivar tarea</button></form>{% endif %}
                         </details>
                     </article>
                 {% empty %}
@@ -834,21 +827,9 @@
                                         <button class="btn secondary" type="submit">Guardar pago</button>
                                     </div>
                                 </form>
-                                <form method="post" data-confirm="Eliminar este pago?">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="accion" value="eliminar_pago_evento">
-                                    <input type="hidden" name="evento_id" value="{{ evento.id }}">
-                                    <input type="hidden" name="pago_id" value="{{ pago.id }}">
-                                    <button class="btn danger" type="submit">Eliminar pago</button>
-                                </form>
+                                {% if pago.estado != 'ANULADO' %}<form method="post" action="{% url 'eventos_pago_anular' evento.empresa.slug pago.id %}" data-confirm="Anular este pago sin borrar su registro?">{% csrf_token %}<input type="hidden" name="motivo" value="Anulado desde dashboard"><button class="btn danger" type="submit">Anular pago</button></form>{% endif %}
                             {% endfor %}
-                            <form method="post" data-confirm="Eliminar este gasto y sus pagos?">
-                                {% csrf_token %}
-                                <input type="hidden" name="accion" value="eliminar_gasto_evento">
-                                <input type="hidden" name="evento_id" value="{{ evento.id }}">
-                                <input type="hidden" name="gasto_id" value="{{ gasto.id }}">
-                                <button class="btn danger" type="submit">Eliminar gasto</button>
-                            </form>
+                            {% if gasto.archivado_en %}<form method="post" action="{% url 'eventos_gasto_desarchivar' evento.empresa.slug gasto.id %}">{% csrf_token %}<button class="btn secondary" type="submit">Restaurar gasto</button></form>{% else %}{% if not gasto.cancelado_en and gasto.estado != 'CANCELADO' %}<form method="post" action="{% url 'eventos_gasto_cancelar' evento.empresa.slug gasto.id %}" data-confirm="Cancelar este gasto?">{% csrf_token %}<input type="hidden" name="motivo" value="Cancelado desde dashboard"><button class="btn secondary" type="submit">Cancelar gasto</button></form>{% endif %}<form method="post" action="{% url 'eventos_gasto_archivar' evento.empresa.slug gasto.id %}">{% csrf_token %}<button class="btn danger" type="submit">Archivar gasto</button></form>{% endif %}
                         </details>
                     </article>
                 {% empty %}
@@ -880,7 +861,7 @@
                 {% for documento in documentos_evento %}
                     <article class="saved-item">
                         <div><strong>{{ documento.titulo }}</strong><span>{{ documento.get_tipo_documento_display }}{% if documento.visible_cliente %} - visible cliente{% endif %}</span></div>
-                        {% if documento.archivo %}<a href="{{ documento.archivo.url }}" target="_blank">Abrir archivo</a>{% endif %}
+                        {% if documento.archivo %}<a href="{% url 'secure_documento_evento' documento.id %}" target="_blank">Abrir archivo</a>{% endif %}
                         <details>
                             <summary>Editar documento</summary>
                             <form class="inline-edit-form" method="post" enctype="multipart/form-data">
@@ -898,13 +879,7 @@
                                 </div>
                                 <button class="btn" type="submit">Guardar documento</button>
                             </form>
-                            <form method="post" data-confirm="Eliminar este documento?">
-                                {% csrf_token %}
-                                <input type="hidden" name="accion" value="eliminar_documento_evento">
-                                <input type="hidden" name="evento_id" value="{{ evento.id }}">
-                                <input type="hidden" name="documento_id" value="{{ documento.id }}">
-                                <button class="btn danger" type="submit">Eliminar documento</button>
-                            </form>
+                            {% if documento.archivado_en %}<form method="post" action="{% url 'eventos_documento_desarchivar' evento.empresa.slug documento.id %}">{% csrf_token %}<button class="btn secondary" type="submit">Restaurar documento</button></form>{% else %}<form method="post" action="{% url 'eventos_documento_archivar' evento.empresa.slug documento.id %}">{% csrf_token %}<button class="btn danger" type="submit">Archivar documento</button></form>{% endif %}
                         </details>
                     </article>
                 {% empty %}

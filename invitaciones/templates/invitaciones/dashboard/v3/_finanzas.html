@@ -1,64 +1,6 @@
 <section class="tab-panel product-section event-v3-panel" id="finanzas" data-tab-panel="finanzas" hidden>
-  <div class="product-section-header">
-    <div>
-      <span class="product-section-eyebrow">Finanzas</span>
-      <h2>Cliente, contrato y operación</h2>
-      <p class="muted">Los pagos del cliente a la empresa se muestran separados de los egresos y pagos a proveedores.</p>
-    </div>
-  </div>
-
-  <div class="event-v3-finance-grid">
-    <article class="event-v3-card"><span>Total contratado</span><strong>${{ resumen_financiero_v3.total_contratado|floatformat:0 }}</strong><small>{% if contrato_actual_v3 %}v{{ contrato_actual_v3.version }} - {{ contrato_actual_v3.get_estado_display }}{% else %}{{ resumen_financiero_v3.fuente_total }}{% endif %}</small></article>
-    <article class="event-v3-card"><span>Pagado cliente</span><strong>${{ resumen_financiero_v3.pagos_cliente_recibidos|floatformat:0 }}</strong><small>Saldo cliente ${{ resumen_financiero_v3.saldo_cliente|floatformat:0 }}</small></article>
-    <article class="event-v3-card"><span>Costo comprometido</span><strong>${{ resumen_financiero_v3.costo_comprometido|floatformat:0 }}</strong><small>Real ${{ resumen_financiero_v3.costo_real|floatformat:0 }} - saldo ${{ saldo_operativo_v3|floatformat:0 }}</small></article>
-    <article class="event-v3-card emphasis"><span>Margen real</span><strong>${{ resumen_financiero_v3.margen_real|floatformat:0 }}</strong><small>{{ resumen_financiero_v3.porcentaje_margen_real }}% - caja ${{ resumen_financiero_v3.flujo_neto_caja|floatformat:0 }}</small></article>
-  </div>
-
-  <section class="event-v3-card">
-    <div class="event-v3-card__head">
-      <div><span>Ingresos</span><h3>Pagos reportados por cliente</h3></div>
-      {% if pagos_cliente_pendientes_v3 %}<b>{{ pagos_cliente_pendientes_v3|length }} por revisar</b>{% endif %}
-    </div>
-    <div class="event-v3-client-payments">
-      {% for pago in pagos_cliente_evento_v3 %}
-      <article class="event-v3-client-payment" data-status="{{ pago.estado }}">
-        <a href="{% url 'secure_pago_cliente_comprobante' pago.id %}" target="_blank" rel="noopener" class="event-v3-payment-proof">
-          {% if pago.comprobante_es_imagen %}<img src="{% url 'secure_pago_cliente_comprobante' pago.id %}" alt="Comprobante" loading="lazy">{% else %}<span>PDF</span>{% endif %}
-        </a>
-        <div class="event-v3-payment-copy">
-          <span>{% if pago.registrado_por %}{{ pago.registrado_por.get_full_name|default:pago.registrado_por.username }}{% else %}Cliente del evento{% endif %}</span>
-          <strong>${{ pago.monto|floatformat:2 }} · {{ pago.concepto|default:"Pago del evento" }}</strong>
-          <small>{{ pago.fecha_pago|date:"d/m/Y" }} · {{ pago.get_metodo_pago_display }}{% if pago.servicio_evento %} · {{ pago.servicio_evento.nombre_servicio }}{% endif %}</small>
-          {% if pago.comentario_cliente %}<p>{{ pago.comentario_cliente }}</p>{% endif %}
-          {% if pago.comentario_equipo %}<p><b>Respuesta equipo:</b> {{ pago.comentario_equipo }}</p>{% endif %}
-        </div>
-        <div class="event-v3-payment-review">
-          <em>{{ pago.get_estado_display }}</em>
-          {% if pago.estado == "PENDIENTE" or pago.estado == "OBSERVADO" %}
-          <form method="post" action="{% url 'pago_cliente_evento_revisar' pago.id %}">
-            {% csrf_token %}
-            <textarea name="comentario_equipo" rows="2" placeholder="Comentario opcional"></textarea>
-            <button name="estado" value="RECIBIDO">Marcar recibido</button>
-            <button name="estado" value="OBSERVADO" class="secondary">Observar</button>
-          </form>
-          {% endif %}
-        </div>
-      </article>
-      {% empty %}<p class="empty-state">El cliente todavía no ha reportado pagos.</p>{% endfor %}
-    </div>
-  </section>
-
-  <section class="event-v3-card">
-    <div class="event-v3-card__head"><div><span>Egresos</span><h3>Gastos y pagos a proveedores</h3></div></div>
-    <div class="event-v3-table">
-      <div class="thead"><span>Concepto</span><span>Servicio</span><span>Total</span><span>Pagado</span><span>Saldo</span></div>
-      {% for gasto in gastos_evento %}
-      <div class="trow {% if gasto.esta_vencido %}is-overdue{% endif %}">
-        <span><strong>{{ gasto.concepto }}</strong><small>{{ gasto.proveedor.nombre_comercial|default:"Sin proveedor" }}</small></span>
-        <span>{% if gasto.servicio_evento %}<a href="{% url 'colaboracion_workspace_servicio' gasto.servicio_evento.id %}">{{ gasto.servicio_evento.nombre_servicio }}</a>{% else %}General{% endif %}</span>
-        <span>${{ gasto.monto_objetivo|floatformat:0 }}</span><span>${{ gasto.total_pagado|floatformat:0 }}</span><span>${{ gasto.saldo_pendiente|floatformat:0 }}</span>
-      </div>
-      {% empty %}<p class="empty-state">No hay gastos registrados.</p>{% endfor %}
-    </div>
-  </section>
+  <div class="product-section-header"><div><span class="product-section-eyebrow">Finanzas</span><h2>Cliente, contrato y operación</h2><p class="muted">Pagos del cliente separados de egresos. Los pagos operativos se anulan, no se borran.</p></div></div>
+  <div class="event-v3-finance-grid"><article class="event-v3-card"><span>Total contratado</span><strong>${{ resumen_financiero_v3.total_contratado|floatformat:0 }}</strong></article><article class="event-v3-card"><span>Pagado cliente</span><strong>${{ resumen_financiero_v3.pagos_cliente_recibidos|floatformat:0 }}</strong><small>Saldo ${{ resumen_financiero_v3.saldo_cliente|floatformat:0 }}</small></article><article class="event-v3-card"><span>Costo comprometido</span><strong>${{ resumen_financiero_v3.costo_comprometido|floatformat:0 }}</strong></article><article class="event-v3-card emphasis"><span>Margen real</span><strong>${{ resumen_financiero_v3.margen_real|floatformat:0 }}</strong></article></div>
+  <section class="event-v3-card"><div class="event-v3-card__head"><div><span>Ingresos</span><h3>Pagos reportados por cliente</h3></div></div><div class="event-v3-client-payments">{% for pago in pagos_cliente_evento_v3 %}<article class="event-v3-client-payment"><div class="event-v3-payment-copy"><strong>${{ pago.monto|floatformat:2 }} · {{ pago.concepto|default:"Pago del evento" }}</strong><small>{{ pago.fecha_pago|date:"d/m/Y" }} · {{ pago.get_estado_display }}</small></div></article>{% empty %}<p class="empty-state">Sin pagos del cliente.</p>{% endfor %}</div></section>
+  <section class="event-v3-card" data-filter-scope><div class="event-v3-card__head"><div><span>Egresos</span><h3>Gastos y pagos operativos</h3></div></div><div class="event-v3-filterbar"><input type="search" placeholder="Buscar gasto o proveedor" data-filter-search><select data-filter-field="lifecycle"><option value="">Todos</option><option value="activo">Activos</option><option value="cancelado">Cancelados</option><option value="archivado">Archivados</option></select><span data-filter-count></span></div><div class="finance-lifecycle-list">{% for gasto in gastos_evento %}<article data-filter-item data-lifecycle="{% if gasto.archivado_en %}archivado{% elif gasto.cancelado_en or gasto.estado == 'CANCELADO' %}cancelado{% else %}activo{% endif %}" data-search="{{ gasto.concepto }} {{ gasto.proveedor.nombre_comercial|default:'' }}" class="finance-lifecycle-item {% if gasto.archivado_en %}is-archived{% endif %}"><div><strong>{{ gasto.concepto }}</strong><small>{{ gasto.proveedor.nombre_comercial|default:"Sin proveedor" }} · {{ gasto.get_estado_display }}</small></div><div class="finance-lifecycle-values"><span>Objetivo <b>${{ gasto.monto_objetivo|floatformat:0 }}</b></span><span>Pagado <b>${{ gasto.total_pagado|floatformat:0 }}</b></span><span>Saldo <b>${{ gasto.saldo_pendiente|floatformat:0 }}</b></span></div><div class="lifecycle-actions">{% if gasto.archivado_en %}<form method="post" action="{% url 'eventos_gasto_desarchivar' evento.empresa.slug gasto.id %}">{% csrf_token %}<button class="text-action" type="submit">Restaurar</button></form>{% else %}{% if not gasto.cancelado_en and gasto.estado != 'CANCELADO' %}<form method="post" action="{% url 'eventos_gasto_cancelar' evento.empresa.slug gasto.id %}" data-confirm="Cancelar este gasto? Si tiene pagos activos primero deben anularse.">{% csrf_token %}<input type="hidden" name="motivo" value="Cancelado desde dashboard"><button class="text-action" type="submit">Cancelar</button></form>{% endif %}<form method="post" action="{% url 'eventos_gasto_archivar' evento.empresa.slug gasto.id %}">{% csrf_token %}<button class="text-action danger-text" type="submit">Archivar</button></form>{% endif %}</div>{% if gasto.pagos.all %}<details><summary>Pagos operativos</summary><div class="payment-lifecycle-list">{% for pago in gasto.pagos.all %}<div class="payment-lifecycle-row {% if pago.estado == 'ANULADO' %}is-archived{% endif %}"><span>${{ pago.monto|floatformat:2 }} · {{ pago.fecha_pago|date:"d/m/Y" }} · {{ pago.get_estado_display }}</span>{% if pago.estado != 'ANULADO' %}<form method="post" action="{% url 'eventos_pago_anular' evento.empresa.slug pago.id %}" data-confirm="Anular este pago operativo sin borrar su registro?">{% csrf_token %}<input type="hidden" name="motivo" value="Anulado desde dashboard"><button class="text-action danger-text" type="submit">Anular</button></form>{% endif %}</div>{% endfor %}</div></details>{% endif %}</article>{% empty %}<p class="empty-state">No hay gastos registrados.</p>{% endfor %}</div></section>
 </section>

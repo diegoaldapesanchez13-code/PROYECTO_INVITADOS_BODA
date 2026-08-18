@@ -1,97 +1,17 @@
 <section class="tab-panel product-section event-v3-panel" id="servicios" data-tab-panel="servicios" hidden>
-  <div class="product-section-header">
-    <div>
-      <span class="product-section-eyebrow">Operación Event-Centric</span>
-      <h2>Servicios del evento</h2>
-      <p class="muted">Cada servicio separa claramente lo que se comparte con el cliente, lo que se coordina con el proveedor y lo que debe resolver el Planner.</p>
+  <div class="product-section-header"><div><span class="product-section-eyebrow">Operación Event-Centric</span><h2>Servicios del evento</h2><p class="muted">Cancela o archiva sin destruir historial contractual, financiero o de colaboración.</p></div></div>
+  <div class="event-v3-visibility-legend"><span><b>Cliente</b> propuestas y aprobaciones.</span><span><b>Proveedor</b> ejecución y coordinación.</span><span><b>Privado</b> costos, margen y notas internas.</span></div>
+  <details class="event-v3-create"><summary>+ Agregar servicio manual</summary><form class="mini-admin-form" method="post">{% csrf_token %}<input type="hidden" name="accion" value="agregar_servicio_evento"><input type="hidden" name="evento_id" value="{{ evento.id }}"><div class="event-v3-form-grid"><label>Proveedor<select name="proveedor_id"><option value="">Por definir</option>{% for proveedor in proveedores_empresa %}<option value="{{ proveedor.id }}">{{ proveedor.nombre_comercial }}</option>{% endfor %}</select></label><label>Nombre<input name="nombre_servicio" required></label><label>Fecha<input type="date" name="fecha_servicio"></label><label>Lugar<input name="lugar_servicio"></label></div><input type="hidden" name="estado_servicio" value="SOLICITADO"><input type="hidden" name="costo_total_servicio" value="0"><input type="hidden" name="anticipo_servicio" value="0"><label>Descripción<textarea name="descripcion_servicio" rows="2"></textarea></label><button class="btn" type="submit">Crear servicio</button></form></details>
+  <div class="event-v3-filterbar" data-filter-scope><input type="search" placeholder="Buscar servicio o proveedor" data-filter-search><select data-filter-field="lifecycle"><option value="">Todos</option><option value="activo">Activos</option><option value="cancelado">Cancelados</option><option value="archivado">Archivados</option></select><span data-filter-count></span>
+    <div class="event-v3-service-grid event-v3-service-grid--wide">
+      {% for servicio in servicios_gestion_v3 %}
+      <article data-filter-item data-lifecycle="{% if servicio.archivado_en %}archivado{% elif servicio.cancelado_en or servicio.estado_operativo == 'CANCELADO' %}cancelado{% else %}activo{% endif %}" data-search="{{ servicio.nombre_servicio }} {{ servicio.proveedor.nombre_comercial|default:'' }}" class="service-v3-card service-v3-card--operational {% if servicio.estado_operativo == 'INCIDENCIA' %}has-incidence{% endif %} {% if servicio.archivado_en %}is-archived{% endif %}">
+        <header><div><span>{{ servicio.get_modalidad_display }}</span><h3>{{ servicio.nombre_servicio }}</h3><p>{% if servicio.proveedor %}{{ servicio.proveedor.nombre_comercial }}{% elif servicio.proveedor_nombre_snapshot %}{{ servicio.proveedor_nombre_snapshot }}{% else %}Proveedor por definir{% endif %}</p></div><span class="status-pill">{% if servicio.archivado_en %}Archivado{% else %}{{ servicio.get_estado_operativo_display }}{% endif %}</span></header>
+        <div class="service-v3-meta"><span><b>Comercial</b>{{ servicio.get_estado_comercial_display }}</span><span><b>Origen</b>{{ servicio.get_origen_display }}</span>{% if servicio.fecha_servicio %}<span><b>Fecha</b>{{ servicio.fecha_servicio|date:"d/m/Y" }}</span>{% endif %}</div>
+        {% if not servicio.archivado_en %}<div class="service-v3-sides"><section class="service-side-card client-side"><div class="service-side-head"><span>CLIENTE</span></div>{% if servicio.cliente_accion_v3 %}<div class="service-side-action {{ servicio.cliente_accion_v3.nivel }}"><strong>{{ servicio.cliente_accion_v3.titulo }}</strong><p>{{ servicio.cliente_accion_v3.detalle }}</p></div>{% else %}<div class="service-side-empty">✓ Sin acciones pendientes</div>{% endif %}</section><section class="service-side-card provider-side"><div class="service-side-head"><span>PROVEEDOR</span></div>{% if servicio.proveedor_accion_v3 %}<div class="service-side-action {{ servicio.proveedor_accion_v3.nivel }}"><strong>{{ servicio.proveedor_accion_v3.titulo }}</strong><p>{{ servicio.proveedor_accion_v3.detalle }}</p></div>{% else %}<div class="service-side-empty">✓ Sin acciones pendientes</div>{% endif %}</section></div>{% endif %}
+        <footer class="lifecycle-actions"><a class="btn" href="{% url 'colaboracion_workspace_servicio' servicio.id %}">Workspace</a>{% if servicio.archivado_en %}<form method="post" action="{% url 'eventos_servicio_desarchivar' evento.empresa.slug servicio.id %}">{% csrf_token %}<button class="btn secondary" type="submit">Restaurar</button></form>{% else %}{% if not servicio.cancelado_en and servicio.estado_operativo != 'CANCELADO' %}<form method="post" action="{% url 'eventos_servicio_cancelar' evento.empresa.slug servicio.id %}" data-confirm="Cancelar este servicio sin borrar su historial?">{% csrf_token %}<input type="hidden" name="motivo" value="Cancelado desde dashboard"><button class="btn secondary" type="submit">Cancelar</button></form>{% endif %}<form method="post" action="{% url 'eventos_servicio_archivar' evento.empresa.slug servicio.id %}" data-confirm="Archivar este servicio?">{% csrf_token %}<button class="btn danger-soft" type="submit">Archivar</button></form>{% endif %}</footer>
+      </article>
+      {% empty %}<div class="event-v3-empty"><h3>Aún no hay servicios</h3></div>{% endfor %}
     </div>
   </div>
-
-  <div class="event-v3-visibility-legend">
-    <span><b>Cliente</b> propuestas, aprobaciones, decisiones compartidas y confirmaciones de cita.</span>
-    <span><b>Proveedor</b> cotizaciones, coordinación de ejecución y confirmaciones de cita.</span>
-    <span><b>Privado</b> costos, margen, notas internas y comparación comercial quedan solo para Planner/empresa.</span>
-  </div>
-
-  <details class="event-v3-create">
-    <summary>+ Agregar servicio manual</summary>
-    <form class="mini-admin-form" method="post">
-      {% csrf_token %}<input type="hidden" name="accion" value="agregar_servicio_evento"><input type="hidden" name="evento_id" value="{{ evento.id }}">
-      <div class="event-v3-form-grid">
-        <label>Proveedor<select name="proveedor_id"><option value="">Por definir</option>{% for proveedor in proveedores_empresa %}<option value="{{ proveedor.id }}">{{ proveedor.nombre_comercial }}</option>{% endfor %}</select></label>
-        <label>Nombre<input name="nombre_servicio" required placeholder="Banquete, DJ, decoración..."></label>
-        <label>Fecha<input type="date" name="fecha_servicio"></label>
-        <label>Lugar<input name="lugar_servicio"></label>
-      </div>
-      <input type="hidden" name="estado_servicio" value="SOLICITADO"><input type="hidden" name="costo_total_servicio" value="0"><input type="hidden" name="anticipo_servicio" value="0">
-      <label>Descripción<textarea name="descripcion_servicio" rows="2"></textarea></label>
-      <button class="btn" type="submit">Crear servicio</button>
-    </form>
-  </details>
-
-  <div class="event-v3-service-grid event-v3-service-grid--wide">
-    {% for servicio in servicios_v3 %}
-    <article class="service-v3-card service-v3-card--operational {% if servicio.estado_operativo == 'INCIDENCIA' %}has-incidence{% endif %}">
-      <header>
-        <div>
-          <span>{{ servicio.get_modalidad_display }}</span>
-          <h3>{{ servicio.nombre_servicio }}</h3>
-          <p>{% if servicio.proveedor %}{{ servicio.proveedor.nombre_comercial }}{% elif servicio.proveedor_nombre_snapshot %}{{ servicio.proveedor_nombre_snapshot }}{% else %}Proveedor por definir{% endif %}</p>
-        </div>
-        <span class="status-pill">{{ servicio.get_estado_operativo_display }}</span>
-      </header>
-
-      <div class="service-v3-meta">
-        <span><b>Comercial</b>{{ servicio.get_estado_comercial_display }}</span>
-        <span><b>Origen</b>{{ servicio.get_origen_display }}</span>
-        {% if servicio.fecha_servicio %}<span><b>Fecha</b>{{ servicio.fecha_servicio|date:"d/m/Y" }}</span>{% endif %}
-      </div>
-
-      <div class="service-v3-sides">
-        <section class="service-side-card client-side">
-          <div class="service-side-head"><span>CLIENTE</span><small>Lo que el cliente ve o debe responder</small></div>
-          {% if servicio.cliente_accion_v3 %}
-          <div class="service-side-action {{ servicio.cliente_accion_v3.nivel }}">
-            <strong>{{ servicio.cliente_accion_v3.titulo }}</strong>
-            <p>{{ servicio.cliente_accion_v3.detalle }}</p>
-            <small>Responsable · <b>{{ servicio.cliente_accion_v3.responsable }}</b></small>
-          </div>
-          {% else %}
-          <div class="service-side-empty">✓ Sin acciones pendientes del lado del cliente</div>
-          {% endif %}
-        </section>
-
-        <section class="service-side-card provider-side">
-          <div class="service-side-head"><span>PROVEEDOR</span><small>Lo que se coordina con el proveedor</small></div>
-          {% if servicio.proveedor_accion_v3 %}
-          <div class="service-side-action {{ servicio.proveedor_accion_v3.nivel }}">
-            <strong>{{ servicio.proveedor_accion_v3.titulo }}</strong>
-            <p>{{ servicio.proveedor_accion_v3.detalle }}</p>
-            <small>Responsable · <b>{{ servicio.proveedor_accion_v3.responsable }}</b></small>
-          </div>
-          {% else %}
-          <div class="service-side-empty">✓ Sin acciones pendientes del lado del proveedor</div>
-          {% endif %}
-        </section>
-      </div>
-
-      {% if servicio.siguiente_accion_v3 %}
-      <div class="service-next-action {{ servicio.siguiente_accion_v3.nivel }}">
-        <span>Siguiente acción</span>
-        <strong>{{ servicio.siguiente_accion_v3.titulo }}</strong>
-        <small>{{ servicio.siguiente_accion_v3.detalle }}</small>
-      </div>
-      {% else %}
-      <div class="service-next-action done"><span>Siguiente acción</span><strong>Sin pendientes inmediatos</strong><small>El servicio puede seguir su flujo normal.</small></div>
-      {% endif %}
-
-      <footer>
-        <a class="btn" href="{% url 'colaboracion_workspace_servicio' servicio.id %}">Abrir workspace</a>
-        <span class="service-private-note">Costos y notas internas permanecen privados</span>
-      </footer>
-    </article>
-    {% empty %}<div class="event-v3-empty"><h3>Aún no hay servicios</h3><p>Crea el primero manualmente o materializa un paquete contratado.</p></div>{% endfor %}
-  </div>
-
-  {% if paquetes_evento %}<section class="event-v3-card event-v3-package-summary"><div class="event-v3-card__head"><div><span>Origen contractual</span><h3>Paquetes del evento</h3></div></div><div class="event-v3-simple-list">{% for pe in paquetes_evento %}<div><strong>{% if pe.snapshot_paquete %}{{ pe.snapshot_paquete.nombre|default:"Paquete" }}{% elif pe.paquete %}{{ pe.paquete.nombre }}{% else %}Paquete{% endif %}</strong><span>{{ pe.get_estado_display }} · ${{ pe.total|floatformat:0 }}</span></div>{% endfor %}</div></section>{% endif %}
 </section>
