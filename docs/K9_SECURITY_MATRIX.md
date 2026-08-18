@@ -110,6 +110,15 @@ K9.5 implementado: la vista `eventos_contrato_detail` usa tenant por slug, filtr
 
 K9.6 implementado: materializar contrato crea `ServicioEvento` con proveedor `null` y `prestacion_tipo=POR_DEFINIR`; un proveedor no asignado no obtiene acceso al workspace del servicio. Cliente conserva solo el canal cliente-planner permitido por las reglas existentes del workspace.
 
+K9.7 implementado:
+
+- `resumen_financiero_interno` entrega costos, pagos operativos, margen y flujo solo a DIRTEC, Empresa y planner autorizado.
+- El planner requiere autorizacion central `usuario_puede_evento(..., Actions.EVENT_VIEW)`, asignacion activa al evento y `ParticipanteEvento.puede_ver_finanzas=True`.
+- `resumen_financiero_cliente` entrega solo total contratado, pagos cliente, saldo, sobrepago y advertencias publicas.
+- Cliente no recibe costos, margen, pagos operativos ni detalle de pagos a proveedor.
+- Proveedor no recibe total contractual ni pagos cliente desde la capa financiera K9.7.
+- El dashboard financiero filtra por `empresa_slug` validado y `evento__empresa`, sin aceptar tenant desde POST.
+
 ## Login/logout
 
 Bug documentado:

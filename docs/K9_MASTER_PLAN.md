@@ -205,6 +205,20 @@ K9.6 implementado:
 - `ServicioEvento` puede ser concepto puente, no fuente para recalcular venta congelada.
 - Reportes deben separar ingreso, costo, saldo cliente, saldo proveedor y margen.
 
+K9.7 implementado:
+
+- La capa financiera vive en `presupuesto.services` como service/query layer reutilizable.
+- El total contratado sale de `ContratoEvento.snapshot_comercial` v2 cuando existe contrato K9.
+- `PagoClienteEvento` mide pagos recibidos del cliente a la empresa; no crea pagos operativos.
+- `GastoEvento` mide costos operativos estimados/reales y puede vincularse a `ServicioEvento`.
+- `PagoEvento` mide pagos operativos realizados contra gastos; no representa pagos del cliente.
+- Margen interno = venta contratada - costo operativo, separado del flujo de caja.
+- `costo_real` suma solo valores reales registrados; el fallback real/estimado se etiqueta como `costo_comprometido`.
+- Flujo de caja = pagos cliente recibidos - pagos operativos realizados.
+- Cliente recibe una proyeccion publica sin costos, margen, pagos proveedor ni datos internos.
+- Empresa, DIRTEC y planner con permiso financiero explicito pueden ver la proyeccion financiera interna.
+- K9.7 no crea ledger, facturas, movimientos contables ni un segundo sistema financiero.
+
 ## 14. Hallazgos seguridad
 
 Ver `docs/K9_SECURITY_MATRIX.md`.

@@ -8,10 +8,10 @@
   </div>
 
   <div class="event-v3-finance-grid">
-    <article class="event-v3-card"><span>Contrato base</span><strong>${{ contrato_base_v3|floatformat:0 }}</strong><small>{% if contrato_actual_v3 %}v{{ contrato_actual_v3.version }} · {{ contrato_actual_v3.get_estado_display }}{% else %}Sin ContratoEvento activo{% endif %}</small></article>
-    <article class="event-v3-card"><span>Extras / upgrades</span><strong>${{ extras_cliente_v3|floatformat:0 }}</strong><small>Cargos adicionales aprobados/registrados</small></article>
-    <article class="event-v3-card emphasis"><span>Total comercial</span><strong>${{ total_cliente_v3|floatformat:0 }}</strong><small>Base + cargos adicionales</small></article>
-    <article class="event-v3-card"><span>Compromisos operativos</span><strong>${{ gastos_operativos_total_v3|floatformat:0 }}</strong><small>${{ pagos_operativos_total_v3|floatformat:0 }} pagado · ${{ saldo_operativo_v3|floatformat:0 }} pendiente</small></article>
+    <article class="event-v3-card"><span>Total contratado</span><strong>${{ resumen_financiero_v3.total_contratado|floatformat:0 }}</strong><small>{% if contrato_actual_v3 %}v{{ contrato_actual_v3.version }} - {{ contrato_actual_v3.get_estado_display }}{% else %}{{ resumen_financiero_v3.fuente_total }}{% endif %}</small></article>
+    <article class="event-v3-card"><span>Pagado cliente</span><strong>${{ resumen_financiero_v3.pagos_cliente_recibidos|floatformat:0 }}</strong><small>Saldo cliente ${{ resumen_financiero_v3.saldo_cliente|floatformat:0 }}</small></article>
+    <article class="event-v3-card"><span>Costo comprometido</span><strong>${{ resumen_financiero_v3.costo_comprometido|floatformat:0 }}</strong><small>Real ${{ resumen_financiero_v3.costo_real|floatformat:0 }} - saldo ${{ saldo_operativo_v3|floatformat:0 }}</small></article>
+    <article class="event-v3-card emphasis"><span>Margen real</span><strong>${{ resumen_financiero_v3.margen_real|floatformat:0 }}</strong><small>{{ resumen_financiero_v3.porcentaje_margen_real }}% - caja ${{ resumen_financiero_v3.flujo_neto_caja|floatformat:0 }}</small></article>
   </div>
 
   <section class="event-v3-card">

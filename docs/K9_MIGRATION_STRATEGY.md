@@ -239,7 +239,7 @@ Reglas:
 
 ## Finanzas
 
-Fase recomendada: K9.7.
+Fase implementada: K9.7.
 
 No crear segundo sistema.
 
@@ -259,6 +259,15 @@ Reportes:
 - pagos operativos;
 - saldo proveedor/costo;
 - margen interno solo para Empresa/Planner autorizado/DIRTEC.
+
+Decision K9.7:
+
+- No se agregan modelos financieros nuevos.
+- No se agregan migraciones.
+- No se crean ledger, facturas ni movimientos contables.
+- `presupuesto.services` concentra las consultas y DTOs financieros para evitar formulas duplicadas en dashboards/templates.
+- Los modelos K8 existentes siguen siendo la fuente de pagos y costos; K9 agrega lectura integrada sobre ellos.
+- La compatibilidad legacy se mantiene mediante advertencias cuando el total no viene de contrato K9 v2.
 
 ## CRUD operativo
 

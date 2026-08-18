@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finanzas | DIRTEC</title>
+    <style>
+        *{box-sizing:border-box}body{margin:0;background:#f7f8fb;color:#202631;font-family:Inter,Arial,sans-serif}.finance-shell{width:min(1180px,100%);margin:0 auto;padding:20px}.finance-top{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:18px}.finance-top span,.kpi span,.service-row span{color:#667085;font-size:.78rem;font-weight:800;text-transform:uppercase}.finance-top h1{margin:.25rem 0}.finance-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.kpi,.finance-card{background:#fff;border:1px solid #d9e0ea;border-radius:8px;padding:16px}.kpi strong{display:block;font-size:1.45rem;margin-top:6px}.kpi small{color:#667085}.warn{background:#fff7df;border-color:#ead28a}.good{color:#1d6f42}.bad{color:#a43a31}.finance-table{display:grid;gap:8px;margin-top:18px}.service-row{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr;gap:10px;align-items:center;background:#fff;border:1px solid #d9e0ea;border-radius:8px;padding:12px}.service-row strong,.service-row small{display:block}.service-row small{color:#667085}.warnings{display:grid;gap:8px;margin:18px 0}.warnings p{margin:0;background:#fff7df;border:1px solid #ead28a;border-radius:8px;padding:10px}@media(max-width:840px){.finance-grid{grid-template-columns:1fr 1fr}.service-row{grid-template-columns:1fr}.finance-top{display:grid}}@media(max-width:520px){.finance-grid{grid-template-columns:1fr}.finance-shell{padding:14px}}
+    </style>
+</head>
+<body>
+<main class="finance-shell">
+    <header class="finance-top">
+        <div>
+            <span>Finanzas integradas</span>
+            <h1>{{ evento.titulo_evento }}</h1>
+            <p>{{ empresa.nombre_comercial }}</p>
+        </div>
+        <div>
+            <span>Fuente venta</span>
+            <strong>{{ resumen.fuente_total }}</strong>
+        </div>
+    </header>
+
+    {% if resumen.advertencias %}
+        <section class="warnings">
+            {% for advertencia in resumen.advertencias %}<p>{{ advertencia }}</p>{% endfor %}
+        </section>
+    {% endif %}
+
+    <section class="finance-grid">
+        <article class="kpi"><span>Total contratado</span><strong>${{ resumen.total_contratado }}</strong></article>
+        <article class="kpi"><span>Pagado cliente</span><strong>${{ resumen.pagos_cliente_recibidos }}</strong><small>Saldo ${{ resumen.saldo_cliente }}</small></article>
+        <article class="kpi"><span>Costo estimado</span><strong>${{ resumen.costo_estimado }}</strong></article>
+        <article class="kpi"><span>Costo real</span><strong>${{ resumen.costo_real }}</strong><small>Solo monto real registrado</small></article>
+        <article class="kpi"><span>Costo comprometido</span><strong>${{ resumen.costo_comprometido }}</strong><small>Saldo operativo ${{ resumen.saldo_operativo }}</small></article>
+        <article class="kpi"><span>Margen estimado</span><strong class="{% if resumen.margen_estimado < 0 %}bad{% else %}good{% endif %}">${{ resumen.margen_estimado }}</strong><small>{{ resumen.porcentaje_margen_estimado }}%</small></article>
+        <article class="kpi"><span>Margen real</span><strong class="{% if resumen.margen_real < 0 %}bad{% else %}good{% endif %}">${{ resumen.margen_real }}</strong><small>{{ resumen.porcentaje_margen_real }}%</small></article>
+        <article class="kpi"><span>Flujo neto caja</span><strong>${{ resumen.flujo_neto_caja }}</strong></article>
+    </section>
+
+    <section class="finance-card" style="margin-top:18px">
+        <h2>Detalle por servicio</h2>
+        <div class="finance-table">
+            <div class="service-row">
+                <span>Servicio</span><span>Prestacion</span><span>Valor contractual</span><span>Costo estimado</span><span>Costo real</span><span>Comprometido / saldo</span>
+            </div>
+            {% for item in resumen.servicios %}
+                <div class="service-row">
+                    <strong>{{ item.nombre }}<small>{{ item.proveedor.nombre_comercial|default:"Sin proveedor" }}</small></strong>
+                    <span>{{ item.prestacion_tipo }}</span>
+                    <span>${{ item.valor_contractual }}</span>
+                    <span>${{ item.costo_estimado }}</span>
+                    <span>${{ item.costo_real }}</span>
+                    <span>${{ item.costo_comprometido }} / ${{ item.saldo_operativo }}</span>
+                </div>
+            {% empty %}
+                <p>No hay servicios operativos.</p>
+            {% endfor %}
+        </div>
+    </section>
+</main>
+</body>
+</html>

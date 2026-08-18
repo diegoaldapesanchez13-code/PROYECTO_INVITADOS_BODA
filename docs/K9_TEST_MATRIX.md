@@ -188,16 +188,37 @@ Tests implementados en `eventos.tests_k96`:
 
 ## K9.7 Presupuesto
 
-Tests propuestos:
+Tests implementados en `presupuesto.tests_k97`:
 
-- pago cliente no crea `PagoEvento`;
-- pago operativo no crea `PagoClienteEvento`;
-- saldo cliente usa contrato y pagos cliente;
-- costo operativo usa gastos y pagos operativos;
-- proveedor no revisa pagos cliente;
-- cliente no ve pagos proveedor;
-- margen solo roles internos autorizados;
-- gasto asociado a servicio exige mismo evento.
+- total contratado sale de `ContratoEvento` v2;
+- pagos cliente suman solo estados recibidos/validos;
+- saldo cliente y sobrepago se calculan desde contrato y pagos cliente;
+- costo estimado usa `GastoEvento.monto_estimado`;
+- costo real suma solo `monto_real` registrado;
+- costo comprometido usa `monto_real` cuando existe y `monto_estimado` cuando no;
+- pagos operativos usan `PagoEvento`;
+- saldo operativo separa costo de pagos realizados;
+- margen estimado y real se calculan como venta menos costo;
+- porcentaje de margen no divide entre cero;
+- flujo neto de caja se calcula separado de margen;
+- cambiar proveedor/costo/pago no altera total contractual;
+- servicios `EMPRESA`, `PROVEEDOR` y `POR_DEFINIR` no requieren proveedor ficticio;
+- costos pendientes generan advertencia;
+- cliente no ve costos, margen ni pagos operativos;
+- planner sin permiso financiero no ve margen/costos;
+- planner asignado sin permiso financiero no ve resumen interno;
+- planner con acceso central al evento y permiso financiero ve resumen interno;
+- empresa del mismo tenant ve dashboard financiero;
+- empresa de otro tenant queda bloqueada;
+- proveedor no ve total contractual ni pagos cliente;
+- compatibilidad K8 via `PaqueteEvento` sigue disponible con advertencia legacy.
+
+Regresion ligera K9.7:
+
+- `eventos.tests_k96`;
+- `eventos.tests_k95`;
+- `paquetes.tests_k94`;
+- `presupuesto.tests_client_payments_k8741`.
 
 ## K9.8 CRUD operativo
 

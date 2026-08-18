@@ -370,6 +370,30 @@ Separacion:
 
 `ServicioEvento` puede relacionar concepto operativo con gasto o pago, pero no debe mezclar ingreso cliente con costo proveedor.
 
+K9.7 implementa la primera capa financiera integrada sobre los modelos existentes:
+
+- Venta contratada: viene de `ContratoEvento` K9 v2. Si no existe contrato v2, los lectores pueden caer a compatibilidad legacy con advertencia.
+- Pagos cliente: suma de `PagoClienteEvento` recibidos/validos del evento.
+- Saldo cliente: total contratado menos pagos cliente recibidos, separado de cualquier costo operativo.
+- Costos operativos: `GastoEvento` no cancelado, con `monto_estimado` y `monto_real`.
+- Pagos operativos: `PagoEvento` asociado a gastos del evento, separado de pagos de cliente.
+- Margen estimado: total contratado menos costo estimado.
+- Costo real: suma solo valores realmente registrados en `monto_real`.
+- Costo comprometido: `monto_real` cuando existe; si no existe, `monto_estimado`.
+- Margen real: total contratado menos costo real.
+- Flujo neto de caja: pagos cliente recibidos menos pagos operativos realizados.
+
+Reglas:
+
+- El margen no es flujo de caja.
+- Cambiar proveedor, costo, gasto o pago operativo no modifica el contrato ni su snapshot comercial.
+- Servicios `EMPRESA`, `PROVEEDOR` y `POR_DEFINIR` participan en detalle financiero sin exigir proveedor ficticio.
+- Un servicio sin costo definido debe aparecer como pendiente de costo operativo cuando corresponda.
+- `costo_real` no debe heredar silenciosamente estimaciones.
+- Cliente no ve costos, margen, pagos operativos ni pagos a proveedor.
+- Proveedor no ve total contractual ni pagos cliente.
+- Planner solo ve margen/costos si pasa autorizacion central del evento y tiene autorizacion financiera explicita en `ParticipanteEvento`.
+
 ## Colaboracion
 
 Contrato aceptado produce servicios operativos. La colaboracion sigue asi:

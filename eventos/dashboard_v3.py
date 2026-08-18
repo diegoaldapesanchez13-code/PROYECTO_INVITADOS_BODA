@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-from django.db.models import Count, Q, Sum
+from django.db.models import Count, Q
 from django.utils import timezone
 
 from colaboracion.models import (
@@ -8,10 +8,10 @@ from colaboracion.models import (
     CotizacionServicio,
     PropuestaServicioCliente,
 )
-from eventos.models import ContratoEvento, ParticipanteEvento
+from eventos.models import ParticipanteEvento
 from itinerario.models import ActividadItinerario, ParticipanteActividad
 from proveedores.models import ServicioEvento
-from presupuesto.models import PagoClienteEvento
+from presupuesto.services import obtener_resumen_financiero_evento
 
 
 def _decimal(value):
@@ -263,28 +263,10 @@ def construir_contexto_dashboard_evento_v3(
     citas_pendientes_confirmacion_v3 = sum(a.confirmaciones_pendientes for a in citas_v3)
 
     gastos_vencidos_v3 = [g for g in gastos_evento if g.esta_vencido]
-    gastos_operativos_total = sum((_decimal(g.monto_objetivo) for g in gastos_evento), Decimal('0'))
-    pagos_operativos_total = sum((_decimal(g.total_pagado) for g in gastos_evento), Decimal('0'))
-    saldo_operativo = max(gastos_operativos_total - pagos_operativos_total, Decimal('0'))
-
-    contrato_actual = (
-        ContratoEvento.objects.filter(evento=evento)
-        .exclude(estado__in=['CANCELADO', 'REEMPLAZADO'])
-        .order_by('-version', '-id')
-        .first()
-    )
-    contrato_base = _decimal(contrato_actual.monto_base if contrato_actual else 0)
-    extras_cliente = _decimal(
-        servicios_evento.filter(modalidad__in=['ADICIONAL', 'UPGRADE'])
-        .aggregate(total=Sum('cargo_adicional_cliente'))['total']
-    )
-    total_cliente = contrato_base + extras_cliente
-
-    pagos_cliente_evento_v3 = list(
-        PagoClienteEvento.objects.filter(evento=evento)
-        .select_related('registrado_por', 'revisado_por', 'servicio_evento')
-        .order_by('-fecha_pago', '-id')
-    )
+    resumen_financiero = obtener_resumen_financiero_evento(evento)
+    contrato_actual = resumen_financiero['contrato']
+    total_cliente = resumen_financiero['total_contratado']
+    pagos_cliente_evento_v3 = resumen_financiero['pagos_cliente']
     pagos_cliente_pendientes_v3 = [
         pago for pago in pagos_cliente_evento_v3
         if pago.estado in {'PENDIENTE', 'OBSERVADO'}
@@ -327,15 +309,16 @@ def construir_contexto_dashboard_evento_v3(
         'citas_pendientes_confirmacion_v3': citas_pendientes_confirmacion_v3,
         'actividades_proximas_v3': actividades_base[:10],
         'gastos_vencidos_v3': gastos_vencidos_v3,
-        'gastos_operativos_total_v3': gastos_operativos_total,
-        'pagos_operativos_total_v3': pagos_operativos_total,
-        'saldo_operativo_v3': saldo_operativo,
+        'gastos_operativos_total_v3': resumen_financiero['costo_comprometido'],
+        'pagos_operativos_total_v3': resumen_financiero['pagos_operativos_realizados'],
+        'saldo_operativo_v3': resumen_financiero['saldo_operativo'],
         'pagos_cliente_evento_v3': pagos_cliente_evento_v3,
         'pagos_cliente_pendientes_v3': pagos_cliente_pendientes_v3,
         'contrato_actual_v3': contrato_actual,
-        'contrato_base_v3': contrato_base,
-        'extras_cliente_v3': extras_cliente,
+        'contrato_base_v3': total_cliente,
+        'extras_cliente_v3': Decimal('0'),
         'total_cliente_v3': total_cliente,
+        'resumen_financiero_v3': resumen_financiero,
         'documentos_generales_v3': documentos_generales,
         'documentos_servicio_v3': documentos_servicio,
         'tipos_agenda_v3': ActividadItinerario.TIPOS,
