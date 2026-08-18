@@ -1,0 +1,58 @@
+{% load static %}
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light">
+    <title>{% block title %}DIRTEC Event Studio{% endblock %}</title>
+
+    <link rel="stylesheet" href="{% static 'core/app/tokens.css' %}">
+    <link rel="stylesheet" href="{% static 'core/app/components.css' %}">
+    <link rel="stylesheet" href="{% static 'core/app/forms.css' %}">
+    <link rel="stylesheet" href="{% static 'core/app/layout.css' %}">
+    <link rel="stylesheet" href="{% static 'core/app/responsive.css' %}">
+    {% block extra_css %}{% endblock %}
+
+    {% with brand=brand_context|default:None %}
+    <style>
+        :root {
+            --brand-primary: {{ brand.primary|default:"#1F2937" }};
+            --brand-secondary: {{ brand.secondary|default:"#64748B" }};
+            --brand-accent: {{ brand.accent|default:"#2563EB" }};
+        }
+    </style>
+    {% endwith %}
+</head>
+<body class="{% block body_class %}app-body{% endblock %}">
+    <a class="app-skip-link" href="#main-content">Saltar al contenido</a>
+
+    {% block page %}
+    <div class="app-shell">
+        {% block sidebar %}
+            {% include "core/app/components/sidebar.html" %}
+        {% endblock %}
+
+        <div class="app-shell__main">
+            {% block topbar %}
+                {% include "core/app/components/topbar.html" %}
+            {% endblock %}
+
+            <main id="main-content" class="app-content" tabindex="-1">
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+
+        {% block mobile_nav %}
+            {% include "core/app/components/mobile_nav.html" %}
+        {% endblock %}
+    </div>
+    {% endblock %}
+
+    {% include "core/app/components/toast_region.html" %}
+    {% include "core/app/components/modal_root.html" %}
+
+    <script src="{% static 'core/app/app.js' %}" defer></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

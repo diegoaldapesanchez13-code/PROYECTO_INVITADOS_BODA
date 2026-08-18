@@ -1,0 +1,28 @@
+<header class="app-topbar">
+    <div class="app-topbar__context">
+        {% block topbar_context %}
+        <span class="app-topbar__eyebrow">{{ app_context.section_label|default:"DIRTEC Event Studio" }}</span>
+        <strong class="app-topbar__title">{{ app_context.page_title|default:"Inicio" }}</strong>
+        {% endblock %}
+    </div>
+
+    <div class="app-topbar__actions">
+        {% block topbar_actions %}{% endblock %}
+        {% if request.user.is_authenticated %}
+        <details class="app-user-menu">
+            <summary class="app-icon-button" aria-label="Abrir menú de usuario">
+                <span aria-hidden="true">{{ request.user.get_short_name|default:request.user.username|slice:":1"|upper }}</span>
+            </summary>
+            <div class="app-menu app-menu--right">
+                <div class="app-menu__identity">
+                    <strong>{{ request.user.get_full_name|default:request.user.username }}</strong>
+                    {% if brand_context.company_name %}
+                    <span>{{ brand_context.company_name }}</span>
+                    {% endif %}
+                </div>
+                <a href="{% url 'logout' %}" class="app-menu__item">Cerrar sesión</a>
+            </div>
+        </details>
+        {% endif %}
+    </div>
+</header>

@@ -1,0 +1,59 @@
+.app-form {
+    display: grid;
+    gap: var(--space-5);
+}
+
+.app-field {
+    display: grid;
+    gap: var(--space-2);
+}
+
+.app-field label,
+.app-label {
+    font-weight: 700;
+    font-size: .9rem;
+}
+
+.app-input,
+.app-select,
+.app-textarea {
+    width: 100%;
+    min-height: 46px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--surface);
+    color: var(--text);
+    padding: .7rem .8rem;
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.app-textarea {
+    min-height: 120px;
+    resize: vertical;
+}
+
+.app-input:focus,
+.app-select:focus,
+.app-textarea:focus {
+    border-color: var(--brand-accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-accent) 15%, transparent);
+    outline: none;
+}
+
+.app-field__help {
+    color: var(--text-muted);
+    font-size: .84rem;
+}
+
+.app-field__error {
+    color: var(--danger);
+    font-size: .84rem;
+    font-weight: 600;
+}
+
+.app-form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: var(--space-3);
+}

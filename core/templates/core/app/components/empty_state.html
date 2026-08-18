@@ -1,0 +1,8 @@
+<section class="app-empty-state">
+    {% if empty_icon %}<div class="app-empty-state__icon" aria-hidden="true">{{ empty_icon }}</div>{% endif %}
+    <h2>{{ empty_title|default:"Aún no hay información" }}</h2>
+    {% if empty_text %}<p>{{ empty_text }}</p>{% endif %}
+    {% if empty_action_url and empty_action_label %}
+        <a class="app-button app-button--primary" href="{{ empty_action_url }}">{{ empty_action_label }}</a>
+    {% endif %}
+</section>

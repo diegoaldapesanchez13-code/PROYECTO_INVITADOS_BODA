@@ -1,0 +1,19 @@
+<div
+    class="app-toast-region"
+    id="app-toast-region"
+    aria-live="polite"
+    aria-atomic="true"
+></div>
+
+{% if messages %}
+<script type="application/json" id="app-django-messages">
+[
+{% for message in messages %}
+    {
+        "text": "{{ message|escapejs }}",
+        "level": "{{ message.tags|default:'info'|escapejs }}"
+    }{% if not forloop.last %},{% endif %}
+{% endfor %}
+]
+</script>
+{% endif %}

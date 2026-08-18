@@ -1,0 +1,29 @@
+<aside class="app-sidebar" aria-label="Navegación principal">
+    <div class="app-brand">
+        {% if brand_context.logo_url %}
+            <img class="app-brand__logo" src="{{ brand_context.logo_url }}" alt="{{ brand_context.company_name|default:'DIRTEC Event Studio' }}">
+        {% else %}
+            <span class="app-brand__mark" aria-hidden="true">D</span>
+        {% endif %}
+        <div class="app-brand__text">
+            <strong>{{ brand_context.company_name|default:"DIRTEC" }}</strong>
+            <span>Event Studio</span>
+        </div>
+    </div>
+
+    <nav class="app-nav">
+        {% for item in navigation.items %}
+            <a
+                class="app-nav__item{% if item.active %} is-active{% endif %}"
+                href="{{ item.url }}"
+                {% if item.active %}aria-current="page"{% endif %}
+            >
+                {% if item.icon %}<span class="app-nav__icon" aria-hidden="true">{{ item.icon }}</span>{% endif %}
+                <span>{{ item.label }}</span>
+                {% if item.badge %}<span class="app-badge app-badge--neutral">{{ item.badge }}</span>{% endif %}
+            </a>
+        {% empty %}
+            <span class="app-nav__empty">Navegación en preparación</span>
+        {% endfor %}
+    </nav>
+</aside>
