@@ -139,7 +139,7 @@ def obtener_resumen_financiero_evento(evento):
         for gasto in gastos
     )
 
-    pagos_operativos_qs = PagoEvento.objects.filter(gasto__evento=evento).exclude(gasto__estado='CANCELADO')
+    pagos_operativos_qs = PagoEvento.objects.filter(gasto__evento=evento, estado='ACTIVO').exclude(gasto__estado='CANCELADO')
     pagos_operativos_realizados = _sumar(pagos_operativos_qs, 'monto')
     saldo_operativo = max(costo_comprometido - pagos_operativos_realizados, Decimal('0.00'))
 
@@ -158,7 +158,7 @@ def obtener_resumen_financiero_evento(evento):
             gastos_por_servicio.setdefault(gasto.servicio_evento_id, []).append(gasto)
     pagos_por_gasto = {}
     for gasto in gastos:
-        pagos_por_gasto[gasto.id] = list(gasto.pagos.all())
+        pagos_por_gasto[gasto.id] = list(gasto.pagos.filter(estado='ACTIVO'))
 
     servicios_detalle = [_servicio_detalle(servicio, gastos_por_servicio, pagos_por_gasto) for servicio in servicios]
     pendientes = [item for item in servicios_detalle if item['costo_pendiente']]

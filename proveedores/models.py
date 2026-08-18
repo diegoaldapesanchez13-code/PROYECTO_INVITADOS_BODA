@@ -309,6 +309,23 @@ class ServicioEvento(models.Model):
     comprobante_pago = models.FileField(upload_to='proveedores/comprobantes/', validators=[validar_documento], blank=True, null=True)
     notas = models.TextField(blank=True, null=True)
     notas_internas = models.TextField(blank=True, null=True)
+    cancelado_en = models.DateTimeField(blank=True, null=True)
+    cancelado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='servicios_evento_cancelados',
+    )
+    motivo_cancelacion = models.TextField(blank=True, null=True)
+    archivado_en = models.DateTimeField(blank=True, null=True)
+    archivado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='servicios_evento_archivados',
+    )
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion = models.DateTimeField(auto_now=True)
 

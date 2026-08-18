@@ -59,6 +59,23 @@ class GastoEvento(models.Model):
     fecha_limite = models.DateField(blank=True, null=True)
     estado = models.CharField(max_length=20, choices=ESTADOS, default='PENDIENTE')
     notas = models.TextField(blank=True, null=True)
+    cancelado_en = models.DateTimeField(blank=True, null=True)
+    cancelado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='gastos_evento_cancelados',
+    )
+    motivo_cancelacion = models.TextField(blank=True, null=True)
+    archivado_en = models.DateTimeField(blank=True, null=True)
+    archivado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='gastos_evento_archivados',
+    )
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion = models.DateTimeField(auto_now=True)
 
@@ -97,7 +114,7 @@ class GastoEvento(models.Model):
 
     @property
     def total_pagado(self):
-        return self.pagos.aggregate(total=Sum('monto'))['total'] or 0
+        return self.pagos.filter(estado='ACTIVO').aggregate(total=Sum('monto'))['total'] or 0
 
     @property
     def monto_objetivo(self):
@@ -126,6 +143,10 @@ class GastoEvento(models.Model):
 
 
 class PagoEvento(models.Model):
+    ESTADOS = [
+        ('ACTIVO', 'Activo'),
+        ('ANULADO', 'Anulado'),
+    ]
     METODOS = [
         ('EFECTIVO', 'Efectivo'),
         ('TRANSFERENCIA', 'Transferencia'),
@@ -146,6 +167,16 @@ class PagoEvento(models.Model):
     referencia = models.CharField(max_length=120, blank=True, null=True)
     comprobante = models.FileField(upload_to='presupuesto/comprobantes/', validators=[validar_documento], blank=True, null=True)
     notas = models.TextField(blank=True, null=True)
+    estado = models.CharField(max_length=20, choices=ESTADOS, default='ACTIVO')
+    anulado_en = models.DateTimeField(blank=True, null=True)
+    anulado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='pagos_evento_anulados',
+    )
+    motivo_anulacion = models.TextField(blank=True, null=True)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
 
     class Meta:

@@ -65,6 +65,23 @@ class TareaEvento(models.Model):
     categoria = models.CharField(max_length=20, choices=CATEGORIAS, default='GENERAL')
     evidencia = models.FileField(upload_to='tareas/evidencias/', validators=[validar_documento], blank=True, null=True)
     notas = models.TextField(blank=True, null=True)
+    cancelado_en = models.DateTimeField(blank=True, null=True)
+    cancelado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='tareas_evento_canceladas',
+    )
+    motivo_cancelacion = models.TextField(blank=True, null=True)
+    archivado_en = models.DateTimeField(blank=True, null=True)
+    archivado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='tareas_evento_archivadas',
+    )
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion = models.DateTimeField(auto_now=True)
 

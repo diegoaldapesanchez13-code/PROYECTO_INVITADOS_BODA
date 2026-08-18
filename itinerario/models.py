@@ -81,6 +81,23 @@ class ActividadItinerario(models.Model):
     estado = models.CharField(max_length=20, choices=ESTADOS, default='PENDIENTE')
     orden = models.PositiveIntegerField(default=0)
     notas = models.TextField(blank=True, null=True)
+    cancelado_en = models.DateTimeField(blank=True, null=True)
+    cancelado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='actividades_itinerario_canceladas',
+    )
+    motivo_cancelacion = models.TextField(blank=True, null=True)
+    archivado_en = models.DateTimeField(blank=True, null=True)
+    archivado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='actividades_itinerario_archivadas',
+    )
 
     class Meta:
         ordering = ['evento', 'fecha', 'hora_inicio', 'orden']

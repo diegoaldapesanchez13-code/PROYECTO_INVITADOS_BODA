@@ -53,6 +53,15 @@ class DocumentoEvento(models.Model):
     )
     visible_cliente = models.BooleanField(default=False)
     visible_proveedor = models.BooleanField(default=False)
+    archivado_en = models.DateTimeField(blank=True, null=True)
+    archivado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='documentos_evento_archivados',
+    )
+    motivo_archivo = models.TextField(blank=True, null=True)
 
     class Meta:
         ordering = ['evento', '-fecha_carga']
