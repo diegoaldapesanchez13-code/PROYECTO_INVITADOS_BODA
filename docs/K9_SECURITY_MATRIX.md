@@ -22,7 +22,7 @@ No corregir en K9.0. Documentar para K9.1.
 | Proveedor | Acceso por `ServicioEvento.proveedor.usuario`. | Servicios sin proveedor no deben exponerse. |
 | Workspace | Canales visibles por servicio y rol. | Mantener canales; no crear chats paralelos. |
 | Django admin | `admin.site.has_permission` usa `Actions.DJANGO_ADMIN`. | Conservar reservado a DIRTEC. |
-| IDs directos | Tests K8 cubren varios 403/404. | Agregar contrato/propuesta/catalogo. |
+| IDs directos | Tests K8 cubren varios 403/404. | K9.5 cubre contrato/propuesta; mantener catalogo y materializacion. |
 | Archivos privados | `secure_files.py` centraliza descargas. | Unificar fallbacks proveedor. |
 | Media comercial catalogo | K9.2 guarda `ServicioCatalogo.imagen_principal` y `ServicioCatalogoArchivo.archivo` en `PRIVATE_MEDIA_ROOT`. | No servir `PRIVATE_MEDIA_ROOT` por Caddy/Nginx; acceso solo por vistas Django autorizadas. |
 
@@ -48,6 +48,8 @@ Cambio recomendado K9.1:
 - agregar `/colaboracion/` y `/presupuesto/` a rutas operativas;
 - auditar futuras apps `catalogo/` y contrato cuando se monten;
 - tests GET y POST con empresa suspendida.
+
+K9.5: `/eventos/` se agrega a `PATHS_OPERATIVOS` para proteger las rutas de contrato bajo estado SaaS del tenant.
 
 ## Secure files
 
@@ -103,6 +105,8 @@ Leyenda: `SI`, `NO`, `Segun permiso`.
 | Workspace interno | SI | SI/Planner | SI | NO | NO |
 | Pagos cliente | SI | SI | SI segun operacion | SI propios/evento | NO |
 | Pagos proveedor/operativos | SI | SI | SI segun finanzas | NO | Solo si se decide exponer comprobante propio |
+
+K9.5 implementado: la vista `eventos_contrato_detail` usa tenant por slug, filtra `ContratoEvento` por `evento__empresa`, exige `Actions.EVENT_VIEW` y entrega al cliente una proyeccion publica sin metadata interna. El proveedor no ve el contrato completo en K9.5.
 
 ## Login/logout
 

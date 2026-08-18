@@ -80,7 +80,7 @@ Estado: borrador K9.0, documental, sin cambios de negocio.
 - `ServicioEvento` como instancia operativa central.
 - `GastoEvento`, `PagoEvento`, `PagoClienteEvento` como sistema financiero unico.
 - Workspace de colaboracion actual sobre `ServicioEvento`.
-- `ContratoEvento.snapshot_comercial` como candidato para snapshot contractual K9 versionado.
+- `ContratoEvento.snapshot_comercial` como snapshot contractual K9 versionado implementado en K9.5.
 - `core.services.authorization` como punto central de permisos.
 
 ## 4. Que queda legacy
@@ -98,7 +98,7 @@ Estado: borrador K9.0, documental, sin cambios de negocio.
 - App `catalogo/` con `ServicioCatalogo` por empresa implementada en K9.2.
 - Modelo puente `ProveedorServicioCatalogo` implementado en K9.3 para relacionar proveedor con catalogo general.
 - Modelo/servicio comercial de propuesta testeable.
-- Snapshot contractual K9 v2, sin reemplazar v1.
+- Snapshot contractual K9 v2 implementado en `ContratoEvento`, sin reemplazar v1.
 - DTOs de contrato/propuesta para vistas de Empresa, Planner, Cliente, Proveedor y DIRTEC.
 - Politica central de visibilidad comercial vs operativa/financiera.
 - Tests de pricing, snapshot v2, cortesias, adicionales, permisos y SaaS.
@@ -131,7 +131,8 @@ Resumen contractual:
 9. Aplica descuentos visibles.
 10. Genera total estimado/acordado.
 11. Cliente acepta.
-12. Se emite `ContratoEvento` con snapshot v2.
+12. En estado `ACEPTADO`, se emite `ContratoEvento` con snapshot v2.
+13. La propuesta pasa a `CONTRATADO` solo despues de crear o recuperar el contrato idempotente.
 
 Las formulas deben vivir en service layer, no en templates.
 
@@ -158,10 +159,19 @@ Las formulas deben vivir en service layer, no en templates.
 ## 10. Estrategia snapshot v1 -> v2
 
 - Mantener `snapshot_paquete` v1 y `materializacion_version=1` para K8.
-- Introducir v2 aditivo en `ContratoEvento.snapshot_comercial` o nuevo campo versionado.
+- Introducir v2 aditivo en `ContratoEvento.snapshot_comercial` con `snapshot_version`.
 - No mutar snapshots firmados.
 - Lectores deben soportar v1 legacy y v2 K9.
 - Migracion historica puede ser lazy: contratos K8 se interpretan con adaptador v1.
+
+K9.5 implementado:
+
+- `ContratoEvento` es la autoridad contractual K9 para propuestas aceptadas.
+- `propuesta_origen` vincula el contrato v2 con `PropuestaEvento` y evita duplicados.
+- `snapshot_version=2` identifica el snapshot comercial K9.
+- El snapshot v2 congela empresa, evento, sede, paquete, cantidades, incluidos, adicionales, cortesias, descuentos, totales y metadata de calculo.
+- No crea `ServicioEvento`, gastos ni pagos; materializacion v2 queda para K9.6.
+- `PaqueteEvento.snapshot_paquete` v1 sigue vigente como compatibilidad K8.
 
 ## 11. Estrategia materializacion
 
@@ -249,7 +259,7 @@ Reglas:
 - K9.2: app `catalogo/`, modelo `ServicioCatalogo` por empresa y archivos IMAGEN/PDF.
 - K9.3: puente `ProveedorServicioCatalogo` catalogo-proveedor y convivencia con `ServicioCatalogoProveedor`.
 - K9.4: motor comercial de propuesta, DTOs y pricing adulto/nino/fijo/adicionales implementado en `paquetes`.
-- K9.5: contrato snapshot v2 y vistas de contrato por rol.
+- K9.5: contrato snapshot v2 y vistas de contrato por rol implementado.
 - K9.6: materializacion v2 hacia `ServicioEvento` con cortesias.
 - K9.7: presupuesto/reportes integrados sin duplicar finanzas.
 - K9.8: CRUD operativo soft-delete/cancelar/archivar.

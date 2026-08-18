@@ -134,21 +134,25 @@ Evitar duplicados:
 
 ## Snapshot v1 -> v2
 
-Actual:
+Actual K9.5:
 
 - `PaqueteEvento.snapshot_paquete` v1.
 - `MATERIALIZACION_VERSION = 1`.
 - `materializacion_version` en `PaqueteEvento`.
+- `ContratoEvento.snapshot_comercial` v2.
+- `ContratoEvento.snapshot_version`.
+- `ContratoEvento.propuesta_origen`.
 
-Objetivo:
+Objetivo aplicado:
 
 - v1 legacy K8: reconstruible siempre.
 - v2 K9: snapshot comercial del contrato completo.
 
-Ubicacion recomendada:
+Ubicacion:
 
 - `ContratoEvento.snapshot_comercial` para el contrato aceptado;
-- campo `snapshot_version` aditivo si se requiere;
+- `snapshot_version` aditivo para identificar v1/v2;
+- `propuesta_origen` aditivo para idempotencia por propuesta;
 - conservar `PaqueteEvento.snapshot_paquete` para K8.
 
 Contenido v2:
@@ -169,9 +173,16 @@ Contenido v2:
 
 Lectores:
 
-- `leer_contrato_publico(snapshot)` soporta v1/v2.
-- `leer_contrato_interno(snapshot)` soporta v1/v2.
+- `leer_contrato_publico(contrato)` proyecta v2 sin metadata interna.
+- `leer_contrato_interno(contrato)` proyecta v2 para roles internos.
+- `leer_contrato_v1_paquete_evento(paquete_evento)` adapta snapshot K8 v1.
 - Nunca modificar snapshot firmado salvo crear nueva version de contrato.
+
+Migraciones K9.5:
+
+- `paquetes/migrations/0005_alter_propuestaevento_estado.py`: agrega `CONTRATADO` a choices de `PropuestaEvento.estado`.
+- `eventos/migrations/0003_contratoevento_propuesta_origen_and_more.py`: agrega `propuesta_origen`, `snapshot_version`, choice `CONTRATADO`, indice de snapshot y constraint unico por propuesta.
+- Ambas migraciones son aditivas y no migran datos legacy.
 
 ## Materializacion v2
 

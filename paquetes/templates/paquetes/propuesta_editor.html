@@ -16,6 +16,18 @@
             {{ form.as_p }}
             <button class="btn" type="submit">Guardar propuesta</button>
         </form>
+        {% if propuesta %}
+            <div class="contract-actions">
+                {% if contrato_existente %}
+                    <a class="btn" href="{% url 'eventos_contrato_detail' empresa.slug contrato_existente.id %}">Ver contrato</a>
+                {% elif propuesta.estado == "ACEPTADO" %}
+                    <form method="post" action="{% url 'eventos_contrato_generar' empresa.slug propuesta.id %}">
+                        {% csrf_token %}
+                        <button class="btn" type="submit">Generar contrato</button>
+                    </form>
+                {% endif %}
+            </div>
+        {% endif %}
 
         {% if propuesta and linea_form %}
             <div class="section-heading compact stack-top">

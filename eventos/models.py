@@ -74,6 +74,7 @@ class ContratoEvento(models.Model):
         ('BORRADOR', 'Borrador'),
         ('EN_REVISION', 'En revision'),
         ('FIRMADO', 'Firmado'),
+        ('CONTRATADO', 'Contratado'),
         ('CANCELADO', 'Cancelado'),
         ('REEMPLAZADO', 'Reemplazado'),
     ]
@@ -97,6 +98,14 @@ class ContratoEvento(models.Model):
         null=True,
     )
     snapshot_comercial = models.JSONField(default=dict, blank=True)
+    snapshot_version = models.PositiveIntegerField(default=1)
+    propuesta_origen = models.ForeignKey(
+        'paquetes.PropuestaEvento',
+        on_delete=models.PROTECT,
+        blank=True,
+        null=True,
+        related_name='contratos_v2',
+    )
     notas = models.TextField(blank=True, null=True)
     creado_por = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -115,9 +124,14 @@ class ContratoEvento(models.Model):
                 fields=['evento', 'version'],
                 name='eventos_contrato_evento_version_unica',
             ),
+            models.UniqueConstraint(
+                fields=['propuesta_origen'],
+                name='eventos_contrato_propuesta_origen_unica',
+            ),
         ]
         indexes = [
             models.Index(fields=['evento', 'estado'], name='evt_contrato_evt_est_idx'),
+            models.Index(fields=['snapshot_version'], name='evt_contrato_snap_ver_idx'),
         ]
         verbose_name = 'Contrato del evento'
         verbose_name_plural = 'Contratos del evento'

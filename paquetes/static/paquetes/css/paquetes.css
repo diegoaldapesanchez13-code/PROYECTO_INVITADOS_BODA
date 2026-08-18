@@ -31,6 +31,8 @@ dt{color:var(--muted);font-size:.75rem;font-weight:800;text-transform:uppercase}
 .pkg-form p{display:grid;gap:6px;margin:0}
 .pkg-form ul.errorlist{margin:0;padding-left:18px;color:var(--warn)}
 .compact-form{border-top:1px solid var(--line);padding-top:14px;margin-top:14px}
+.contract-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+.contract-actions form{margin:0}
 .line-list{display:grid;gap:8px;margin-bottom:14px}
 .line-item{display:grid;gap:5px;border:1px solid var(--line);border-radius:8px;padding:11px;background:#fff}
 .total-box{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line);padding:10px 0}

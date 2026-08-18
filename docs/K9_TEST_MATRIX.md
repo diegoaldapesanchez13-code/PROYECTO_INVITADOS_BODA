@@ -124,18 +124,30 @@ Tests implementados en `paquetes.tests_k94`:
 
 ## K9.5 Contrato y visibilidad
 
-Tests propuestos:
+Tests implementados en `eventos.tests_k95`:
 
-- crear snapshot v2 al aceptar propuesta;
-- snapshot v2 congela sede, duracion, tarifas, cantidades y lineas;
-- modificar paquete/catalogo despues no cambia contrato;
-- contrato v1 legacy se renderiza;
-- contrato v2 se renderiza;
-- cliente no ve costo/margen/notas privadas;
+- crear contrato v2 desde propuesta `ACEPTADO`;
+- rechazar generacion desde `BORRADOR`, `PROPUESTA` y `EN_REVISION`;
+- cambiar `PropuestaEvento` a `CONTRATADO` solo despues de crear el contrato;
+- idempotencia: segunda generacion devuelve el mismo contrato;
+- `snapshot_version=2` en modelo y JSON;
+- snapshot congela adultos, ninos, paquete, incluidos, adicionales, cortesias, descuento y total;
+- recalc server-side ignora totales manipulados en la propuesta;
+- modificar paquete, catalogo, propuesta o proveedor despues no cambia el contrato;
+- snapshot no contiene costo proveedor ni margen;
+- cliente autorizado ve contrato publico;
+- cliente ajeno no ve contrato;
+- cliente no ve campos internos;
+- planner asignado ve contrato;
+- planner no asignado no ve contrato;
+- empresa ve solo contratos de su tenant;
 - proveedor no ve contrato completo;
-- planner solo si evento asignado;
-- empresa solo su tenant;
-- DIRTEC operativo puede auditar segun permiso.
+- DIRTEC autorizado ve contrato;
+- lector v1 mantiene legible `PaqueteEvento.snapshot_paquete`;
+- snapshot/materializacion K8 sigue funcionando;
+- generar contrato no crea `ServicioEvento`, `GastoEvento`, `PagoEvento` ni `PagoClienteEvento`;
+- POST manipulado no cruza tenant;
+- lector publico no expone metadata interna.
 
 ## K9.6 Materializacion v2
 

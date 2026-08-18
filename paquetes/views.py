@@ -10,6 +10,7 @@ from django.views.decorators.http import require_POST
 from core.secure_files import _file_response
 from core.services.permisos import roles_usuario_empresa, usuario_es_dirtec_operativo
 from core.services.tenant_context import validar_slug_tenant
+from eventos.models import ContratoEvento
 from invitaciones.models import EventoBoda
 
 from .forms import (
@@ -274,6 +275,9 @@ def propuesta_editor(request, empresa_slug, evento_id, propuesta_id=None):
         dto = calcular_propuesta(propuesta)
 
     propuestas = propuestas_empresa_qs(empresa).filter(evento=evento)
+    contrato_existente = None
+    if propuesta:
+        contrato_existente = ContratoEvento.objects.filter(propuesta_origen=propuesta).first()
     return render(
         request,
         'paquetes/propuesta_editor.html',
@@ -286,6 +290,7 @@ def propuesta_editor(request, empresa_slug, evento_id, propuesta_id=None):
             form=form,
             linea_form=linea_form,
             dto=dto,
+            contrato_existente=contrato_existente,
         ),
     )
 

@@ -18,7 +18,17 @@ class ParticipanteEventoAdmin(admin.ModelAdmin):
 
 @admin.register(ContratoEvento)
 class ContratoEventoAdmin(admin.ModelAdmin):
-    list_display = ('evento', 'version', 'numero_contrato', 'estado', 'monto_base', 'moneda', 'fecha_firma')
-    list_filter = ('estado', 'moneda', 'evento__empresa')
+    list_display = (
+        'evento',
+        'version',
+        'numero_contrato',
+        'estado',
+        'snapshot_version',
+        'monto_base',
+        'moneda',
+        'fecha_firma',
+    )
+    list_filter = ('estado', 'snapshot_version', 'moneda', 'evento__empresa')
     search_fields = ('numero_contrato', 'evento__nombre_evento', 'evento__novio', 'evento__novia')
-    autocomplete_fields = ('evento', 'creado_por')
+    autocomplete_fields = ('evento', 'propuesta_origen', 'creado_por')
+    readonly_fields = ('snapshot_comercial', 'snapshot_version', 'propuesta_origen')

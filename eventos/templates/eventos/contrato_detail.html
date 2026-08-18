@@ -1,0 +1,88 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contrato | DIRTEC</title>
+    <link rel="stylesheet" href="{% static 'eventos/css/contrato.css' %}">
+</head>
+<body>
+<main class="contract-shell">
+    <header class="contract-topbar">
+        <div>
+            <span>Contrato comercial</span>
+            <h1>{{ contrato_data.evento.nombre }}</h1>
+            <p>{{ empresa.nombre_comercial }}</p>
+        </div>
+        <nav>
+            {% if dashboard_url %}<a href="{{ dashboard_url }}">Dashboard</a>{% endif %}
+        </nav>
+    </header>
+
+    <section class="contract-hero">
+        <div>
+            <span>{{ contrato.get_estado_display }}</span>
+            <h2>{{ contrato_data.paquete.nombre }}</h2>
+            <p>{{ contrato_data.paquete.descripcion }}</p>
+        </div>
+        <div class="contract-total">
+            <span>Total contratado</span>
+            <strong>${{ contrato_data.totales.total_final }}</strong>
+        </div>
+    </section>
+
+    <section class="contract-summary">
+        <article><span>Sede</span><strong>{{ contrato_data.sede.nombre|default:"Por definir" }}</strong></article>
+        <article><span>Adultos</span><strong>{{ contrato_data.cantidades.adultos|default:"-" }}</strong></article>
+        <article><span>Ninos</span><strong>{{ contrato_data.cantidades.ninos|default:"-" }}</strong></article>
+        <article><span>Personas</span><strong>{{ contrato_data.cantidades.total_personas|default:"-" }}</strong></article>
+    </section>
+
+    <section class="contract-grid">
+        <article class="contract-card">
+            <h3>Incluye</h3>
+            <div class="contract-list">
+                {% for item in contrato_data.incluidos %}
+                    <div><strong>{{ item.nombre }}</strong><span>{{ item.cantidad }}{% if item.categoria %} - {{ item.categoria }}{% endif %}</span></div>
+                {% empty %}
+                    <p>Sin servicios incluidos.</p>
+                {% endfor %}
+            </div>
+        </article>
+
+        <article class="contract-card">
+            <h3>Adicionales</h3>
+            <div class="contract-list">
+                {% for item in contrato_data.adicionales %}
+                    <div><strong>{{ item.nombre }}</strong><span>{{ item.modo_precio }} - ${{ item.subtotal }}</span></div>
+                {% empty %}
+                    <p>Sin adicionales.</p>
+                {% endfor %}
+            </div>
+        </article>
+
+        <article class="contract-card">
+            <h3>Cortesias</h3>
+            <div class="contract-list">
+                {% for item in contrato_data.cortesias %}
+                    <div><strong>{{ item.nombre }}</strong><span>Cargo cliente ${{ item.cargo_cliente }}</span></div>
+                {% empty %}
+                    <p>Sin cortesias.</p>
+                {% endfor %}
+            </div>
+        </article>
+
+        <article class="contract-card totals">
+            <h3>Totales</h3>
+            <dl>
+                <div><dt>Base</dt><dd>${{ contrato_data.totales.base }}</dd></div>
+                <div><dt>Adicionales</dt><dd>${{ contrato_data.totales.adicionales }}</dd></div>
+                <div><dt>Descuento</dt><dd>${{ contrato_data.totales.descuento }}</dd></div>
+                <div class="grand"><dt>Total</dt><dd>${{ contrato_data.totales.total_final }}</dd></div>
+            </dl>
+        </article>
+    </section>
+</main>
+</body>
+</html>

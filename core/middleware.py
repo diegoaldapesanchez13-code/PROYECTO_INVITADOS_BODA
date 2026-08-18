@@ -21,6 +21,7 @@ class SaasSubscriptionMiddleware:
         '/proveedor/',
         '/catalogo/',
         '/paquetes/',
+        '/eventos/',
         '/colaboracion/',
         '/presupuesto/',
         '/dashboard/',

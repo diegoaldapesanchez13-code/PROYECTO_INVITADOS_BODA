@@ -230,15 +230,16 @@ DTO minimo sugerido:
 
 Implementado K9.4: `PropuestaEvento` guarda propuesta editable con empresa, evento, sede, adultos, ninos, paquete, descuento, estado, notas comerciales, creador/modificador y ultimo desglose calculado. Ese desglose no es snapshot contractual definitivo.
 
-Estados K9.4:
+Estados K9.4/K9.5:
 
 - `BORRADOR`;
 - `PROPUESTA`;
 - `EN_REVISION`;
 - `ACEPTADO`;
+- `CONTRATADO`;
 - `CANCELADO`.
 
-`CONTRATADO` queda fuera de K9.4 y pertenece a K9.5.
+`CONTRATADO` se asigna en K9.5 solo despues de crear o recuperar idempotentemente el `ContratoEvento` v2. `ACEPTADO` por si solo no crea materializacion operativa.
 
 ## Adicionales
 
@@ -309,6 +310,26 @@ Debe congelar:
 - snapshots de servicios.
 
 `ContratoEvento.snapshot_comercial` es el candidato natural para snapshot v2, pero debe convivir con `PaqueteEvento.snapshot_paquete` v1.
+
+K9.5 implementado:
+
+- `ContratoEvento` es la autoridad contractual K9 para propuestas aceptadas.
+- `ContratoEvento.propuesta_origen` apunta a la `PropuestaEvento` de origen y es unico para evitar dos contratos del mismo acuerdo.
+- `ContratoEvento.snapshot_version` identifica la version del snapshot; K9 usa `2`.
+- `ContratoEvento.estado` admite `CONTRATADO` para contratos generados desde propuesta aceptada.
+- `PropuestaEvento.estado` admite `CONTRATADO` y cambia a ese estado solo despues de generar el contrato.
+- El servicio `generar_contrato_v2_desde_propuesta` trabaja en transaccion, bloquea la propuesta, recalcula totales server-side y persiste el snapshot congelado.
+- La operacion es idempotente: si ya existe contrato para la propuesta, devuelve el contrato existente.
+- El snapshot v2 guarda datos comerciales congelados: empresa, evento, sede, paquete, adultos, ninos, incluidos, adicionales, cortesias, descuentos y total final.
+- El snapshot v2 no guarda costo proveedor, margen, pagos proveedor, gastos ni negociacion interna.
+- K9.5 no crea `ServicioEvento`; eso queda para materializacion v2 en K9.6.
+- Cambios posteriores en paquete, catalogo, propuesta o proveedor no modifican el contrato ya emitido.
+
+Lectores implementados:
+
+- `leer_contrato_v2` devuelve la proyeccion interna desde `ContratoEvento.snapshot_comercial`.
+- `leer_contrato_publico` devuelve una proyeccion cliente sin metadata interna.
+- `leer_contrato_v1_paquete_evento` adapta `PaqueteEvento.snapshot_paquete` v1 para mantener compatibilidad K8.
 
 ## ServicioEvento
 

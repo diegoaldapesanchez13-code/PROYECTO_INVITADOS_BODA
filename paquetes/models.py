@@ -278,6 +278,7 @@ class PropuestaEvento(models.Model):
         ('PROPUESTA', 'Propuesta'),
         ('EN_REVISION', 'En revision'),
         ('ACEPTADO', 'Aceptado'),
+        ('CONTRATADO', 'Contratado'),
         ('CANCELADO', 'Cancelado'),
     ]
 
