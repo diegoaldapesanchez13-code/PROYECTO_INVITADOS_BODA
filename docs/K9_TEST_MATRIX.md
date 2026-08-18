@@ -151,17 +151,40 @@ Tests implementados en `eventos.tests_k95`:
 
 ## K9.6 Materializacion v2
 
-Tests propuestos:
+Tests implementados en `eventos.tests_k96`:
 
 - materializa incluidos;
 - materializa adicionales;
-- materializa cortesias con cargo cliente cero;
+- materializa cortesias;
+- cortesia con cargo cliente cero;
 - servicio nace con proveedor `null`;
-- re-ejecutar no duplica;
-- master eliminado no rompe;
-- cambio de proveedor posterior no cambia `valor_contratado`;
-- cambio de costo posterior no cambia snapshot;
-- workspace se abre sobre `ServicioEvento`.
+- servicio manual funciona sin catalogo;
+- master catalogo ausente no rompe;
+- master catalogo inactivo no rompe snapshot historico;
+- dos llamadas no duplican;
+- tres llamadas no duplican;
+- lineas distintas del mismo catalogo no colisionan;
+- contrato incorrecto/no v2 no materializa;
+- contrato no contratado no materializa;
+- contrato cancelado no materializa;
+- tenant cruzado rechaza vinculo de catalogo;
+- valor contratado viene del snapshot;
+- cambio tarifa/catalogo no cambia valor;
+- cambio paquete no cambia valor;
+- proveedor asignado despues se conserva al rematerializar;
+- costo proveedor se conserva;
+- notas operativas se conservan;
+- estado operativo se conserva;
+- no crea `GastoEvento`;
+- no crea `PagoEvento`;
+- no crea `PagoClienteEvento`;
+- no altera total de `ContratoEvento`;
+- registra `materializado_en`;
+- `materializacion_version = 2`;
+- rollback completo si falla una linea;
+- workspace se abre sobre `ServicioEvento`;
+- proveedor no asignado no obtiene acceso;
+- cliente solo obtiene canal permitido, sin acceso operativo indebido.
 
 ## K9.7 Presupuesto
 

@@ -170,16 +170,25 @@ K9.5 implementado:
 - `propuesta_origen` vincula el contrato v2 con `PropuestaEvento` y evita duplicados.
 - `snapshot_version=2` identifica el snapshot comercial K9.
 - El snapshot v2 congela empresa, evento, sede, paquete, cantidades, incluidos, adicionales, cortesias, descuentos, totales y metadata de calculo.
-- No crea `ServicioEvento`, gastos ni pagos; materializacion v2 queda para K9.6.
+- K9.5 no crea `ServicioEvento`, gastos ni pagos; K9.6 materializa el contrato v2.
 - `PaqueteEvento.snapshot_paquete` v1 sigue vigente como compatibilidad K8.
 
 ## 11. Estrategia materializacion
 
-- Mantener `MATERIALIZACION_VERSION = 1` hasta implementar K9.
-- K9 debe subir a version 2 con datos de contrato, incluidos, adicionales y cortesias.
+- Mantener `MATERIALIZACION_VERSION = 1` para K8.
+- K9.6 implementa materializacion version 2 con datos de contrato, incluidos, adicionales y cortesias.
 - Usar claves de origen estables para evitar duplicados.
 - Preservar servicios si desaparece el maestro.
 - `precio_incluido`/valor comercial sigue siendo `valor_contratado`, nunca costo proveedor.
+
+K9.6 implementado:
+
+- `ContratoEvento` registra `materializado_en` y `materializacion_version`.
+- `ServicioEvento` registra `contrato_origen`, `linea_origen_key`, `snapshot_linea` y `materializacion_version`.
+- La identidad idempotente es `contrato_origen + linea_origen_key`.
+- `CORTESIA` es modalidad operativa con `cargo_adicional_cliente = 0`.
+- La materializacion crea servicios con proveedor `null` y `prestacion_tipo=POR_DEFINIR`.
+- Reejecutar materializacion no duplica y conserva proveedor, costos, notas y estado operativo posteriores.
 
 ## 12. Estrategia proveedor post-contrato
 
@@ -260,7 +269,7 @@ Reglas:
 - K9.3: puente `ProveedorServicioCatalogo` catalogo-proveedor y convivencia con `ServicioCatalogoProveedor`.
 - K9.4: motor comercial de propuesta, DTOs y pricing adulto/nino/fijo/adicionales implementado en `paquetes`.
 - K9.5: contrato snapshot v2 y vistas de contrato por rol implementado.
-- K9.6: materializacion v2 hacia `ServicioEvento` con cortesias.
+- K9.6: materializacion v2 hacia `ServicioEvento` con cortesias implementada.
 - K9.7: presupuesto/reportes integrados sin duplicar finanzas.
 - K9.8: CRUD operativo soft-delete/cancelar/archivar.
 - K9.9: landing, terminologia visible, branding multiempresa y navegacion contextual.

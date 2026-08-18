@@ -5,8 +5,10 @@ from django.db import IntegrityError, transaction
 from django.db.models import Max
 from django.utils import timezone
 
+from catalogo.models import ServicioCatalogo
 from paquetes.models import PaqueteEvento, PropuestaEvento
 from paquetes.services import actualizar_totales_propuesta
+from proveedores.models import ServicioEvento
 
 from .models import ContratoEvento, ParticipanteEvento
 
@@ -66,6 +68,8 @@ def sincronizar_participantes_legacy(evento):
 
 
 CONTRATO_SNAPSHOT_VERSION_K9 = 2
+MATERIALIZACION_VERSION_K9 = 2
+MONEY = Decimal('0.01')
 
 
 def _serializar_decimal(valor):
@@ -74,6 +78,10 @@ def _serializar_decimal(valor):
     if valor is None:
         return '0.00'
     return str(valor)
+
+
+def _money(valor):
+    return Decimal(str(valor if valor is not None else '0')).quantize(MONEY)
 
 
 def _snapshot_empresa(empresa):
@@ -261,6 +269,217 @@ def generar_contrato_v2_desde_propuesta(propuesta_id, *, user=None):
         propuesta.updated_by = user
     propuesta.save(update_fields=['estado', 'updated_by', 'updated_at'])
     return contrato
+
+
+def _linea_key(tipo, item, posicion):
+    base = (
+        item.get('linea_key')
+        or item.get('clave_origen')
+        or item.get('linea_id')
+        or item.get('servicio_paquete_id')
+        or f'{posicion:04d}'
+    )
+    return f'{tipo}:{base}'
+
+
+def _lineas_snapshot_v2(snapshot):
+    for tipo, seccion in (
+        ('INCLUIDO', 'incluidos'),
+        ('ADICIONAL', 'adicionales'),
+        ('CORTESIA', 'cortesias'),
+    ):
+        for posicion, item in enumerate(snapshot.get(seccion) or [], start=1):
+            yield tipo, _linea_key(tipo, item, posicion), item
+
+
+def _catalogo_k9_para_linea(item, empresa_id):
+    servicio_catalogo_id = item.get('servicio_catalogo_id')
+    if not servicio_catalogo_id:
+        return None
+    return ServicioCatalogo.objects.filter(
+        pk=servicio_catalogo_id,
+        empresa_id=empresa_id,
+    ).first()
+
+
+def _cantidad_operativa(tipo, item):
+    valor = item.get('cantidad_aplicada') if tipo == 'ADICIONAL' else item.get('cantidad')
+    try:
+        cantidad = int(Decimal(str(valor if valor is not None else '1')))
+    except Exception:
+        cantidad = 1
+    return max(cantidad, 1)
+
+
+def _valor_contratado_linea(tipo, item):
+    if tipo == 'ADICIONAL':
+        return _money(item.get('subtotal'))
+    if tipo == 'CORTESIA':
+        return _money(item.get('valor_informativo'))
+    return _money(item.get('valor_comercial'))
+
+
+def _cargo_cliente_linea(tipo, item):
+    if tipo == 'ADICIONAL':
+        return _money(item.get('subtotal'))
+    return Decimal('0.00')
+
+
+def _snapshot_linea_materializada(contrato, tipo, linea_key, item):
+    data = {
+        'contrato_id': contrato.id,
+        'snapshot_version': contrato.snapshot_version,
+        'linea_key': linea_key,
+        'tipo': tipo,
+        'nombre': item.get('nombre') or '',
+        'descripcion': item.get('descripcion') or '',
+        'cantidad': str(item.get('cantidad') or ''),
+        'modo_precio': item.get('modo_precio') or '',
+        'tarifa': str(item.get('tarifa') or '0.00'),
+        'subtotal': str(item.get('subtotal') or '0.00'),
+    }
+    if tipo == 'ADICIONAL':
+        data['cantidad_aplicada'] = str(item.get('cantidad_aplicada') or '0')
+    if tipo == 'CORTESIA':
+        data['valor_informativo'] = str(item.get('valor_informativo') or '0.00')
+        data['cargo_cliente'] = '0.00'
+    return data
+
+
+def _defaults_servicio_materializado(contrato, tipo, linea_key, item):
+    nombre = (item.get('nombre') or '').strip()
+    if not nombre:
+        raise ValidationError('No se puede materializar una linea contractual sin nombre.')
+
+    modalidad = tipo
+    origen_snapshot = item.get('origen') or ''
+    if tipo == 'INCLUIDO':
+        origen = 'PAQUETE'
+    elif origen_snapshot == 'CATALOGO':
+        origen = 'CATALOGO'
+    else:
+        origen = 'MANUAL'
+
+    valor_contratado = _valor_contratado_linea(tipo, item)
+    cargo_cliente = _cargo_cliente_linea(tipo, item)
+    catalogo_k9 = _catalogo_k9_para_linea(item, contrato.evento.empresa_id)
+    descripcion = item.get('descripcion') or item.get('notas') or ''
+
+    return {
+        'evento': contrato.evento,
+        'servicio_catalogo_k9': catalogo_k9,
+        'origen': origen,
+        'modalidad': modalidad,
+        'categoria': item.get('categoria') or '',
+        'nombre_servicio': nombre,
+        'descripcion': descripcion,
+        'valor_contratado': valor_contratado,
+        'cargo_adicional_cliente': cargo_cliente,
+        'precio_cliente': cargo_cliente if tipo != 'INCLUIDO' else valor_contratado,
+        'ajuste_cliente': Decimal('0.00'),
+        'paquete_nombre_snapshot': (contrato.snapshot_comercial.get('paquete') or {}).get('nombre') or '',
+        'paquete_servicio_snapshot': item if tipo == 'INCLUIDO' else {},
+        'cantidad_paquete': _cantidad_operativa(tipo, item),
+        'snapshot_linea': _snapshot_linea_materializada(contrato, tipo, linea_key, item),
+        'materializacion_version': MATERIALIZACION_VERSION_K9,
+    }
+
+
+def _crear_servicio_materializado(contrato, tipo, linea_key, item):
+    defaults = _defaults_servicio_materializado(contrato, tipo, linea_key, item)
+    servicio = ServicioEvento(
+        contrato_origen=contrato,
+        linea_origen_key=linea_key,
+        proveedor=None,
+        costo_total=Decimal('0.00'),
+        costo_proveedor=Decimal('0.00'),
+        prestacion_tipo='POR_DEFINIR',
+        estado='SOLICITADO',
+        estado_comercial='CONTRATADO',
+        estado_operativo='PENDIENTE',
+        **defaults,
+    )
+    servicio.full_clean()
+    servicio.save()
+    return servicio
+
+
+def _actualizar_servicio_materializado(servicio, contrato, tipo, linea_key, item):
+    defaults = _defaults_servicio_materializado(contrato, tipo, linea_key, item)
+    campos_contractuales = [
+        'evento',
+        'servicio_catalogo_k9',
+        'origen',
+        'modalidad',
+        'categoria',
+        'nombre_servicio',
+        'descripcion',
+        'valor_contratado',
+        'cargo_adicional_cliente',
+        'precio_cliente',
+        'ajuste_cliente',
+        'paquete_nombre_snapshot',
+        'paquete_servicio_snapshot',
+        'cantidad_paquete',
+        'snapshot_linea',
+        'materializacion_version',
+    ]
+    for campo in campos_contractuales:
+        setattr(servicio, campo, defaults[campo])
+    servicio.full_clean()
+    servicio.save(update_fields=campos_contractuales + ['fecha_actualizacion'])
+    return servicio
+
+
+@transaction.atomic
+def materializar_servicios_contrato_v2(contrato_id, *, user=None):
+    contrato = (
+        ContratoEvento.objects.select_for_update()
+        .select_related('evento', 'evento__empresa')
+        .get(pk=contrato_id)
+    )
+    snapshot = contrato.snapshot_comercial or {}
+
+    if contrato.estado == 'CANCELADO':
+        raise ValidationError('No se puede materializar un contrato cancelado.')
+    if contrato.estado != 'CONTRATADO':
+        raise ValidationError('Solo un contrato contratado puede materializar servicios.')
+    if contrato.snapshot_version != CONTRATO_SNAPSHOT_VERSION_K9 or snapshot.get('version') != CONTRATO_SNAPSHOT_VERSION_K9:
+        raise ValidationError('Solo se puede materializar snapshot comercial v2.')
+
+    creados = 0
+    actualizados = 0
+    ids = []
+    lineas = list(_lineas_snapshot_v2(snapshot))
+    keys = [linea_key for _, linea_key, _ in lineas]
+    if len(keys) != len(set(keys)):
+        raise ValidationError('El snapshot contiene claves de linea duplicadas.')
+
+    for tipo, linea_key, item in lineas:
+        servicio = ServicioEvento.objects.select_for_update().filter(
+            contrato_origen=contrato,
+            linea_origen_key=linea_key,
+        ).first()
+        if servicio:
+            servicio = _actualizar_servicio_materializado(servicio, contrato, tipo, linea_key, item)
+            created = False
+        else:
+            servicio = _crear_servicio_materializado(contrato, tipo, linea_key, item)
+            created = True
+        ids.append(servicio.id)
+        creados += int(created)
+        actualizados += int(not created)
+
+    contrato.materializado_en = timezone.now()
+    contrato.materializacion_version = MATERIALIZACION_VERSION_K9
+    contrato.save(update_fields=['materializado_en', 'materializacion_version', 'fecha_actualizacion'])
+
+    return {
+        'creados': creados,
+        'actualizados': actualizados,
+        'servicio_evento_ids': ids,
+        'materializacion_version': MATERIALIZACION_VERSION_K9,
+    }
 
 
 def leer_contrato_v2(contrato):

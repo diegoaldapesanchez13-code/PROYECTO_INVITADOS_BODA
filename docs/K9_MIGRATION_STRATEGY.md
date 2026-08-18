@@ -186,7 +186,7 @@ Migraciones K9.5:
 
 ## Materializacion v2
 
-Fase recomendada: K9.6.
+Fase implementada: K9.6.
 
 Preservar de v1:
 
@@ -197,24 +197,37 @@ Preservar de v1:
 - `precio_incluido`/valor comercial hacia `valor_contratado`;
 - costo proveedor inicia separado.
 
-Evolucion:
+Evolucion implementada:
 
-- `MATERIALIZACION_VERSION = 2` cuando exista snapshot K9.
+- `MATERIALIZACION_VERSION_K9 = 2` para snapshot K9.
 - Materializar incluidos, adicionales y cortesias.
 - `CORTESIA` con `cargo_adicional_cliente = 0`.
 - Adicionales con snapshot de tarifa.
 - Servicios sin proveedor permitido.
-- Prestacion por definir o interna sin proveedor ficticio.
+- Prestacion inicial `POR_DEFINIR`, sin proveedor ficticio.
+- Idempotencia por `ServicioEvento.contrato_origen + linea_origen_key`.
+- `ServicioEvento.snapshot_linea` conserva el resumen de la linea contractual.
+- Rematerializar no sobreescribe proveedor, costos, notas ni estado operativo.
+- `ContratoEvento.materializado_en` y `ContratoEvento.materializacion_version` se actualizan solo al terminar la transaccion.
+
+Migraciones K9.6:
+
+- `eventos/migrations/0004_contratoevento_materializacion_version_and_more.py`: agrega `materializado_en`, `materializacion_version` e indice.
+- `proveedores/migrations/0010_servicioevento_contrato_origen_and_more.py`: agrega `contrato_origen`, `linea_origen_key`, `snapshot_linea`, `materializacion_version`, `prestacion_tipo`, `servicio_catalogo_k9`, modalidad `CORTESIA`, indices y constraint unico por contrato-linea.
+- No hay migraciones de datos ni cambios destructivos sobre K8.
 
 ## Proveedor post-contrato
 
-Fase recomendada: K9.6-K9.7.
+Fase iniciada en K9.6 y continua en K9.7.
 
 `ServicioEvento.proveedor` ya acepta `null`.
 
-Agregar solo si hace falta:
+Agregado en K9.6:
 
 - `prestacion_tipo`: `EMPRESA`, `PROVEEDOR`, `POR_DEFINIR`.
+
+Pendiente:
+
 - `proveedor_asignado_en`;
 - `proveedor_asignado_por`.
 

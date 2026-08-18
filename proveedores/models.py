@@ -166,6 +166,12 @@ class ServicioEvento(models.Model):
         ('INCLUIDO', 'Incluido en paquete'),
         ('ADICIONAL', 'Servicio adicional'),
         ('UPGRADE', 'Upgrade / diferencia'),
+        ('CORTESIA', 'Cortesia'),
+    ]
+    PRESTACIONES = [
+        ('POR_DEFINIR', 'Por definir'),
+        ('EMPRESA', 'Empresa'),
+        ('PROVEEDOR', 'Proveedor'),
     ]
     ESTADOS_COMERCIALES = [
         ('BORRADOR', 'Borrador'),
@@ -216,6 +222,24 @@ class ServicioEvento(models.Model):
         null=True,
         related_name='instancias_evento',
     )
+    servicio_catalogo_k9 = models.ForeignKey(
+        'catalogo.ServicioCatalogo',
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='servicios_evento_k9',
+    )
+    contrato_origen = models.ForeignKey(
+        'eventos.ContratoEvento',
+        on_delete=models.PROTECT,
+        blank=True,
+        null=True,
+        related_name='servicios_materializados',
+    )
+    linea_origen_key = models.CharField(max_length=140, blank=True)
+    snapshot_linea = models.JSONField(default=dict, blank=True)
+    materializacion_version = models.PositiveIntegerField(default=1)
+    prestacion_tipo = models.CharField(max_length=20, choices=PRESTACIONES, default='POR_DEFINIR')
     paquete_evento = models.ForeignKey(
         'paquetes.PaqueteEvento',
         on_delete=models.SET_NULL,
@@ -295,11 +319,17 @@ class ServicioEvento(models.Model):
             models.Index(fields=['evento', 'estado_comercial'], name='prov_srv_evt_com_idx'),
             models.Index(fields=['evento', 'proveedor'], name='prov_srv_evt_prov_idx'),
             models.Index(fields=['paquete_evento', 'origen'], name='prov_srv_pkg_orig_idx'),
+            models.Index(fields=['contrato_origen', 'linea_origen_key'], name='prov_srv_ctr_line_idx'),
+            models.Index(fields=['servicio_catalogo_k9'], name='prov_srv_cat_k9_idx'),
         ]
         constraints = [
             models.UniqueConstraint(
                 fields=['paquete_evento', 'servicio_paquete_origen'],
                 name='prov_srv_pkg_item_unico',
+            ),
+            models.UniqueConstraint(
+                fields=['contrato_origen', 'linea_origen_key'],
+                name='prov_srv_contrato_linea_unica',
             ),
         ]
         verbose_name = 'Servicio contratado'
@@ -318,14 +348,19 @@ class ServicioEvento(models.Model):
                 raise ValidationError({'servicio_catalogo': 'El servicio de catalogo no pertenece al proveedor seleccionado.'})
             if self.evento_id and self.evento.empresa_id and self.servicio_catalogo.empresa_id != self.evento.empresa_id:
                 raise ValidationError({'servicio_catalogo': 'El servicio de catalogo debe pertenecer a la empresa del evento.'})
+        if self.servicio_catalogo_k9_id:
+            if self.evento_id and self.evento.empresa_id and self.servicio_catalogo_k9.empresa_id != self.evento.empresa_id:
+                raise ValidationError({'servicio_catalogo_k9': 'El servicio de catalogo K9 debe pertenecer a la empresa del evento.'})
+        if self.contrato_origen_id and self.evento_id and self.contrato_origen.evento_id != self.evento_id:
+            raise ValidationError({'contrato_origen': 'El contrato debe pertenecer al mismo evento del servicio.'})
         if self.valor_contratado < 0:
             raise ValidationError({'valor_contratado': 'El valor contratado no puede ser negativo.'})
         if self.cargo_adicional_cliente < 0:
             raise ValidationError({'cargo_adicional_cliente': 'El cargo adicional al cliente no puede ser negativo.'})
-        if self.modalidad == 'INCLUIDO' and self.cargo_adicional_cliente != 0:
+        if self.modalidad in {'INCLUIDO', 'CORTESIA'} and self.cargo_adicional_cliente != 0:
             raise ValidationError({
                 'cargo_adicional_cliente':
-                    'Un servicio incluido en paquete no debe generar cargo adicional.'
+                    'Un servicio incluido o cortesia no debe generar cargo adicional.'
             })
 
     def __str__(self):

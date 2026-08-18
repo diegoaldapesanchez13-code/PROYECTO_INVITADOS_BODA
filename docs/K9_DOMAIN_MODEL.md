@@ -46,7 +46,7 @@ Version corta solicitada:
 - `Proveedor`: empresa nullable, usuario, razon/nombre comercial, `tipo_proveedor`, etiquetas/logistica/datos privados, activo.
 - `EtiquetaProveedor`: taxonomia por empresa.
 - `ServicioCatalogoProveedor`: catalogo dependiente de proveedor con costo/precio de referencia.
-- `ServicioEvento`: evento, proveedor nullable, servicio catalogo nullable, paquete evento/origen, origen, modalidad, estados, descripcion, cantidades, valores comerciales, costos, archivos, notas y snapshots.
+- `ServicioEvento`: evento, proveedor nullable, servicio catalogo legacy nullable, servicio catalogo K9 nullable, contrato origen, linea origen, paquete evento/origen, origen, modalidad, estados, prestacion, descripcion, cantidades, valores comerciales, costos, archivos, notas y snapshots.
 
 ### Finanzas
 
@@ -268,7 +268,7 @@ El contrato debe guardar snapshot de la tarifa usada:
 
 ## Cortesias
 
-K9 debe agregar conceptualmente `CORTESIA` a `ServicioEvento.modalidad`.
+K9.6 agrega `CORTESIA` a `ServicioEvento.modalidad`.
 
 Una cortesia:
 
@@ -281,6 +281,8 @@ Una cortesia:
 - no es lo mismo que incluido.
 
 Implementado K9.4: una cortesia vive en `PropuestaLinea` con `tipo=CORTESIA`; aparece en el DTO y siempre tiene cargo cliente cero. Puede conservar valor informativo.
+
+Implementado K9.6: al materializar contrato, la cortesia crea `ServicioEvento.modalidad=CORTESIA`, `cargo_adicional_cliente=0`, proveedor `null` y `prestacion_tipo=POR_DEFINIR`.
 
 ## Contrato de evento
 
@@ -322,7 +324,7 @@ K9.5 implementado:
 - La operacion es idempotente: si ya existe contrato para la propuesta, devuelve el contrato existente.
 - El snapshot v2 guarda datos comerciales congelados: empresa, evento, sede, paquete, adultos, ninos, incluidos, adicionales, cortesias, descuentos y total final.
 - El snapshot v2 no guarda costo proveedor, margen, pagos proveedor, gastos ni negociacion interna.
-- K9.5 no crea `ServicioEvento`; eso queda para materializacion v2 en K9.6.
+- K9.5 no crea `ServicioEvento`; K9.6 materializa el snapshot v2 hacia servicios operativos.
 - Cambios posteriores en paquete, catalogo, propuesta o proveedor no modifican el contrato ya emitido.
 
 Lectores implementados:
@@ -338,13 +340,24 @@ Lectores implementados:
 Debe representar:
 
 - origen: `MANUAL`, `CATALOGO`, `PAQUETE`;
-- modalidad: `INCLUIDO`, `ADICIONAL`, `UPGRADE`, futuro `CORTESIA`;
+- modalidad: `INCLUIDO`, `ADICIONAL`, `UPGRADE`, `CORTESIA`;
 - prestacion: empresa, proveedor externo o por definir;
 - valores comerciales congelados;
 - costos operativos posteriores;
 - workspace, tareas, citas, documentos, gastos y pagos relacionados.
 
 Regla critica: cambiar proveedor o costo proveedor no modifica el contrato cliente.
+
+K9.6 implementado:
+
+- `ServicioEvento.contrato_origen` apunta al `ContratoEvento` v2 que le dio origen.
+- `ServicioEvento.linea_origen_key` identifica la linea contractual dentro del snapshot.
+- `ServicioEvento.snapshot_linea` conserva un resumen congelado de la linea materializada.
+- `ServicioEvento.servicio_catalogo_k9` enlaza al catalogo general solo si el master existe y pertenece al mismo tenant.
+- Si el master no existe, esta inactivo o el ID fue manipulado hacia otro tenant, la materializacion usa el texto del snapshot y no inventa master.
+- `ServicioEvento.materializacion_version=2` distingue la proyeccion K9 de la materializacion K8.
+- Reejecutar la materializacion garantiza la existencia de lineas contractuales sin resetear proveedor, costo proveedor, costo total, notas, estado operativo, workspace, tareas, documentos o gastos.
+- La materializacion no crea `GastoEvento`, `PagoEvento` ni `PagoClienteEvento`.
 
 ## Presupuesto
 

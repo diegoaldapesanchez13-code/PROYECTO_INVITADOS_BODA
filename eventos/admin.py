@@ -24,11 +24,18 @@ class ContratoEventoAdmin(admin.ModelAdmin):
         'numero_contrato',
         'estado',
         'snapshot_version',
+        'materializacion_version',
         'monto_base',
         'moneda',
         'fecha_firma',
     )
-    list_filter = ('estado', 'snapshot_version', 'moneda', 'evento__empresa')
+    list_filter = ('estado', 'snapshot_version', 'materializacion_version', 'moneda', 'evento__empresa')
     search_fields = ('numero_contrato', 'evento__nombre_evento', 'evento__novio', 'evento__novia')
     autocomplete_fields = ('evento', 'propuesta_origen', 'creado_por')
-    readonly_fields = ('snapshot_comercial', 'snapshot_version', 'propuesta_origen')
+    readonly_fields = (
+        'snapshot_comercial',
+        'snapshot_version',
+        'propuesta_origen',
+        'materializado_en',
+        'materializacion_version',
+    )

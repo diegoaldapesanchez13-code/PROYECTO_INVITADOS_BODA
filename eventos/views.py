@@ -11,7 +11,12 @@ from core.services.tenant_context import validar_slug_tenant
 from paquetes.models import PropuestaEvento
 
 from .models import ContratoEvento
-from .services import generar_contrato_v2_desde_propuesta, leer_contrato_interno, leer_contrato_publico
+from .services import (
+    generar_contrato_v2_desde_propuesta,
+    leer_contrato_interno,
+    leer_contrato_publico,
+    materializar_servicios_contrato_v2,
+)
 
 
 def _eventos_context(request, empresa_slug):
@@ -71,6 +76,25 @@ def contrato_generar_desde_propuesta(request, empresa_slug, propuesta_id):
 
 
 @login_required(login_url='/login/')
+@require_POST
+def contrato_materializar_servicios(request, empresa_slug, contrato_id):
+    context = _eventos_context(request, empresa_slug)
+    empresa = context.empresa
+    contrato = get_object_or_404(_contratos_empresa(empresa), pk=contrato_id)
+    if not usuario_puede_evento(request.user, contrato.evento, Actions.EVENT_OPERATIONS):
+        raise PermissionDenied('No tienes permiso para preparar la operacion de este contrato.')
+    try:
+        resultado = materializar_servicios_contrato_v2(contrato.id, user=request.user)
+        messages.success(
+            request,
+            f"Operacion preparada: {resultado['creados']} servicios nuevos, {resultado['actualizados']} actualizados.",
+        )
+    except ValidationError as exc:
+        messages.error(request, exc.messages[0] if hasattr(exc, 'messages') else str(exc))
+    return redirect('eventos_contrato_detail', empresa_slug=empresa.slug, contrato_id=contrato.id)
+
+
+@login_required(login_url='/login/')
 def contrato_detail(request, empresa_slug, contrato_id):
     context = _eventos_context(request, empresa_slug)
     empresa = context.empresa
@@ -80,6 +104,7 @@ def contrato_detail(request, empresa_slug, contrato_id):
         raise PermissionDenied('No tienes permiso para ver este contrato.')
 
     es_cliente = _es_cliente_evento(request.user, evento)
+    puede_materializar = usuario_puede_evento(request.user, evento, Actions.EVENT_OPERATIONS)
     contrato_data = leer_contrato_publico(contrato) if es_cliente else leer_contrato_interno(contrato)
     return render(
         request,
@@ -90,5 +115,7 @@ def contrato_detail(request, empresa_slug, contrato_id):
             'contrato_data': contrato_data,
             'dashboard_url': _dashboard_url(request.user, empresa),
             'es_cliente': es_cliente,
+            'puede_materializar': puede_materializar,
+            'servicios_materializados_count': contrato.servicios_materializados.count(),
         },
     )

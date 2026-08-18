@@ -99,6 +99,8 @@ class ContratoEvento(models.Model):
     )
     snapshot_comercial = models.JSONField(default=dict, blank=True)
     snapshot_version = models.PositiveIntegerField(default=1)
+    materializado_en = models.DateTimeField(blank=True, null=True)
+    materializacion_version = models.PositiveIntegerField(default=0)
     propuesta_origen = models.ForeignKey(
         'paquetes.PropuestaEvento',
         on_delete=models.PROTECT,
@@ -132,6 +134,7 @@ class ContratoEvento(models.Model):
         indexes = [
             models.Index(fields=['evento', 'estado'], name='evt_contrato_evt_est_idx'),
             models.Index(fields=['snapshot_version'], name='evt_contrato_snap_ver_idx'),
+            models.Index(fields=['materializacion_version'], name='evt_contrato_mat_ver_idx'),
         ]
         verbose_name = 'Contrato del evento'
         verbose_name_plural = 'Contratos del evento'

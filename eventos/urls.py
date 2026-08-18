@@ -14,4 +14,9 @@ urlpatterns = [
         views.contrato_detail,
         name='eventos_contrato_detail',
     ),
+    path(
+        '<slug:empresa_slug>/contratos/<int:contrato_id>/materializar/',
+        views.contrato_materializar_servicios,
+        name='eventos_contrato_materializar',
+    ),
 ]

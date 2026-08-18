@@ -108,6 +108,8 @@ Leyenda: `SI`, `NO`, `Segun permiso`.
 
 K9.5 implementado: la vista `eventos_contrato_detail` usa tenant por slug, filtra `ContratoEvento` por `evento__empresa`, exige `Actions.EVENT_VIEW` y entrega al cliente una proyeccion publica sin metadata interna. El proveedor no ve el contrato completo en K9.5.
 
+K9.6 implementado: materializar contrato crea `ServicioEvento` con proveedor `null` y `prestacion_tipo=POR_DEFINIR`; un proveedor no asignado no obtiene acceso al workspace del servicio. Cliente conserva solo el canal cliente-planner permitido por las reglas existentes del workspace.
+
 ## Login/logout
 
 Bug documentado:

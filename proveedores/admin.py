@@ -93,13 +93,14 @@ class ServicioCatalogoProveedorAdmin(admin.ModelAdmin):
 @admin.register(ServicioEvento)
 class ServicioEventoAdmin(admin.ModelAdmin):
     save_on_top = True
-    autocomplete_fields = ('proveedor', 'evento')
+    autocomplete_fields = ('proveedor', 'evento', 'servicio_catalogo_k9', 'contrato_origen')
     list_display = (
         'nombre_servicio',
         'evento',
         'proveedor',
         'origen',
         'modalidad',
+        'prestacion_tipo',
         'estado_comercial',
         'estado_operativo',
         'fecha_servicio',
@@ -107,7 +108,16 @@ class ServicioEventoAdmin(admin.ModelAdmin):
         'anticipo',
         'saldo_pendiente',
     )
-    list_filter = ('evento', 'origen', 'modalidad', 'estado_comercial', 'estado_operativo', 'fecha_servicio', 'proveedor__tipo_proveedor')
+    list_filter = (
+        'evento',
+        'origen',
+        'modalidad',
+        'prestacion_tipo',
+        'estado_comercial',
+        'estado_operativo',
+        'fecha_servicio',
+        'proveedor__tipo_proveedor',
+    )
     search_fields = (
         'nombre_servicio',
         'descripcion',
@@ -120,7 +130,20 @@ class ServicioEventoAdmin(admin.ModelAdmin):
     readonly_fields = ('saldo_pendiente',)
     fieldsets = (
         ('Evento y proveedor', {
-            'fields': ('evento', 'proveedor', 'servicio_catalogo', 'origen', 'modalidad', 'estado', 'estado_comercial', 'estado_operativo')
+            'fields': (
+                'evento',
+                'proveedor',
+                'servicio_catalogo',
+                'servicio_catalogo_k9',
+                'contrato_origen',
+                'linea_origen_key',
+                'origen',
+                'modalidad',
+                'prestacion_tipo',
+                'estado',
+                'estado_comercial',
+                'estado_operativo',
+            )
         }),
         ('Servicio', {
             'fields': (
@@ -147,7 +170,15 @@ class ServicioEventoAdmin(admin.ModelAdmin):
             'fields': ('contrato', 'cotizacion', 'comprobante_pago')
         }),
         ('Notas', {
-            'fields': ('notas', 'notas_internas', 'proveedor_nombre_snapshot', 'catalogo_nombre_snapshot', 'catalogo_descripcion_snapshot')
+            'fields': (
+                'notas',
+                'notas_internas',
+                'proveedor_nombre_snapshot',
+                'catalogo_nombre_snapshot',
+                'catalogo_descripcion_snapshot',
+                'snapshot_linea',
+                'materializacion_version',
+            )
         }),
     )
 

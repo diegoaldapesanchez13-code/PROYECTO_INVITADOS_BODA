@@ -32,6 +32,26 @@
         </div>
     </section>
 
+    {% if puede_materializar and not es_cliente %}
+        <section class="contract-ops">
+            <div>
+                <span>Operacion</span>
+                <strong>
+                    {% if contrato.materializado_en %}
+                        Materializado
+                    {% else %}
+                        Pendiente
+                    {% endif %}
+                </strong>
+                <p>{{ servicios_materializados_count }} servicios operativos</p>
+            </div>
+            <form method="post" action="{% url 'eventos_contrato_materializar' empresa.slug contrato.id %}">
+                {% csrf_token %}
+                <button type="submit">Preparar operacion</button>
+            </form>
+        </section>
+    {% endif %}
+
     <section class="contract-summary">
         <article><span>Sede</span><strong>{{ contrato_data.sede.nombre|default:"Por definir" }}</strong></article>
         <article><span>Adultos</span><strong>{{ contrato_data.cantidades.adultos|default:"-" }}</strong></article>
