@@ -30,7 +30,7 @@ def sincronizar_participantes_legacy(evento):
     ).update(activo=False)
 
     if evento.wedding_planner_id:
-        _, created = ParticipanteEvento.objects.update_or_create(
+        participante, created = ParticipanteEvento.objects.get_or_create(
             evento=evento,
             usuario_id=evento.wedding_planner_id,
             rol='PLANNER',
@@ -42,6 +42,12 @@ def sincronizar_participantes_legacy(evento):
                 'puede_gestionar_servicios': True,
             },
         )
+        if not created and not participante.activo:
+            # La relacion legacy solo reactiva la pertenencia. Los permisos
+            # pueden haber sido personalizados por la empresa y no deben
+            # volver a sus valores iniciales durante una sincronizacion.
+            participante.activo = True
+            participante.save(update_fields=['activo', 'fecha_actualizacion'])
         creados += int(created)
         actualizados += int(not created)
 
@@ -51,7 +57,7 @@ def sincronizar_participantes_legacy(evento):
     ).update(activo=False)
 
     for usuario_id in cliente_ids:
-        _, created = ParticipanteEvento.objects.update_or_create(
+        participante, created = ParticipanteEvento.objects.get_or_create(
             evento=evento,
             usuario_id=usuario_id,
             rol='CLIENTE',
@@ -61,6 +67,9 @@ def sincronizar_participantes_legacy(evento):
                 'puede_gestionar_invitados': True,
             },
         )
+        if not created and not participante.activo:
+            participante.activo = True
+            participante.save(update_fields=['activo', 'fecha_actualizacion'])
         creados += int(created)
         actualizados += int(not created)
 

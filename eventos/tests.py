@@ -59,6 +59,68 @@ class EventDomainFoundationTests(TestCase):
         sincronizar_participantes_legacy(self.evento)
         self.assertEqual(ParticipanteEvento.objects.filter(evento=self.evento).count(), 2)
 
+    def test_sync_preserves_custom_planner_permissions(self):
+        participante = ParticipanteEvento.objects.get(
+            evento=self.evento, usuario=self.planner, rol='PLANNER'
+        )
+        participante.puede_ver_finanzas = False
+        participante.puede_aprobar = False
+        participante.puede_gestionar_invitados = False
+        participante.puede_gestionar_servicios = False
+        participante.save(
+            update_fields=[
+                'puede_ver_finanzas',
+                'puede_aprobar',
+                'puede_gestionar_invitados',
+                'puede_gestionar_servicios',
+            ]
+        )
+
+        self.evento.nombre_evento = 'Evento Foundation actualizado'
+        self.evento.save(update_fields=['nombre_evento'])
+
+        participante.refresh_from_db()
+        self.assertFalse(participante.puede_ver_finanzas)
+        self.assertFalse(participante.puede_aprobar)
+        self.assertFalse(participante.puede_gestionar_invitados)
+        self.assertFalse(participante.puede_gestionar_servicios)
+        self.assertTrue(participante.activo)
+
+    def test_sync_reactivates_planner_without_resetting_permissions(self):
+        participante = ParticipanteEvento.objects.get(
+            evento=self.evento, usuario=self.planner, rol='PLANNER'
+        )
+        participante.activo = False
+        participante.puede_ver_finanzas = False
+        participante.puede_aprobar = False
+        participante.save(
+            update_fields=['activo', 'puede_ver_finanzas', 'puede_aprobar']
+        )
+
+        sincronizar_participantes_legacy(self.evento)
+
+        participante.refresh_from_db()
+        self.assertTrue(participante.activo)
+        self.assertFalse(participante.puede_ver_finanzas)
+        self.assertFalse(participante.puede_aprobar)
+
+    def test_sync_preserves_custom_client_permissions(self):
+        participante = ParticipanteEvento.objects.get(
+            evento=self.evento, usuario=self.cliente, rol='CLIENTE'
+        )
+        participante.puede_aprobar = False
+        participante.puede_gestionar_invitados = False
+        participante.save(
+            update_fields=['puede_aprobar', 'puede_gestionar_invitados']
+        )
+
+        sincronizar_participantes_legacy(self.evento)
+
+        participante.refresh_from_db()
+        self.assertFalse(participante.puede_aprobar)
+        self.assertFalse(participante.puede_gestionar_invitados)
+        self.assertTrue(participante.activo)
+
 
     def test_legacy_client_removal_deactivates_domain_participant(self):
         self.evento.clientes.remove(self.cliente)
