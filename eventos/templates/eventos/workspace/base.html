@@ -3,48 +3,75 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'eventos/css/workspace_r2.css' %}">
+<link rel="stylesheet" href="{% static 'eventos/css/workspace_r4.css' %}">
 {% endblock %}
 
 {% block content %}
 {% if evento %}
-<section class="event-context">
-    <div class="event-context__main">
-        <div class="event-context__navigation">
-            <a class="event-context__back" href="{{ return_to }}">← Volver</a>
-            <a class="event-context__directory" href="{% url 'k9_evento_list' empresa_slug=empresa.slug %}?return_to={{ return_to|urlencode }}">Eventos</a>
-        </div>
-        <div>
-            <div class="event-context__title-row">
-                <h1>{{ evento.titulo_evento }}</h1>
-                <span class="app-badge app-badge--neutral">{{ evento.get_estado_display }}</span>
+<section class="workspace-shell">
+    <header class="workspace-header">
+        <div class="workspace-header__top">
+            <div class="workspace-breadcrumbs">
+                <a href="{{ return_to }}">Inicio</a>
+                <span>›</span>
+                <a href="{% url 'k9_evento_list' empresa_slug=empresa.slug %}?return_to={{ return_to|urlencode }}">Eventos</a>
+                <span>›</span>
+                <strong>{{ evento.titulo_evento }}</strong>
             </div>
-            <p>
-                {{ evento.get_tipo_evento_display }}
-                {% if evento.fecha_inicio %} · {{ evento.fecha_inicio|date:"d M Y · H:i" }}{% else %} · Fecha por definir{% endif %}
-                {% if evento.sede %} · {{ evento.sede.nombre }}{% endif %}
-            </p>
-        </div>
-    </div>
 
-    <nav class="event-tabs" aria-label="Secciones del evento">
-        <a href="{% url 'k9_evento_resumen' empresa_slug=empresa.slug evento_id=evento.id %}?return_to={{ return_to|urlencode }}"
-           class="{% if workspace_active == 'resumen' %}is-active{% endif %}">
-            Resumen
-        </a>
-        <a href="{% url 'k9_evento_datos' empresa_slug=empresa.slug evento_id=evento.id %}?return_to={{ return_to|urlencode }}"
-           class="{% if workspace_active == 'datos' %}is-active{% endif %}">
-            Datos
-        </a>
-        <span>Comercial</span>
-        <span>Servicios</span>
-        <span>Invitados</span>
-        <a href="{% url 'k9_evento_configuracion' empresa_slug=empresa.slug evento_id=evento.id %}?return_to={{ return_to|urlencode }}"
-           class="{% if workspace_active == 'configuracion' %}is-active{% endif %}">
-            Configuración
-        </a>
-    </nav>
+            <span class="workspace-status workspace-status--{{ evento.estado|lower }}">
+                {{ evento.get_estado_display }}
+            </span>
+        </div>
+
+        <div class="workspace-header__main">
+            <div>
+                <span class="workspace-eyebrow">{{ evento.get_tipo_evento_display }}</span>
+                <h1>{{ evento.titulo_evento }}</h1>
+                <p>
+                    {% if evento.fecha_inicio %}
+                        {{ evento.fecha_inicio|date:"d M Y · H:i" }}
+                    {% else %}
+                        Fecha por definir
+                    {% endif %}
+                    {% if evento.sede %} · {{ evento.sede.nombre }}{% endif %}
+                </p>
+            </div>
+
+            <div class="workspace-header__actions">
+                {% if puede_editar and workspace_active != "datos" %}
+                <a
+                    class="app-button app-button--secondary"
+                    href="{% url 'k9_evento_datos' empresa_slug=empresa.slug evento_id=evento.id %}?return_to={{ return_to|urlencode }}"
+                >
+                    Editar datos
+                </a>
+                {% endif %}
+                <a class="app-button app-button--secondary" href="{{ return_to }}">Salir del evento</a>
+            </div>
+        </div>
+
+        <nav class="workspace-tabs" aria-label="Módulos del evento">
+            {% for tab in workspace_navigation.tabs %}
+                {% if tab.enabled and tab.url %}
+                    <a
+                        href="{{ tab.url }}?return_to={{ return_to|urlencode }}"
+                        class="{% if workspace_navigation.active_key == tab.key %}is-active{% endif %}"
+                        {% if workspace_navigation.active_key == tab.key %}aria-current="page"{% endif %}
+                    >
+                        {{ tab.label }}
+                        {% if tab.badge %}<span>{{ tab.badge }}</span>{% endif %}
+                    </a>
+                {% else %}
+                    <span class="is-disabled" title="Se habilitará en una siguiente fase">{{ tab.label }}</span>
+                {% endif %}
+            {% endfor %}
+        </nav>
+    </header>
+
+    <div class="workspace-content">
+        {% block workspace_content %}{% endblock %}
+    </div>
 </section>
 {% endif %}
-
-{% block workspace_content %}{% endblock %}
 {% endblock %}

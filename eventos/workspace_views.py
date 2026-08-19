@@ -26,6 +26,8 @@ from .event_domain import (
     usuario_puede_purgar_evento,
 )
 from .forms import EventoCreateForm, EventoEditForm
+from .workspace_navigation import build_workspace_tabs
+from .workspace_summary import construir_resumen_workspace
 
 
 BACKOFFICE_ROLES = {"ADMIN_EMPRESA", "VENTAS", "WEDDING_PLANNER"}
@@ -71,6 +73,15 @@ def _app_context(request, empresa, *, title, section="Eventos"):
         page_title=title,
         section_label=section,
         active_key="eventos",
+    )
+
+
+def _workspace_context(request, *, empresa, evento, active_key):
+    return build_workspace_tabs(
+        user=request.user,
+        empresa=empresa,
+        evento=evento,
+        active_key=active_key,
     )
 
 
@@ -204,8 +215,15 @@ def evento_resumen(request, empresa_slug, evento_id):
             "workspace_active": "resumen",
             "puede_editar": usuario_puede_evento(request.user, evento, Actions.EVENT_EDIT),
             "return_to": return_to,
+            "workspace_navigation": _workspace_context(
+                request,
+                empresa=empresa,
+                evento=evento,
+                active_key="resumen",
+            ),
         }
     )
+    context.update(construir_resumen_workspace(evento=evento, user=request.user))
     return render(request, "eventos/workspace/resumen.html", context)
 
 
@@ -276,6 +294,12 @@ def evento_datos(request, empresa_slug, evento_id):
                 return_to,
             ),
             "return_to": return_to,
+            "workspace_navigation": _workspace_context(
+                request,
+                empresa=empresa,
+                evento=evento,
+                active_key="datos",
+            ),
         }
     )
     return render(request, "eventos/workspace/evento_form.html", context)
@@ -305,6 +329,12 @@ def evento_configuracion(request, empresa_slug, evento_id):
             "evaluacion_eliminacion": evaluacion,
             "puede_purgar": usuario_puede_purgar_evento(request.user, evento),
             "return_to": return_to,
+            "workspace_navigation": _workspace_context(
+                request,
+                empresa=empresa,
+                evento=evento,
+                active_key="configuracion",
+            ),
         }
     )
     return render(request, "eventos/workspace/configuracion.html", context)

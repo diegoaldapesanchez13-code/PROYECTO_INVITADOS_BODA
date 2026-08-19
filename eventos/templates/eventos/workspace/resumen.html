@@ -3,62 +3,179 @@
 {% block title %}{{ evento.titulo_evento }} | DIRTEC Event Studio{% endblock %}
 
 {% block workspace_content %}
-<section class="event-summary">
-    <div class="event-summary__hero">
+<section class="workspace-summary">
+    <div class="workspace-summary__hero">
         <div>
-            <span class="event-eyebrow">Resumen del evento</span>
-            <h2>Todo empieza aquí.</h2>
+            <span class="workspace-eyebrow">Estado del evento</span>
+            <h2>{{ workspace_progress }}% de datos base listos</h2>
             <p>
-                Este workspace irá concentrando comercial, servicios, tareas,
-                invitados y finanzas sin obligarte a salir del evento.
+                Este resumen concentra lo que necesita tu atención sin obligarte
+                a recorrer cada módulo.
             </p>
         </div>
-        {% if puede_editar %}
-        <a class="app-button app-button--primary" href="{% url 'k9_evento_datos' empresa_slug=empresa.slug evento_id=evento.id %}">
-            Completar datos
-        </a>
-        {% endif %}
+        <div class="workspace-progress" aria-label="{{ workspace_progress }} por ciento completado">
+            <div class="workspace-progress__ring" style="--progress: {{ workspace_progress }}%">
+                <strong>{{ workspace_progress }}%</strong>
+            </div>
+        </div>
     </div>
 
-    <div class="event-summary__grid">
-        <article class="app-card event-info-card">
-            <span class="event-eyebrow">Datos</span>
-            <h3>Información general</h3>
-            <dl>
-                <div><dt>Tipo</dt><dd>{{ evento.get_tipo_evento_display }}</dd></div>
-                <div><dt>Fecha</dt><dd>{% if evento.fecha_inicio %}{{ evento.fecha_inicio|date:"d M Y · H:i" }}{% else %}Por definir{% endif %}</dd></div>
-                <div><dt>Sede</dt><dd>{% if evento.sede %}{{ evento.sede.nombre }}{% else %}Por definir{% endif %}</dd></div>
+    <section class="workspace-kpis" aria-label="Resumen operativo">
+        <article class="workspace-kpi">
+            <span>Tareas pendientes</span>
+            <strong>{{ workspace_kpis.tareas_pendientes }}</strong>
+            <small>{% if workspace_kpis.tareas_vencidas %}{{ workspace_kpis.tareas_vencidas }} vencida(s){% else %}Sin vencidas{% endif %}</small>
+        </article>
+        <article class="workspace-kpi">
+            <span>Servicios activos</span>
+            <strong>{{ workspace_kpis.servicios_activos }}</strong>
+            <small>Operación registrada</small>
+        </article>
+        <article class="workspace-kpi">
+            <span>Agenda próxima</span>
+            <strong>{{ workspace_kpis.agenda_proxima }}</strong>
+            <small>Actividades futuras</small>
+        </article>
+        <article class="workspace-kpi">
+            <span>Documentos</span>
+            <strong>{{ workspace_kpis.documentos }}</strong>
+            <small>Archivos del evento</small>
+        </article>
+    </section>
+
+    <section class="workspace-summary-grid">
+        <article class="workspace-panel">
+            <header class="workspace-panel__header">
                 <div>
-                    <dt>Cliente</dt>
-                    <dd>
-                        {% with cliente=evento.clientes.first %}
-                            {% if cliente %}{{ cliente.get_full_name|default:cliente.username }}{% else %}Por definir{% endif %}
-                        {% endwith %}
-                    </dd>
+                    <span class="workspace-eyebrow">Checklist inicial</span>
+                    <h3>Información general</h3>
                 </div>
-                <div>
-                    <dt>Planner</dt>
-                    <dd>{% if evento.wedding_planner %}{{ evento.wedding_planner.get_full_name|default:evento.wedding_planner.username }}{% else %}Por definir{% endif %}</dd>
+                {% if puede_editar %}
+                <a href="{% url 'k9_evento_datos' empresa_slug=empresa.slug evento_id=evento.id %}?return_to={{ return_to|urlencode }}">Editar →</a>
+                {% endif %}
+            </header>
+
+            <div class="workspace-checklist">
+                {% for item in workspace_checklist %}
+                <div class="{% if item.done %}is-done{% endif %}">
+                    <span class="workspace-checkmark" aria-hidden="true"></span>
+                    <div>
+                        <strong>{{ item.label }}</strong>
+                        <small>{{ item.detail }}</small>
+                    </div>
                 </div>
-            </dl>
+                {% endfor %}
+            </div>
         </article>
 
-        <article class="app-card event-progress-card">
-            <span class="event-eyebrow">Siguiente</span>
-            <h3>Construye el evento progresivamente</h3>
-            <ul>
-                <li class="{% if evento.fecha_inicio %}is-complete{% endif %}">Definir fecha</li>
-                <li class="{% if evento.sede %}is-complete{% endif %}">Definir sede</li>
-                <li class="{% if evento.wedding_planner %}is-complete{% endif %}">Asignar planner</li>
-                <li class="{% if evento.clientes.exists %}is-complete{% endif %}">Asignar cliente</li>
-            </ul>
-        </article>
-    </div>
+        <aside class="workspace-panel">
+            <header class="workspace-panel__header">
+                <div>
+                    <span class="workspace-eyebrow">Atención</span>
+                    <h3>Lo importante ahora</h3>
+                </div>
+            </header>
 
-    <div class="event-coming-grid">
-        <article class="event-coming-card"><span>Comercial</span><strong>Próximamente en R7</strong></article>
-        <article class="event-coming-card"><span>Servicios</span><strong>Próximamente en R8</strong></article>
-        <article class="event-coming-card"><span>Invitados</span><strong>Próximamente en R11</strong></article>
-    </div>
+            {% if workspace_alertas %}
+            <div class="workspace-alert-list">
+                {% for alerta in workspace_alertas %}
+                <div class="workspace-alert workspace-alert--{{ alerta.level }}">
+                    <strong>{{ alerta.title }}</strong>
+                    <span>{{ alerta.text }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="workspace-empty">
+                <strong>Todo se ve en orden.</strong>
+                <p>No hay alertas básicas en este momento.</p>
+            </div>
+            {% endif %}
+        </aside>
+    </section>
+
+    <section class="workspace-summary-grid workspace-summary-grid--operations">
+        <article class="workspace-panel">
+            <header class="workspace-panel__header">
+                <div>
+                    <span class="workspace-eyebrow">Tareas</span>
+                    <h3>Prioridades</h3>
+                </div>
+                <span class="workspace-panel__coming">R4D</span>
+            </header>
+
+            {% if workspace_tareas %}
+            <div class="workspace-row-list">
+                {% for tarea in workspace_tareas %}
+                <div>
+                    <span class="workspace-row-dot {% if tarea.esta_vencida %}is-danger{% endif %}"></span>
+                    <div>
+                        <strong>{{ tarea.titulo }}</strong>
+                        <small>{% if tarea.fecha_limite %}Límite {{ tarea.fecha_limite|date:"d M" }}{% else %}Sin fecha límite{% endif %}</small>
+                    </div>
+                    <em>{{ tarea.get_prioridad_display }}</em>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="workspace-empty">
+                <strong>Sin tareas pendientes.</strong>
+                <p>Las nuevas tareas aparecerán aquí.</p>
+            </div>
+            {% endif %}
+        </article>
+
+        <article class="workspace-panel">
+            <header class="workspace-panel__header">
+                <div>
+                    <span class="workspace-eyebrow">Agenda</span>
+                    <h3>Próximas actividades</h3>
+                </div>
+                <span class="workspace-panel__coming">R4E</span>
+            </header>
+
+            {% if workspace_agenda %}
+            <div class="workspace-agenda-list">
+                {% for actividad in workspace_agenda %}
+                <div>
+                    <time>
+                        <strong>{{ actividad.fecha|date:"d" }}</strong>
+                        <span>{{ actividad.fecha|date:"M"|upper }}</span>
+                    </time>
+                    <div>
+                        <strong>{{ actividad.titulo }}</strong>
+                        <small>{{ actividad.hora_inicio|time:"H:i" }}</small>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="workspace-empty">
+                <strong>Agenda libre.</strong>
+                <p>No hay actividades futuras registradas.</p>
+            </div>
+            {% endif %}
+        </article>
+    </section>
+
+    {% if workspace_servicios_sin_proveedor %}
+    <section class="workspace-panel workspace-provider-alert">
+        <header class="workspace-panel__header">
+            <div>
+                <span class="workspace-eyebrow">Servicios</span>
+                <h3>Requieren proveedor</h3>
+            </div>
+            <span class="workspace-panel__coming">R4C</span>
+        </header>
+        <div class="workspace-provider-grid">
+            {% for servicio in workspace_servicios_sin_proveedor %}
+            <div>
+                <strong>{{ servicio.nombre_servicio }}</strong>
+                <span>Proveedor por definir</span>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
 </section>
 {% endblock %}
