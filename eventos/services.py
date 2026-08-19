@@ -102,11 +102,12 @@ def _snapshot_empresa(empresa):
 
 
 def _snapshot_evento(evento):
+    fecha_evento = evento.fecha_inicio or evento.fecha_fiesta
     return {
         'id': evento.id,
         'nombre': evento.titulo_evento,
         'tipo': evento.tipo_evento,
-        'fecha_evento': evento.fecha_fiesta.isoformat() if evento.fecha_fiesta else None,
+        'fecha_evento': fecha_evento.isoformat() if fecha_evento else None,
     }
 
 

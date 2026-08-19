@@ -110,12 +110,16 @@ class EventoBoda(models.Model):
         ('OTRO', 'Otro'),
     ]
     ESTADOS_EVENTO = [
+        ('BORRADOR', 'Borrador'),
+        ('ACTIVO', 'Activo'),
+        # Estados legacy conservados durante la reestructuracion K9.
         ('PLANEACION', 'Planeacion'),
         ('PREPARACION', 'En preparacion'),
         ('CONFIRMADO', 'Confirmado'),
         ('EN_CURSO', 'En curso'),
         ('FINALIZADO', 'Finalizado'),
         ('CANCELADO', 'Cancelado'),
+        ('ARCHIVADO', 'Archivado'),
     ]
     PALETAS = [
         ('BOSQUE', 'Verde bosque y dorado'),
@@ -154,10 +158,10 @@ class EventoBoda(models.Model):
         null=True,
         related_name='eventos',
     )
-    tipo_evento = models.CharField(max_length=20, choices=TIPOS_EVENTO, default='BODA')
-    estado = models.CharField(max_length=20, choices=ESTADOS_EVENTO, default='PLANEACION')
-    novio = models.CharField(max_length=100)
-    novia = models.CharField(max_length=100)
+    tipo_evento = models.CharField(max_length=20, choices=TIPOS_EVENTO, default='OTRO')
+    estado = models.CharField(max_length=20, choices=ESTADOS_EVENTO, default='BORRADOR')
+    novio = models.CharField(max_length=100, blank=True, default='')
+    novia = models.CharField(max_length=100, blank=True, default='')
     nombre_principal = models.CharField(max_length=120, blank=True, null=True)
     nombre_secundario = models.CharField(max_length=120, blank=True, null=True)
     etiqueta_principal = models.CharField(max_length=80, default='Novia')
@@ -165,16 +169,40 @@ class EventoBoda(models.Model):
     mostrar_nombre_secundario = models.BooleanField(default=True)
     activo = models.BooleanField(default=True)
 
-    frase_portada = models.CharField(max_length=255)
-    mensaje_general = models.TextField()
+    cancelado_en = models.DateTimeField(blank=True, null=True)
+    cancelado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='eventos_cancelados_k9',
+    )
+    motivo_cancelacion = models.TextField(blank=True, default='')
+    archivado_en = models.DateTimeField(blank=True, null=True)
+    archivado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='eventos_archivados_k9',
+    )
+    estado_previo_archivado = models.CharField(max_length=20, blank=True, default='')
 
-    fecha_misa = models.DateTimeField()
-    lugar_misa = models.CharField(max_length=200)
+    frase_portada = models.CharField(max_length=255, blank=True, default='')
+    mensaje_general = models.TextField(blank=True, default='')
+
+    # Fecha administrativa generica del evento. Los campos de ceremonia y
+    # recepcion se conservan por compatibilidad con invitaciones legacy.
+    fecha_inicio = models.DateTimeField(blank=True, null=True)
+    fecha_fin = models.DateTimeField(blank=True, null=True)
+
+    fecha_misa = models.DateTimeField(blank=True, null=True)
+    lugar_misa = models.CharField(max_length=200, blank=True, default='')
     direccion_ceremonia = models.CharField(max_length=255, blank=True, null=True)
     foto_ceremonia = models.FileField(upload_to='lugares/', validators=[validar_media_visual], blank=True, null=True)
 
-    fecha_fiesta = models.DateTimeField()
-    lugar_fiesta = models.CharField(max_length=200)
+    fecha_fiesta = models.DateTimeField(blank=True, null=True)
+    lugar_fiesta = models.CharField(max_length=200, blank=True, default='')
     direccion_recepcion = models.CharField(max_length=255, blank=True, null=True)
     foto_recepcion = models.FileField(upload_to='lugares/', validators=[validar_media_visual], blank=True, null=True)
     hora_inicio = models.TimeField(blank=True, null=True)
@@ -277,17 +305,21 @@ class EventoBoda(models.Model):
     def titulo_evento(self):
         if self.nombre_evento:
             return self.nombre_evento
-        if self.tipo_evento == 'BODA':
-            return f'Boda {self.participante_secundario} & {self.participante_principal}'
-        return f'{self.get_tipo_evento_display()} {self.participante_principal}'
+        principal = self.participante_principal
+        secundario = self.participante_secundario
+        if self.tipo_evento == 'BODA' and principal and secundario:
+            return f'Boda {secundario} & {principal}'
+        if principal:
+            return f'{self.get_tipo_evento_display()} {principal}'
+        return self.get_tipo_evento_display() or 'Evento'
 
     @property
     def participante_principal(self):
-        return self.nombre_principal or self.novia
+        return self.nombre_principal or self.novia or self.nombre_evento or ''
 
     @property
     def participante_secundario(self):
-        return self.nombre_secundario or self.novio
+        return self.nombre_secundario or self.novio or ''
 
     @property
     def titulo_portada(self):
