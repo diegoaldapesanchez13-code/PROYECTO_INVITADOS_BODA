@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
+from urllib.parse import quote
 
 from invitaciones.models import EventoBoda
 from organizaciones.models import EmpresaSuscriptora, MembresiaEmpresa, SedeEvento
@@ -85,9 +86,14 @@ class EventWorkspaceR2BTests(TestCase):
 
     def test_admin_creates_minimal_event_and_enters_workspace(self):
         self.client.force_login(self.admin)
+        return_to = reverse(
+            "empresa_dashboard",
+            kwargs={"empresa_slug": self.empresa.slug},
+        )
         response = self.client.post(
             reverse("k9_evento_create", kwargs={"empresa_slug": self.empresa.slug}),
             {
+                "return_to": return_to,
                 "nombre_evento": "  Cena   Anual ACME ",
                 "tipo_evento": "CORPORATIVO",
                 "fecha_inicio": "",
@@ -98,12 +104,13 @@ class EventWorkspaceR2BTests(TestCase):
             },
         )
         evento = EventoBoda.objects.get(nombre_evento="Cena Anual ACME")
-        self.assertRedirects(
-            response,
-            reverse(
-                "k9_evento_resumen",
-                kwargs={"empresa_slug": self.empresa.slug, "evento_id": evento.id},
-            ),
+        expected = reverse(
+            "k9_evento_resumen",
+            kwargs={"empresa_slug": self.empresa.slug, "evento_id": evento.id},
+        )
+        self.assertEqual(
+            response["Location"],
+            f"{expected}?return_to={quote(return_to, safe='')}",
         )
         self.assertIsNone(evento.fecha_inicio)
         self.assertIsNone(evento.fecha_fiesta)
@@ -170,12 +177,17 @@ class EventWorkspaceR2BTests(TestCase):
         )
         fecha = timezone.now().replace(second=0, microsecond=0)
         self.client.force_login(self.admin)
+        return_to = reverse(
+            "empresa_dashboard",
+            kwargs={"empresa_slug": self.empresa.slug},
+        )
         response = self.client.post(
             reverse(
                 "k9_evento_datos",
                 kwargs={"empresa_slug": self.empresa.slug, "evento_id": evento.id},
             ),
             {
+                "return_to": return_to,
                 "nombre_evento": "Evento actualizado",
                 "tipo_evento": "CORPORATIVO",
                 "fecha_inicio": fecha.strftime("%Y-%m-%dT%H:%M"),
@@ -186,12 +198,13 @@ class EventWorkspaceR2BTests(TestCase):
             },
         )
         evento.refresh_from_db()
-        self.assertRedirects(
-            response,
-            reverse(
-                "k9_evento_datos",
-                kwargs={"empresa_slug": self.empresa.slug, "evento_id": evento.id},
-            ),
+        expected = reverse(
+            "k9_evento_datos",
+            kwargs={"empresa_slug": self.empresa.slug, "evento_id": evento.id},
+        )
+        self.assertEqual(
+            response["Location"],
+            f"{expected}?return_to={quote(return_to, safe='')}",
         )
         self.assertEqual(evento.nombre_evento, "Evento actualizado")
         self.assertEqual(evento.wedding_planner, self.planner)
