@@ -1,0 +1,84 @@
+<section class="event-form-shell">
+    <header class="event-page-heading event-page-heading--form">
+        <div>
+            {% if modo == "crear" %}
+                <a class="event-context__back" href="{{ cancel_url }}">← Eventos</a>
+                <span class="event-eyebrow">Nuevo evento</span>
+                <h1>Empieza con lo esencial.</h1>
+                <p>No necesitas definir todo ahora. Cliente, planner, sede y fecha pueden completarse después.</p>
+            {% else %}
+                <span class="event-eyebrow">Datos del evento</span>
+                <h2>Información general</h2>
+                <p>Actualiza solo lo que ya conozcas. Guardar te mantiene dentro de esta misma sección.</p>
+            {% endif %}
+        </div>
+    </header>
+
+    {% if form.non_field_errors %}
+    <div class="event-form-error" role="alert">
+        {{ form.non_field_errors }}
+    </div>
+    {% endif %}
+
+    <form method="post" class="event-form-card">
+        {% csrf_token %}
+
+        <div class="event-form-grid">
+            <div class="app-field event-form-grid__wide">
+                <label for="{{ form.nombre_evento.id_for_label }}">{{ form.nombre_evento.label }} *</label>
+                {{ form.nombre_evento }}
+                {% if form.nombre_evento.errors %}<div class="app-field__error">{{ form.nombre_evento.errors|striptags }}</div>{% endif %}
+            </div>
+
+            <div class="app-field">
+                <label for="{{ form.tipo_evento.id_for_label }}">{{ form.tipo_evento.label }}</label>
+                {{ form.tipo_evento }}
+                {% if form.tipo_evento.errors %}<div class="app-field__error">{{ form.tipo_evento.errors|striptags }}</div>{% endif %}
+            </div>
+
+            <div class="app-field">
+                <label for="{{ form.cliente.id_for_label }}">{{ form.cliente.label }}</label>
+                {{ form.cliente }}
+                {% if form.cliente.errors %}<div class="app-field__error">{{ form.cliente.errors|striptags }}</div>{% endif %}
+                <span class="app-field__help">Puede quedar por definir.</span>
+            </div>
+
+            <div class="app-field">
+                <label for="{{ form.fecha_inicio.id_for_label }}">{{ form.fecha_inicio.label }}</label>
+                {{ form.fecha_inicio }}
+                {% if form.fecha_inicio.errors %}<div class="app-field__error">{{ form.fecha_inicio.errors|striptags }}</div>{% endif %}
+            </div>
+
+            <div class="app-field">
+                <label for="{{ form.fecha_fin.id_for_label }}">{{ form.fecha_fin.label }}</label>
+                {{ form.fecha_fin }}
+                {% if form.fecha_fin.errors %}<div class="app-field__error">{{ form.fecha_fin.errors|striptags }}</div>{% endif %}
+            </div>
+
+            <div class="app-field">
+                <label for="{{ form.planner.id_for_label }}">{{ form.planner.label }}</label>
+                {{ form.planner }}
+                {% if form.planner.help_text %}<span class="app-field__help">{{ form.planner.help_text }}</span>{% endif %}
+                {% if form.planner.errors %}<div class="app-field__error">{{ form.planner.errors|striptags }}</div>{% endif %}
+            </div>
+
+            <div class="app-field">
+                <label for="{{ form.sede.id_for_label }}">{{ form.sede.label }}</label>
+                {{ form.sede }}
+                {% if form.sede.errors %}<div class="app-field__error">{{ form.sede.errors|striptags }}</div>{% endif %}
+            </div>
+        </div>
+
+        <div class="event-form-note">
+            <strong>Práctico desde el inicio</strong>
+            <span>Los campos vacíos se guardan como “Por definir”; no insertamos datos ficticios para poder continuar.</span>
+        </div>
+
+        <div class="app-form-actions event-form-actions">
+            <a class="app-button app-button--secondary" href="{{ cancel_url }}">Cancelar</a>
+            <button class="app-button app-button--primary" type="submit">
+                {% if modo == "crear" %}Crear evento{% else %}Guardar cambios{% endif %}
+            </button>
+        </div>
+    </form>
+</section>

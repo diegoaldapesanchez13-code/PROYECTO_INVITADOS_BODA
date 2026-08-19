@@ -1,0 +1,54 @@
+{% extends "core/app/base.html" %}
+{% load static %}
+
+{% block title %}{% if modo == "crear" %}Nuevo evento{% else %}Datos del evento{% endif %} | DIRTEC Event Studio{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'eventos/css/workspace_r2.css' %}">
+{% endblock %}
+
+{% block content %}
+{% if modo == "editar" and evento %}
+<section class="event-context">
+    <div class="event-context__main">
+        <a class="event-context__back" href="{% url 'k9_evento_list' empresa_slug=empresa.slug %}">← Eventos</a>
+        <div>
+            <div class="event-context__title-row">
+                <h1>{{ evento.titulo_evento }}</h1>
+                <span class="app-badge app-badge--neutral">{{ evento.get_estado_display }}</span>
+            </div>
+            <p>
+                {{ evento.get_tipo_evento_display }}
+                {% if evento.fecha_inicio %}
+                    · {{ evento.fecha_inicio|date:"d M Y · H:i" }}
+                {% else %}
+                    · Fecha por definir
+                {% endif %}
+                {% if evento.sede %} · {{ evento.sede.nombre }}{% endif %}
+            </p>
+        </div>
+    </div>
+
+    <nav class="event-tabs" aria-label="Secciones del evento">
+        <a href="{% url 'k9_evento_resumen' empresa_slug=empresa.slug evento_id=evento.id %}">
+            Resumen
+        </a>
+        <a
+            href="{% url 'k9_evento_datos' empresa_slug=empresa.slug evento_id=evento.id %}"
+            class="is-active"
+            aria-current="page"
+        >
+            Datos
+        </a>
+        <span>Comercial</span>
+        <span>Servicios</span>
+        <span>Invitados</span>
+        <span>Más</span>
+    </nav>
+</section>
+{% endif %}
+
+<div class="event-form-page{% if modo == 'crear' %} event-form-page--create{% endif %}">
+    {% include "eventos/workspace/_form_content.html" %}
+</div>
+{% endblock %}

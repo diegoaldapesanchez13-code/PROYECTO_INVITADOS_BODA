@@ -44,6 +44,8 @@ urlpatterns = [
     path('catalogo/', include('catalogo.urls')),
     path('paquetes/', include('paquetes.urls')),
     path('eventos/', include('eventos.urls')),
+    # K9.R2B — rutas canonicas de gestion de eventos dentro del tenant.
+    path('empresa/<slug:empresa_slug>/eventos/', include('eventos.workspace_urls')),
     path('colaboracion/', include('colaboracion.urls')),
     path('presupuesto/', include('presupuesto.urls')),
     # Todas las demás rutas se delegan a la aplicación 'invitaciones'.

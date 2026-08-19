@@ -1,0 +1,64 @@
+{% extends "eventos/workspace/base.html" %}
+
+{% block title %}{{ evento.titulo_evento }} | DIRTEC Event Studio{% endblock %}
+
+{% block workspace_content %}
+<section class="event-summary">
+    <div class="event-summary__hero">
+        <div>
+            <span class="event-eyebrow">Resumen del evento</span>
+            <h2>Todo empieza aquí.</h2>
+            <p>
+                Este workspace irá concentrando comercial, servicios, tareas,
+                invitados y finanzas sin obligarte a salir del evento.
+            </p>
+        </div>
+        {% if puede_editar %}
+        <a class="app-button app-button--primary" href="{% url 'k9_evento_datos' empresa_slug=empresa.slug evento_id=evento.id %}">
+            Completar datos
+        </a>
+        {% endif %}
+    </div>
+
+    <div class="event-summary__grid">
+        <article class="app-card event-info-card">
+            <span class="event-eyebrow">Datos</span>
+            <h3>Información general</h3>
+            <dl>
+                <div><dt>Tipo</dt><dd>{{ evento.get_tipo_evento_display }}</dd></div>
+                <div><dt>Fecha</dt><dd>{% if evento.fecha_inicio %}{{ evento.fecha_inicio|date:"d M Y · H:i" }}{% else %}Por definir{% endif %}</dd></div>
+                <div><dt>Sede</dt><dd>{% if evento.sede %}{{ evento.sede.nombre }}{% else %}Por definir{% endif %}</dd></div>
+                <div>
+                    <dt>Cliente</dt>
+                    <dd>
+                        {% with cliente=evento.clientes.first %}
+                            {% if cliente %}{{ cliente.get_full_name|default:cliente.username }}{% else %}Por definir{% endif %}
+                        {% endwith %}
+                    </dd>
+                </div>
+                <div>
+                    <dt>Planner</dt>
+                    <dd>{% if evento.wedding_planner %}{{ evento.wedding_planner.get_full_name|default:evento.wedding_planner.username }}{% else %}Por definir{% endif %}</dd>
+                </div>
+            </dl>
+        </article>
+
+        <article class="app-card event-progress-card">
+            <span class="event-eyebrow">Siguiente</span>
+            <h3>Construye el evento progresivamente</h3>
+            <ul>
+                <li class="{% if evento.fecha_inicio %}is-complete{% endif %}">Definir fecha</li>
+                <li class="{% if evento.sede %}is-complete{% endif %}">Definir sede</li>
+                <li class="{% if evento.wedding_planner %}is-complete{% endif %}">Asignar planner</li>
+                <li class="{% if evento.clientes.exists %}is-complete{% endif %}">Asignar cliente</li>
+            </ul>
+        </article>
+    </div>
+
+    <div class="event-coming-grid">
+        <article class="event-coming-card"><span>Comercial</span><strong>Próximamente en R7</strong></article>
+        <article class="event-coming-card"><span>Servicios</span><strong>Próximamente en R8</strong></article>
+        <article class="event-coming-card"><span>Invitados</span><strong>Próximamente en R11</strong></article>
+    </div>
+</section>
+{% endblock %}

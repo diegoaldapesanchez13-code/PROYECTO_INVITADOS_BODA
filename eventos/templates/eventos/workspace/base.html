@@ -1,0 +1,44 @@
+{% extends "core/app/base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'eventos/css/workspace_r2.css' %}">
+{% endblock %}
+
+{% block content %}
+{% if evento %}
+<section class="event-context">
+    <div class="event-context__main">
+        <a class="event-context__back" href="{% url 'k9_evento_list' empresa_slug=empresa.slug %}">← Eventos</a>
+        <div>
+            <div class="event-context__title-row">
+                <h1>{{ evento.titulo_evento }}</h1>
+                <span class="app-badge app-badge--neutral">{{ evento.get_estado_display }}</span>
+            </div>
+            <p>
+                {{ evento.get_tipo_evento_display }}
+                {% if evento.fecha_inicio %} · {{ evento.fecha_inicio|date:"d M Y · H:i" }}{% else %} · Fecha por definir{% endif %}
+                {% if evento.sede %} · {{ evento.sede.nombre }}{% endif %}
+            </p>
+        </div>
+    </div>
+
+    <nav class="event-tabs" aria-label="Secciones del evento">
+        <a href="{% url 'k9_evento_resumen' empresa_slug=empresa.slug evento_id=evento.id %}"
+           class="{% if workspace_active == 'resumen' %}is-active{% endif %}">
+            Resumen
+        </a>
+        <a href="{% url 'k9_evento_datos' empresa_slug=empresa.slug evento_id=evento.id %}"
+           class="{% if workspace_active == 'datos' %}is-active{% endif %}">
+            Datos
+        </a>
+        <span>Comercial</span>
+        <span>Servicios</span>
+        <span>Invitados</span>
+        <span>Más</span>
+    </nav>
+</section>
+{% endif %}
+
+{% block workspace_content %}{% endblock %}
+{% endblock %}

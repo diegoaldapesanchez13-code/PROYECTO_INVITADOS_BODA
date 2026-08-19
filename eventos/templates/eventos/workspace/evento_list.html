@@ -1,0 +1,123 @@
+{% extends "core/app/base.html" %}
+{% load static %}
+
+{% block title %}Eventos | DIRTEC Event Studio{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'eventos/css/workspace_r2.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="event-list-page">
+    <header class="event-page-heading">
+        <div>
+            <span class="event-eyebrow">{{ brand_context.company_name|default:"DIRTEC Event Studio" }}</span>
+            <h1>Eventos</h1>
+            <p>Organiza los eventos activos sin mezclar la operación con el dashboard general.</p>
+        </div>
+
+        {% if puede_crear %}
+        <a
+            class="app-button app-button--primary event-desktop-create"
+            href="{% url 'k9_evento_create' empresa_slug=empresa.slug %}"
+        >
+            + Nuevo evento
+        </a>
+        {% endif %}
+    </header>
+
+    <form method="get" class="event-toolbar">
+        <label class="event-search">
+            <span class="sr-only">Buscar evento</span>
+            <input
+                class="app-input"
+                type="search"
+                name="q"
+                value="{{ busqueda }}"
+                placeholder="Buscar evento..."
+            >
+        </label>
+
+        <select class="app-select" name="estado" onchange="this.form.submit()">
+            <option value="ACTIVOS" {% if estado_filtro == "ACTIVOS" %}selected{% endif %}>Activos</option>
+            <option value="BORRADORES" {% if estado_filtro == "BORRADORES" %}selected{% endif %}>Borradores</option>
+            <option value="FINALIZADOS" {% if estado_filtro == "FINALIZADOS" %}selected{% endif %}>Finalizados</option>
+            <option value="CANCELADOS" {% if estado_filtro == "CANCELADOS" %}selected{% endif %}>Cancelados</option>
+            <option value="ARCHIVADOS" {% if estado_filtro == "ARCHIVADOS" %}selected{% endif %}>Archivados</option>
+        </select>
+
+        <button class="app-button app-button--secondary" type="submit">Filtrar</button>
+    </form>
+
+    {% if eventos %}
+    <div class="event-card-grid">
+        {% for evento in eventos %}
+        <article class="event-card">
+            <a
+                class="event-card__main"
+                href="{% url 'k9_evento_resumen' empresa_slug=empresa.slug evento_id=evento.id %}"
+            >
+                <div class="event-card__top">
+                    <span class="event-card__type">{{ evento.get_tipo_evento_display }}</span>
+                    <span class="app-badge app-badge--neutral">{{ evento.get_estado_display }}</span>
+                </div>
+
+                <h2>{{ evento.titulo_evento }}</h2>
+
+                <dl class="event-card__meta">
+                    <div>
+                        <dt>Fecha</dt>
+                        <dd>
+                            {% if evento.fecha_inicio %}
+                                {{ evento.fecha_inicio|date:"d M Y · H:i" }}
+                            {% else %}
+                                Por definir
+                            {% endif %}
+                        </dd>
+                    </div>
+                    <div>
+                        <dt>Sede</dt>
+                        <dd>{% if evento.sede %}{{ evento.sede.nombre }}{% else %}Por definir{% endif %}</dd>
+                    </div>
+                    <div>
+                        <dt>Planner</dt>
+                        <dd>
+                            {% if evento.wedding_planner %}
+                                {{ evento.wedding_planner.get_full_name|default:evento.wedding_planner.username }}
+                            {% else %}
+                                Por definir
+                            {% endif %}
+                        </dd>
+                    </div>
+                </dl>
+
+                <span class="event-card__open">Abrir evento →</span>
+            </a>
+        </article>
+        {% endfor %}
+    </div>
+    {% else %}
+        {% include "core/app/components/empty_state.html" with empty_title="Aún no hay eventos aquí" empty_text="Crea un evento en segundos. Los detalles que todavía no conozcas pueden quedar por definir." %}
+        {% if puede_crear %}
+        <div class="event-empty-action">
+            <a
+                class="app-button app-button--primary"
+                href="{% url 'k9_evento_create' empresa_slug=empresa.slug %}"
+            >
+                + Crear primer evento
+            </a>
+        </div>
+        {% endif %}
+    {% endif %}
+
+    {% if puede_crear %}
+    <a
+        class="event-mobile-fab"
+        href="{% url 'k9_evento_create' empresa_slug=empresa.slug %}"
+        aria-label="Crear evento"
+    >
+        +
+    </a>
+    {% endif %}
+</section>
+{% endblock %}
