@@ -77,6 +77,13 @@ def crear_evento_generico(
     tipos_validos = {value for value, _label in EventoBoda.TIPOS_EVENTO}
     tipo = tipo_evento if tipo_evento in tipos_validos else "OTRO"
 
+    # Si un Planner crea el evento y no se especifico otro responsable,
+    # se asigna a si mismo. De lo contrario crearia un evento al que no podria
+    # volver a entrar por la politica EVENT_VIEW del dominio.
+    roles_creador = roles_usuario_empresa(usuario, empresa)
+    if planner is None and "WEDDING_PLANNER" in roles_creador:
+        planner = usuario
+
     planner = _planner_valido(empresa, planner)
     cliente = _cliente_valido(empresa, cliente)
 
@@ -131,6 +138,8 @@ def actualizar_datos_evento_generico(
     sede=None,
     planner_marker=False,
     planner=None,
+    cliente_marker=False,
+    cliente=None,
     request=None,
 ):
     if not usuario_puede_evento(usuario, evento, Actions.EVENT_EDIT):
@@ -143,6 +152,7 @@ def actualizar_datos_evento_generico(
         "fecha_fin": evento.fecha_fin.isoformat() if evento.fecha_fin else None,
         "sede_id": evento.sede_id,
         "planner_id": evento.wedding_planner_id,
+        "cliente_ids": list(evento.clientes.values_list("id", flat=True)),
     }
 
     if nombre_evento is not None:
@@ -170,12 +180,22 @@ def actualizar_datos_evento_generico(
     if planner_marker:
         evento.wedding_planner = _planner_valido(evento.empresa, planner)
 
+    cliente_validado = None
+    if cliente_marker:
+        cliente_validado = _cliente_valido(evento.empresa, cliente)
+
     if evento.estado == "BORRADOR" and (
         evento.fecha_inicio or evento.sede_id or evento.wedding_planner_id
     ):
         evento.estado = "ACTIVO"
 
     evento.save()
+
+    if cliente_marker:
+        if cliente_validado is None:
+            evento.clientes.clear()
+        else:
+            evento.clientes.set([cliente_validado])
 
     registrar_auditoria(
         usuario=usuario,
@@ -193,6 +213,7 @@ def actualizar_datos_evento_generico(
             "fecha_fin": evento.fecha_fin.isoformat() if evento.fecha_fin else None,
             "sede_id": evento.sede_id,
             "planner_id": evento.wedding_planner_id,
+            "cliente_ids": list(evento.clientes.values_list("id", flat=True)),
             "estado": evento.estado,
         },
         request=request,

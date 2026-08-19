@@ -89,13 +89,13 @@ class GenericEventDomainR2ATests(TestCase):
                 nombre_evento="   ",
             )
 
-    def test_planner_can_create_event_and_is_not_automatically_assigned(self):
+    def test_planner_creator_is_automatically_assigned(self):
         evento = crear_evento_generico(
             empresa=self.empresa,
             usuario=self.planner,
             nombre_evento="Lead planner",
         )
-        self.assertIsNone(evento.wedding_planner)
+        self.assertEqual(evento.wedding_planner, self.planner)
 
     def test_cancel_preserves_event_and_records_actor(self):
         evento = crear_evento_generico(
