@@ -129,8 +129,13 @@
     font-size: .85rem;
 }
 
+.app-menu__form {
+    margin: 0;
+}
+
 .app-menu__item {
     display: flex;
+    width: 100%;
     min-height: 42px;
     align-items: center;
     padding: .55rem .8rem;
@@ -140,6 +145,15 @@
 
 .app-menu__item:hover {
     background: var(--surface-muted);
+}
+
+.app-menu__item--button {
+    border: 0;
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
 }
 
 .app-toast-region {

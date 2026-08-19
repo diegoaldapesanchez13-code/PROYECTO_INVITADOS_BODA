@@ -648,3 +648,29 @@
         width: 100%;
     }
 }
+
+
+.event-context__navigation {
+    display: grid;
+    gap: .35rem;
+    min-width: 72px;
+}
+
+.event-context__directory {
+    color: var(--text-muted);
+    font-size: .74rem;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.event-context__directory:hover {
+    color: var(--brand-primary);
+}
+
+@media (max-width: 767px) {
+    .event-context__navigation {
+        display: flex;
+        justify-content: space-between;
+        width: 100%;
+    }
+}

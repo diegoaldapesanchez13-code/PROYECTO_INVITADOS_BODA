@@ -13,6 +13,7 @@
             <summary class="app-icon-button" aria-label="Abrir menú de usuario">
                 <span aria-hidden="true">{{ request.user.get_short_name|default:request.user.username|slice:":1"|upper }}</span>
             </summary>
+
             <div class="app-menu app-menu--right">
                 <div class="app-menu__identity">
                     <strong>{{ request.user.get_full_name|default:request.user.username }}</strong>
@@ -20,7 +21,13 @@
                     <span>{{ brand_context.company_name }}</span>
                     {% endif %}
                 </div>
-                <a href="{% url 'logout' %}" class="app-menu__item">Cerrar sesión</a>
+
+                <form method="post" action="{% url 'logout' %}" class="app-menu__form">
+                    {% csrf_token %}
+                    <button type="submit" class="app-menu__item app-menu__item--button">
+                        Cerrar sesión
+                    </button>
+                </form>
             </div>
         </details>
         {% endif %}

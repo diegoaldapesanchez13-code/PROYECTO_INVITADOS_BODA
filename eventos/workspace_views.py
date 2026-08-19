@@ -10,6 +10,7 @@ from core.services.app_context import build_app_context
 from core.services.authorization import Actions, usuario_puede_evento, usuario_tiene_permiso
 from core.services.permisos import roles_usuario_empresa, usuario_es_dirtec_operativo
 from core.services.tenant_context import validar_slug_tenant
+from core.services.return_context import request_return_to, safe_return_to
 from invitaciones.models import EventoBoda
 
 from .event_domain import (
@@ -73,6 +74,22 @@ def _app_context(request, empresa, *, title, section="Eventos"):
     )
 
 
+def _return_context(request, empresa, *, default=None):
+    return request_return_to(
+        request,
+        empresa=empresa,
+        default=default,
+    )
+
+
+def _url_with_return(url, return_to):
+    from urllib.parse import urlencode
+    if not return_to:
+        return url
+    separator = "&" if "?" in url else "?"
+    return f"{url}{separator}{urlencode({'return_to': return_to})}"
+
+
 @login_required(login_url="/login/")
 def evento_list(request, empresa_slug):
     tenant, roles = _contexto_empresa(request, empresa_slug)
@@ -103,6 +120,7 @@ def evento_list(request, empresa_slug):
 
     qs = qs.order_by("fecha_inicio", "-fecha_creacion")
 
+    return_to = _return_context(request, empresa)
     context = _app_context(request, empresa, title="Eventos")
     context.update(
         {
@@ -110,6 +128,7 @@ def evento_list(request, empresa_slug):
             "estado_filtro": estado,
             "busqueda": q,
             "puede_crear": usuario_tiene_permiso(request.user, Actions.EVENT_CREATE, empresa=empresa),
+            "return_to": return_to,
         }
     )
     return render(request, "eventos/workspace/evento_list.html", context)
@@ -119,6 +138,7 @@ def evento_list(request, empresa_slug):
 def evento_create(request, empresa_slug):
     tenant, _roles = _contexto_empresa(request, empresa_slug)
     empresa = tenant.empresa
+    return_to = _return_context(request, empresa)
 
     if not usuario_tiene_permiso(request.user, Actions.EVENT_CREATE, empresa=empresa):
         raise PermissionDenied("No tienes permiso para crear eventos.")
@@ -147,18 +167,19 @@ def evento_create(request, empresa_slug):
             form.add_error(None, exc)
         else:
             messages.success(request, "Evento creado. Puedes completar los datos cuando los tengas.")
-            return redirect(
+            destino = reverse(
                 "k9_evento_resumen",
-                empresa_slug=empresa.slug,
-                evento_id=evento.id,
+                kwargs={"empresa_slug": empresa.slug, "evento_id": evento.id},
             )
+            return redirect(_url_with_return(destino, return_to))
 
     context = _app_context(request, empresa, title="Nuevo evento")
     context.update(
         {
             "form": form,
             "modo": "crear",
-            "cancel_url": reverse("k9_evento_list", kwargs={"empresa_slug": empresa.slug}),
+            "cancel_url": return_to,
+            "return_to": return_to,
         }
     )
     return render(request, "eventos/workspace/evento_form.html", context)
@@ -169,6 +190,7 @@ def evento_resumen(request, empresa_slug, evento_id):
     tenant, _roles = _contexto_empresa(request, empresa_slug)
     empresa = tenant.empresa
     evento = _evento_visible(request.user, empresa, evento_id)
+    return_to = _return_context(request, empresa)
 
     context = _app_context(
         request,
@@ -181,6 +203,7 @@ def evento_resumen(request, empresa_slug, evento_id):
             "evento": evento,
             "workspace_active": "resumen",
             "puede_editar": usuario_puede_evento(request.user, evento, Actions.EVENT_EDIT),
+            "return_to": return_to,
         }
     )
     return render(request, "eventos/workspace/resumen.html", context)
@@ -196,6 +219,7 @@ def evento_datos(request, empresa_slug, evento_id):
         evento_id,
         action=Actions.EVENT_EDIT,
     )
+    return_to = _return_context(request, empresa)
 
     form = EventoEditForm(
         request.POST or None,
@@ -226,11 +250,11 @@ def evento_datos(request, empresa_slug, evento_id):
         else:
             messages.success(request, "Datos del evento actualizados.")
             # Regla K9: guardar conserva el contexto exacto del módulo Datos.
-            return redirect(
+            destino = reverse(
                 "k9_evento_datos",
-                empresa_slug=empresa.slug,
-                evento_id=evento.id,
+                kwargs={"empresa_slug": empresa.slug, "evento_id": evento.id},
             )
+            return redirect(_url_with_return(destino, return_to))
 
     context = _app_context(
         request,
@@ -244,10 +268,14 @@ def evento_datos(request, empresa_slug, evento_id):
             "form": form,
             "modo": "editar",
             "workspace_active": "datos",
-            "cancel_url": reverse(
-                "k9_evento_resumen",
-                kwargs={"empresa_slug": empresa.slug, "evento_id": evento.id},
+            "cancel_url": _url_with_return(
+                reverse(
+                    "k9_evento_resumen",
+                    kwargs={"empresa_slug": empresa.slug, "evento_id": evento.id},
+                ),
+                return_to,
             ),
+            "return_to": return_to,
         }
     )
     return render(request, "eventos/workspace/evento_form.html", context)
@@ -258,6 +286,7 @@ def evento_configuracion(request, empresa_slug, evento_id):
     tenant, _roles = _contexto_empresa(request, empresa_slug)
     empresa = tenant.empresa
     evento = _evento_visible(request.user, empresa, evento_id)
+    return_to = _return_context(request, empresa)
 
     evaluacion = evaluar_eliminacion_evento(evento)
     context = _app_context(
@@ -275,6 +304,7 @@ def evento_configuracion(request, empresa_slug, evento_id):
                 and usuario_puede_evento(request.user, evento, Actions.EVENT_EDIT),
             "evaluacion_eliminacion": evaluacion,
             "puede_purgar": usuario_puede_purgar_evento(request.user, evento),
+            "return_to": return_to,
         }
     )
     return render(request, "eventos/workspace/configuracion.html", context)
@@ -291,7 +321,11 @@ def evento_finalizar(request, empresa_slug, evento_id):
         messages.error(request, " ".join(exc.messages))
     else:
         messages.success(request, "Evento finalizado. El historial permanece disponible.")
-    return redirect("k9_evento_configuracion", empresa_slug=tenant.empresa.slug, evento_id=evento.id)
+    destino = reverse(
+        "k9_evento_configuracion",
+        kwargs={"empresa_slug": tenant.empresa.slug, "evento_id": evento.id},
+    )
+    return redirect(_url_with_return(destino, _return_context(request, tenant.empresa)))
 
 
 @require_POST
@@ -310,7 +344,11 @@ def evento_cancelar(request, empresa_slug, evento_id):
         messages.error(request, " ".join(exc.messages))
     else:
         messages.success(request, "Evento cancelado. No se eliminó ningún historial.")
-    return redirect("k9_evento_configuracion", empresa_slug=tenant.empresa.slug, evento_id=evento.id)
+    destino = reverse(
+        "k9_evento_configuracion",
+        kwargs={"empresa_slug": tenant.empresa.slug, "evento_id": evento.id},
+    )
+    return redirect(_url_with_return(destino, _return_context(request, tenant.empresa)))
 
 
 @require_POST
@@ -320,7 +358,11 @@ def evento_archivar(request, empresa_slug, evento_id):
     evento = _evento_visible(request.user, tenant.empresa, evento_id, action=Actions.EVENT_EDIT)
     archivar_evento(evento, usuario=request.user, request=request)
     messages.success(request, "Evento archivado.")
-    return redirect("k9_evento_configuracion", empresa_slug=tenant.empresa.slug, evento_id=evento.id)
+    destino = reverse(
+        "k9_evento_configuracion",
+        kwargs={"empresa_slug": tenant.empresa.slug, "evento_id": evento.id},
+    )
+    return redirect(_url_with_return(destino, _return_context(request, tenant.empresa)))
 
 
 @require_POST
@@ -330,7 +372,11 @@ def evento_restaurar(request, empresa_slug, evento_id):
     evento = _evento_visible(request.user, tenant.empresa, evento_id, action=Actions.EVENT_EDIT)
     restaurar_evento(evento, usuario=request.user, request=request)
     messages.success(request, "Evento restaurado.")
-    return redirect("k9_evento_configuracion", empresa_slug=tenant.empresa.slug, evento_id=evento.id)
+    destino = reverse(
+        "k9_evento_configuracion",
+        kwargs={"empresa_slug": tenant.empresa.slug, "evento_id": evento.id},
+    )
+    return redirect(_url_with_return(destino, _return_context(request, tenant.empresa)))
 
 
 @require_POST
@@ -341,16 +387,24 @@ def evento_eliminar_error(request, empresa_slug, evento_id):
 
     if (request.POST.get("confirmacion") or "").strip().upper() != "ELIMINAR":
         messages.error(request, 'Escribe ELIMINAR para confirmar.')
-        return redirect("k9_evento_configuracion", empresa_slug=tenant.empresa.slug, evento_id=evento.id)
+        destino = reverse(
+            "k9_evento_configuracion",
+            kwargs={"empresa_slug": tenant.empresa.slug, "evento_id": evento.id},
+        )
+        return redirect(_url_with_return(destino, _return_context(request, tenant.empresa)))
 
     try:
         eliminado = eliminar_evento_error(evento, usuario=request.user, request=request)
     except ValidationError as exc:
         messages.error(request, " ".join(exc.messages))
-        return redirect("k9_evento_configuracion", empresa_slug=tenant.empresa.slug, evento_id=evento.id)
+        destino = reverse(
+            "k9_evento_configuracion",
+            kwargs={"empresa_slug": tenant.empresa.slug, "evento_id": evento.id},
+        )
+        return redirect(_url_with_return(destino, _return_context(request, tenant.empresa)))
 
     messages.success(request, f'Evento "{eliminado["nombre"]}" eliminado porque no tenía historial protegido.')
-    return redirect("k9_evento_list", empresa_slug=tenant.empresa.slug)
+    return redirect(_return_context(request, tenant.empresa))
 
 
 @require_POST
@@ -361,7 +415,11 @@ def evento_purgar(request, empresa_slug, evento_id):
 
     if (request.POST.get("confirmacion") or "").strip().upper() != "PURGAR":
         messages.error(request, 'Escribe PURGAR para confirmar.')
-        return redirect("k9_evento_configuracion", empresa_slug=tenant.empresa.slug, evento_id=evento.id)
+        destino = reverse(
+            "k9_evento_configuracion",
+            kwargs={"empresa_slug": tenant.empresa.slug, "evento_id": evento.id},
+        )
+        return redirect(_url_with_return(destino, _return_context(request, tenant.empresa)))
 
     try:
         eliminado = purgar_evento_archivado(evento, usuario=request.user, request=request)
@@ -370,7 +428,11 @@ def evento_purgar(request, empresa_slug, evento_id):
             messages.error(request, " ".join(exc.messages))
         else:
             raise
-        return redirect("k9_evento_configuracion", empresa_slug=tenant.empresa.slug, evento_id=evento.id)
+        destino = reverse(
+            "k9_evento_configuracion",
+            kwargs={"empresa_slug": tenant.empresa.slug, "evento_id": evento.id},
+        )
+        return redirect(_url_with_return(destino, _return_context(request, tenant.empresa)))
 
     messages.success(request, f'Evento "{eliminado["nombre"]}" purgado permanentemente.')
-    return redirect("k9_evento_list", empresa_slug=tenant.empresa.slug)
+    return redirect(_return_context(request, tenant.empresa))

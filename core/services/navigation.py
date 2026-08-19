@@ -61,9 +61,9 @@ def _company_navigation(empresa, active_key="inicio"):
 def _planner_navigation(empresa, active_key="inicio"):
     dashboard = reverse("planner_dashboard_empresa_alias", kwargs={"empresa_slug": empresa.slug})
     return [
-        _item("inicio", "Inicio", dashboard + "#resumen", "⌂", active_key=active_key),
+        _item("inicio", "Inicio", dashboard, "⌂", active_key=active_key),
         _item("eventos", "Mis eventos", reverse("k9_evento_list", kwargs={"empresa_slug": empresa.slug}), "◇", short_label="Eventos", active_key=active_key),
-        _item("agenda", "Calendario", reverse("calendario_operativo"), "◷", active_key=active_key),
+        _item("agenda", "Agenda", dashboard + "#agenda", "◷", active_key=active_key),
         _item("tareas", "Mis tareas", dashboard + "#tareas", "✓", short_label="Tareas", active_key=active_key),
     ]
 

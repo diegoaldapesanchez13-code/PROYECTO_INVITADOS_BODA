@@ -215,7 +215,7 @@ def redirigir_por_rol(request):
         and 'WEDDING_PLANNER' in roles
     ):
         return redirect(
-            f'/empresa/{empresa.slug}/wedding-planner/dashboard/'
+            f'/empresa/{empresa.slug}/planner/dashboard/'
         )
 
     # Relationship fallbacks for older accounts not yet migrated to memberships.

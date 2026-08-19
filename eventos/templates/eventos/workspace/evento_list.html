@@ -11,6 +11,7 @@
 <section class="event-list-page">
     <header class="event-page-heading">
         <div>
+            <a class="event-context__back" href="{{ return_to }}">← Volver al inicio</a>
             <span class="event-eyebrow">{{ brand_context.company_name|default:"DIRTEC Event Studio" }}</span>
             <h1>Eventos</h1>
             <p>Organiza los eventos activos sin mezclar la operación con el dashboard general.</p>
@@ -19,7 +20,7 @@
         {% if puede_crear %}
         <a
             class="app-button app-button--primary event-desktop-create"
-            href="{% url 'k9_evento_create' empresa_slug=empresa.slug %}"
+            href="{% url 'k9_evento_create' empresa_slug=empresa.slug %}?return_to={{ return_to|urlencode }}"
         >
             + Nuevo evento
         </a>
@@ -55,7 +56,7 @@
         <article class="event-card">
             <a
                 class="event-card__main"
-                href="{% url 'k9_evento_resumen' empresa_slug=empresa.slug evento_id=evento.id %}"
+                href="{% url 'k9_evento_resumen' empresa_slug=empresa.slug evento_id=evento.id %}?return_to={{ return_to|urlencode }}"
             >
                 <div class="event-card__top">
                     <span class="event-card__type">{{ evento.get_tipo_evento_display }}</span>
@@ -109,7 +110,7 @@
         <div class="event-empty-action">
             <a
                 class="app-button app-button--primary"
-                href="{% url 'k9_evento_create' empresa_slug=empresa.slug %}"
+                href="{% url 'k9_evento_create' empresa_slug=empresa.slug %}?return_to={{ return_to|urlencode }}"
             >
                 + Crear primer evento
             </a>
@@ -120,7 +121,7 @@
     {% if puede_crear %}
     <a
         class="event-mobile-fab"
-        href="{% url 'k9_evento_create' empresa_slug=empresa.slug %}"
+        href="{% url 'k9_evento_create' empresa_slug=empresa.slug %}?return_to={{ return_to|urlencode }}"
         aria-label="Crear evento"
     >
         +

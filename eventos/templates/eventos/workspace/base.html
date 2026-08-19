@@ -9,7 +9,10 @@
 {% if evento %}
 <section class="event-context">
     <div class="event-context__main">
-        <a class="event-context__back" href="{% url 'k9_evento_list' empresa_slug=empresa.slug %}">← Eventos</a>
+        <div class="event-context__navigation">
+            <a class="event-context__back" href="{{ return_to }}">← Volver</a>
+            <a class="event-context__directory" href="{% url 'k9_evento_list' empresa_slug=empresa.slug %}?return_to={{ return_to|urlencode }}">Eventos</a>
+        </div>
         <div>
             <div class="event-context__title-row">
                 <h1>{{ evento.titulo_evento }}</h1>
@@ -24,18 +27,18 @@
     </div>
 
     <nav class="event-tabs" aria-label="Secciones del evento">
-        <a href="{% url 'k9_evento_resumen' empresa_slug=empresa.slug evento_id=evento.id %}"
+        <a href="{% url 'k9_evento_resumen' empresa_slug=empresa.slug evento_id=evento.id %}?return_to={{ return_to|urlencode }}"
            class="{% if workspace_active == 'resumen' %}is-active{% endif %}">
             Resumen
         </a>
-        <a href="{% url 'k9_evento_datos' empresa_slug=empresa.slug evento_id=evento.id %}"
+        <a href="{% url 'k9_evento_datos' empresa_slug=empresa.slug evento_id=evento.id %}?return_to={{ return_to|urlencode }}"
            class="{% if workspace_active == 'datos' %}is-active{% endif %}">
             Datos
         </a>
         <span>Comercial</span>
         <span>Servicios</span>
         <span>Invitados</span>
-        <a href="{% url 'k9_evento_configuracion' empresa_slug=empresa.slug evento_id=evento.id %}"
+        <a href="{% url 'k9_evento_configuracion' empresa_slug=empresa.slug evento_id=evento.id %}?return_to={{ return_to|urlencode }}"
            class="{% if workspace_active == 'configuracion' %}is-active{% endif %}">
             Configuración
         </a>

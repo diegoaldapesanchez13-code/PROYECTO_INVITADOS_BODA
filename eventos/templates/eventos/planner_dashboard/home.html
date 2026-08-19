@@ -1,0 +1,182 @@
+{% extends "core/app/base.html" %}
+{% load static %}
+
+{% block title %}Planner | {{ empresa.nombre_comercial }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'eventos/css/planner_dashboard_r3.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="planner-home">
+    <section class="planner-hero">
+        <div>
+            <span class="planner-eyebrow">Planner Workspace</span>
+            <h1>
+                {% if request.user.first_name %}
+                    Hola, {{ request.user.first_name }}.
+                {% else %}
+                    Tu día está aquí.
+                {% endif %}
+            </h1>
+            <p>Eventos, tareas y agenda organizados por prioridad.</p>
+        </div>
+
+        <div class="planner-hero__actions">
+            <a class="app-button planner-primary" href="{% url 'k9_evento_create' empresa_slug=empresa.slug %}?return_to={% url 'planner_dashboard_empresa_alias' empresa_slug=empresa.slug %}">
+                + Nuevo evento
+            </a>
+            <a class="app-button planner-secondary" href="{% url 'k9_evento_list' empresa_slug=empresa.slug %}?return_to={% url 'planner_dashboard_empresa_alias' empresa_slug=empresa.slug %}">
+                Mis eventos
+            </a>
+        </div>
+    </section>
+
+    <section class="planner-kpis" aria-label="Resumen de trabajo">
+        <a class="planner-kpi" href="{% url 'k9_evento_list' empresa_slug=empresa.slug %}?return_to={% url 'planner_dashboard_empresa_alias' empresa_slug=empresa.slug %}">
+            <span>Mis eventos</span>
+            <strong>{{ kpis.eventos }}</strong>
+            <small>Asignados y activos</small>
+        </a>
+        <a class="planner-kpi" href="#tareas">
+            <span>Tareas de hoy</span>
+            <strong>{{ kpis.tareas_hoy }}</strong>
+            <small>En tu responsabilidad</small>
+        </a>
+        <a class="planner-kpi planner-kpi--danger" href="#tareas">
+            <span>Vencidas</span>
+            <strong>{{ kpis.tareas_vencidas }}</strong>
+            <small>Necesitan atención</small>
+        </a>
+        <a class="planner-kpi" href="#agenda">
+            <span>Agenda de hoy</span>
+            <strong>{{ kpis.agenda_hoy }}</strong>
+            <small>Citas y actividades</small>
+        </a>
+    </section>
+
+    <section class="planner-grid">
+        <article class="planner-panel" id="tareas">
+            <header class="planner-panel__header">
+                <div>
+                    <span class="planner-eyebrow">Prioridad</span>
+                    <h2>Mis tareas</h2>
+                </div>
+            </header>
+
+            {% if tareas_prioritarias %}
+            <div class="planner-task-list">
+                {% for tarea in tareas_prioritarias %}
+                <a href="{% url 'k9_evento_resumen' empresa_slug=empresa.slug evento_id=tarea.evento_id %}?return_to={% url 'planner_dashboard_empresa_alias' empresa_slug=empresa.slug %}">
+                    <span class="planner-task-state
+                        {% if tarea.esta_vencida %}is-danger
+                        {% elif tarea.prioridad == 'URGENTE' or tarea.prioridad == 'ALTA' %}is-warning
+                        {% endif %}">
+                    </span>
+                    <div>
+                        <strong>{{ tarea.titulo }}</strong>
+                        <small>
+                            {{ tarea.evento.titulo_evento }}
+                            {% if tarea.fecha_limite %} · {{ tarea.fecha_limite|date:"d M" }}{% else %} · Sin fecha límite{% endif %}
+                        </small>
+                    </div>
+                    <em>{{ tarea.get_prioridad_display }}</em>
+                </a>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="planner-empty">
+                <strong>No tienes tareas pendientes.</strong>
+                <p>Cuando tengas trabajo asignado aparecerá aquí.</p>
+            </div>
+            {% endif %}
+        </article>
+
+        <aside class="planner-panel" id="agenda">
+            <header class="planner-panel__header">
+                <div>
+                    <span class="planner-eyebrow">Agenda</span>
+                    <h2>Próximas actividades</h2>
+                </div>
+            </header>
+
+            {% if agenda_proxima %}
+            <div class="planner-agenda-list">
+                {% for actividad in agenda_proxima %}
+                <a href="{% url 'k9_evento_resumen' empresa_slug=empresa.slug evento_id=actividad.evento_id %}?return_to={% url 'planner_dashboard_empresa_alias' empresa_slug=empresa.slug %}">
+                    <time>
+                        <strong>{{ actividad.fecha|date:"d" }}</strong>
+                        <span>{{ actividad.fecha|date:"M"|upper }}</span>
+                    </time>
+                    <div>
+                        <strong>{{ actividad.titulo }}</strong>
+                        <small>{{ actividad.hora_inicio|time:"H:i" }} · {{ actividad.evento.titulo_evento }}</small>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="planner-empty">
+                <strong>Tu agenda está libre.</strong>
+                <p>No hay actividades próximas registradas.</p>
+            </div>
+            {% endif %}
+        </aside>
+    </section>
+
+    {% if requiere_atencion %}
+    <section class="planner-panel planner-attention">
+        <header class="planner-panel__header">
+            <div>
+                <span class="planner-eyebrow">Requiere atención</span>
+                <h2>Eventos que necesitan algo de ti</h2>
+            </div>
+        </header>
+
+        <div class="planner-attention-grid">
+            {% for item in requiere_atencion %}
+            <a href="{% url 'k9_evento_resumen' empresa_slug=empresa.slug evento_id=item.evento.id %}?return_to={% url 'planner_dashboard_empresa_alias' empresa_slug=empresa.slug %}">
+                <strong>{{ item.evento.titulo_evento }}</strong>
+                <span>{{ item.atencion|join:" · " }}</span>
+                <b>Revisar →</b>
+            </a>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    <section class="planner-panel">
+        <header class="planner-panel__header">
+            <div>
+                <span class="planner-eyebrow">Mis eventos</span>
+                <h2>Operación asignada</h2>
+            </div>
+            <a href="{% url 'k9_evento_list' empresa_slug=empresa.slug %}?return_to={% url 'planner_dashboard_empresa_alias' empresa_slug=empresa.slug %}">Ver todos →</a>
+        </header>
+
+        {% if eventos_recientes %}
+        <div class="planner-event-grid">
+            {% for item in eventos_recientes %}
+            <a href="{% url 'k9_evento_resumen' empresa_slug=empresa.slug evento_id=item.evento.id %}?return_to={% url 'planner_dashboard_empresa_alias' empresa_slug=empresa.slug %}">
+                <div>
+                    <span>{{ item.evento.get_tipo_evento_display }}</span>
+                    <em>{{ item.evento.get_estado_display }}</em>
+                </div>
+                <h3>{{ item.evento.titulo_evento }}</h3>
+                <p>
+                    {% if item.fecha %}{{ item.fecha|date:"d M Y" }}{% else %}Fecha por definir{% endif %}
+                    {% if item.evento.sede %} · {{ item.evento.sede.nombre }}{% endif %}
+                </p>
+                <footer>{{ item.tareas_pendientes }} tareas pendientes</footer>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="planner-empty planner-empty--large">
+            <strong>No tienes eventos asignados todavía.</strong>
+            <p>Cuando se te asigne uno aparecerá en este espacio.</p>
+        </div>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}

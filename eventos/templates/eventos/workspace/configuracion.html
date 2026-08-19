@@ -26,21 +26,25 @@
                 {% if evento.estado == "ARCHIVADO" %}
                     <form method="post" action="{% url 'k9_evento_restaurar' empresa_slug=empresa.slug evento_id=evento.id %}">
                         {% csrf_token %}
+                        <input type="hidden" name="return_to" value="{{ return_to }}">
                         <button class="app-button app-button--primary" type="submit">Restaurar evento</button>
                     </form>
                 {% elif evento.estado == "CANCELADO" %}
                     <form method="post" action="{% url 'k9_evento_archivar' empresa_slug=empresa.slug evento_id=evento.id %}">
                         {% csrf_token %}
+                        <input type="hidden" name="return_to" value="{{ return_to }}">
                         <button class="app-button app-button--secondary" type="submit">Archivar</button>
                     </form>
                 {% elif evento.estado == "FINALIZADO" %}
                     <form method="post" action="{% url 'k9_evento_archivar' empresa_slug=empresa.slug evento_id=evento.id %}">
                         {% csrf_token %}
+                        <input type="hidden" name="return_to" value="{{ return_to }}">
                         <button class="app-button app-button--secondary" type="submit">Archivar</button>
                     </form>
                 {% else %}
                     <form method="post" action="{% url 'k9_evento_finalizar' empresa_slug=empresa.slug evento_id=evento.id %}">
                         {% csrf_token %}
+                        <input type="hidden" name="return_to" value="{{ return_to }}">
                         <button class="app-button app-button--secondary" type="submit">Marcar finalizado</button>
                     </form>
 
@@ -48,6 +52,7 @@
                         <summary>Cancelar evento</summary>
                         <form method="post" action="{% url 'k9_evento_cancelar' empresa_slug=empresa.slug evento_id=evento.id %}">
                             {% csrf_token %}
+                        <input type="hidden" name="return_to" value="{{ return_to }}">
                             <label class="app-field">
                                 <span class="app-label">Motivo</span>
                                 <textarea class="app-textarea" name="motivo" rows="3" placeholder="Opcional"></textarea>
@@ -58,6 +63,7 @@
 
                     <form method="post" action="{% url 'k9_evento_archivar' empresa_slug=empresa.slug evento_id=evento.id %}">
                         {% csrf_token %}
+                        <input type="hidden" name="return_to" value="{{ return_to }}">
                         <button class="app-button app-button--secondary" type="submit">Archivar evento</button>
                     </form>
                 {% endif %}
@@ -97,6 +103,7 @@
             </div>
             <form method="post" action="{% url 'k9_evento_eliminar_error' empresa_slug=empresa.slug evento_id=evento.id %}">
                 {% csrf_token %}
+                        <input type="hidden" name="return_to" value="{{ return_to }}">
                 <input class="app-input" name="confirmacion" placeholder="Escribe ELIMINAR" autocomplete="off">
                 <button class="app-button app-button--danger" type="submit">Eliminar definitivamente</button>
             </form>
@@ -114,6 +121,7 @@
             </div>
             <form method="post" action="{% url 'k9_evento_purgar' empresa_slug=empresa.slug evento_id=evento.id %}">
                 {% csrf_token %}
+                        <input type="hidden" name="return_to" value="{{ return_to }}">
                 <input class="app-input" name="confirmacion" placeholder="Escribe PURGAR" autocomplete="off">
                 <button class="app-button app-button--danger" type="submit">Purgar permanentemente</button>
             </form>

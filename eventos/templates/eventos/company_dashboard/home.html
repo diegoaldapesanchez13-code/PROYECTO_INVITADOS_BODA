@@ -21,10 +21,10 @@
             </h1>
             <p>Esto es lo que necesita tu atención hoy.</p>
             <div class="company-hero__actions">
-                <a class="app-button company-primary-action" href="{% url 'k9_evento_create' empresa_slug=empresa.slug %}">
+                <a class="app-button company-primary-action" href="{% url 'k9_evento_create' empresa_slug=empresa.slug %}?return_to={% url 'empresa_dashboard' empresa_slug=empresa.slug %}">
                     + Nuevo evento
                 </a>
-                <a class="app-button company-ghost-action" href="{% url 'k9_evento_list' empresa_slug=empresa.slug %}">
+                <a class="app-button company-ghost-action" href="{% url 'k9_evento_list' empresa_slug=empresa.slug %}?return_to={% url 'empresa_dashboard' empresa_slug=empresa.slug %}">
                     Ver todos
                 </a>
             </div>
@@ -41,13 +41,13 @@
     </section>
 
     <section class="company-kpis" aria-label="Resumen">
-        <a class="company-kpi" href="{% url 'k9_evento_list' empresa_slug=empresa.slug %}?estado=ACTIVOS">
+        <a class="company-kpi" href="{% url 'k9_evento_list' empresa_slug=empresa.slug %}?estado=ACTIVOS&return_to={% url 'empresa_dashboard' empresa_slug=empresa.slug %}">
             <span>Eventos activos</span><strong>{{ kpis.activos }}</strong><small>En operación</small>
         </a>
-        <a class="company-kpi" href="{% url 'k9_evento_list' empresa_slug=empresa.slug %}?estado=ACTIVOS">
+        <a class="company-kpi" href="{% url 'k9_evento_list' empresa_slug=empresa.slug %}?estado=ACTIVOS&return_to={% url 'empresa_dashboard' empresa_slug=empresa.slug %}">
             <span>Próximos</span><strong>{{ kpis.proximos }}</strong><small>Con fecha definida</small>
         </a>
-        <a class="company-kpi" href="{% url 'k9_evento_list' empresa_slug=empresa.slug %}?estado=BORRADORES">
+        <a class="company-kpi" href="{% url 'k9_evento_list' empresa_slug=empresa.slug %}?estado=BORRADORES&return_to={% url 'empresa_dashboard' empresa_slug=empresa.slug %}">
             <span>Borradores</span><strong>{{ kpis.borradores }}</strong><small>Por completar</small>
         </a>
         <a class="company-kpi company-kpi--attention" href="#requiere-atencion">
@@ -62,13 +62,13 @@
                     <span class="company-eyebrow">Próximos eventos</span>
                     <h2>Lo que viene</h2>
                 </div>
-                <a href="{% url 'k9_evento_list' empresa_slug=empresa.slug %}">Ver todos →</a>
+                <a href="{% url 'k9_evento_list' empresa_slug=empresa.slug %}?return_to={% url 'empresa_dashboard' empresa_slug=empresa.slug %}">Ver todos →</a>
             </header>
 
             {% if proximos %}
             <div class="company-event-list">
                 {% for item in proximos %}
-                <a class="company-event-row" href="{% url 'k9_evento_resumen' empresa_slug=empresa.slug evento_id=item.evento.id %}">
+                <a class="company-event-row" href="{% url 'k9_evento_resumen' empresa_slug=empresa.slug evento_id=item.evento.id %}?return_to={% url 'empresa_dashboard' empresa_slug=empresa.slug %}">
                     <div class="company-event-date">
                         <strong>{{ item.fecha|date:"d" }}</strong>
                         <span>{{ item.fecha|date:"M"|upper }}</span>
@@ -103,7 +103,7 @@
             {% if atencion %}
             <div class="company-attention-list">
                 {% for item in atencion %}
-                <a href="{% url 'k9_evento_resumen' empresa_slug=empresa.slug evento_id=item.evento.id %}">
+                <a href="{% url 'k9_evento_resumen' empresa_slug=empresa.slug evento_id=item.evento.id %}?return_to={% url 'empresa_dashboard' empresa_slug=empresa.slug %}">
                     <div>
                         <strong>{{ item.evento.titulo_evento }}</strong>
                         <span>{{ item.razones_atencion|join:" · " }}</span>
@@ -127,13 +127,13 @@
                 <span class="company-eyebrow">Actividad reciente</span>
                 <h2>Tus eventos</h2>
             </div>
-            <a href="{% url 'k9_evento_list' empresa_slug=empresa.slug %}">Abrir directorio →</a>
+            <a href="{% url 'k9_evento_list' empresa_slug=empresa.slug %}?return_to={% url 'empresa_dashboard' empresa_slug=empresa.slug %}">Abrir directorio →</a>
         </header>
 
         {% if recientes %}
         <div class="company-card-grid">
             {% for item in recientes %}
-            <a class="company-mini-card" href="{% url 'k9_evento_resumen' empresa_slug=empresa.slug evento_id=item.evento.id %}">
+            <a class="company-mini-card" href="{% url 'k9_evento_resumen' empresa_slug=empresa.slug evento_id=item.evento.id %}?return_to={% url 'empresa_dashboard' empresa_slug=empresa.slug %}">
                 <div class="company-mini-card__top">
                     <span>{{ item.evento.get_tipo_evento_display }}</span>
                     <em>{{ item.evento.get_estado_display }}</em>
@@ -154,7 +154,7 @@
         <div class="company-empty company-empty--large">
             <strong>Tu espacio está listo.</strong>
             <p>Crea tu primer evento para comenzar a trabajar.</p>
-            <a class="app-button app-button--primary" href="{% url 'k9_evento_create' empresa_slug=empresa.slug %}">+ Crear evento</a>
+            <a class="app-button app-button--primary" href="{% url 'k9_evento_create' empresa_slug=empresa.slug %}?return_to={% url 'empresa_dashboard' empresa_slug=empresa.slug %}">+ Crear evento</a>
         </div>
         {% endif %}
     </section>

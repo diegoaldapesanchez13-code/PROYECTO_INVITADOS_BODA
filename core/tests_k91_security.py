@@ -322,7 +322,7 @@ class K91LoginNextTests(TestCase):
     def test_login_planner_redirige_dashboard_planner(self):
         response = self.login("planner-login")
         follow = self.client.get(response["Location"])
-        self.assertEqual(follow["Location"], "/empresa/login-a/wedding-planner/dashboard/")
+        self.assertEqual(follow["Location"], "/empresa/login-a/planner/dashboard/")
 
     def test_login_cliente_redirige_dashboard_cliente(self):
         response = self.login("cliente-login")

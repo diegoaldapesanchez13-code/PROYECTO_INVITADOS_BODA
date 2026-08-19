@@ -22,6 +22,7 @@
 
     <form method="post" class="event-form-card">
         {% csrf_token %}
+        <input type="hidden" name="return_to" value="{{ return_to }}">
 
         <div class="event-form-grid">
             <div class="app-field event-form-grid__wide">

@@ -2,7 +2,7 @@ from django.urls import path
 from . import views, client_guest_views
 from .builder import views as builder_views
 from .builder import public_views as builder_public_views
-from eventos import company_dashboard_views
+from eventos import company_dashboard_views, planner_dashboard_views
 
 urlpatterns = [
     path('cliente/eventos/<int:evento_id>/invitados/grupos/crear/', client_guest_views.crear_grupo_cliente, name='cliente_grupo_crear'),
@@ -14,8 +14,8 @@ urlpatterns = [
     path('', views.inicio, name='inicio'),
     path('dirtec/dashboard/', views.dashboard_dirtec, name='dirtec_dashboard'),
     path('empresa/<slug:empresa_slug>/dashboard/', company_dashboard_views.company_dashboard, name='empresa_dashboard'),
-    path('empresa/<slug:empresa_slug>/wedding-planner/dashboard/', views.dashboard_planner_slug, name='planner_dashboard_empresa'),
-    path('empresa/<slug:empresa_slug>/planner/dashboard/', views.dashboard_planner_slug, name='planner_dashboard_empresa_alias'),
+    path('empresa/<slug:empresa_slug>/wedding-planner/dashboard/', planner_dashboard_views.planner_dashboard, name='planner_dashboard_empresa'),
+    path('empresa/<slug:empresa_slug>/planner/dashboard/', planner_dashboard_views.planner_dashboard, name='planner_dashboard_empresa_alias'),
     path('cliente/dashboard/', views.portal_cliente, name='cliente_dashboard'),
     path('proveedor/dashboard/', views.portal_proveedor, name='proveedor_dashboard'),
     path('portal/cliente/', views.portal_cliente, name='portal_cliente'),
