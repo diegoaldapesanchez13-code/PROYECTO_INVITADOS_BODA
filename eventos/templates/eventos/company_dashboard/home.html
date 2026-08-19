@@ -1,0 +1,162 @@
+{% extends "core/app/base.html" %}
+{% load static %}
+
+{% block title %}Inicio | {{ empresa.nombre_comercial }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'eventos/css/company_dashboard_r3.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="company-home">
+    <section class="company-hero">
+        <div class="company-hero__content">
+            <span class="company-eyebrow">{{ empresa.nombre_comercial }}</span>
+            <h1>
+                {% if request.user.first_name %}
+                    Hola, {{ request.user.first_name }}.
+                {% else %}
+                    Bienvenido.
+                {% endif %}
+            </h1>
+            <p>Esto es lo que necesita tu atención hoy.</p>
+            <div class="company-hero__actions">
+                <a class="app-button company-primary-action" href="{% url 'k9_evento_create' empresa_slug=empresa.slug %}">
+                    + Nuevo evento
+                </a>
+                <a class="app-button company-ghost-action" href="{% url 'k9_evento_list' empresa_slug=empresa.slug %}">
+                    Ver todos
+                </a>
+            </div>
+        </div>
+
+        <div class="company-hero__brand">
+            {% if brand_context.logo_url %}
+                <img src="{{ brand_context.logo_url }}" alt="{{ empresa.nombre_comercial }}">
+            {% else %}
+                <span>{{ empresa.nombre_comercial|slice:":1"|upper }}</span>
+            {% endif %}
+            <small>Powered by DIRTEC Event Studio</small>
+        </div>
+    </section>
+
+    <section class="company-kpis" aria-label="Resumen">
+        <a class="company-kpi" href="{% url 'k9_evento_list' empresa_slug=empresa.slug %}?estado=ACTIVOS">
+            <span>Eventos activos</span><strong>{{ kpis.activos }}</strong><small>En operación</small>
+        </a>
+        <a class="company-kpi" href="{% url 'k9_evento_list' empresa_slug=empresa.slug %}?estado=ACTIVOS">
+            <span>Próximos</span><strong>{{ kpis.proximos }}</strong><small>Con fecha definida</small>
+        </a>
+        <a class="company-kpi" href="{% url 'k9_evento_list' empresa_slug=empresa.slug %}?estado=BORRADORES">
+            <span>Borradores</span><strong>{{ kpis.borradores }}</strong><small>Por completar</small>
+        </a>
+        <a class="company-kpi company-kpi--attention" href="#requiere-atencion">
+            <span>Requieren atención</span><strong>{{ kpis.atencion }}</strong><small>Revisar pendientes</small>
+        </a>
+    </section>
+
+    <section class="company-main-grid">
+        <article class="company-panel">
+            <header class="company-panel__header">
+                <div>
+                    <span class="company-eyebrow">Próximos eventos</span>
+                    <h2>Lo que viene</h2>
+                </div>
+                <a href="{% url 'k9_evento_list' empresa_slug=empresa.slug %}">Ver todos →</a>
+            </header>
+
+            {% if proximos %}
+            <div class="company-event-list">
+                {% for item in proximos %}
+                <a class="company-event-row" href="{% url 'k9_evento_resumen' empresa_slug=empresa.slug evento_id=item.evento.id %}">
+                    <div class="company-event-date">
+                        <strong>{{ item.fecha|date:"d" }}</strong>
+                        <span>{{ item.fecha|date:"M"|upper }}</span>
+                    </div>
+                    <div class="company-event-copy">
+                        <strong>{{ item.evento.titulo_evento }}</strong>
+                        <span>
+                            {{ item.evento.get_tipo_evento_display }}
+                            {% if item.evento.sede %} · {{ item.evento.sede.nombre }}{% endif %}
+                        </span>
+                    </div>
+                    <span class="company-event-arrow">→</span>
+                </a>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="company-empty">
+                <strong>No hay próximos eventos con fecha.</strong>
+                <p>Puedes crear uno nuevo o completar la fecha de un borrador.</p>
+            </div>
+            {% endif %}
+        </article>
+
+        <aside class="company-panel" id="requiere-atencion">
+            <header class="company-panel__header">
+                <div>
+                    <span class="company-eyebrow">Requiere atención</span>
+                    <h2>Pendientes importantes</h2>
+                </div>
+            </header>
+
+            {% if atencion %}
+            <div class="company-attention-list">
+                {% for item in atencion %}
+                <a href="{% url 'k9_evento_resumen' empresa_slug=empresa.slug evento_id=item.evento.id %}">
+                    <div>
+                        <strong>{{ item.evento.titulo_evento }}</strong>
+                        <span>{{ item.razones_atencion|join:" · " }}</span>
+                    </div>
+                    <b>{{ item.atencion }}</b>
+                </a>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="company-empty">
+                <strong>Todo se ve en orden.</strong>
+                <p>No detectamos pendientes básicos en tus eventos activos.</p>
+            </div>
+            {% endif %}
+        </aside>
+    </section>
+
+    <section class="company-panel">
+        <header class="company-panel__header">
+            <div>
+                <span class="company-eyebrow">Actividad reciente</span>
+                <h2>Tus eventos</h2>
+            </div>
+            <a href="{% url 'k9_evento_list' empresa_slug=empresa.slug %}">Abrir directorio →</a>
+        </header>
+
+        {% if recientes %}
+        <div class="company-card-grid">
+            {% for item in recientes %}
+            <a class="company-mini-card" href="{% url 'k9_evento_resumen' empresa_slug=empresa.slug evento_id=item.evento.id %}">
+                <div class="company-mini-card__top">
+                    <span>{{ item.evento.get_tipo_evento_display }}</span>
+                    <em>{{ item.evento.get_estado_display }}</em>
+                </div>
+                <h3>{{ item.evento.titulo_evento }}</h3>
+                <p>
+                    {% if item.fecha %}{{ item.fecha|date:"d M Y" }}{% else %}Fecha por definir{% endif %}
+                    {% if item.evento.wedding_planner %} · {{ item.evento.wedding_planner.get_full_name|default:item.evento.wedding_planner.username }}{% endif %}
+                </p>
+                <footer>
+                    <span>{{ item.servicios }} servicios</span>
+                    <span>{{ item.tareas_pendientes }} tareas</span>
+                </footer>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="company-empty company-empty--large">
+            <strong>Tu espacio está listo.</strong>
+            <p>Crea tu primer evento para comenzar a trabajar.</p>
+            <a class="app-button app-button--primary" href="{% url 'k9_evento_create' empresa_slug=empresa.slug %}">+ Crear evento</a>
+        </div>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}

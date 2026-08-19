@@ -44,14 +44,17 @@ def _item(key, label, url, icon="", short_label="", active_key=""):
 
 def _company_navigation(empresa, active_key="inicio"):
     dashboard = reverse("empresa_dashboard", kwargs={"empresa_slug": empresa.slug})
+    legacy = reverse("dashboard_empresa") + f"?empresa={empresa.id}"
     return [
-        _item("inicio", "Inicio", dashboard + "#resumen", "⌂", active_key=active_key),
+        _item("inicio", "Inicio", dashboard, "⌂", active_key=active_key),
         _item("eventos", "Eventos", reverse("k9_evento_list", kwargs={"empresa_slug": empresa.slug}), "◇", active_key=active_key),
-        _item("clientes", "Clientes", dashboard + "#clientes", "◎", active_key=active_key),
-        _item("equipo", "Planners", dashboard + "#equipo", "◌", active_key=active_key),
-        _item("proveedores", "Proveedores", dashboard + "#proveedores", "◈", active_key=active_key),
-        _item("catalogo", "Catálogo", dashboard + "#catalogos", "▦", active_key=active_key),
-        _item("configuracion", "Configuración", dashboard + "#configuracion", "⚙", active_key=active_key),
+        # R3A mantiene temporalmente estos módulos en el dashboard legacy hasta
+        # que sus fases específicas los migren a pantallas canónicas.
+        _item("clientes", "Clientes", legacy + "#clientes", "◎", active_key=active_key),
+        _item("equipo", "Planners", legacy + "#equipo", "◌", active_key=active_key),
+        _item("proveedores", "Proveedores", legacy + "#proveedores", "◈", active_key=active_key),
+        _item("catalogo", "Catálogo", legacy + "#catalogos", "▦", active_key=active_key),
+        _item("configuracion", "Configuración", legacy + "#configuracion", "⚙", active_key=active_key),
     ]
 
 
