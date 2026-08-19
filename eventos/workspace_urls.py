@@ -8,4 +8,12 @@ urlpatterns = [
     path("nuevo/", workspace_views.evento_create, name="k9_evento_create"),
     path("<int:evento_id>/", workspace_views.evento_resumen, name="k9_evento_resumen"),
     path("<int:evento_id>/datos/", workspace_views.evento_datos, name="k9_evento_datos"),
+    path("<int:evento_id>/configuracion/", workspace_views.evento_configuracion, name="k9_evento_configuracion"),
+    path("<int:evento_id>/finalizar/", workspace_views.evento_finalizar, name="k9_evento_finalizar"),
+    path("<int:evento_id>/cancelar/", workspace_views.evento_cancelar, name="k9_evento_cancelar"),
+    path("<int:evento_id>/archivar/", workspace_views.evento_archivar, name="k9_evento_archivar"),
+    path("<int:evento_id>/restaurar/", workspace_views.evento_restaurar, name="k9_evento_restaurar"),
+    path("<int:evento_id>/eliminar-error/", workspace_views.evento_eliminar_error, name="k9_evento_eliminar_error"),
+    path("<int:evento_id>/purgar/", workspace_views.evento_purgar, name="k9_evento_purgar"),
 ]
+

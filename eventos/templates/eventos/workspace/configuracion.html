@@ -1,0 +1,124 @@
+{% extends "eventos/workspace/base.html" %}
+
+{% block title %}Configuración | {{ evento.titulo_evento }}{% endblock %}
+
+{% block workspace_content %}
+<section class="event-settings">
+    <header class="event-page-heading">
+        <div>
+            <span class="event-eyebrow">Configuración</span>
+            <h2>Lifecycle del evento</h2>
+            <p>
+                Editar, finalizar, cancelar, archivar y eliminar son acciones distintas.
+                El historial real nunca se borra a ciegas.
+            </p>
+        </div>
+    </header>
+
+    <div class="event-settings__grid">
+        <article class="app-card event-setting-card">
+            <span class="event-eyebrow">Estado actual</span>
+            <h3>{{ evento.get_estado_display }}</h3>
+            <p>El estado define si el evento sigue en operación diaria.</p>
+
+            {% if puede_editar %}
+            <div class="event-setting-actions">
+                {% if evento.estado == "ARCHIVADO" %}
+                    <form method="post" action="{% url 'k9_evento_restaurar' empresa_slug=empresa.slug evento_id=evento.id %}">
+                        {% csrf_token %}
+                        <button class="app-button app-button--primary" type="submit">Restaurar evento</button>
+                    </form>
+                {% elif evento.estado == "CANCELADO" %}
+                    <form method="post" action="{% url 'k9_evento_archivar' empresa_slug=empresa.slug evento_id=evento.id %}">
+                        {% csrf_token %}
+                        <button class="app-button app-button--secondary" type="submit">Archivar</button>
+                    </form>
+                {% elif evento.estado == "FINALIZADO" %}
+                    <form method="post" action="{% url 'k9_evento_archivar' empresa_slug=empresa.slug evento_id=evento.id %}">
+                        {% csrf_token %}
+                        <button class="app-button app-button--secondary" type="submit">Archivar</button>
+                    </form>
+                {% else %}
+                    <form method="post" action="{% url 'k9_evento_finalizar' empresa_slug=empresa.slug evento_id=evento.id %}">
+                        {% csrf_token %}
+                        <button class="app-button app-button--secondary" type="submit">Marcar finalizado</button>
+                    </form>
+
+                    <details class="event-action-disclosure">
+                        <summary>Cancelar evento</summary>
+                        <form method="post" action="{% url 'k9_evento_cancelar' empresa_slug=empresa.slug evento_id=evento.id %}">
+                            {% csrf_token %}
+                            <label class="app-field">
+                                <span class="app-label">Motivo</span>
+                                <textarea class="app-textarea" name="motivo" rows="3" placeholder="Opcional"></textarea>
+                            </label>
+                            <button class="app-button app-button--danger" type="submit">Confirmar cancelación</button>
+                        </form>
+                    </details>
+
+                    <form method="post" action="{% url 'k9_evento_archivar' empresa_slug=empresa.slug evento_id=evento.id %}">
+                        {% csrf_token %}
+                        <button class="app-button app-button--secondary" type="submit">Archivar evento</button>
+                    </form>
+                {% endif %}
+            </div>
+            {% endif %}
+        </article>
+
+        <article class="app-card event-setting-card">
+            <span class="event-eyebrow">Integridad</span>
+            <h3>¿Se puede eliminar?</h3>
+            {% if evaluacion_eliminacion.permitido %}
+                <p>Este evento todavía no tiene historial protegido y puede tratarse como un error de captura.</p>
+                <span class="app-badge app-badge--success">Eliminación segura disponible</span>
+            {% else %}
+                <p>Ya existe historial relevante. El flujo correcto es cancelar o archivar.</p>
+                <ul class="event-protection-list">
+                    {% for motivo in evaluacion_eliminacion.motivos %}
+                    <li>{{ motivo }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </article>
+    </div>
+
+    <section class="event-danger-zone">
+        <div>
+            <span class="event-eyebrow">Danger Zone</span>
+            <h3>Acciones destructivas</h3>
+            <p>Estas acciones no deben confundirse con archivar.</p>
+        </div>
+
+        {% if puede_eliminar_error %}
+        <div class="event-danger-action">
+            <div>
+                <strong>Eliminar evento creado por error</strong>
+                <p>Solo está disponible mientras no exista historial relevante.</p>
+            </div>
+            <form method="post" action="{% url 'k9_evento_eliminar_error' empresa_slug=empresa.slug evento_id=evento.id %}">
+                {% csrf_token %}
+                <input class="app-input" name="confirmacion" placeholder="Escribe ELIMINAR" autocomplete="off">
+                <button class="app-button app-button--danger" type="submit">Eliminar definitivamente</button>
+            </form>
+        </div>
+        {% endif %}
+
+        {% if evento.estado == "ARCHIVADO" and puede_purgar %}
+        <div class="event-danger-action">
+            <div>
+                <strong>Purgar archivado</strong>
+                <p>
+                    Disponible para DIRTEC/Admin Empresa, pero seguirá bloqueado si existen
+                    contratos, pagos, servicios u otro historial protegido.
+                </p>
+            </div>
+            <form method="post" action="{% url 'k9_evento_purgar' empresa_slug=empresa.slug evento_id=evento.id %}">
+                {% csrf_token %}
+                <input class="app-input" name="confirmacion" placeholder="Escribe PURGAR" autocomplete="off">
+                <button class="app-button app-button--danger" type="submit">Purgar permanentemente</button>
+            </form>
+        </div>
+        {% endif %}
+    </section>
+</section>
+{% endblock %}

@@ -59,7 +59,14 @@
             >
                 <div class="event-card__top">
                     <span class="event-card__type">{{ evento.get_tipo_evento_display }}</span>
-                    <span class="app-badge app-badge--neutral">{{ evento.get_estado_display }}</span>
+                    <span class="app-badge
+        {% if evento.estado == 'CANCELADO' %}app-badge--danger
+        {% elif evento.estado == 'FINALIZADO' %}app-badge--success
+        {% elif evento.estado == 'ARCHIVADO' %}app-badge--neutral
+        {% elif evento.estado == 'BORRADOR' %}app-badge--warning
+        {% else %}app-badge--success{% endif %}">
+        {{ evento.get_estado_display }}
+    </span>
                 </div>
 
                 <h2>{{ evento.titulo_evento }}</h2>

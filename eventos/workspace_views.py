@@ -3,6 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_POST
 from django.urls import reverse
 
 from core.services.app_context import build_app_context
@@ -11,7 +12,18 @@ from core.services.permisos import roles_usuario_empresa, usuario_es_dirtec_oper
 from core.services.tenant_context import validar_slug_tenant
 from invitaciones.models import EventoBoda
 
-from .event_domain import crear_evento_generico, actualizar_datos_evento_generico
+from .event_domain import (
+    actualizar_datos_evento_generico,
+    archivar_evento,
+    cancelar_evento,
+    crear_evento_generico,
+    eliminar_evento_error,
+    evaluar_eliminacion_evento,
+    finalizar_evento,
+    purgar_evento_archivado,
+    restaurar_evento,
+    usuario_puede_purgar_evento,
+)
 from .forms import EventoCreateForm, EventoEditForm
 
 
@@ -239,3 +251,126 @@ def evento_datos(request, empresa_slug, evento_id):
         }
     )
     return render(request, "eventos/workspace/evento_form.html", context)
+
+
+@login_required(login_url="/login/")
+def evento_configuracion(request, empresa_slug, evento_id):
+    tenant, _roles = _contexto_empresa(request, empresa_slug)
+    empresa = tenant.empresa
+    evento = _evento_visible(request.user, empresa, evento_id)
+
+    evaluacion = evaluar_eliminacion_evento(evento)
+    context = _app_context(
+        request,
+        empresa,
+        title=evento.titulo_evento,
+        section="Event Workspace",
+    )
+    context.update(
+        {
+            "evento": evento,
+            "workspace_active": "configuracion",
+            "puede_editar": usuario_puede_evento(request.user, evento, Actions.EVENT_EDIT),
+            "puede_eliminar_error": evaluacion.permitido
+                and usuario_puede_evento(request.user, evento, Actions.EVENT_EDIT),
+            "evaluacion_eliminacion": evaluacion,
+            "puede_purgar": usuario_puede_purgar_evento(request.user, evento),
+        }
+    )
+    return render(request, "eventos/workspace/configuracion.html", context)
+
+
+@require_POST
+@login_required(login_url="/login/")
+def evento_finalizar(request, empresa_slug, evento_id):
+    tenant, _roles = _contexto_empresa(request, empresa_slug)
+    evento = _evento_visible(request.user, tenant.empresa, evento_id, action=Actions.EVENT_EDIT)
+    try:
+        finalizar_evento(evento, usuario=request.user, request=request)
+    except ValidationError as exc:
+        messages.error(request, " ".join(exc.messages))
+    else:
+        messages.success(request, "Evento finalizado. El historial permanece disponible.")
+    return redirect("k9_evento_configuracion", empresa_slug=tenant.empresa.slug, evento_id=evento.id)
+
+
+@require_POST
+@login_required(login_url="/login/")
+def evento_cancelar(request, empresa_slug, evento_id):
+    tenant, _roles = _contexto_empresa(request, empresa_slug)
+    evento = _evento_visible(request.user, tenant.empresa, evento_id, action=Actions.EVENT_EDIT)
+    try:
+        cancelar_evento(
+            evento,
+            usuario=request.user,
+            motivo=request.POST.get("motivo", ""),
+            request=request,
+        )
+    except ValidationError as exc:
+        messages.error(request, " ".join(exc.messages))
+    else:
+        messages.success(request, "Evento cancelado. No se eliminó ningún historial.")
+    return redirect("k9_evento_configuracion", empresa_slug=tenant.empresa.slug, evento_id=evento.id)
+
+
+@require_POST
+@login_required(login_url="/login/")
+def evento_archivar(request, empresa_slug, evento_id):
+    tenant, _roles = _contexto_empresa(request, empresa_slug)
+    evento = _evento_visible(request.user, tenant.empresa, evento_id, action=Actions.EVENT_EDIT)
+    archivar_evento(evento, usuario=request.user, request=request)
+    messages.success(request, "Evento archivado.")
+    return redirect("k9_evento_configuracion", empresa_slug=tenant.empresa.slug, evento_id=evento.id)
+
+
+@require_POST
+@login_required(login_url="/login/")
+def evento_restaurar(request, empresa_slug, evento_id):
+    tenant, _roles = _contexto_empresa(request, empresa_slug)
+    evento = _evento_visible(request.user, tenant.empresa, evento_id, action=Actions.EVENT_EDIT)
+    restaurar_evento(evento, usuario=request.user, request=request)
+    messages.success(request, "Evento restaurado.")
+    return redirect("k9_evento_configuracion", empresa_slug=tenant.empresa.slug, evento_id=evento.id)
+
+
+@require_POST
+@login_required(login_url="/login/")
+def evento_eliminar_error(request, empresa_slug, evento_id):
+    tenant, _roles = _contexto_empresa(request, empresa_slug)
+    evento = _evento_visible(request.user, tenant.empresa, evento_id, action=Actions.EVENT_EDIT)
+
+    if (request.POST.get("confirmacion") or "").strip().upper() != "ELIMINAR":
+        messages.error(request, 'Escribe ELIMINAR para confirmar.')
+        return redirect("k9_evento_configuracion", empresa_slug=tenant.empresa.slug, evento_id=evento.id)
+
+    try:
+        eliminado = eliminar_evento_error(evento, usuario=request.user, request=request)
+    except ValidationError as exc:
+        messages.error(request, " ".join(exc.messages))
+        return redirect("k9_evento_configuracion", empresa_slug=tenant.empresa.slug, evento_id=evento.id)
+
+    messages.success(request, f'Evento "{eliminado["nombre"]}" eliminado porque no tenía historial protegido.')
+    return redirect("k9_evento_list", empresa_slug=tenant.empresa.slug)
+
+
+@require_POST
+@login_required(login_url="/login/")
+def evento_purgar(request, empresa_slug, evento_id):
+    tenant, _roles = _contexto_empresa(request, empresa_slug)
+    evento = _evento_visible(request.user, tenant.empresa, evento_id)
+
+    if (request.POST.get("confirmacion") or "").strip().upper() != "PURGAR":
+        messages.error(request, 'Escribe PURGAR para confirmar.')
+        return redirect("k9_evento_configuracion", empresa_slug=tenant.empresa.slug, evento_id=evento.id)
+
+    try:
+        eliminado = purgar_evento_archivado(evento, usuario=request.user, request=request)
+    except (ValidationError, PermissionDenied) as exc:
+        if isinstance(exc, ValidationError):
+            messages.error(request, " ".join(exc.messages))
+        else:
+            raise
+        return redirect("k9_evento_configuracion", empresa_slug=tenant.empresa.slug, evento_id=evento.id)
+
+    messages.success(request, f'Evento "{eliminado["nombre"]}" purgado permanentemente.')
+    return redirect("k9_evento_list", empresa_slug=tenant.empresa.slug)

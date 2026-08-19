@@ -542,3 +542,109 @@
         text-decoration: none;
     }
 }
+
+
+.event-settings {
+    display: grid;
+    gap: 1.25rem;
+}
+
+.event-settings__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+.event-setting-card h3,
+.event-danger-zone h3 {
+    margin: .35rem 0 .55rem;
+    font-size: 1.35rem;
+    letter-spacing: -.025em;
+}
+
+.event-setting-card > p,
+.event-danger-zone > div > p,
+.event-danger-action p {
+    margin: 0;
+    color: var(--text-muted);
+    line-height: 1.55;
+}
+
+.event-setting-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: start;
+    gap: .65rem;
+    margin-top: 1.15rem;
+}
+
+.event-action-disclosure {
+    width: min(100%, 420px);
+    border: 1px solid color-mix(in srgb, var(--danger) 24%, var(--border));
+    border-radius: 14px;
+}
+
+.event-action-disclosure summary {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    padding: .65rem .8rem;
+    color: var(--danger);
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.event-action-disclosure form {
+    display: grid;
+    gap: .8rem;
+    padding: 0 .8rem .8rem;
+}
+
+.event-protection-list {
+    margin: .9rem 0 0;
+    padding-left: 1.15rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+}
+
+.event-danger-zone {
+    display: grid;
+    gap: 1rem;
+    border: 1px solid color-mix(in srgb, var(--danger) 28%, var(--border));
+    border-radius: 20px;
+    background: color-mix(in srgb, var(--danger) 3.5%, white);
+    padding: clamp(1rem, 3vw, 1.5rem);
+}
+
+.event-danger-action {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(300px, .7fr);
+    gap: 1.25rem;
+    align-items: end;
+    border-top: 1px solid color-mix(in srgb, var(--danger) 18%, var(--border));
+    padding-top: 1rem;
+}
+
+.event-danger-action form {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: .6rem;
+}
+
+@media (max-width: 767px) {
+    .event-settings__grid,
+    .event-danger-action,
+    .event-danger-action form {
+        grid-template-columns: 1fr;
+    }
+
+    .event-setting-actions,
+    .event-setting-actions form,
+    .event-setting-actions .app-button {
+        width: 100%;
+    }
+
+    .event-action-disclosure {
+        width: 100%;
+    }
+}

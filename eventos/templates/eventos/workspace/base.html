@@ -35,7 +35,10 @@
         <span>Comercial</span>
         <span>Servicios</span>
         <span>Invitados</span>
-        <span>Más</span>
+        <a href="{% url 'k9_evento_configuracion' empresa_slug=empresa.slug evento_id=evento.id %}"
+           class="{% if workspace_active == 'configuracion' %}is-active{% endif %}">
+            Configuración
+        </a>
     </nav>
 </section>
 {% endif %}

@@ -403,8 +403,79 @@ def restaurar_evento(evento, *, usuario, request=None):
     return evento
 
 
+@transaction.atomic
+def finalizar_evento(evento, *, usuario, request=None):
+    if not usuario_puede_evento(usuario, evento, Actions.EVENT_EDIT):
+        raise PermissionDenied("No tienes permiso para finalizar este evento.")
+    if evento.estado == "ARCHIVADO":
+        raise ValidationError("Restaura el evento antes de finalizarlo.")
+    if evento.estado == "CANCELADO":
+        raise ValidationError("Un evento cancelado no puede marcarse como finalizado.")
+
+    anterior = evento.estado
+    evento.estado = "FINALIZADO"
+    evento.activo = False
+    evento.save(update_fields=["estado", "activo", "fecha_actualizacion"])
+
+    registrar_auditoria(
+        usuario=usuario,
+        empresa=evento.empresa,
+        evento=evento,
+        accion="FINALIZAR_EVENTO_K9",
+        modelo="EventoBoda",
+        objeto_id=evento.id,
+        descripcion=f"Se finalizo el evento {evento.titulo_evento}.",
+        valores_anteriores={"estado": anterior},
+        valores_nuevos={"estado": evento.estado},
+        request=request,
+    )
+    return evento
+
+
 def usuario_puede_purgar_evento(usuario, evento):
     if usuario_es_dirtec_operativo(usuario):
         return True
     roles = roles_usuario_empresa(usuario, evento.empresa)
     return "ADMIN_EMPRESA" in roles
+
+
+@transaction.atomic
+def purgar_evento_archivado(evento, *, usuario, request=None):
+    """
+    Purga administrativa R2C.
+
+    Solo DIRTEC/Admin Empresa y únicamente después de ARCHIVAR.
+    Aun así respeta la misma evaluación de integridad que error-delete.
+    """
+    if not usuario_puede_purgar_evento(usuario, evento):
+        raise PermissionDenied("No tienes permiso para purgar eventos.")
+    if evento.estado != "ARCHIVADO":
+        raise ValidationError("El evento debe estar archivado antes de purgarse.")
+
+    evaluacion = evaluar_eliminacion_evento(evento)
+    if not evaluacion.permitido:
+        raise ValidationError(
+            ["El evento archivado todavía tiene historial protegido.", *evaluacion.motivos]
+        )
+
+    empresa = evento.empresa
+    evento_id = evento.id
+    nombre = evento.titulo_evento
+
+    registrar_auditoria(
+        usuario=usuario,
+        empresa=empresa,
+        evento=evento,
+        accion="PURGAR_EVENTO_K9",
+        modelo="EventoBoda",
+        objeto_id=evento_id,
+        descripcion=f"Se purgo permanentemente el evento archivado: {nombre}.",
+        valores_anteriores={
+            "nombre_evento": evento.nombre_evento,
+            "tipo_evento": evento.tipo_evento,
+            "estado": evento.estado,
+        },
+        request=request,
+    )
+    evento.delete()
+    return {"evento_id": evento_id, "nombre": nombre}
