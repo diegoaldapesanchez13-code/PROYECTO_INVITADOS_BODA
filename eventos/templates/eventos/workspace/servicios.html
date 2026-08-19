@@ -1,0 +1,251 @@
+{% extends "eventos/workspace/base.html" %}
+{% load static %}
+
+{% block title %}Servicios | {{ evento.titulo_evento }}{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'eventos/css/workspace_services_r4.css' %}">
+{% endblock %}
+
+{% block workspace_content %}
+<section class="services-workspace">
+    <header class="services-heading">
+        <div>
+            <span class="workspace-eyebrow">Operación</span>
+            <h2>Servicios y proveedores</h2>
+            <p>
+                Aquí administras la ejecución real del evento. Cambiar proveedor,
+                fechas, costos internos o notas operativas no modifica el contrato congelado.
+            </p>
+        </div>
+
+        {% if puede_operar %}
+        <a
+            class="app-button app-button--primary"
+            href="{% url 'k9_evento_servicios' empresa_slug=empresa.slug evento_id=evento.id %}?return_to={{ return_to|urlencode }}"
+        >
+            + Servicio operativo
+        </a>
+        {% endif %}
+    </header>
+
+    <div class="services-contract-note">
+        <strong>¿Es un adicional que se cobrará al cliente?</strong>
+        <span>
+            Créalo primero como revisión en Comercial. Un servicio agregado directamente aquí
+            es operativo y no altera el snapshot contractual.
+        </span>
+        <a href="{% url 'k9_evento_comercial' empresa_slug=empresa.slug evento_id=evento.id %}?return_to={{ return_to|urlencode }}">Ir a Comercial →</a>
+    </div>
+
+    <form method="get" class="services-toolbar">
+        <input type="hidden" name="return_to" value="{{ return_to }}">
+        <input class="app-input" type="search" name="q" value="{{ busqueda }}" placeholder="Buscar servicio o proveedor...">
+        <select class="app-select" name="vista" onchange="this.form.submit()">
+            <option value="activos" {% if vista == "activos" %}selected{% endif %}>Activos</option>
+            <option value="cancelados" {% if vista == "cancelados" %}selected{% endif %}>Cancelados</option>
+            <option value="archivados" {% if vista == "archivados" %}selected{% endif %}>Archivados</option>
+        </select>
+        <button class="app-button app-button--secondary" type="submit">Filtrar</button>
+    </form>
+
+    <section class="services-layout">
+        <div class="services-list">
+            {% for item in servicios %}
+            <a
+                href="{% url 'k9_evento_servicios' empresa_slug=empresa.slug evento_id=evento.id %}?servicio={{ item.id }}&vista={{ vista }}&return_to={{ return_to|urlencode }}"
+                class="service-card {% if servicio and servicio.id == item.id %}is-selected{% endif %}"
+            >
+                <div class="service-card__top">
+                    <span class="service-origin">
+                        {% if item.contrato_origen_id %}Contrato v{{ item.contrato_origen.version }}
+                        {% elif item.origen == "CATALOGO" %}Catálogo
+                        {% else %}Operativo{% endif %}
+                    </span>
+                    <b class="service-state service-state--{{ item.estado_operativo|lower }}">
+                        {{ item.get_estado_operativo_display }}
+                    </b>
+                </div>
+
+                <h3>{{ item.nombre_servicio }}</h3>
+
+                <dl>
+                    <div>
+                        <dt>Prestación</dt>
+                        <dd>{{ item.get_prestacion_tipo_display }}</dd>
+                    </div>
+                    <div>
+                        <dt>Proveedor</dt>
+                        <dd>{% if item.proveedor %}{{ item.proveedor.nombre_comercial }}{% else %}Por definir{% endif %}</dd>
+                    </div>
+                    <div>
+                        <dt>Fecha</dt>
+                        <dd>{% if item.fecha_servicio %}{{ item.fecha_servicio|date:"d M Y" }}{% else %}Por definir{% endif %}</dd>
+                    </div>
+                </dl>
+
+                {% if puede_finanzas %}
+                <footer>Costo proveedor: ${{ item.costo_proveedor }}</footer>
+                {% endif %}
+            </a>
+            {% empty %}
+            <div class="services-empty">
+                <strong>No hay servicios en esta vista.</strong>
+                <p>
+                    {% if vista == "archivados" %}
+                    Los servicios archivados aparecerán aquí.
+                    {% elif vista == "cancelados" %}
+                    No hay servicios cancelados sin archivar.
+                    {% else %}
+                    Materializa un contrato o agrega un servicio operativo.
+                    {% endif %}
+                </p>
+            </div>
+            {% endfor %}
+        </div>
+
+        <aside class="services-editor">
+            {% if puede_operar %}
+            <article class="workspace-panel">
+                <header class="workspace-panel__header">
+                    <div>
+                        <span class="workspace-eyebrow">
+                            {% if servicio %}Servicio #{{ servicio.id }}{% else %}Nuevo servicio{% endif %}
+                        </span>
+                        <h3>
+                            {% if servicio %}Editar operación{% else %}Agregar servicio{% endif %}
+                        </h3>
+                    </div>
+                    {% if servicio and servicio.contrato_origen_id %}
+                    <span class="services-lock">Identidad contractual</span>
+                    {% endif %}
+                </header>
+
+                {% if servicio and servicio.archivado_en %}
+                    <div class="services-archived-note">
+                        Este servicio está archivado. Restáuralo para editarlo.
+                    </div>
+                {% else %}
+                <form method="post" class="services-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="accion" value="guardar">
+                    <input type="hidden" name="servicio_id" value="{% if servicio %}{{ servicio.id }}{% endif %}">
+                    <input type="hidden" name="vista" value="{{ vista }}">
+                    <input type="hidden" name="return_to" value="{{ return_to }}">
+
+                    <div class="services-form-grid">
+                        {% for field in form %}
+                        <label class="app-field {% if field.name == 'descripcion' or field.name == 'notas_internas' %}services-form-grid__wide{% endif %}">
+                            <span>{{ field.label }}</span>
+                            {{ field }}
+                            {% if field.help_text %}<small class="app-field__help">{{ field.help_text }}</small>{% endif %}
+                            {% if field.errors %}<small class="app-field__error">{{ field.errors|striptags }}</small>{% endif %}
+                        </label>
+                        {% endfor %}
+                    </div>
+
+                    {% if form.non_field_errors %}
+                    <div class="services-errors">{{ form.non_field_errors }}</div>
+                    {% endif %}
+
+                    <div class="services-actions">
+                        <button class="app-button app-button--primary" type="submit">
+                            {% if servicio %}Guardar cambios{% else %}Agregar servicio{% endif %}
+                        </button>
+                    </div>
+                </form>
+                {% endif %}
+            </article>
+
+            {% if servicio %}
+            <article class="workspace-panel service-lifecycle">
+                <header class="workspace-panel__header">
+                    <div>
+                        <span class="workspace-eyebrow">Lifecycle</span>
+                        <h3>Acciones del servicio</h3>
+                    </div>
+                </header>
+
+                {% if servicio.archivado_en %}
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="accion" value="restaurar">
+                        <input type="hidden" name="servicio_id" value="{{ servicio.id }}">
+                        <input type="hidden" name="return_to" value="{{ return_to }}">
+                        <button class="app-button app-button--secondary" type="submit">Restaurar del archivo</button>
+                    </form>
+                {% else %}
+                    {% if servicio.estado_operativo != "CANCELADO" and servicio.estado_operativo != "COMPLETADO" %}
+                    <details class="service-danger-disclosure">
+                        <summary>Cancelar servicio</summary>
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="accion" value="cancelar">
+                            <input type="hidden" name="servicio_id" value="{{ servicio.id }}">
+                            <input type="hidden" name="return_to" value="{{ return_to }}">
+                            <textarea class="app-textarea" name="motivo" rows="2" placeholder="Motivo opcional"></textarea>
+                            <button class="app-button app-button--danger" type="submit">Confirmar cancelación</button>
+                        </form>
+                    </details>
+                    {% endif %}
+
+                    {% if servicio.estado_operativo == "CANCELADO" or servicio.estado_operativo == "COMPLETADO" %}
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="accion" value="archivar">
+                        <input type="hidden" name="servicio_id" value="{{ servicio.id }}">
+                        <input type="hidden" name="return_to" value="{{ return_to }}">
+                        <button class="app-button app-button--secondary" type="submit">Archivar servicio</button>
+                    </form>
+                    {% endif %}
+                {% endif %}
+            </article>
+
+            {% if not servicio.archivado_en and selected_eval and selected_eval.permitido %}
+            <article class="workspace-panel service-delete-zone">
+                <span class="workspace-eyebrow">Error de captura</span>
+                <h3>Eliminar definitivamente</h3>
+                <p>Disponible porque este servicio aún no tiene historial protegido.</p>
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="accion" value="eliminar_error">
+                    <input type="hidden" name="servicio_id" value="{{ servicio.id }}">
+                    <input type="hidden" name="return_to" value="{{ return_to }}">
+                    <input class="app-input" name="confirmacion" placeholder="Escribe ELIMINAR">
+                    <button class="app-button app-button--danger" type="submit">Eliminar servicio</button>
+                </form>
+            </article>
+            {% elif servicio.archivado_en and puede_purgar %}
+            <article class="workspace-panel service-delete-zone">
+                <span class="workspace-eyebrow">Purge</span>
+                <h3>Purgar archivado</h3>
+                {% if selected_eval.permitido %}
+                <p>Solo DIRTEC/Admin Empresa. Este registro no tiene historial protegido adicional.</p>
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="accion" value="purgar">
+                    <input type="hidden" name="servicio_id" value="{{ servicio.id }}">
+                    <input type="hidden" name="return_to" value="{{ return_to }}">
+                    <input class="app-input" name="confirmacion" placeholder="Escribe PURGAR">
+                    <button class="app-button app-button--danger" type="submit">Purgar permanentemente</button>
+                </form>
+                {% else %}
+                <p>Este servicio archivado conserva historial protegido y no puede purgarse.</p>
+                <ul>
+                    {% for motivo in selected_eval.motivos %}<li>{{ motivo }}</li>{% endfor %}
+                </ul>
+                {% endif %}
+            </article>
+            {% endif %}
+            {% endif %}
+            {% else %}
+            <article class="workspace-panel services-readonly">
+                <strong>Solo lectura</strong>
+                <p>No tienes permisos operativos para modificar servicios.</p>
+            </article>
+            {% endif %}
+        </aside>
+    </section>
+</section>
+{% endblock %}

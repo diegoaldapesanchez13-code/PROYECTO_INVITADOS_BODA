@@ -1,0 +1,331 @@
+{% extends "eventos/workspace/base.html" %}
+{% load static %}
+
+{% block title %}Comercial | {{ evento.titulo_evento }}{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'eventos/css/workspace_commercial_r4.css' %}">
+{% endblock %}
+
+{% block workspace_content %}
+<section class="commercial-workspace">
+    <header class="commercial-heading">
+        <div>
+            <span class="workspace-eyebrow">Comercial</span>
+            <h2>Propuesta y contrato</h2>
+            <p>
+                La propuesta puede evolucionar. Cuando se genera un contrato,
+                su snapshot queda congelado; cualquier cambio posterior crea una nueva revisión.
+            </p>
+        </div>
+    </header>
+
+    <section class="commercial-status-grid">
+        <article class="commercial-status-card">
+            <span>Propuestas</span>
+            <strong>{{ propuestas|length }}</strong>
+            <small>{% if propuesta %}Seleccionada: {{ propuesta.get_estado_display }}{% else %}Sin propuesta{% endif %}</small>
+        </article>
+        <article class="commercial-status-card">
+            <span>Contrato vigente</span>
+            <strong>{% if contrato_actual %}v{{ contrato_actual.version }}{% else %}—{% endif %}</strong>
+            <small>{% if contrato_actual %}{{ contrato_actual.get_estado_display }}{% else %}Aún no generado{% endif %}</small>
+        </article>
+        <article class="commercial-status-card">
+            <span>Total propuesta</span>
+            <strong>{% if dto %}${{ dto.total }}{% else %}$0.00{% endif %}</strong>
+            <small>Calculado server-side</small>
+        </article>
+    </section>
+
+    <section class="commercial-layout">
+        <aside class="commercial-sidebar">
+            <div class="commercial-sidebar__title">
+                <strong>Versiones comerciales</strong>
+            </div>
+
+            <div class="commercial-proposal-list">
+                {% for item in propuestas %}
+                <a
+                    href="{% url 'k9_evento_comercial' empresa_slug=empresa.slug evento_id=evento.id %}?propuesta={{ item.id }}&return_to={{ return_to|urlencode }}"
+                    class="{% if propuesta and propuesta.id == item.id %}is-active{% endif %}"
+                >
+                    <div>
+                        <strong>Propuesta #{{ item.id }}</strong>
+                        <span>{{ item.get_estado_display }}</span>
+                    </div>
+                    <b>${{ item.total }}</b>
+                </a>
+                {% empty %}
+                <div class="commercial-empty">
+                    <strong>Sin propuestas todavía.</strong>
+                    <span>Crea la primera cuando tengas un paquete base.</span>
+                </div>
+                {% endfor %}
+            </div>
+
+            {% if puede_editar %}
+            <a
+                class="app-button app-button--secondary commercial-new"
+                href="{% url 'k9_evento_comercial' empresa_slug=empresa.slug evento_id=evento.id %}?return_to={{ return_to|urlencode }}"
+            >
+                + Nueva propuesta
+            </a>
+            {% endif %}
+        </aside>
+
+        <div class="commercial-main">
+            <article class="workspace-panel commercial-form-panel">
+                <header class="workspace-panel__header">
+                    <div>
+                        <span class="workspace-eyebrow">Propuesta</span>
+                        <h3>{% if propuesta %}Editar propuesta #{{ propuesta.id }}{% else %}Nueva propuesta{% endif %}</h3>
+                    </div>
+                    {% if propuesta and not propuesta_editable %}
+                    <span class="commercial-lock">Congelada</span>
+                    {% endif %}
+                </header>
+
+                {% if puede_editar %}
+                <form method="post" class="commercial-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="accion" value="guardar_propuesta">
+                    <input type="hidden" name="propuesta_id" value="{% if propuesta %}{{ propuesta.id }}{% endif %}">
+                    <input type="hidden" name="return_to" value="{{ return_to }}">
+
+                    <div class="commercial-form-grid">
+                        <label class="app-field">
+                            <span>Paquete *</span>
+                            {{ form.paquete }}
+                            {% if form.paquete.errors %}<small class="app-field__error">{{ form.paquete.errors|striptags }}</small>{% endif %}
+                        </label>
+                        <label class="app-field">
+                            <span>Sede</span>
+                            {{ form.sede }}
+                        </label>
+                        <label class="app-field">
+                            <span>Adultos</span>
+                            {{ form.adultos }}
+                        </label>
+                        <label class="app-field">
+                            <span>Niños</span>
+                            {{ form.ninos }}
+                        </label>
+                        <label class="app-field">
+                            <span>Descuento</span>
+                            {{ form.descuento }}
+                        </label>
+                        <label class="app-field">
+                            <span>Estado</span>
+                            {{ form.estado }}
+                        </label>
+                        <label class="app-field commercial-form-grid__wide">
+                            <span>Notas comerciales</span>
+                            {{ form.notas_comerciales }}
+                        </label>
+                    </div>
+
+                    {% if form.non_field_errors %}
+                    <div class="commercial-errors">{{ form.non_field_errors }}</div>
+                    {% endif %}
+
+                    <div class="commercial-actions">
+                        {% if propuesta and propuesta.estado == "BORRADOR" %}
+                        <button
+                            class="app-button app-button--danger"
+                            type="submit"
+                            name="accion"
+                            value="eliminar_propuesta_error"
+                            onclick="return confirm('¿Eliminar este borrador creado por error?');"
+                        >
+                            Eliminar borrador
+                        </button>
+                        {% endif %}
+                        <button class="app-button app-button--primary" type="submit" {% if not propuesta_editable %}disabled{% endif %}>
+                            Guardar propuesta
+                        </button>
+                    </div>
+                </form>
+                {% else %}
+                <div class="commercial-empty"><strong>Solo lectura.</strong></div>
+                {% endif %}
+            </article>
+
+            {% if propuesta and dto %}
+            <section class="commercial-summary">
+                <article><span>Base</span><strong>${{ dto.subtotal_base }}</strong></article>
+                <article><span>Adicionales</span><strong>${{ dto.subtotal|default:"0.00" }}</strong></article>
+                <article><span>Descuento</span><strong>${{ dto.descuento }}</strong></article>
+                <article class="is-total"><span>Total</span><strong>${{ dto.total }}</strong></article>
+            </section>
+
+            {% if dto.advertencias %}
+            <div class="commercial-warning-list">
+                {% for warning in dto.advertencias %}
+                <div>{{ warning }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <section class="commercial-columns">
+                <article class="workspace-panel">
+                    <header class="workspace-panel__header">
+                        <div><span class="workspace-eyebrow">Incluye</span><h3>Paquete</h3></div>
+                    </header>
+                    <div class="commercial-line-list">
+                        {% for item in dto.lineas_incluidas %}
+                        <div>
+                            <div><strong>{{ item.nombre }}</strong><span>{{ item.cantidad }} · {{ item.categoria }}</span></div>
+                        </div>
+                        {% empty %}
+                        <div class="commercial-empty">Sin servicios incluidos.</div>
+                        {% endfor %}
+                    </div>
+                </article>
+
+                <article class="workspace-panel">
+                    <header class="workspace-panel__header">
+                        <div><span class="workspace-eyebrow">Extras</span><h3>Adicionales y cortesías</h3></div>
+                    </header>
+                    <div class="commercial-line-list">
+                        {% for item in propuesta.lineas.all %}
+                        <div class="{% if not item.activo %}is-inactive{% endif %}">
+                            <div>
+                                <strong>{{ item.nombre }}</strong>
+                                <span>{{ item.get_tipo_display }} · {{ item.get_modo_precio_display }} · ${{ item.subtotal }}</span>
+                            </div>
+                            {% if puede_editar and propuesta_editable %}
+                            <form method="post">
+                                {% csrf_token %}
+                                <input type="hidden" name="accion" value="toggle_linea">
+                                <input type="hidden" name="propuesta_id" value="{{ propuesta.id }}">
+                                <input type="hidden" name="linea_id" value="{{ item.id }}">
+                                <input type="hidden" name="return_to" value="{{ return_to }}">
+                                <button type="submit">{% if item.activo %}Retirar{% else %}Reactivar{% endif %}</button>
+                            </form>
+                            {% endif %}
+                        </div>
+                        {% empty %}
+                        <div class="commercial-empty">Sin extras.</div>
+                        {% endfor %}
+                    </div>
+                </article>
+            </section>
+
+            {% if linea_form and puede_editar %}
+            <details class="workspace-panel commercial-add-line">
+                <summary>+ Agregar adicional o cortesía</summary>
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="accion" value="agregar_linea">
+                    <input type="hidden" name="propuesta_id" value="{{ propuesta.id }}">
+                    <input type="hidden" name="return_to" value="{{ return_to }}">
+                    <div class="commercial-form-grid">
+                        {% for field in linea_form %}
+                        <label class="app-field {% if field.name == 'descripcion' %}commercial-form-grid__wide{% endif %}">
+                            <span>{{ field.label }}</span>
+                            {{ field }}
+                            {% if field.errors %}<small class="app-field__error">{{ field.errors|striptags }}</small>{% endif %}
+                        </label>
+                        {% endfor %}
+                    </div>
+                    <div class="commercial-actions">
+                        <button class="app-button app-button--primary" type="submit">Agregar</button>
+                    </div>
+                </form>
+            </details>
+            {% endif %}
+
+            {% if propuesta.estado == "ACEPTADO" and puede_editar and propuesta_editable %}
+            <section class="commercial-contract-cta">
+                <div>
+                    <span class="workspace-eyebrow">Listo para congelar</span>
+                    <h3>Convertir propuesta en contrato</h3>
+                    <p>El total y las líneas se recalculan en servidor antes de crear el snapshot contractual.</p>
+                </div>
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="accion" value="generar_contrato">
+                    <input type="hidden" name="propuesta_id" value="{{ propuesta.id }}">
+                    <input type="hidden" name="return_to" value="{{ return_to }}">
+                    <button class="app-button app-button--primary" type="submit">Generar contrato</button>
+                </form>
+            </section>
+            {% endif %}
+            {% endif %}
+
+            {% if contrato_actual and contrato_data %}
+            <article class="workspace-panel commercial-contract">
+                <header class="workspace-panel__header">
+                    <div>
+                        <span class="workspace-eyebrow">Contrato vigente</span>
+                        <h3>Versión {{ contrato_actual.version }} · {{ contrato_actual.get_estado_display }}</h3>
+                    </div>
+                    <strong>${{ contrato_data.totales.total_final }}</strong>
+                </header>
+
+                <div class="commercial-contract-grid">
+                    <div><span>Paquete</span><strong>{{ contrato_data.paquete.nombre }}</strong></div>
+                    <div><span>Adultos</span><strong>{{ contrato_data.cantidades.adultos|default:"—" }}</strong></div>
+                    <div><span>Niños</span><strong>{{ contrato_data.cantidades.ninos|default:"—" }}</strong></div>
+                    <div><span>Servicios operativos</span><strong>{{ contrato_actual.servicios_materializados.count }}</strong></div>
+                </div>
+
+                {% if puede_editar %}
+                <div class="commercial-actions">
+                    {% if contrato_actual.estado == "CONTRATADO" or contrato_actual.estado == "FIRMADO" %}
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="accion" value="crear_revision">
+                        <input type="hidden" name="contrato_id" value="{{ contrato_actual.id }}">
+                        <input type="hidden" name="propuesta_id" value="{% if propuesta %}{{ propuesta.id }}{% endif %}">
+                        <input type="hidden" name="return_to" value="{{ return_to }}">
+                        <button class="app-button app-button--secondary" type="submit">Crear revisión</button>
+                    </form>
+                    {% endif %}
+
+                    {% if contrato_actual.estado == "CONTRATADO" %}
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="accion" value="materializar_contrato">
+                        <input type="hidden" name="contrato_id" value="{{ contrato_actual.id }}">
+                        <input type="hidden" name="propuesta_id" value="{% if propuesta %}{{ propuesta.id }}{% endif %}">
+                        <input type="hidden" name="return_to" value="{{ return_to }}">
+                        <button class="app-button app-button--secondary" type="submit">
+                            {% if contrato_actual.materializado_en %}Actualizar operación{% else %}Preparar operación{% endif %}
+                        </button>
+                    </form>
+
+                    <details class="commercial-cancel-contract">
+                        <summary>Cancelar contrato</summary>
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="accion" value="cancelar_contrato">
+                            <input type="hidden" name="contrato_id" value="{{ contrato_actual.id }}">
+                            <input type="hidden" name="propuesta_id" value="{% if propuesta %}{{ propuesta.id }}{% endif %}">
+                            <input type="hidden" name="return_to" value="{{ return_to }}">
+                            <textarea class="app-textarea" name="motivo" rows="2" placeholder="Motivo de cancelación"></textarea>
+                            <button class="app-button app-button--danger" type="submit">Confirmar cancelación</button>
+                        </form>
+                    </details>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                <div class="commercial-contract-history">
+                    <strong>Historial contractual</strong>
+                    {% for contrato in contratos %}
+                    <div>
+                        <span>v{{ contrato.version }}</span>
+                        <b>{{ contrato.get_estado_display }}</b>
+                        <small>{{ contrato.fecha_creacion|date:"d M Y H:i" }}</small>
+                    </div>
+                    {% endfor %}
+                </div>
+            </article>
+            {% endif %}
+        </div>
+    </section>
+</section>
+{% endblock %}

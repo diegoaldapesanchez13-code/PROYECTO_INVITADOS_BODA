@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import workspace_views
+from . import workspace_views, workspace_commercial_views, workspace_services_views
 
 
 urlpatterns = [
@@ -8,6 +8,8 @@ urlpatterns = [
     path("nuevo/", workspace_views.evento_create, name="k9_evento_create"),
     path("<int:evento_id>/", workspace_views.evento_resumen, name="k9_evento_resumen"),
     path("<int:evento_id>/datos/", workspace_views.evento_datos, name="k9_evento_datos"),
+    path("<int:evento_id>/comercial/", workspace_commercial_views.evento_comercial, name="k9_evento_comercial"),
+    path("<int:evento_id>/servicios/", workspace_services_views.evento_servicios, name="k9_evento_servicios"),
     path("<int:evento_id>/configuracion/", workspace_views.evento_configuracion, name="k9_evento_configuracion"),
     path("<int:evento_id>/finalizar/", workspace_views.evento_finalizar, name="k9_evento_finalizar"),
     path("<int:evento_id>/cancelar/", workspace_views.evento_cancelar, name="k9_evento_cancelar"),

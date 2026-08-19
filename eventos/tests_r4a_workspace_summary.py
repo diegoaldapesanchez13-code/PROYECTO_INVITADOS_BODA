@@ -82,7 +82,13 @@ class EventWorkspaceR4ATests(TestCase):
         ):
             self.assertContains(response, label)
 
-    def test_future_tabs_are_disabled_not_broken_links(self):
+    def test_only_unmigrated_tabs_are_disabled(self):
+        """
+        R4A registered the complete Workspace structure. Later R4 subphases
+        progressively enable canonical modules. R4B enables Comercial, while
+        modules not migrated yet (for example Servicios) must remain disabled
+        and without broken URLs.
+        """
         evento = self._evento()
         self.client.force_login(self.admin)
         response = self.client.get(
@@ -92,9 +98,20 @@ class EventWorkspaceR4ATests(TestCase):
             )
         )
         nav = response.context["workspace_navigation"]
+
         commercial = next(tab for tab in nav["tabs"] if tab["key"] == "comercial")
-        self.assertFalse(commercial["enabled"])
-        self.assertIsNone(commercial["url"])
+        self.assertTrue(commercial["enabled"])
+        self.assertEqual(
+            commercial["url"],
+            reverse(
+                "k9_evento_comercial",
+                kwargs={"empresa_slug": self.empresa.slug, "evento_id": evento.id},
+            ),
+        )
+
+        services = next(tab for tab in nav["tabs"] if tab["key"] == "servicios")
+        self.assertFalse(services["enabled"])
+        self.assertIsNone(services["url"])
 
     def test_summary_progress_reflects_base_data(self):
         evento = self._evento(
