@@ -84,10 +84,10 @@ class EventWorkspaceR4ATests(TestCase):
 
     def test_only_unmigrated_tabs_are_disabled(self):
         """
-        R4A registered the complete Workspace structure. Later R4 subphases
-        progressively enable canonical modules. R4B enables Comercial, while
-        modules not migrated yet (for example Servicios) must remain disabled
-        and without broken URLs.
+        R4A registró la estructura completa del Workspace.
+        R4B habilitó Comercial y R4C habilitó Servicios.
+        Los módulos que todavía no han migrado deben continuar deshabilitados
+        y sin URLs rotas.
         """
         evento = self._evento()
         self.client.force_login(self.admin)
@@ -110,8 +110,18 @@ class EventWorkspaceR4ATests(TestCase):
         )
 
         services = next(tab for tab in nav["tabs"] if tab["key"] == "servicios")
-        self.assertFalse(services["enabled"])
-        self.assertIsNone(services["url"])
+        self.assertTrue(services["enabled"])
+        self.assertEqual(
+            services["url"],
+            reverse(
+                "k9_evento_servicios",
+                kwargs={"empresa_slug": self.empresa.slug, "evento_id": evento.id},
+            ),
+        )
+
+        tasks = next(tab for tab in nav["tabs"] if tab["key"] == "tareas")
+        self.assertFalse(tasks["enabled"])
+        self.assertIsNone(tasks["url"])
 
     def test_summary_progress_reflects_base_data(self):
         evento = self._evento(

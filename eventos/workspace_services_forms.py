@@ -39,6 +39,17 @@ class WorkspaceServicioForm(forms.ModelForm):
         self.fields["nombre_servicio"].required = False
         self.fields["proveedor"].required = False
 
+        # Estos campos tienen defaults de dominio y no deben bloquear el
+        # formulario cuando el POST mínimo no los envía explícitamente.
+        self.fields["descripcion"].required = False
+        self.fields["fecha_servicio"].required = False
+        self.fields["hora_inicio"].required = False
+        self.fields["hora_fin"].required = False
+        self.fields["lugar"].required = False
+        self.fields["notas_internas"].required = False
+        if "costo_proveedor" in self.fields:
+            self.fields["costo_proveedor"].required = False
+
         self.fields["servicio_catalogo_k9"].queryset = ServicioCatalogo.objects.filter(
             empresa=empresa,
             activo=True,
@@ -93,6 +104,10 @@ class WorkspaceServicioForm(forms.ModelForm):
 
         if not can_finance:
             self.fields.pop("costo_proveedor")
+        else:
+            # El costo puede quedar por definir. Persistimos 0.00 como valor
+            # neutral del modelo cuando el usuario no captura nada.
+            self.fields["costo_proveedor"].required = False
 
         # Contract-derived identity is frozen. Operational assignment remains editable.
         if self.instance and self.instance.pk and self.instance.contrato_origen_id:

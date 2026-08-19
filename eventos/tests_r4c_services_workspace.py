@@ -120,6 +120,7 @@ class ServicesWorkspaceR4CTests(TestCase):
         self.assertEqual(servicio.modalidad, "ADICIONAL")
         self.assertIsNone(servicio.proveedor)
         self.assertEqual(servicio.cargo_adicional_cliente, Decimal("0.00"))
+        self.assertEqual(servicio.costo_proveedor, Decimal("0.00"))
 
     def test_assign_compatible_provider_from_catalog(self):
         servicio = ServicioEvento.objects.create(

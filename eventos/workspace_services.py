@@ -119,6 +119,8 @@ def guardar_servicio_operativo(
     servicio.evento = evento
 
     for field, value in cleaned_data.items():
+        if field == "costo_proveedor" and value in {None, ""}:
+            value = ZERO
         setattr(servicio, field, value)
 
     if nuevo:
