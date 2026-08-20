@@ -1,0 +1,257 @@
+{% extends "eventos/workspace/base.html" %}
+{% load static %}
+
+{% block title %}Tareas | {{ evento.titulo_evento }}{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'eventos/css/workspace_tasks_r4.css' %}">
+{% endblock %}
+
+{% block workspace_content %}
+<section class="tasks-workspace" data-task-workspace>
+    <header class="tasks-heading">
+        <div>
+            <span class="workspace-eyebrow">Operación</span>
+            <h2>Tareas</h2>
+            <p>Organiza el trabajo sin convertir el evento en una lista rígida.</p>
+        </div>
+        {% if puede_operar %}
+        <a class="app-button app-button--primary"
+           href="{% url 'k9_evento_tareas' empresa_slug=empresa.slug evento_id=evento.id %}?modo={{ modo }}&return_to={{ return_to|urlencode }}">
+            + Nueva tarea
+        </a>
+        {% endif %}
+    </header>
+
+    <form method="get" class="tasks-toolbar">
+        <input type="hidden" name="return_to" value="{{ return_to }}">
+        <input type="hidden" name="modo" value="{{ modo }}">
+        <input class="app-input" type="search" name="q" value="{{ busqueda }}" placeholder="Buscar tarea...">
+        <select class="app-select" name="vista" onchange="this.form.submit()">
+            <option value="activas" {% if vista == "activas" %}selected{% endif %}>Activas</option>
+            <option value="completadas" {% if vista == "completadas" %}selected{% endif %}>Completadas</option>
+            <option value="canceladas" {% if vista == "canceladas" %}selected{% endif %}>Canceladas</option>
+            <option value="archivadas" {% if vista == "archivadas" %}selected{% endif %}>Archivadas</option>
+        </select>
+        <select class="app-select" name="prioridad" onchange="this.form.submit()">
+            <option value="">Todas las prioridades</option>
+            <option value="URGENTE" {% if prioridad_filtro == "URGENTE" %}selected{% endif %}>Urgente</option>
+            <option value="ALTA" {% if prioridad_filtro == "ALTA" %}selected{% endif %}>Alta</option>
+            <option value="MEDIA" {% if prioridad_filtro == "MEDIA" %}selected{% endif %}>Media</option>
+            <option value="BAJA" {% if prioridad_filtro == "BAJA" %}selected{% endif %}>Baja</option>
+        </select>
+        <div class="tasks-view-toggle">
+            <a class="{% if modo == 'tablero' %}is-active{% endif %}"
+               href="?vista={{ vista }}&modo=tablero&return_to={{ return_to|urlencode }}">Tablero</a>
+            <a class="{% if modo == 'lista' %}is-active{% endif %}"
+               href="?vista={{ vista }}&modo=lista&return_to={{ return_to|urlencode }}">Lista</a>
+        </div>
+    </form>
+
+    {% if modo == "tablero" and vista == "activas" %}
+    <div class="tasks-board" data-kanban>
+        {% for state, items in board.items %}
+        <section class="tasks-column" data-state="{{ state }}">
+            <header>
+                <strong>
+                    {% if state == "PENDIENTE" %}Pendiente
+                    {% elif state == "EN_PROCESO" %}En proceso
+                    {% else %}En revisión{% endif %}
+                </strong>
+                <span>{{ items|length }}</span>
+            </header>
+            <div class="tasks-dropzone" data-dropzone="{{ state }}">
+                {% for item in items %}
+                <article class="task-card"
+                         draggable="{% if puede_operar %}true{% else %}false{% endif %}"
+                         data-task-id="{{ item.id }}">
+                    <a href="?tarea={{ item.id }}&vista={{ vista }}&modo={{ modo }}&return_to={{ return_to|urlencode }}">
+                        <div class="task-card__meta">
+                            <span class="priority priority--{{ item.prioridad|lower }}">{{ item.get_prioridad_display }}</span>
+                            {% if item.esta_vencida %}<b>Vencida</b>{% endif %}
+                        </div>
+                        <h3>{{ item.titulo }}</h3>
+                        <p>
+                            {% if item.responsable %}
+                                {{ item.responsable.get_full_name|default:item.responsable.username }}
+                            {% else %}
+                                Sin responsable
+                            {% endif %}
+                        </p>
+                        <footer>
+                            <span>{% if item.fecha_limite %}{{ item.fecha_limite|date:"d M" }}{% else %}Sin fecha{% endif %}</span>
+                            <span>{{ item.porcentaje_avance }}%</span>
+                        </footer>
+                    </a>
+                </article>
+                {% empty %}
+                <div class="tasks-column-empty">Suelta una tarea aquí</div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="tasks-list">
+        {% for item in tareas %}
+        <a class="task-list-row"
+           href="?tarea={{ item.id }}&vista={{ vista }}&modo={{ modo }}&return_to={{ return_to|urlencode }}">
+            <span class="priority priority--{{ item.prioridad|lower }}">{{ item.get_prioridad_display }}</span>
+            <div>
+                <strong>{{ item.titulo }}</strong>
+                <small>
+                    {{ item.get_estado_display }} ·
+                    {% if item.responsable %}{{ item.responsable.get_full_name|default:item.responsable.username }}{% else %}Sin responsable{% endif %}
+                </small>
+            </div>
+            <time>{% if item.fecha_limite %}{{ item.fecha_limite|date:"d M Y" }}{% else %}—{% endif %}</time>
+            <b>{{ item.porcentaje_avance }}%</b>
+        </a>
+        {% empty %}
+        <div class="tasks-empty"><strong>No hay tareas en esta vista.</strong></div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <section class="tasks-editor-layout">
+        {% if puede_operar %}
+        <article class="workspace-panel">
+            <header class="workspace-panel__header">
+                <div>
+                    <span class="workspace-eyebrow">{% if tarea %}Tarea #{{ tarea.id }}{% else %}Captura rápida{% endif %}</span>
+                    <h3>{% if tarea %}Editar tarea{% else %}Nueva tarea{% endif %}</h3>
+                </div>
+            </header>
+
+            {% if tarea and tarea.archivado_en %}
+            <div class="tasks-archived-note">Restaura la tarea para volver a editarla.</div>
+            {% else %}
+            <form method="post" class="tasks-form">
+                {% csrf_token %}
+                <input type="hidden" name="accion" value="guardar">
+                <input type="hidden" name="tarea_id" value="{% if tarea %}{{ tarea.id }}{% endif %}">
+                <input type="hidden" name="vista" value="{{ vista }}">
+                <input type="hidden" name="modo" value="{{ modo }}">
+                <input type="hidden" name="return_to" value="{{ return_to }}">
+                <div class="tasks-form-grid">
+                    {% for field in form %}
+                    <label class="app-field {% if field.name == 'titulo' or field.name == 'descripcion' or field.name == 'notas' %}tasks-form-grid__wide{% endif %}">
+                        <span>{{ field.label }}</span>
+                        {{ field }}
+                        {% if field.errors %}<small class="app-field__error">{{ field.errors|striptags }}</small>{% endif %}
+                    </label>
+                    {% endfor %}
+                </div>
+                <div class="tasks-actions">
+                    <button class="app-button app-button--primary" type="submit">Guardar tarea</button>
+                </div>
+            </form>
+            {% endif %}
+        </article>
+
+        {% if tarea %}
+        <aside class="task-actions-panel">
+            <article class="workspace-panel">
+                <span class="workspace-eyebrow">Acciones rápidas</span>
+                <div class="task-quick-actions">
+                    {% if not tarea.archivado_en and tarea.estado != "CANCELADA" %}
+                    {% if tarea.estado != "COMPLETADA" %}
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="accion" value="mover_estado">
+                        <input type="hidden" name="tarea_id" value="{{ tarea.id }}">
+                        <input type="hidden" name="estado" value="COMPLETADA">
+                        <input type="hidden" name="return_to" value="{{ return_to }}">
+                        <button class="app-button app-button--secondary" type="submit">✓ Completar</button>
+                    </form>
+                    <details>
+                        <summary>Cancelar</summary>
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="accion" value="cancelar">
+                            <input type="hidden" name="tarea_id" value="{{ tarea.id }}">
+                            <input type="hidden" name="return_to" value="{{ return_to }}">
+                            <textarea class="app-textarea" name="motivo" rows="2" placeholder="Motivo opcional"></textarea>
+                            <button class="app-button app-button--danger" type="submit">Confirmar</button>
+                        </form>
+                    </details>
+                    {% endif %}
+                    {% endif %}
+
+                    {% if tarea.estado == "COMPLETADA" or tarea.estado == "CANCELADA" %}
+                        {% if not tarea.archivado_en %}
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="accion" value="archivar">
+                            <input type="hidden" name="tarea_id" value="{{ tarea.id }}">
+                            <input type="hidden" name="return_to" value="{{ return_to }}">
+                            <button class="app-button app-button--secondary" type="submit">Archivar</button>
+                        </form>
+                        {% else %}
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="accion" value="restaurar">
+                            <input type="hidden" name="tarea_id" value="{{ tarea.id }}">
+                            <input type="hidden" name="return_to" value="{{ return_to }}">
+                            <button class="app-button app-button--secondary" type="submit">Restaurar</button>
+                        </form>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </article>
+
+            {% if not tarea.archivado_en and selected_eval and selected_eval.permitido %}
+            <article class="workspace-panel task-delete-zone">
+                <span class="workspace-eyebrow">Error de captura</span>
+                <h3>Eliminar definitivamente</h3>
+                <p>Solo mientras no tenga historial protegido.</p>
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="accion" value="eliminar_error">
+                    <input type="hidden" name="tarea_id" value="{{ tarea.id }}">
+                    <input type="hidden" name="return_to" value="{{ return_to }}">
+                    <input class="app-input" name="confirmacion" placeholder="Escribe ELIMINAR">
+                    <button class="app-button app-button--danger" type="submit">Eliminar</button>
+                </form>
+            </article>
+            {% elif tarea.archivado_en and puede_purgar %}
+            <article class="workspace-panel task-delete-zone">
+                <span class="workspace-eyebrow">Purge</span>
+                <h3>Eliminar archivado</h3>
+                {% if selected_eval.permitido %}
+                <p>Disponible únicamente para DIRTEC/Admin Empresa.</p>
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="accion" value="purgar">
+                    <input type="hidden" name="tarea_id" value="{{ tarea.id }}">
+                    <input type="hidden" name="return_to" value="{{ return_to }}">
+                    <input class="app-input" name="confirmacion" placeholder="Escribe PURGAR">
+                    <button class="app-button app-button--danger" type="submit">Purgar</button>
+                </form>
+                {% else %}
+                <p>Conserva historial protegido y no puede purgarse.</p>
+                {% endif %}
+            </article>
+            {% endif %}
+        </aside>
+        {% endif %}
+        {% endif %}
+    </section>
+
+    <form method="post" data-kanban-form hidden>
+        {% csrf_token %}
+        <input type="hidden" name="accion" value="mover_estado">
+        <input type="hidden" name="tarea_id" value="">
+        <input type="hidden" name="estado" value="">
+        <input type="hidden" name="vista" value="{{ vista }}">
+        <input type="hidden" name="modo" value="{{ modo }}">
+        <input type="hidden" name="return_to" value="{{ return_to }}">
+    </form>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script src="{% static 'eventos/js/workspace_tasks_r4.js' %}" defer></script>
+{% endblock %}

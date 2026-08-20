@@ -85,7 +85,7 @@ class EventWorkspaceR4ATests(TestCase):
     def test_only_unmigrated_tabs_are_disabled(self):
         """
         R4A registró la estructura completa del Workspace.
-        R4B habilitó Comercial y R4C habilitó Servicios.
+        R4B habilitó Comercial, R4C Servicios, R4D Tareas, R4E Agenda y R4F-A Invitados.
         Los módulos que todavía no han migrado deben continuar deshabilitados
         y sin URLs rotas.
         """
@@ -120,8 +120,38 @@ class EventWorkspaceR4ATests(TestCase):
         )
 
         tasks = next(tab for tab in nav["tabs"] if tab["key"] == "tareas")
-        self.assertFalse(tasks["enabled"])
-        self.assertIsNone(tasks["url"])
+        self.assertTrue(tasks["enabled"])
+        self.assertEqual(
+            tasks["url"],
+            reverse(
+                "k9_evento_tareas",
+                kwargs={"empresa_slug": self.empresa.slug, "evento_id": evento.id},
+            ),
+        )
+
+        agenda = next(tab for tab in nav["tabs"] if tab["key"] == "agenda")
+        self.assertTrue(agenda["enabled"])
+        self.assertEqual(
+            agenda["url"],
+            reverse(
+                "k9_evento_agenda",
+                kwargs={"empresa_slug": self.empresa.slug, "evento_id": evento.id},
+            ),
+        )
+
+        guests = next(tab for tab in nav["tabs"] if tab["key"] == "invitados")
+        self.assertTrue(guests["enabled"])
+        self.assertEqual(
+            guests["url"],
+            reverse(
+                "k9_evento_invitados",
+                kwargs={"empresa_slug": self.empresa.slug, "evento_id": evento.id},
+            ),
+        )
+
+        documents = next(tab for tab in nav["tabs"] if tab["key"] == "documentos")
+        self.assertFalse(documents["enabled"])
+        self.assertIsNone(documents["url"])
 
     def test_summary_progress_reflects_base_data(self):
         evento = self._evento(

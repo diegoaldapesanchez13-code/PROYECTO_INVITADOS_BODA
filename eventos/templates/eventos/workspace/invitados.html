@@ -1,0 +1,248 @@
+{% extends "eventos/workspace/base.html" %}
+{% load static %}
+
+{% block title %}Invitados | {{ evento.titulo_evento }}{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'eventos/css/workspace_guests_r4.css' %}">
+{% endblock %}
+
+{% block workspace_content %}
+<section class="guests-workspace">
+    <header class="guests-heading">
+        <div>
+            <span class="workspace-eyebrow">Experiencia</span>
+            <h2>Invitados</h2>
+            <p>
+                Las personas que dicen que no siguen conservando su invitación e historial,
+                pero dejan de reservar un lugar para que puedas invitar a alguien más.
+            </p>
+        </div>
+        {% if puede_gestionar %}
+        <a class="app-button app-button--primary"
+           href="{% url 'k9_evento_invitados' empresa_slug=empresa.slug evento_id=evento.id %}?return_to={{ return_to|urlencode }}">
+            + Nueva invitación
+        </a>
+        {% endif %}
+    </header>
+
+    <section class="guests-kpis">
+        <article><span>Personas emitidas</span><strong>{{ metricas.total_personas }}</strong><small>Siguen en historial</small></article>
+        <article><span>Confirmadas</span><strong>{{ metricas.confirmados }}</strong><small>{{ metricas.porcentaje_asistencia }}% del roster</small></article>
+        <article><span>Pendientes</span><strong>{{ metricas.pendientes }}</strong><small>Siguen reservando lugar</small></article>
+        <article class="is-released"><span>No asisten</span><strong>{{ metricas.no_asisten }}</strong><small>Lugares liberados</small></article>
+    </section>
+
+    <section class="guest-capacity">
+        <div>
+            <span class="workspace-eyebrow">Cupo real</span>
+            {% if cupo.capacidad %}
+            <h3>{{ cupo.reservados }} / {{ cupo.capacidad }} lugares reservados</h3>
+            <p>
+                Confirmados + pendientes ocupan cupo. Los {{ cupo.liberados }} que dijeron NO
+                permanecen visibles, pero ya no bloquean capacidad.
+            </p>
+            {% else %}
+            <h3>Sin límite de capacidad configurado</h3>
+            <p>Configura capacidad contratada o estimada en Datos cuando quieras controlar sobrecupo.</p>
+            {% endif %}
+        </div>
+        <div class="guest-capacity__numbers">
+            {% if cupo.disponibles != None %}
+            <div><strong>{{ cupo.disponibles }}</strong><span>Disponibles</span></div>
+            {% endif %}
+            <div><strong>{{ cupo.liberados }}</strong><span>Liberados</span></div>
+            {% if cupo.sobrecupo %}
+            <div class="is-danger"><strong>{{ cupo.sobrecupo }}</strong><span>Sobrecupo</span></div>
+            {% endif %}
+        </div>
+    </section>
+
+    <form method="get" class="guests-toolbar">
+        <input type="hidden" name="return_to" value="{{ return_to }}">
+        <input class="app-input" name="q" value="{{ busqueda }}" placeholder="Buscar familia, persona, teléfono...">
+        <select class="app-select" name="estado" onchange="this.form.submit()">
+            <option value="TODOS" {% if estado_filtro == "TODOS" %}selected{% endif %}>Todos</option>
+            <option value="CONFIRMADOS" {% if estado_filtro == "CONFIRMADOS" %}selected{% endif %}>Con confirmados</option>
+            <option value="PENDIENTES" {% if estado_filtro == "PENDIENTES" %}selected{% endif %}>Con pendientes</option>
+            <option value="NO_ASISTEN" {% if estado_filtro == "NO_ASISTEN" %}selected{% endif %}>Con no asistencia</option>
+        </select>
+        <select class="app-select" name="tipo" onchange="this.form.submit()">
+            <option value="">Personal + familiar</option>
+            <option value="PERSONAL" {% if tipo_filtro == "PERSONAL" %}selected{% endif %}>Personal</option>
+            <option value="FAMILIAR" {% if tipo_filtro == "FAMILIAR" %}selected{% endif %}>Familiar</option>
+        </select>
+        <button class="app-button app-button--secondary" type="submit">Filtrar</button>
+    </form>
+
+    <section class="guests-layout">
+        <div class="guest-groups">
+            {% for item in grupos %}
+            <article class="guest-group-card {% if grupo and grupo.id == item.id %}is-selected{% endif %}">
+                <a href="?grupo={{ item.id }}&estado={{ estado_filtro }}&return_to={{ return_to|urlencode }}">
+                    <div class="guest-group-card__head">
+                        <div>
+                            <span>{{ item.get_tipo_display }}</span>
+                            <h3>{{ item.nombre_grupo }}</h3>
+                        </div>
+                        <b>{{ item.total_lugares }} lugar(es)</b>
+                    </div>
+                    <div class="guest-group-status">
+                        <span class="is-yes">{{ item.lugares_asistiran }} sí</span>
+                        <span class="is-pending">{{ item.lugares_pendientes }} pendientes</span>
+                        <span class="is-no">{{ item.lugares_no_asistiran }} no</span>
+                    </div>
+                </a>
+
+                <div class="guest-people">
+                    {% for person in item.invitados.all %}
+                    <a href="?grupo={{ item.id }}&invitado={{ person.id }}&estado={{ estado_filtro }}&return_to={{ return_to|urlencode }}"
+                       class="{% if invitado and invitado.id == person.id %}is-selected{% endif %}">
+                        <div>
+                            <strong>{{ person }}</strong>
+                            <small>{{ person.get_tipo_persona_display }}{% if person.es_acompanante_extra %} · acompañante{% endif %}</small>
+                        </div>
+                        <span class="rsvp-dot {% if person.asistira is True %}is-yes{% elif person.asistira is False %}is-no{% else %}is-pending{% endif %}">
+                            {% if person.asistira is True %}Sí{% elif person.asistira is False %}No{% else %}Pendiente{% endif %}
+                        </span>
+                    </a>
+                    {% endfor %}
+                </div>
+
+                <footer>
+                    <a href="{% url 'ver_invitacion' item.codigo %}" target="_blank" rel="noopener">Ver invitación ↗</a>
+                </footer>
+            </article>
+            {% empty %}
+            <div class="guest-empty">
+                <strong>No hay invitaciones con estos filtros.</strong>
+                <p>Puedes crear la primera sin tener que definir todos los datos.</p>
+            </div>
+            {% endfor %}
+        </div>
+
+        <aside class="guest-editor">
+            {% if puede_gestionar %}
+            <article class="workspace-panel">
+                <header class="workspace-panel__header">
+                    <div>
+                        <span class="workspace-eyebrow">{% if grupo %}Invitación #{{ grupo.id }}{% else %}Captura rápida{% endif %}</span>
+                        <h3>{% if grupo %}Editar invitación{% else %}Nueva invitación{% endif %}</h3>
+                    </div>
+                </header>
+
+                <form method="post" class="guest-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="accion" value="guardar_grupo">
+                    <input type="hidden" name="grupo_id" value="{% if grupo %}{{ grupo.id }}{% endif %}">
+                    <input type="hidden" name="return_to" value="{{ return_to }}">
+                    <div class="guest-form-grid">
+                        {% for field in grupo_form %}
+                        <label class="app-field {% if field.name == 'integrantes' %}guest-form-grid__wide{% endif %}">
+                            <span>{{ field.label }}</span>
+                            {{ field }}
+                            {% if field.help_text %}<small class="app-field__help">{{ field.help_text }}</small>{% endif %}
+                            {% if field.errors %}<small class="app-field__error">{{ field.errors|striptags }}</small>{% endif %}
+                        </label>
+                        {% endfor %}
+                    </div>
+                    <div class="guest-actions">
+                        <button class="app-button app-button--primary" type="submit">Guardar invitación</button>
+                    </div>
+                </form>
+            </article>
+
+            {% if grupo %}
+            <article class="workspace-panel guest-person-editor">
+                <header class="workspace-panel__header">
+                    <div>
+                        <span class="workspace-eyebrow">Personas</span>
+                        <h3>{% if invitado %}{{ invitado }}{% elif grupo.es_familiar %}Agregar persona{% else %}RSVP del grupo{% endif %}</h3>
+                    </div>
+                </header>
+
+                {% if invitado_form %}
+                <form method="post" class="guest-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="accion" value="guardar_invitado">
+                    <input type="hidden" name="grupo_id" value="{{ grupo.id }}">
+                    <input type="hidden" name="invitado_id" value="{% if invitado %}{{ invitado.id }}{% endif %}">
+                    <input type="hidden" name="return_to" value="{{ return_to }}">
+                    <div class="guest-form-grid">
+                        {% for field in invitado_form %}
+                        <label class="app-field {% if field.name == 'restricciones_alimentarias' or field.name == 'alergias' or field.name == 'notas' %}guest-form-grid__wide{% endif %}">
+                            <span>{{ field.label }}</span>
+                            {{ field }}
+                            {% if field.errors %}<small class="app-field__error">{{ field.errors|striptags }}</small>{% endif %}
+                        </label>
+                        {% endfor %}
+                    </div>
+                    <div class="guest-actions">
+                        <button class="app-button app-button--primary" type="submit">{% if invitado %}Guardar persona{% else %}Agregar persona{% endif %}</button>
+                    </div>
+                </form>
+                {% endif %}
+
+                {% if invitado and respuesta_form %}
+                <form method="post" class="guest-rsvp-manual">
+                    {% csrf_token %}
+                    <input type="hidden" name="accion" value="respuesta">
+                    <input type="hidden" name="invitado_id" value="{{ invitado.id }}">
+                    <input type="hidden" name="return_to" value="{{ return_to }}">
+                    <div>
+                        <span class="workspace-eyebrow">Ajuste administrativo</span>
+                        <strong>Respuesta RSVP</strong>
+                    </div>
+                    {{ respuesta_form.respuesta }}
+                    <button class="app-button app-button--secondary" type="submit">Actualizar</button>
+                </form>
+                {% endif %}
+            </article>
+
+            {% if invitado and not invitado.es_acompanante_extra and not grupo.es_personal %}
+                {% if invitado.asistira == None %}
+                <article class="workspace-panel guest-danger">
+                    <span class="workspace-eyebrow">Error de captura</span>
+                    <h3>Eliminar persona</h3>
+                    <p>Solo si todavía no respondió ni tiene mesa.</p>
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="accion" value="eliminar_invitado">
+                        <input type="hidden" name="invitado_id" value="{{ invitado.id }}">
+                        <input type="hidden" name="return_to" value="{{ return_to }}">
+                        <input class="app-input" name="confirmacion" placeholder="Escribe ELIMINAR">
+                        <button class="app-button app-button--danger" type="submit">Eliminar</button>
+                    </form>
+                </article>
+                {% endif %}
+            {% elif grupo and not invitado %}
+                <article class="workspace-panel guest-danger">
+                    <span class="workspace-eyebrow">Error de captura</span>
+                    <h3>Eliminar invitación</h3>
+                    {% if grupo_puede_eliminar %}
+                    <p>Disponible porque todavía no tiene RSVP ni personas en mesa.</p>
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="accion" value="eliminar_grupo">
+                        <input type="hidden" name="grupo_id" value="{{ grupo.id }}">
+                        <input type="hidden" name="return_to" value="{{ return_to }}">
+                        <input class="app-input" name="confirmacion" placeholder="Escribe ELIMINAR">
+                        <button class="app-button app-button--danger" type="submit">Eliminar invitación</button>
+                    </form>
+                    {% else %}
+                    <p>{{ grupo_motivo_no_eliminar }} Se conserva como historial.</p>
+                    {% endif %}
+                </article>
+            {% endif %}
+            {% endif %}
+            {% else %}
+            <article class="workspace-panel">
+                <strong>Solo lectura</strong>
+                <p>No tienes permiso para modificar invitados.</p>
+            </article>
+            {% endif %}
+        </aside>
+    </section>
+</section>
+{% endblock %}
