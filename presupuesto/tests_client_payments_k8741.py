@@ -7,6 +7,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
+from eventos.models import ParticipanteEvento
 from invitaciones.models import EventoBoda
 from organizaciones.models import EmpresaSuscriptora, MembresiaEmpresa
 from proveedores.models import Proveedor, ServicioEvento
@@ -30,6 +31,12 @@ class ClientPaymentsK8741Tests(TestCase):
             fecha_fiesta=now+timedelta(days=20), lugar_fiesta="Recepción",
         )
         self.evento.clientes.add(self.cliente)
+        ParticipanteEvento.objects.update_or_create(
+            evento=self.evento,
+            usuario=self.planner,
+            rol="PLANNER",
+            defaults={"activo": True, "puede_ver_finanzas": True},
+        )
         self.proveedor = Proveedor.objects.create(
             empresa=self.empresa, usuario=self.proveedor_user,
             nombre_comercial="Proveedor", tipo_proveedor="BANQUETE",
@@ -57,7 +64,7 @@ class ClientPaymentsK8741Tests(TestCase):
         self.assertEqual(pago.registrado_por, self.cliente)
         self.assertEqual(PagoEvento.objects.count(), 0)
 
-    def test_planner_puede_marcar_recibido(self):
+    def test_revision_legacy_no_muta_y_k9_marca_recibido(self):
         pago = PagoClienteEvento.objects.create(
             evento=self.evento, registrado_por=self.cliente, monto=Decimal("5000"),
             comprobante="presupuesto/pagos_cliente_evento/test.jpg",
@@ -65,6 +72,23 @@ class ClientPaymentsK8741Tests(TestCase):
         self.client.force_login(self.planner)
         response = self.client.post(
             reverse("pago_cliente_evento_revisar", args=[pago.id]),
+            {"estado":"RECIBIDO","comentario_equipo":"Pago recibido"},
+        )
+        self.assertEqual(response.status_code, 302)
+        pago.refresh_from_db()
+        self.assertEqual(pago.estado, "PENDIENTE")
+        self.assertIsNone(pago.revisado_por)
+        self.assertIsNone(pago.fecha_revision)
+
+        response = self.client.post(
+            reverse(
+                "k9_finanzas_pago_cliente_revisar",
+                kwargs={
+                    "empresa_slug": self.empresa.slug,
+                    "evento_id": self.evento.id,
+                    "pago_id": pago.id,
+                },
+            ),
             {"estado":"RECIBIDO","comentario_equipo":"Pago recibido"},
         )
         self.assertEqual(response.status_code, 302)

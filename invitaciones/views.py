@@ -82,6 +82,7 @@ from core.services.identity import (
     crear_identidad_usuario,
     perfil_acceso_de,
 )
+from core.services.runtime_guardrails import block_replaced_legacy_post
 from core.services.tenant_context import (
     exigir_tenant,
     tenant_desde_request,
@@ -3261,6 +3262,83 @@ ACCIONES_DASHBOARD_AVANZADO = {
     'asignar_planner_evento': asignar_planner_evento_dashboard,
 }
 
+ACCIONES_DASHBOARD_CANONICAL_REPLACED = {
+    'agregar_actividad_agenda_v3': 'k9_evento_agenda',
+    'agregar_servicio_evento': 'k9_evento_servicios',
+    'editar_servicio_evento': 'k9_evento_servicios',
+    'eliminar_servicio_evento': 'k9_evento_servicios',
+    'agregar_tarea_evento': 'k9_evento_tareas',
+    'editar_tarea_evento': 'k9_evento_tareas',
+    'eliminar_tarea_evento': 'k9_evento_tareas',
+    'agregar_gasto_evento': 'k9_evento_finanzas',
+    'editar_gasto_evento': 'k9_evento_finanzas',
+    'eliminar_gasto_evento': 'k9_evento_finanzas',
+    'agregar_pago_evento': 'k9_evento_finanzas',
+    'editar_pago_evento': 'k9_evento_finanzas',
+    'eliminar_pago_evento': 'k9_evento_finanzas',
+    'agregar_documento_evento': 'k9_evento_documentos',
+    'editar_documento_evento': 'k9_evento_documentos',
+    'eliminar_documento_evento': 'k9_evento_documentos',
+    'agregar_grupo': 'k9_evento_invitados',
+    'editar_grupo': 'k9_evento_invitados',
+    'eliminar_grupo': 'k9_evento_invitados',
+    'agregar_invitado': 'k9_evento_invitados',
+    'editar_invitado': 'k9_evento_invitados',
+    'eliminar_invitado': 'k9_evento_invitados',
+}
+
+ACCIONES_DASHBOARD_STILL_REQUIRED = {
+    'agregar_persona_ceremonia',
+    'editar_persona_ceremonia',
+    'eliminar_persona_ceremonia',
+    'editar_regalo',
+    'eliminar_regalo',
+    'editar_album',
+    'eliminar_album',
+    'agregar_personal_evento',
+    'editar_personal_evento',
+    'eliminar_personal_evento',
+    'agregar_aprobacion_evento',
+    'editar_aprobacion_evento',
+    'eliminar_aprobacion_evento',
+    'agregar_sede_empresa',
+    'editar_sede_empresa',
+    'eliminar_sede_empresa',
+    'agregar_proveedor_empresa',
+    'editar_proveedor_empresa',
+    'eliminar_proveedor_empresa',
+    'agregar_paquete_empresa',
+    'editar_paquete_empresa',
+    'eliminar_paquete_empresa',
+    'crear_usuario_empresa',
+    'editar_membresia_empresa',
+    'desactivar_membresia_empresa',
+    'eliminar_membresia_empresa',
+    'asignar_planner_evento',
+}
+
+ACCIONES_DASHBOARD_EXTERNAL_OR_SPECIAL = set()
+
+
+def _bloquear_accion_dashboard_reemplazada(request, accion, evento):
+    empresa = evento.empresa
+    route_name = ACCIONES_DASHBOARD_CANONICAL_REPLACED[accion]
+    if empresa:
+        redirect_to = reverse(
+            route_name,
+            kwargs={'empresa_slug': empresa.slug, 'evento_id': evento.id},
+        )
+    else:
+        redirect_to = f'/dashboard/?evento={evento.id}'
+    return block_replaced_legacy_post(
+        request,
+        endpoint=f'dashboard:{accion}',
+        replacement=route_name,
+        redirect_to=redirect_to,
+        empresa=empresa,
+        evento=evento,
+    )
+
 ACCIONES_CATALOGOS_EMPRESA = {
     'agregar_sede_empresa',
     'editar_sede_empresa',
@@ -3308,6 +3386,8 @@ def dashboard(request):
             bloquear_accion_dashboard(request, empresa=empresa_accion, evento=evento, accion=accion, permiso='gestionar catalogos')
         if accion in ACCIONES_USUARIOS_EMPRESA and not usuario_puede_gestionar_usuarios(request.user, empresa_accion):
             bloquear_accion_dashboard(request, empresa=empresa_accion, evento=evento, accion=accion, permiso='gestionar usuarios')
+        if accion in ACCIONES_DASHBOARD_CANONICAL_REPLACED:
+            return _bloquear_accion_dashboard_reemplazada(request, accion, evento)
         destino = ACCIONES_DASHBOARD_AVANZADO[accion](request, evento)
         return redirect(f'/dashboard/?evento={evento.id}#{destino}')
 

@@ -119,6 +119,14 @@ class OperationalLifecycleEndpointsK98BTests(TestCase):
         empresa = empresa or self.empresa
         return reverse(name, args=[empresa.slug, objeto_id])
 
+    def workspace_url(self, name, **kwargs):
+        params = {
+            'empresa_slug': self.empresa.slug,
+            'evento_id': self.evento.id,
+        }
+        params.update(kwargs)
+        return reverse(name, kwargs=params)
+
     def test_acciones_requieren_post(self):
         self.client.force_login(self.admin)
         response = self.client.get(self.url('eventos_servicio_cancelar', self.servicio.id))
@@ -134,6 +142,16 @@ class OperationalLifecycleEndpointsK98BTests(TestCase):
     def test_admin_cancela_servicio_y_audita(self):
         self.client.force_login(self.admin)
         response = self.client.post(self.url('eventos_servicio_cancelar', self.servicio.id), {'motivo': 'Ya no aplica'})
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, self.workspace_url('k9_evento_servicios'))
+        self.servicio.refresh_from_db()
+        self.assertEqual(self.servicio.estado_operativo, 'PROGRAMADO')
+        self.assertFalse(RegistroAuditoria.objects.filter(accion='servicio_evento.cancelar', objeto_id=str(self.servicio.id)).exists())
+
+        response = self.client.post(
+            self.workspace_url('k9_evento_servicios'),
+            {'accion': 'cancelar', 'servicio_id': self.servicio.id, 'motivo': 'Ya no aplica'},
+        )
         self.assertEqual(response.status_code, 302)
         self.servicio.refresh_from_db()
         self.assertEqual(self.servicio.estado_operativo, 'CANCELADO')
@@ -161,6 +179,15 @@ class OperationalLifecycleEndpointsK98BTests(TestCase):
         self.client.force_login(self.planner)
         response = self.client.post(self.url('eventos_tarea_cancelar', self.tarea.id), {'motivo': 'Cambio operativo'})
         self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, self.workspace_url('k9_evento_tareas'))
+        self.tarea.refresh_from_db()
+        self.assertEqual(self.tarea.estado, 'PENDIENTE')
+
+        response = self.client.post(
+            self.workspace_url('k9_evento_tareas'),
+            {'accion': 'cancelar', 'tarea_id': self.tarea.id, 'motivo': 'Cambio operativo'},
+        )
+        self.assertEqual(response.status_code, 302)
         self.tarea.refresh_from_db()
         self.assertEqual(self.tarea.estado, 'CANCELADA')
 
@@ -174,8 +201,25 @@ class OperationalLifecycleEndpointsK98BTests(TestCase):
 
     def test_cancelar_y_archivar_actividad(self):
         self.client.force_login(self.admin)
-        self.client.post(self.url('eventos_actividad_cancelar', self.actividad.id), {'motivo': 'Cancelada'})
+        response = self.client.post(self.url('eventos_actividad_cancelar', self.actividad.id), {'motivo': 'Cancelada'})
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, self.workspace_url('k9_evento_agenda'))
         response = self.client.post(self.url('eventos_actividad_archivar', self.actividad.id))
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, self.workspace_url('k9_evento_agenda'))
+        self.actividad.refresh_from_db()
+        self.assertEqual(self.actividad.estado, 'PENDIENTE')
+        self.assertIsNone(self.actividad.archivado_en)
+
+        response = self.client.post(
+            self.workspace_url('k9_evento_agenda'),
+            {'accion': 'cancelar', 'actividad_id': self.actividad.id, 'motivo': 'Cancelada'},
+        )
+        self.assertEqual(response.status_code, 302)
+        response = self.client.post(
+            self.workspace_url('k9_evento_agenda'),
+            {'accion': 'archivar', 'actividad_id': self.actividad.id},
+        )
         self.assertEqual(response.status_code, 302)
         self.actividad.refresh_from_db()
         self.assertEqual(self.actividad.estado, 'CANCELADA')
@@ -186,15 +230,45 @@ class OperationalLifecycleEndpointsK98BTests(TestCase):
         archivo = self.documento.archivo.name
         response = self.client.post(self.url('eventos_documento_archivar', self.documento.id), {'motivo': 'Historico'})
         self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, self.workspace_url('k9_evento_documentos'))
+        self.documento.refresh_from_db()
+        self.assertIsNone(self.documento.archivado_en)
+        self.assertEqual(self.documento.archivo.name, archivo)
+
+        response = self.client.post(
+            self.workspace_url('k9_documento_archivar', documento_id=self.documento.id),
+            {'motivo': 'Historico'},
+        )
+        self.assertEqual(response.status_code, 302)
         self.documento.refresh_from_db()
         self.assertIsNotNone(self.documento.archivado_en)
         self.assertEqual(self.documento.archivo.name, archivo)
 
     def test_desarchivar_no_reactiva_servicio_cancelado(self):
         self.client.force_login(self.admin)
-        self.client.post(self.url('eventos_servicio_cancelar', self.servicio.id))
-        self.client.post(self.url('eventos_servicio_archivar', self.servicio.id))
+        response = self.client.post(self.url('eventos_servicio_cancelar', self.servicio.id))
+        self.assertEqual(response.status_code, 302)
+        response = self.client.post(self.url('eventos_servicio_archivar', self.servicio.id))
+        self.assertEqual(response.status_code, 302)
         response = self.client.post(self.url('eventos_servicio_desarchivar', self.servicio.id))
+        self.assertEqual(response.status_code, 302)
+        self.servicio.refresh_from_db()
+        self.assertIsNone(self.servicio.archivado_en)
+        self.assertEqual(self.servicio.estado_operativo, 'PROGRAMADO')
+
+        self.client.post(self.workspace_url('k9_evento_servicios'), {
+            'accion': 'cancelar',
+            'servicio_id': self.servicio.id,
+            'motivo': 'Cancelado',
+        })
+        self.client.post(self.workspace_url('k9_evento_servicios'), {
+            'accion': 'archivar',
+            'servicio_id': self.servicio.id,
+        })
+        response = self.client.post(self.workspace_url('k9_evento_servicios'), {
+            'accion': 'restaurar',
+            'servicio_id': self.servicio.id,
+        })
         self.assertEqual(response.status_code, 302)
         self.servicio.refresh_from_db()
         self.assertIsNone(self.servicio.archivado_en)
@@ -212,13 +286,31 @@ class OperationalLifecycleEndpointsK98BTests(TestCase):
         self.client.force_login(self.planner)
         response = self.client.post(self.url('eventos_pago_anular', self.pago.id), {'motivo': 'Duplicado'})
         self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, self.workspace_url('k9_evento_finanzas'))
+        self.pago.refresh_from_db()
+        self.assertEqual(self.pago.estado, 'ACTIVO')
+
+        response = self.client.post(
+            self.workspace_url('k9_finanzas_pago_anular', pago_id=self.pago.id),
+            {'motivo': 'Duplicado'},
+        )
+        self.assertEqual(response.status_code, 302)
         self.pago.refresh_from_db()
         self.assertEqual(self.pago.estado, 'ANULADO')
-        self.assertTrue(RegistroAuditoria.objects.filter(accion='pago_evento.anular', objeto_id=str(self.pago.id)).exists())
+        self.assertTrue(RegistroAuditoria.objects.filter(accion='ANULAR_PAGO_OPERATIVO_K9', objeto_id=str(self.pago.id)).exists())
 
     def test_admin_anula_pago(self):
         self.client.force_login(self.admin)
         response = self.client.post(self.url('eventos_pago_anular', self.pago.id), {'motivo': 'Captura duplicada'})
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, self.workspace_url('k9_evento_finanzas'))
+        self.pago.refresh_from_db()
+        self.assertEqual(self.pago.estado, 'ACTIVO')
+
+        response = self.client.post(
+            self.workspace_url('k9_finanzas_pago_anular', pago_id=self.pago.id),
+            {'motivo': 'Captura duplicada'},
+        )
         self.assertEqual(response.status_code, 302)
         self.pago.refresh_from_db()
         self.assertEqual(self.pago.estado, 'ANULADO')
@@ -232,10 +324,30 @@ class OperationalLifecycleEndpointsK98BTests(TestCase):
 
     def test_gasto_se_cancela_despues_de_anular_pago(self):
         self.client.force_login(self.admin)
-        self.client.post(self.url('eventos_pago_anular', self.pago.id), {'motivo': 'Anular primero'})
+        response = self.client.post(self.url('eventos_pago_anular', self.pago.id), {'motivo': 'Anular primero'})
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, self.workspace_url('k9_evento_finanzas'))
         response = self.client.post(self.url('eventos_gasto_cancelar', self.gasto.id), {'motivo': 'Ya no aplica'})
         self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, self.workspace_url('k9_evento_finanzas'))
+        self.pago.refresh_from_db()
         self.gasto.refresh_from_db()
+        self.assertEqual(self.pago.estado, 'ACTIVO')
+        self.assertEqual(self.gasto.estado, 'PENDIENTE')
+
+        response = self.client.post(
+            self.workspace_url('k9_finanzas_pago_anular', pago_id=self.pago.id),
+            {'motivo': 'Anular primero'},
+        )
+        self.assertEqual(response.status_code, 302)
+        response = self.client.post(
+            self.workspace_url('k9_finanzas_gasto_cancelar', gasto_id=self.gasto.id),
+            {'motivo': 'Ya no aplica'},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.pago.refresh_from_db()
+        self.gasto.refresh_from_db()
+        self.assertEqual(self.pago.estado, 'ANULADO')
         self.assertEqual(self.gasto.estado, 'CANCELADO')
 
     def test_cliente_no_accede_accion_financiera(self):
@@ -250,6 +362,16 @@ class OperationalLifecycleEndpointsK98BTests(TestCase):
             {'motivo': 'Prueba'},
         )
         self.assertEqual(response.status_code, 302)
-        self.assertIn(reverse('empresa_dashboard', kwargs={'empresa_slug': self.empresa.slug}), response.url)
-        self.assertIn(f'evento={self.evento.id}', response.url)
+        self.assertEqual(response.url, self.workspace_url('k9_evento_tareas'))
         self.assertNotIn('evil.example', response.url)
+        self.tarea.refresh_from_db()
+        self.assertEqual(self.tarea.estado, 'PENDIENTE')
+
+        response = self.client.post(
+            self.workspace_url('k9_evento_tareas') + '?next=https://evil.example/',
+            {'accion': 'cancelar', 'tarea_id': self.tarea.id, 'motivo': 'Prueba'},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertNotIn('evil.example', response.url)
+        self.tarea.refresh_from_db()
+        self.assertEqual(self.tarea.estado, 'CANCELADA')

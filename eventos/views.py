@@ -1,21 +1,19 @@
-from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.core.exceptions import PermissionDenied, ValidationError
+from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST
 
 from core.services.authorization import Actions, usuario_puede_evento, usuario_tiene_permiso
 from core.services.permisos import roles_usuario_empresa, usuario_es_dirtec_operativo
+from core.services.runtime_guardrails import block_replaced_legacy_post
 from core.services.tenant_context import validar_slug_tenant
 from paquetes.models import PropuestaEvento
 
 from .models import ContratoEvento
 from .services import (
-    generar_contrato_v2_desde_propuesta,
     leer_contrato_interno,
     leer_contrato_publico,
-    materializar_servicios_contrato_v2,
 )
 
 
@@ -61,18 +59,14 @@ def contrato_generar_desde_propuesta(request, empresa_slug, propuesta_id):
     )
     if not usuario_puede_evento(request.user, propuesta.evento, Actions.EVENT_EDIT):
         raise PermissionDenied('No tienes permiso para contratar esta propuesta.')
-    try:
-        contrato = generar_contrato_v2_desde_propuesta(propuesta.id, user=request.user)
-        messages.success(request, 'Contrato comercial generado.')
-        return redirect('eventos_contrato_detail', empresa_slug=empresa.slug, contrato_id=contrato.id)
-    except ValidationError as exc:
-        messages.error(request, exc.messages[0] if hasattr(exc, 'messages') else str(exc))
-        return redirect(
-            'paquetes_propuesta_editor',
-            empresa_slug=empresa.slug,
-            evento_id=propuesta.evento_id,
-            propuesta_id=propuesta.id,
-        )
+    return block_replaced_legacy_post(
+        request,
+        endpoint='eventos_contrato_generar',
+        replacement='k9_evento_comercial:generar_contrato',
+        redirect_to=f"{reverse('k9_evento_comercial', kwargs={'empresa_slug': empresa.slug, 'evento_id': propuesta.evento_id})}?propuesta={propuesta.id}",
+        empresa=empresa,
+        evento=propuesta.evento,
+    )
 
 
 @login_required(login_url='/login/')
@@ -83,15 +77,21 @@ def contrato_materializar_servicios(request, empresa_slug, contrato_id):
     contrato = get_object_or_404(_contratos_empresa(empresa), pk=contrato_id)
     if not usuario_puede_evento(request.user, contrato.evento, Actions.EVENT_OPERATIONS):
         raise PermissionDenied('No tienes permiso para preparar la operacion de este contrato.')
-    try:
-        resultado = materializar_servicios_contrato_v2(contrato.id, user=request.user)
-        messages.success(
-            request,
-            f"Operacion preparada: {resultado['creados']} servicios nuevos, {resultado['actualizados']} actualizados.",
-        )
-    except ValidationError as exc:
-        messages.error(request, exc.messages[0] if hasattr(exc, 'messages') else str(exc))
-    return redirect('eventos_contrato_detail', empresa_slug=empresa.slug, contrato_id=contrato.id)
+    propuesta_id = contrato.propuesta_origen_id
+    redirect_to = reverse(
+        'k9_evento_comercial',
+        kwargs={'empresa_slug': empresa.slug, 'evento_id': contrato.evento_id},
+    )
+    if propuesta_id:
+        redirect_to = f"{redirect_to}?propuesta={propuesta_id}"
+    return block_replaced_legacy_post(
+        request,
+        endpoint='eventos_contrato_materializar',
+        replacement='k9_evento_comercial:materializar_contrato',
+        redirect_to=redirect_to,
+        empresa=empresa,
+        evento=contrato.evento,
+    )
 
 
 @login_required(login_url='/login/')
