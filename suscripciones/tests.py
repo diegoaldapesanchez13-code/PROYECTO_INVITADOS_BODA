@@ -257,7 +257,7 @@ class SuscripcionSaasTests(TestCase):
         self.crear_suscripcion()
         self.client.force_login(planner)
 
-        response = self.client.post('/empresa/casa-cisneros/wedding-planner/dashboard/', {
+        response = self.client.post(f'/dashboard/planner/?empresa={self.empresa.id}', {
             'accion': 'crear_evento_planner',
             'empresa_id': self.empresa.id,
             'nombre_evento': 'Boda Planner',
@@ -273,7 +273,7 @@ class SuscripcionSaasTests(TestCase):
 
         evento = EventoBoda.objects.get(empresa=self.empresa, nombre_evento='Boda Planner')
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(response['Location'], '/empresa/casa-cisneros/wedding-planner/dashboard/#eventos')
+        self.assertEqual(response['Location'], '/empresa/casa-cisneros/planner/dashboard/#eventos')
         self.assertEqual(evento.wedding_planner, planner)
         self.assertTrue(RegistroAuditoria.objects.filter(empresa=self.empresa, evento=evento, accion='CREAR_EVENTO_PLANNER').exists())
 
@@ -304,7 +304,7 @@ class SuscripcionSaasTests(TestCase):
         )
         self.client.force_login(planner)
 
-        response = self.client.post('/empresa/casa-cisneros/wedding-planner/dashboard/', {
+        response = self.client.post(f'/dashboard/planner/?empresa={self.empresa.id}', {
             'accion': 'crear_evento_planner',
             'empresa_id': self.empresa.id,
             'nombre_evento': 'Evento Bloqueado Planner',
@@ -315,6 +315,6 @@ class SuscripcionSaasTests(TestCase):
         })
 
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(response['Location'], '/empresa/casa-cisneros/wedding-planner/dashboard/#eventos')
+        self.assertEqual(response['Location'], '/empresa/casa-cisneros/planner/dashboard/#eventos')
         self.assertFalse(EventoBoda.objects.filter(empresa=self.empresa, nombre_evento='Evento Bloqueado Planner').exists())
         self.assertTrue(RegistroAuditoria.objects.filter(empresa=self.empresa, accion='LIMITE_PLAN_EXCEDIDO').exists())

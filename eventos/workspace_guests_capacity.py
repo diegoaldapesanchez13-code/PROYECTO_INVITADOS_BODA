@@ -16,6 +16,9 @@ class GuestCapacity:
     liberados: int
     disponibles: int | None
     sobrecupo: int
+    adultos: dict
+    ninos: dict
+    capacidad_separada: bool
 
     def as_dict(self):
         return {
@@ -28,19 +31,58 @@ class GuestCapacity:
             "liberados": self.liberados,
             "disponibles": self.disponibles,
             "sobrecupo": self.sobrecupo,
+            "adultos": self.adultos,
+            "ninos": self.ninos,
+            "capacidad_separada": self.capacidad_separada,
         }
 
 
 def capacidad_objetivo(evento):
-    """
-    Prefer contractual capacity. Fall back to estimated capacity.
-    Zero means "no hard capacity configured".
-    """
     return max(
         int(evento.capacidad_contratada or 0)
         or int(evento.numero_invitados_estimado or 0),
         0,
     )
+
+
+def _contracted_split(evento):
+    try:
+        detalle = evento.detalle_produccion
+    except Exception:
+        return 0, 0
+    return (
+        max(int(detalle.adultos_contratados or 0), 0),
+        max(int(detalle.ninos_contratados or 0), 0),
+    )
+
+
+def _person_breakdown(qs, person_type, configured_capacity=0):
+    typed = qs.filter(tipo_persona=person_type)
+    emitidos = typed.count()
+    confirmados = typed.filter(asistira=True).count()
+    no_asisten = typed.filter(asistira=False).count()
+    pendientes = emitidos - confirmados - no_asisten
+    reservados = confirmados + pendientes
+
+    return {
+        "emitidos": emitidos,
+        "confirmados": confirmados,
+        "pendientes": pendientes,
+        "no_asisten": no_asisten,
+        "reservados": reservados,
+        "liberados": no_asisten,
+        "capacidad": configured_capacity or None,
+        "disponibles": (
+            max(configured_capacity - reservados, 0)
+            if configured_capacity
+            else None
+        ),
+        "sobrecupo": (
+            max(reservados - configured_capacity, 0)
+            if configured_capacity
+            else 0
+        ),
+    }
 
 
 def resumen_cupo_evento(evento, *, excluir_grupo=None):
@@ -53,12 +95,13 @@ def resumen_cupo_evento(evento, *, excluir_grupo=None):
     no_asisten = qs.filter(asistira=False).count()
     pendientes = emitidos - confirmados - no_asisten
 
-    # A "NO" remains a real person/invitation for history and visibility, but
-    # does not reserve a seat anymore.
     reservados = confirmados + pendientes
     capacidad = capacidad_objetivo(evento)
     disponibles = max(capacidad - reservados, 0) if capacidad else None
     sobrecupo = max(reservados - capacidad, 0) if capacidad else 0
+
+    adultos_cap, ninos_cap = _contracted_split(evento)
+    split_enabled = bool(adultos_cap or ninos_cap)
 
     return GuestCapacity(
         capacidad=capacidad,
@@ -70,6 +113,9 @@ def resumen_cupo_evento(evento, *, excluir_grupo=None):
         liberados=no_asisten,
         disponibles=disponibles,
         sobrecupo=sobrecupo,
+        adultos=_person_breakdown(qs, "ADULTO", adultos_cap),
+        ninos=_person_breakdown(qs, "NINO", ninos_cap),
+        capacidad_separada=split_enabled,
     )
 
 

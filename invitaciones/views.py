@@ -61,7 +61,7 @@ from decoracion.models import ElementoDecoracion
 from entretenimiento.models import CancionEvento, EntretenimientoEvento
 from itinerario.models import ActividadItinerario
 from mesas.models import AsignacionMesa, Mesa
-from paquetes.models import PaqueteBoda, PaqueteEvento
+from paquetes.models import PaqueteBoda
 from presupuesto.models import CategoriaGasto, GastoEvento, PagoEvento
 from proveedores.models import PersonalEvento, Proveedor, ServicioEvento
 from suscripciones.models import PagoSuscripcion, PlanSuscripcion, SuscripcionEmpresa
@@ -103,6 +103,22 @@ from core.services.limites_plan import (
     validar_limite_planners,
     validar_limite_usuarios,
 )
+from .shared_dashboard_services import (
+    bool_post,
+    convertir_decimal,
+    convertir_entero,
+    limpiar_texto,
+    resumen_operativo_eventos,
+)
+from .company_user_services import (
+    aplicar_datos_usuario_empresa,
+    actualizar_usuario_empresa_dashboard,
+    crear_o_actualizar_usuario_empresa,
+    desactivar_usuario_empresa_dashboard,
+    eliminar_usuario_empresa_dashboard,
+)
+
+
 
 
 LOGIN_DASHBOARD_URL = '/login/'
@@ -154,178 +170,6 @@ def slug_empresa_unico(nombre):
         slug = f'{base}-{contador}'
         contador += 1
     return slug
-
-
-def aplicar_datos_usuario_empresa(
-    request,
-    user,
-    *,
-    created=False,
-    activar_default=True,
-):
-    username = (
-        limpiar_texto(
-            request,
-            'username_usuario',
-        )
-        or user.username
-    )
-    email = limpiar_texto(
-        request,
-        'email_usuario',
-    )
-    phone = limpiar_texto(
-        request,
-        'telefono_usuario',
-    )
-    first_name = limpiar_texto(
-        request,
-        'first_name_usuario',
-    )
-    last_name = limpiar_texto(
-        request,
-        'last_name_usuario',
-    )
-
-    password = (
-        request.POST.get(
-            'password_usuario'
-        )
-        or ''
-    ).strip()
-
-    password_generada = None
-    if (
-        not password
-        and (
-            created
-            or not user.has_usable_password()
-        )
-    ):
-        password_generada = (
-            get_random_string(12)
-        )
-        password = password_generada
-
-    active = (
-        bool_post(
-            request,
-            'activo_usuario',
-        )
-        if 'activo_usuario'
-        in request.POST
-        else activar_default
-    )
-
-    try:
-        actualizar_identidad_usuario(
-            user,
-            username=username,
-            email=email,
-            phone=phone,
-            first_name=first_name,
-            last_name=last_name,
-            password=password or None,
-            active=active,
-        )
-    except ValidationError as exc:
-        messages.error(
-            request,
-            '; '.join(exc.messages),
-        )
-        return None
-
-    if password_generada:
-        messages.warning(
-            request,
-            (
-                'Contraseña temporal generada para '
-                f'{user.username}: {password_generada}. '
-                'Compártela ahora por un canal seguro.'
-            ),
-        )
-
-    return user
-
-
-def crear_o_actualizar_usuario_empresa(request, empresa, rol_default='WEDDING_PLANNER'):
-    username = limpiar_texto(request, 'username_usuario')
-    if not empresa or not username:
-        return None
-
-    roles_validos = {valor for valor, _ in MembresiaEmpresa.ROLES}
-    rol = request.POST.get('rol_usuario') if request.POST.get('rol_usuario') in roles_validos else rol_default
-    User = get_user_model()
-    user = User.objects.filter(
-        username__iexact=username
-    ).first()
-    created = False
-
-    if user is None:
-        password = (
-            request.POST.get(
-                'password_usuario'
-            )
-            or get_random_string(12)
-        )
-        try:
-            user = crear_identidad_usuario(
-                username=username,
-                email=limpiar_texto(
-                    request,
-                    'email_usuario',
-                ),
-                phone=limpiar_texto(
-                    request,
-                    'telefono_usuario',
-                ),
-                first_name=limpiar_texto(
-                    request,
-                    'first_name_usuario',
-                ),
-                last_name=limpiar_texto(
-                    request,
-                    'last_name_usuario',
-                ),
-                password=password,
-                active=(
-                    bool_post(
-                        request,
-                        'activo_usuario',
-                    )
-                    if 'activo_usuario'
-                    in request.POST
-                    else True
-                ),
-            )
-            created = True
-        except ValidationError as exc:
-            messages.error(
-                request,
-                '; '.join(exc.messages),
-            )
-            return None
-    else:
-        user = aplicar_datos_usuario_empresa(
-            request,
-            user,
-            created=False,
-        )
-        if user is None:
-            return None
-
-    MembresiaEmpresa.objects.filter(empresa=empresa, usuario=user).exclude(rol=rol).update(activo=False)
-    MembresiaEmpresa.objects.update_or_create(
-        empresa=empresa,
-        usuario=user,
-        rol=rol,
-        defaults={
-            'activo': bool_post(request, 'activo_usuario'),
-            'puede_gestionar_catalogos': bool_post(request, 'puede_gestionar_catalogos_usuario'),
-        },
-    )
-    messages.success(request, f'Acceso listo: usuario {user.username} - rol {dict(MembresiaEmpresa.ROLES).get(rol, rol)}.')
-    return user
 
 
 def usuario_empresa_existente_activo(empresa, username, rol=None):
@@ -396,26 +240,6 @@ def resumen_eventos(eventos):
         'sin_planner': eventos.filter(wedding_planner__isnull=True).count(),
         'planeacion': eventos.filter(estado='PLANEACION').count(),
         'confirmados': eventos.filter(estado='CONFIRMADO').count(),
-    }
-
-
-def resumen_operativo_eventos(eventos):
-    eventos_ids = list(eventos.values_list('id', flat=True))
-    grupos = Grupoinvitacion.objects.filter(evento_id__in=eventos_ids)
-    invitados_metricas = resumen_invitados_eventos(eventos)
-    servicios = ServicioEvento.objects.filter(evento_id__in=eventos_ids)
-    tareas = TareaEvento.objects.filter(evento_id__in=eventos_ids)
-    gastos = GastoEvento.objects.filter(evento_id__in=eventos_ids)
-    return {
-        'invitaciones': grupos.count(),
-        'confirmados': invitados_metricas['confirmados'],
-        'pendientes_rsvp': invitados_metricas['pendientes'],
-        'servicios_pendientes': servicios.exclude(
-            estado__in=['CONTRATADO', 'ANTICIPO_PAGADO', 'LIQUIDADO', 'SERVICIO_COMPLETADO']
-        ).count(),
-        'tareas_pendientes': tareas.exclude(estado__in=['COMPLETADA', 'CANCELADA']).count(),
-        'tareas_vencidas': sum(1 for tarea in tareas if tarea.esta_vencida),
-        'pagos_vencidos': sum(1 for gasto in gastos if gasto.esta_vencido),
     }
 
 
@@ -731,7 +555,6 @@ def eliminar_empresa_dirtec(request):
         EventoBoda.objects.filter(empresa=empresa).delete()
         Proveedor.objects.filter(empresa=empresa).delete()
         for paquete in PaqueteBoda.objects.filter(empresa=empresa):
-            paquete.eventos.all().delete()
             paquete.delete()
         empresa.delete()
 
@@ -872,174 +695,6 @@ def actualizar_evento_empresa_dashboard(request, empresa):
     evento.wedding_planner = planner_activo_empresa(empresa, request.POST.get('planner_id'))
     evento.save()
     return evento
-
-
-def actualizar_usuario_empresa_dashboard(
-    request,
-    empresa,
-):
-    membresia = get_object_or_404(
-        MembresiaEmpresa.objects.select_related(
-            'usuario'
-        ),
-        empresa=empresa,
-        id=request.POST.get(
-            'membresia_id'
-        ),
-    )
-
-    roles_validos = {
-        valor
-        for valor, _
-        in MembresiaEmpresa.ROLES
-    }
-    rol = (
-        request.POST.get(
-            'rol_usuario'
-        )
-        if request.POST.get(
-            'rol_usuario'
-        ) in roles_validos
-        else membresia.rol
-    )
-
-    activo = bool_post(
-        request,
-        'activo_usuario',
-    )
-    puede_catalogos = bool_post(
-        request,
-        'puede_gestionar_catalogos_usuario',
-    )
-    user = membresia.usuario
-
-    try:
-        actualizar_identidad_usuario(
-            user,
-            username=(
-                limpiar_texto(
-                    request,
-                    'username_usuario',
-                )
-                or user.username
-            ),
-            email=limpiar_texto(
-                request,
-                'email_usuario',
-            ),
-            phone=limpiar_texto(
-                request,
-                'telefono_usuario',
-            ),
-            first_name=limpiar_texto(
-                request,
-                'first_name_usuario',
-            ),
-            last_name=limpiar_texto(
-                request,
-                'last_name_usuario',
-            ),
-            password=(
-                request.POST.get(
-                    'password_usuario'
-                )
-                or None
-            ),
-            active=activo,
-        )
-    except ValidationError as exc:
-        messages.error(
-            request,
-            '; '.join(exc.messages),
-        )
-        return membresia
-
-    if rol != membresia.rol:
-        destino = (
-            MembresiaEmpresa.objects
-            .filter(
-                empresa=empresa,
-                usuario=user,
-                rol=rol,
-            )
-            .exclude(
-                id=membresia.id
-            )
-            .first()
-        )
-        if destino:
-            destino.activo = activo
-            destino.puede_gestionar_catalogos = (
-                puede_catalogos
-            )
-            destino.save(
-                update_fields=[
-                    'activo',
-                    'puede_gestionar_catalogos',
-                ]
-            )
-            membresia.activo = False
-            membresia.save(
-                update_fields=['activo']
-            )
-            return destino
-        membresia.rol = rol
-
-    membresia.activo = activo
-    membresia.puede_gestionar_catalogos = (
-        puede_catalogos
-    )
-    membresia.save(
-        update_fields=[
-            'rol',
-            'activo',
-            'puede_gestionar_catalogos',
-        ]
-    )
-    return membresia
-
-
-def desactivar_usuario_empresa_dashboard(request, empresa):
-    membresia = get_object_or_404(MembresiaEmpresa, empresa=empresa, id=request.POST.get('membresia_id'))
-    if membresia.usuario_id == request.user.id:
-        return membresia
-    membresia.activo = False
-    membresia.save(update_fields=['activo'])
-    if not MembresiaEmpresa.objects.filter(usuario=membresia.usuario, activo=True).exists():
-        membresia.usuario.is_active = False
-        membresia.usuario.save(update_fields=['is_active'])
-    return membresia
-
-
-def eliminar_usuario_empresa_dashboard(request, empresa):
-    membresia = get_object_or_404(
-        MembresiaEmpresa.objects.select_related('usuario'),
-        empresa=empresa,
-        id=request.POST.get('membresia_id'),
-    )
-    if membresia.usuario_id == request.user.id:
-        messages.error(request, 'No puedes eliminar tu propio acceso desde este panel.')
-        return membresia
-
-    user = membresia.usuario
-    rol = membresia.rol
-    username = user.username
-    membresia.delete()
-
-    if not user.is_staff and not user.is_superuser and not MembresiaEmpresa.objects.filter(usuario=user).exists():
-        user.delete()
-
-    registrar_auditoria(
-        usuario=request.user,
-        empresa=empresa,
-        accion='ELIMINAR_USUARIO_EMPRESA',
-        modelo='MembresiaEmpresa',
-        objeto_id=request.POST.get('membresia_id'),
-        descripcion=f'Se elimino el acceso {rol} de {username} en {empresa.nombre_comercial}.',
-        request=request,
-    )
-    messages.success(request, f'Usuario eliminado del panel: {username}.')
-    return rol
 
 
 def crear_cliente_empresa_dashboard(request, empresa):
@@ -1302,7 +957,6 @@ def eliminar_paquete_empresa_dashboard(request, empresa):
     paquete = get_object_or_404(PaqueteBoda, empresa=empresa, id=request.POST.get('paquete_id'))
     nombre = paquete.nombre
     try:
-        paquete.eventos.all().delete()
         paquete.delete()
     except ProtectedError:
         messages.error(request, f'No se pudo eliminar el paquete {nombre} porque tiene relaciones protegidas.')
@@ -1474,7 +1128,7 @@ def dashboard_profesional(request):
         if roles.intersection({'ADMIN_EMPRESA', 'VENTAS'}):
             return redirect(f'/empresa/{empresa.slug}/dashboard/')
         if 'WEDDING_PLANNER' in roles:
-            return redirect(f'/empresa/{empresa.slug}/wedding-planner/dashboard/')
+            return redirect(f'/empresa/{empresa.slug}/planner/dashboard/')
 
     return redirect('dashboard')
 
@@ -1806,19 +1460,6 @@ def dashboard_empresa(request):
 
 
 @login_required(login_url=LOGIN_DASHBOARD_URL)
-def dashboard_empresa_slug(request, empresa_slug):
-    context = validar_slug_tenant(
-        request,
-        empresa_slug,
-        roles={'ADMIN_EMPRESA', 'VENTAS'},
-    )
-    if context.es_dirtec:
-        request.GET = request.GET.copy()
-        request.GET['empresa'] = str(context.empresa.id)
-    return dashboard_empresa(request)
-
-
-@login_required(login_url=LOGIN_DASHBOARD_URL)
 def dashboard_planner(request):
     tenant = exigir_tenant(
         request,
@@ -1858,11 +1499,11 @@ def dashboard_planner(request):
                 request=request,
             )
             return redirect(
-                f'/empresa/{empresa_actual.slug}/wedding-planner/dashboard/#eventos'
+                f'/empresa/{empresa_actual.slug}/planner/dashboard/#eventos'
             )
         crear_evento_planner_dashboard(request, empresa_actual)
         return redirect(
-            f'/empresa/{empresa_actual.slug}/wedding-planner/dashboard/#eventos'
+            f'/empresa/{empresa_actual.slug}/planner/dashboard/#eventos'
         )
 
     if request.method == 'POST' and request.POST.get('accion') == 'actualizar_estado_evento':
@@ -1873,7 +1514,7 @@ def dashboard_planner(request):
             evento.estado = estado
             evento.save(update_fields=['estado'])
         return redirect(
-            f'/empresa/{evento.empresa.slug}/wedding-planner/dashboard/#eventos'
+            f'/empresa/{evento.empresa.slug}/planner/dashboard/#eventos'
             if evento.empresa
             else '/dashboard/planner/#eventos'
         )
@@ -2354,13 +1995,6 @@ EDITOR_REAL_MAP_DISPLAY = {'button-map', 'button-only', 'map-only', 'hidden'}
 HEX_COLOR_RE = re.compile(r'^#[0-9a-fA-F]{6}$')
 
 
-def convertir_entero(valor, default=0):
-    try:
-        return max(int(valor), 0)
-    except (TypeError, ValueError):
-        return default
-
-
 PLANTILLAS_EVENTO = [
     ('BODA', 'Boda elegante'),
     ('XV', 'XV años'),
@@ -2723,24 +2357,6 @@ def aplicar_estructura_plantilla_evento(evento, codigo):
             seccion.save(update_fields=['titulo', 'descripcion', 'orden', 'activa', 'fecha_actualizacion'])
 
 
-def bool_post(request, campo):
-    return request.POST.get(campo) == 'on'
-
-
-def limpiar_texto(request, campo):
-    valor = request.POST.get(campo)
-    return valor.strip() if valor else None
-
-
-def convertir_hora(valor):
-    if not valor:
-        return None
-    try:
-        return datetime.strptime(valor, '%H:%M').time()
-    except (TypeError, ValueError):
-        return None
-
-
 def convertir_datetime_local(valor):
     if not valor:
         return None
@@ -2755,13 +2371,6 @@ def convertir_datetime_local(valor):
             timezone.get_current_timezone(),
         )
     return parsed
-
-
-def convertir_decimal(valor, default=0):
-    try:
-        return Decimal(valor or default)
-    except (InvalidOperation, TypeError, ValueError):
-        return Decimal(default)
 
 
 def archivo_pasa_validadores(modelo, campo, archivo):
@@ -2917,14 +2526,12 @@ def guardar_campos_servicio_evento(servicio, request, evento):
     servicio.hora_inicio = hora_dashboard(request, 'hora_inicio_servicio', servicio.hora_inicio)
     servicio.hora_fin = hora_dashboard(request, 'hora_fin_servicio', servicio.hora_fin)
     servicio.lugar = limpiar_texto(request, 'lugar_servicio')
-    servicio.costo_total = convertir_decimal(request.POST.get('costo_total_servicio'), servicio.costo_total)
-    servicio.anticipo = convertir_decimal(request.POST.get('anticipo_servicio'), servicio.anticipo)
-    servicio.fecha_limite_pago = fecha_dashboard(request, 'fecha_limite_pago_servicio', servicio.fecha_limite_pago)
+    servicio.costo_proveedor = convertir_decimal(request.POST.get('costo_proveedor_servicio'), servicio.costo_proveedor)
     estado = request.POST.get('estado_servicio')
     if estado in estados_validos:
         servicio.estado = estado
     servicio.notas = limpiar_texto(request, 'notas_servicio')
-    for campo in ('contrato', 'cotizacion', 'comprobante_pago'):
+    for campo in ('contrato', 'cotizacion'):
         if request.POST.get(f'eliminar_{campo}_servicio') == 'on':
             archivo_actual = getattr(servicio, campo, None)
             if archivo_actual:
@@ -2956,57 +2563,6 @@ def eliminar_servicio_evento_dashboard(request, evento):
     servicio = get_object_or_404(ServicioEvento, evento=evento, id=request.POST.get('servicio_id'))
     servicio.delete()
     return 'servicios'
-
-
-def paquete_empresa_para_evento(evento, paquete_id):
-    if not paquete_id:
-        return None
-    filtros = {'id': paquete_id, 'activo': True}
-    if evento.empresa:
-        filtros['empresa'] = evento.empresa
-    return PaqueteBoda.objects.filter(**filtros).first()
-
-
-def guardar_campos_paquete_evento(paquete_evento, request, evento):
-    paquete = paquete_empresa_para_evento(evento, request.POST.get('paquete_id'))
-    if paquete:
-        paquete_evento.paquete = paquete
-    estados_validos = {valor for valor, _ in PaqueteEvento.ESTADOS}
-    paquete_evento.precio_acordado = convertir_decimal(request.POST.get('precio_acordado_paquete'), paquete_evento.precio_acordado)
-    paquete_evento.descuento = convertir_decimal(request.POST.get('descuento_paquete'), paquete_evento.descuento)
-    total_manual = request.POST.get('total_paquete')
-    if total_manual:
-        paquete_evento.total = convertir_decimal(total_manual, paquete_evento.total)
-    else:
-        base = paquete_evento.precio_acordado or paquete_evento.paquete.precio_base
-        paquete_evento.total = max(base - paquete_evento.descuento, Decimal('0'))
-    if request.POST.get('estado_paquete') in estados_validos:
-        paquete_evento.estado = request.POST.get('estado_paquete')
-    paquete_evento.servicios_adicionales = limpiar_texto(request, 'servicios_adicionales_paquete')
-    paquete_evento.notas = limpiar_texto(request, 'notas_paquete')
-    paquete_evento.save()
-    return paquete_evento
-
-
-def agregar_paquete_evento_dashboard(request, evento):
-    paquete = paquete_empresa_para_evento(evento, request.POST.get('paquete_id'))
-    if not paquete:
-        return 'operacion'
-    paquete_evento = PaqueteEvento(evento=evento, paquete=paquete)
-    guardar_campos_paquete_evento(paquete_evento, request, evento)
-    return 'operacion'
-
-
-def editar_paquete_evento_dashboard(request, evento):
-    paquete_evento = get_object_or_404(PaqueteEvento, evento=evento, id=request.POST.get('paquete_evento_id'))
-    guardar_campos_paquete_evento(paquete_evento, request, evento)
-    return 'operacion'
-
-
-def eliminar_paquete_evento_dashboard(request, evento):
-    paquete_evento = get_object_or_404(PaqueteEvento, evento=evento, id=request.POST.get('paquete_evento_id'))
-    paquete_evento.delete()
-    return 'operacion'
 
 
 def guardar_campos_personal_evento(personal, request, evento):
@@ -3045,184 +2601,6 @@ def editar_personal_evento_dashboard(request, evento):
 def eliminar_personal_evento_dashboard(request, evento):
     personal = get_object_or_404(PersonalEvento, evento=evento, id=request.POST.get('personal_id'))
     personal.delete()
-    return 'operacion'
-
-
-def paquete_buffet_para_evento(evento, paquete_id):
-    if not paquete_id:
-        return None
-    queryset = PaqueteBuffet.objects.filter(id=paquete_id, activo=True)
-    if evento.empresa:
-        queryset = queryset.filter(proveedor__empresa=evento.empresa)
-    return queryset.first()
-
-
-def guardar_campos_catering_evento(catering, request, evento):
-    catering.proveedor = proveedor_empresa_para_evento(evento, request.POST.get('proveedor_id'), user=request.user)
-    catering.paquete_buffet = paquete_buffet_para_evento(evento, request.POST.get('paquete_buffet_id'))
-    catering.cantidad_adultos = convertir_entero(request.POST.get('cantidad_adultos_catering'), catering.cantidad_adultos)
-    catering.cantidad_ninos = convertir_entero(request.POST.get('cantidad_ninos_catering'), catering.cantidad_ninos)
-    catering.cantidad_proveedores = convertir_entero(request.POST.get('cantidad_proveedores_catering'), catering.cantidad_proveedores)
-    catering.precio_total = convertir_decimal(request.POST.get('precio_total_catering'), catering.precio_total)
-    catering.fecha_degustacion = fecha_dashboard(request, 'fecha_degustacion_catering', catering.fecha_degustacion)
-    catering.hora_servicio = hora_dashboard(request, 'hora_servicio_catering', catering.hora_servicio)
-    catering.horario_montaje = hora_dashboard(request, 'horario_montaje_catering', catering.horario_montaje)
-    catering.duracion_servicio = limpiar_texto(request, 'duracion_servicio_catering')
-    catering.observaciones = limpiar_texto(request, 'observaciones_catering')
-    catering.save()
-    alimentos_ids = request.POST.getlist('alimentos_catering')
-    if alimentos_ids:
-        catering.alimentos_seleccionados.set(Alimento.objects.filter(id__in=alimentos_ids, activo=True))
-    elif 'alimentos_catering' in request.POST:
-        catering.alimentos_seleccionados.clear()
-    return catering
-
-
-def agregar_catering_evento_dashboard(request, evento):
-    catering = CateringEvento(evento=evento)
-    guardar_campos_catering_evento(catering, request, evento)
-    return 'operacion'
-
-
-def editar_catering_evento_dashboard(request, evento):
-    catering = get_object_or_404(CateringEvento, evento=evento, id=request.POST.get('catering_id'))
-    guardar_campos_catering_evento(catering, request, evento)
-    return 'operacion'
-
-
-def eliminar_catering_evento_dashboard(request, evento):
-    catering = get_object_or_404(CateringEvento, evento=evento, id=request.POST.get('catering_id'))
-    catering.delete()
-    return 'operacion'
-
-
-def guardar_campos_decoracion_evento(elemento, request, evento):
-    categorias_validas = {valor for valor, _ in ElementoDecoracion.CATEGORIAS}
-    estados_validos = {valor for valor, _ in ElementoDecoracion.ESTADOS}
-    if request.POST.get('categoria_decoracion') in categorias_validas:
-        elemento.categoria = request.POST.get('categoria_decoracion')
-    elemento.nombre = limpiar_texto(request, 'nombre_decoracion') or elemento.nombre or 'Elemento'
-    elemento.descripcion = limpiar_texto(request, 'descripcion_decoracion')
-    elemento.cantidad = max(convertir_entero(request.POST.get('cantidad_decoracion'), elemento.cantidad), 1)
-    elemento.color = limpiar_texto(request, 'color_decoracion')
-    elemento.material = limpiar_texto(request, 'material_decoracion')
-    elemento.proveedor = proveedor_empresa_para_evento(evento, request.POST.get('proveedor_id'), user=request.user)
-    elemento.costo = convertir_decimal(request.POST.get('costo_decoracion'), elemento.costo)
-    elemento.aprobado_cliente = bool_post(request, 'aprobado_cliente_decoracion')
-    if request.POST.get('estado_decoracion') in estados_validos:
-        elemento.estado = request.POST.get('estado_decoracion')
-    elemento.notas = limpiar_texto(request, 'notas_decoracion')
-    for campo in ('imagen_referencia', 'imagen_final'):
-        if request.POST.get(f'eliminar_{campo}_decoracion') == 'on':
-            archivo_actual = getattr(elemento, campo, None)
-            if archivo_actual:
-                archivo_actual.delete(save=False)
-            setattr(elemento, campo, None)
-        archivo = request.FILES.get(f'{campo}_decoracion')
-        if archivo and archivo_pasa_validadores(ElementoDecoracion, campo, archivo):
-            archivo_actual = getattr(elemento, campo, None)
-            if archivo_actual:
-                archivo_actual.delete(save=False)
-            setattr(elemento, campo, archivo)
-    elemento.save()
-    return elemento
-
-
-def agregar_decoracion_evento_dashboard(request, evento):
-    elemento = ElementoDecoracion(evento=evento, nombre='Elemento')
-    guardar_campos_decoracion_evento(elemento, request, evento)
-    return 'operacion'
-
-
-def editar_decoracion_evento_dashboard(request, evento):
-    elemento = get_object_or_404(ElementoDecoracion, evento=evento, id=request.POST.get('decoracion_id'))
-    guardar_campos_decoracion_evento(elemento, request, evento)
-    return 'operacion'
-
-
-def eliminar_decoracion_evento_dashboard(request, evento):
-    elemento = get_object_or_404(ElementoDecoracion, evento=evento, id=request.POST.get('decoracion_id'))
-    if elemento.imagen_referencia:
-        elemento.imagen_referencia.delete(save=False)
-    if elemento.imagen_final:
-        elemento.imagen_final.delete(save=False)
-    elemento.delete()
-    return 'operacion'
-
-
-def guardar_campos_entretenimiento_evento(entretenimiento, request, evento):
-    tipos_validos = {valor for valor, _ in EntretenimientoEvento.TIPOS}
-    estados_validos = {valor for valor, _ in EntretenimientoEvento.ESTADOS}
-    if request.POST.get('tipo_entretenimiento') in tipos_validos:
-        entretenimiento.tipo = request.POST.get('tipo_entretenimiento')
-    entretenimiento.proveedor = proveedor_empresa_para_evento(evento, request.POST.get('proveedor_id'), user=request.user)
-    entretenimiento.nombre_artista = limpiar_texto(request, 'nombre_artista') or entretenimiento.nombre_artista or 'Artista'
-    entretenimiento.hora_inicio = hora_dashboard(request, 'hora_inicio_entretenimiento', entretenimiento.hora_inicio)
-    entretenimiento.hora_fin = hora_dashboard(request, 'hora_fin_entretenimiento', entretenimiento.hora_fin)
-    entretenimiento.duracion = limpiar_texto(request, 'duracion_entretenimiento')
-    entretenimiento.costo = convertir_decimal(request.POST.get('costo_entretenimiento'), entretenimiento.costo)
-    entretenimiento.anticipo = convertir_decimal(request.POST.get('anticipo_entretenimiento'), entretenimiento.anticipo)
-    entretenimiento.requerimientos_tecnicos = limpiar_texto(request, 'requerimientos_entretenimiento')
-    if request.POST.get('estado_entretenimiento') in estados_validos:
-        entretenimiento.estado = request.POST.get('estado_entretenimiento')
-    entretenimiento.notas = limpiar_texto(request, 'notas_entretenimiento')
-    entretenimiento.save()
-    return entretenimiento
-
-
-def agregar_entretenimiento_evento_dashboard(request, evento):
-    entretenimiento = EntretenimientoEvento(evento=evento, nombre_artista='Artista')
-    guardar_campos_entretenimiento_evento(entretenimiento, request, evento)
-    return 'operacion'
-
-
-def editar_entretenimiento_evento_dashboard(request, evento):
-    entretenimiento = get_object_or_404(EntretenimientoEvento, evento=evento, id=request.POST.get('entretenimiento_id'))
-    guardar_campos_entretenimiento_evento(entretenimiento, request, evento)
-    return 'operacion'
-
-
-def eliminar_entretenimiento_evento_dashboard(request, evento):
-    entretenimiento = get_object_or_404(EntretenimientoEvento, evento=evento, id=request.POST.get('entretenimiento_id'))
-    entretenimiento.delete()
-    return 'operacion'
-
-
-def entretenimiento_para_cancion(evento, entretenimiento_id):
-    if not entretenimiento_id:
-        return None
-    return EntretenimientoEvento.objects.filter(evento=evento, id=entretenimiento_id).first()
-
-
-def guardar_campos_cancion_evento(cancion, request, evento):
-    momentos_validos = {valor for valor, _ in CancionEvento.TIPOS_MOMENTO}
-    cancion.entretenimiento = entretenimiento_para_cancion(evento, request.POST.get('entretenimiento_id'))
-    if request.POST.get('tipo_momento') in momentos_validos:
-        cancion.tipo_momento = request.POST.get('tipo_momento')
-    cancion.nombre_cancion = limpiar_texto(request, 'nombre_cancion') or cancion.nombre_cancion or 'Cancion'
-    cancion.artista = limpiar_texto(request, 'artista_cancion')
-    cancion.enlace = limpiar_texto(request, 'enlace_cancion')
-    cancion.orden = convertir_entero(request.POST.get('orden_cancion'), cancion.orden)
-    cancion.notas = limpiar_texto(request, 'notas_cancion')
-    cancion.save()
-    return cancion
-
-
-def agregar_cancion_evento_dashboard(request, evento):
-    cancion = CancionEvento(evento=evento, nombre_cancion='Cancion')
-    guardar_campos_cancion_evento(cancion, request, evento)
-    return 'operacion'
-
-
-def editar_cancion_evento_dashboard(request, evento):
-    cancion = get_object_or_404(CancionEvento, evento=evento, id=request.POST.get('cancion_id'))
-    guardar_campos_cancion_evento(cancion, request, evento)
-    return 'operacion'
-
-
-def eliminar_cancion_evento_dashboard(request, evento):
-    cancion = get_object_or_404(CancionEvento, evento=evento, id=request.POST.get('cancion_id'))
-    cancion.delete()
     return 'operacion'
 
 
@@ -3440,201 +2818,6 @@ def editar_aprobacion_evento_dashboard(request, evento):
 def eliminar_aprobacion_evento_dashboard(request, evento):
     aprobacion = get_object_or_404(AprobacionEvento, evento=evento, id=request.POST.get('aprobacion_id'))
     aprobacion.delete()
-    return 'operacion'
-
-
-def sincronizar_menus_desde_detalle_produccion(evento, detalle):
-    menus = [
-        ('Entrada', detalle.menu_entrada, 'ADULTO'),
-        ('Plato fuerte', detalle.menu_plato_fuerte, 'ADULTO'),
-        ('Postre', detalle.menu_postre, 'ADULTO'),
-        ('Trasnochado', detalle.menu_trasnochado, 'GENERAL'),
-        ('Menu infantil', detalle.menu_infantil, 'NINO'),
-    ]
-    for nombre, descripcion, tipo in menus:
-        if not descripcion:
-            continue
-        MenuBoda.objects.update_or_create(
-            evento=evento,
-            nombre=nombre,
-            defaults={
-                'descripcion': descripcion,
-                'tipo': tipo,
-                'visible': True,
-            },
-        )
-
-
-def guardar_detalle_produccion_dashboard(request, evento):
-    detalle, _ = DetalleProduccionEvento.objects.get_or_create(evento=evento)
-    campos_texto = [
-        'folio_contrato',
-        'cliente_contrato',
-        'arrendador',
-        'lugar_contrato',
-        'banco',
-        'numero_cuenta',
-        'clabe',
-        'tarjeta',
-        'color_mantel',
-        'color_servilleta',
-        'tipo_mesa',
-        'tamano_mesa',
-        'mobiliario',
-        'tipo_loza_cristaleria',
-        'diseno_carpa',
-        'tamano_carpa',
-        'color_carpa',
-        'montaje_carpa',
-        'menu_entrada',
-        'menu_plato_fuerte',
-        'menu_postre',
-        'menu_trasnochado',
-        'menu_infantil',
-        'bebidas',
-        'servicios_incluidos',
-        'notas_puntualidad',
-        'politica_cancelacion',
-        'notas_contrato',
-    ]
-    campos_enteros = [
-        'adultos_contratados',
-        'ninos_contratados',
-        'horas_evento',
-        'minutos_desalojo',
-        'dias_antes_liquidacion',
-    ]
-    campos_decimal = [
-        'costo_hora_extra',
-        'precio_renta_salon',
-        'deposito_apartado',
-        'anticipo_recibido',
-        'saldo_contrato',
-    ]
-    campos_hora = ['recepcion_hora', 'inicio_evento', 'fin_evento']
-
-    for campo in campos_texto:
-        if campo in request.POST:
-            setattr(detalle, campo, limpiar_texto(request, campo))
-    for campo in campos_enteros:
-        if campo in request.POST:
-            setattr(detalle, campo, convertir_entero(request.POST.get(campo), getattr(detalle, campo)))
-    for campo in campos_decimal:
-        if campo in request.POST:
-            setattr(detalle, campo, convertir_decimal(request.POST.get(campo), getattr(detalle, campo)))
-    for campo in campos_hora:
-        if campo in request.POST:
-            setattr(detalle, campo, convertir_hora(request.POST.get(campo)))
-
-    detalle.save()
-    sincronizar_menus_desde_detalle_produccion(evento, detalle)
-
-    evento.capacidad_contratada = max(detalle.total_personas_contratadas, evento.capacidad_contratada)
-    if detalle.inicio_evento:
-        evento.hora_inicio = detalle.inicio_evento
-    if detalle.fin_evento:
-        evento.hora_fin = detalle.fin_evento
-    if detalle.precio_renta_salon:
-        evento.presupuesto_total = detalle.precio_renta_salon
-    if detalle.anticipo_recibido:
-        evento.monto_pagado = detalle.anticipo_recibido
-    evento.save(update_fields=['capacidad_contratada', 'hora_inicio', 'hora_fin', 'presupuesto_total', 'monto_pagado'])
-    return 'operacion'
-
-
-def valor_pendiente(valor):
-    texto = (valor or '').strip().lower()
-    return not texto or 'por definir' in texto or 'pendiente' in texto or 'detallar' in texto
-
-
-def fecha_limite_operativa(evento, dias_antes=30):
-    if not evento or not evento.fecha_fiesta:
-        return None
-    return (evento.fecha_fiesta - timedelta(days=dias_antes)).date()
-
-
-def crear_tarea_pendiente_contrato(evento, titulo, descripcion, categoria='GENERAL', dias_antes=30):
-    tarea, creada = TareaEvento.objects.get_or_create(
-        evento=evento,
-        titulo=titulo,
-        defaults={
-            'descripcion': descripcion,
-            'categoria': categoria,
-            'prioridad': 'ALTA',
-            'estado': 'PENDIENTE',
-            'fecha_limite': fecha_limite_operativa(evento, dias_antes),
-        },
-    )
-    if not creada and tarea.estado == 'CANCELADA':
-        tarea.estado = 'PENDIENTE'
-        tarea.descripcion = descripcion
-        tarea.categoria = categoria
-        tarea.prioridad = 'ALTA'
-        tarea.fecha_limite = fecha_limite_operativa(evento, dias_antes)
-        tarea.save(update_fields=['estado', 'descripcion', 'categoria', 'prioridad', 'fecha_limite'])
-    return tarea
-
-
-def generar_pendientes_contrato_dashboard(request, evento):
-    detalle = DetalleProduccionEvento.objects.filter(evento=evento).first()
-    if not detalle:
-        return 'operacion'
-
-    pendientes = [
-        (
-            valor_pendiente(detalle.color_mantel) or valor_pendiente(detalle.color_servilleta),
-            'Definir colores de manteleria',
-            'Confirmar color de mantel y color de servilleta con el cliente.',
-            'DECORACION',
-            45,
-        ),
-        (
-            valor_pendiente(detalle.tipo_mesa) or valor_pendiente(detalle.tamano_mesa),
-            'Definir tipo y tamano de mesas',
-            'Cerrar tipo de mesa, tamano y distribucion base para el layout del evento.',
-            'MESAS',
-            45,
-        ),
-        (
-            valor_pendiente(detalle.diseno_carpa) or valor_pendiente(detalle.tamano_carpa) or valor_pendiente(detalle.color_carpa),
-            'Definir carpa del jardin',
-            'Confirmar diseno, tamano, color y ubicacion de la carpa en el montaje.',
-            'DECORACION',
-            45,
-        ),
-        (
-            valor_pendiente(detalle.menu_entrada) or valor_pendiente(detalle.menu_plato_fuerte),
-            'Cerrar entrada y plato fuerte',
-            'Definir entrada y comida/plato fuerte final del banquete adulto.',
-            'CATERING',
-            35,
-        ),
-        (
-            valor_pendiente(detalle.menu_postre),
-            'Cerrar postre o mesa de postres',
-            'Definir composicion final de postre o mesa de postres.',
-            'CATERING',
-            35,
-        ),
-        (
-            valor_pendiente(detalle.menu_trasnochado),
-            'Cerrar trasnochado',
-            'Confirmar tipo, horario y porciones del trasnochado.',
-            'CATERING',
-            35,
-        ),
-        (
-            valor_pendiente(detalle.notas_puntualidad),
-            'Confirmar puntualidad de musica',
-            'Asegurar llegada puntual de musica/DJ; el contrato indica que no se repone tiempo por retrasos.',
-            'MUSICA',
-            20,
-        ),
-    ]
-
-    for condicion, titulo, descripcion, categoria, dias_antes in pendientes:
-        if condicion:
-            crear_tarea_pendiente_contrato(evento, titulo, descripcion, categoria, dias_antes)
     return 'operacion'
 
 
@@ -4038,9 +3221,6 @@ ACCIONES_DASHBOARD_AVANZADO = {
     'agregar_servicio_evento': agregar_servicio_evento_dashboard,
     'editar_servicio_evento': editar_servicio_evento_dashboard,
     'eliminar_servicio_evento': eliminar_servicio_evento_dashboard,
-    'agregar_paquete_evento': agregar_paquete_evento_dashboard,
-    'editar_paquete_evento': editar_paquete_evento_dashboard,
-    'eliminar_paquete_evento': eliminar_paquete_evento_dashboard,
     'agregar_personal_evento': agregar_personal_evento_dashboard,
     'editar_personal_evento': editar_personal_evento_dashboard,
     'eliminar_personal_evento': eliminar_personal_evento_dashboard,
@@ -4181,7 +3361,6 @@ def dashboard(request):
 
     servicios_evento = ServicioEvento.objects.filter(evento=evento).select_related('proveedor') if evento else ServicioEvento.objects.none()
     personal_evento = PersonalEvento.objects.filter(evento=evento).select_related('proveedor') if evento else PersonalEvento.objects.none()
-    paquetes_evento = PaqueteEvento.objects.filter(evento=evento).select_related('paquete') if evento else PaqueteEvento.objects.none()
     actividades_evento = ActividadItinerario.objects.filter(evento=evento).select_related('servicio_evento', 'proveedor', 'responsable') if evento else ActividadItinerario.objects.none()
     mesas_evento = Mesa.objects.filter(evento=evento) if evento else Mesa.objects.none()
     asignaciones_mesa = AsignacionMesa.objects.filter(mesa__evento=evento) if evento else AsignacionMesa.objects.none()
@@ -4219,7 +3398,6 @@ def dashboard(request):
         estado__in=['CONTRATADO', 'ANTICIPO_PAGADO', 'LIQUIDADO', 'SERVICIO_COMPLETADO']
     ).count()
     total_personal_evento = personal_evento.count()
-    total_paquetes_evento = paquetes_evento.count()
     total_actividades_evento = actividades_evento.count()
     actividades_pendientes = actividades_evento.exclude(estado__in=['COMPLETADA', 'CANCELADA']).count()
     total_mesas_evento = mesas_evento.count()
@@ -4277,8 +3455,6 @@ def dashboard(request):
         'responsables_evento': responsables_evento,
         'categorias_gasto': CategoriaGasto.objects.filter(activo=True).order_by('nombre'),
         'estados_servicio': ServicioEvento.ESTADOS,
-        'paquetes_evento': paquetes_evento,
-        'estados_paquete_evento': PaqueteEvento.ESTADOS,
         'tipos_personal': PersonalEvento.TIPOS,
         'estados_personal': PersonalEvento.ESTADOS,
         'estados_tarea': TareaEvento.ESTADOS,
@@ -4304,7 +3480,6 @@ def dashboard(request):
         'total_servicios_evento': total_servicios_evento,
         'proveedores_pendientes': proveedores_pendientes,
         'total_personal_evento': total_personal_evento,
-        'total_paquetes_evento': total_paquetes_evento,
         'total_actividades_evento': total_actividades_evento,
         'actividades_pendientes': actividades_pendientes,
         'total_mesas_evento': total_mesas_evento,
@@ -5037,15 +4212,13 @@ def exportar_resumen_evento(request):
 
     ws.append([])
     ws.append(['Proveedores'])
-    ws.append(['Servicio', 'Proveedor', 'Estado', 'Costo', 'Anticipo', 'Saldo'])
+    ws.append(['Servicio', 'Proveedor', 'Estado', 'Costo proveedor'])
     for servicio in ServicioEvento.objects.filter(evento=evento).select_related('proveedor'):
         ws.append([
             servicio.nombre_servicio,
             servicio.proveedor.nombre_comercial if servicio.proveedor else '',
             servicio.get_estado_display(),
-            servicio.costo_total,
-            servicio.anticipo,
-            servicio.saldo_pendiente,
+            servicio.costo_proveedor,
         ])
 
     ws.append([])

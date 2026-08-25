@@ -239,7 +239,6 @@ def evaluar_eliminacion_evento(evento):
         ("Tiene tareas.", evento.tareas_evento.exists()),
         ("Tiene actividades de agenda.", evento.actividades_itinerario.exists()),
         ("Tiene grupos de invitados.", evento.grupos.exists()),
-        ("Tiene paquetes legacy asociados.", evento.paquetes_evento.exists()),
         ("Tiene expedientes de colaboracion.", evento.expedientes_servicio.exists()),
     ]
     motivos = tuple(label for label, exists in checks if exists)

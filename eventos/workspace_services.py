@@ -48,22 +48,15 @@ def evaluar_eliminacion_servicio(servicio, *, para_purga=False):
 
     if servicio.contrato_origen_id:
         motivos.append("Proviene de un contrato materializado.")
-    if servicio.paquete_evento_id or servicio.servicio_paquete_origen_id:
-        motivos.append("Proviene de un paquete materializado.")
-
-    if servicio.contrato or servicio.cotizacion or servicio.comprobante_pago:
+    if servicio.contrato or servicio.cotizacion:
         motivos.append("Tiene archivos comerciales u operativos.")
 
     if any(
         value not in {None, ZERO}
         for value in (
-            servicio.costo_total,
             servicio.costo_proveedor,
-            servicio.precio_cliente,
-            servicio.ajuste_cliente,
             servicio.valor_contratado,
             servicio.cargo_adicional_cliente,
-            servicio.anticipo,
         )
     ):
         motivos.append("Tiene valores financieros registrados.")

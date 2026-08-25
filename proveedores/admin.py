@@ -4,7 +4,6 @@ from .models import (
     EtiquetaProveedor,
     PersonalEvento,
     Proveedor,
-    ServicioCatalogoProveedor,
     ServicioEvento,
 )
 
@@ -81,15 +80,6 @@ class EtiquetaProveedorAdmin(admin.ModelAdmin):
     search_fields = ('nombre', 'empresa__nombre_comercial')
 
 
-@admin.register(ServicioCatalogoProveedor)
-class ServicioCatalogoProveedorAdmin(admin.ModelAdmin):
-    list_display = ('nombre', 'proveedor', 'empresa', 'categoria', 'costo_referencia', 'precio_referencia_cliente', 'activo')
-    list_filter = ('empresa', 'activo', 'categoria')
-    search_fields = ('nombre', 'descripcion', 'proveedor__nombre_comercial')
-    autocomplete_fields = ('proveedor', 'empresa')
-    filter_horizontal = ('etiquetas',)
-
-
 @admin.register(ServicioEvento)
 class ServicioEventoAdmin(admin.ModelAdmin):
     save_on_top = True
@@ -104,9 +94,6 @@ class ServicioEventoAdmin(admin.ModelAdmin):
         'estado_comercial',
         'estado_operativo',
         'fecha_servicio',
-        'costo_total',
-        'anticipo',
-        'saldo_pendiente',
     )
     list_filter = (
         'evento',
@@ -127,13 +114,11 @@ class ServicioEventoAdmin(admin.ModelAdmin):
         'evento__novia',
     )
     date_hierarchy = 'fecha_servicio'
-    readonly_fields = ('saldo_pendiente',)
     fieldsets = (
         ('Evento y proveedor', {
             'fields': (
                 'evento',
                 'proveedor',
-                'servicio_catalogo',
                 'servicio_catalogo_k9',
                 'contrato_origen',
                 'linea_origen_key',
@@ -157,17 +142,12 @@ class ServicioEventoAdmin(admin.ModelAdmin):
         }),
         ('Pagos', {
             'fields': (
-                'costo_total',
-                'costo_proveedor',
-                'precio_cliente',
-                'ajuste_cliente',
-                'anticipo',
-                'saldo_pendiente',
-                'fecha_limite_pago',
+                        'costo_proveedor',
+                                'fecha_limite_pago',
             )
         }),
         ('Documentos', {
-            'fields': ('contrato', 'cotizacion', 'comprobante_pago')
+            'fields': ('contrato', 'cotizacion')
         }),
         ('Notas', {
             'fields': (

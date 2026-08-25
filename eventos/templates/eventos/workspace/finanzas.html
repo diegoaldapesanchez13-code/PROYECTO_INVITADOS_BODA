@@ -1,0 +1,114 @@
+{% extends "eventos/workspace/base.html" %}
+{% load static l10n %}
+{% block title %}Finanzas | {{ evento.titulo_evento }}{% endblock %}
+{% block extra_css %}{{ block.super }}<link rel="stylesheet" href="{% static 'eventos/css/workspace_finance_r4.css' %}">{% endblock %}
+{% block workspace_content %}
+<section class="finance-workspace" data-finance-workspace>
+  <header class="finance-heading">
+    <div><span class="workspace-eyebrow">Negocio</span><h2>Finanzas</h2><p>Control interno de ingresos, costos, pagos operativos y margen del evento.</p></div>
+    <div class="finance-heading__actions">
+      <span class="finance-source">Fuente: {{ resumen.fuente_total }}</span>
+      {% if puede_operar_finanzas %}<button class="app-button app-button--primary" type="button" data-finance-open="new-expense">Nuevo gasto</button>{% endif %}
+    </div>
+  </header>
+
+  <section class="finance-kpis">
+    <article><span>Total contratado</span><strong>${{ resumen.total_contratado|floatformat:2 }}</strong><small>Valor comercial vigente</small></article>
+    <article><span>Cliente recibido</span><strong>${{ resumen.pagos_cliente_recibidos|floatformat:2 }}</strong><small>Saldo ${{ resumen.saldo_cliente|floatformat:2 }}</small></article>
+    <article><span>Costo comprometido</span><strong>${{ resumen.costo_comprometido|floatformat:2 }}</strong><small>Pagado ${{ resumen.pagos_operativos_realizados|floatformat:2 }}</small></article>
+    <article><span>Margen estimado</span><strong>${{ resumen.margen_estimado|floatformat:2 }}</strong><small>{{ resumen.porcentaje_margen_estimado|floatformat:2 }}%</small></article>
+  </section>
+
+  <section class="finance-health">
+    <article><span class="workspace-eyebrow">Caja</span><strong>${{ resumen.flujo_neto_caja|floatformat:2 }}</strong><small>Ingresos recibidos - egresos pagados</small></article>
+    <article><span class="workspace-eyebrow">Pendiente operativo</span><strong>${{ resumen.saldo_operativo|floatformat:2 }}</strong><small>{{ gastos_vencidos|length }} vencido(s)</small></article>
+    <article><span class="workspace-eyebrow">Costos por definir</span><strong>{{ costos_pendientes|length }}</strong><small>Servicios sin costo operativo</small></article>
+    <article><span class="workspace-eyebrow">Pagos por revisar</span><strong>{{ pagos_cliente_pendientes|length }}</strong><small>Reportados por clientes</small></article>
+  </section>
+
+  {% if resumen.advertencias %}<section class="finance-warnings">{% for warning in resumen.advertencias %}<p>{{ warning }}</p>{% endfor %}</section>{% endif %}
+
+  <section class="finance-section">
+    <header class="finance-section__header">
+      <div><span class="workspace-eyebrow">Cliente → empresa</span><h3>Pagos reportados por clientes</h3></div>
+      <form method="get"><input type="hidden" name="return_to" value="{{ return_to }}"><select class="app-select" name="estado_cliente" onchange="this.form.requestSubmit()"><option value="">Todos</option><option value="PENDIENTE" {% if estado_cliente == "PENDIENTE" %}selected{% endif %}>Pendientes</option><option value="RECIBIDO" {% if estado_cliente == "RECIBIDO" %}selected{% endif %}>Recibidos</option><option value="OBSERVADO" {% if estado_cliente == "OBSERVADO" %}selected{% endif %}>Observados</option></select></form>
+    </header>
+    <div class="finance-list">
+      {% for pago in pagos_cliente %}
+      <article class="finance-row">
+        <div><strong>{{ pago.concepto|default:"Pago del cliente" }}</strong><span>{{ pago.fecha_pago|date:"d M Y" }} · {{ pago.get_metodo_pago_display }}</span></div>
+        <div><b>${{ pago.monto|floatformat:2 }}</b><span class="finance-status finance-status--{{ pago.estado|lower }}">{{ pago.get_estado_display }}</span></div>
+        <div class="finance-row__actions">
+          {% if pago.comprobante %}<a class="app-button app-button--secondary" href="{% url 'secure_pago_cliente_comprobante' pago.id %}" target="_blank" rel="noopener" data-workspace-native>Comprobante</a>{% endif %}
+          {% if puede_operar_finanzas and pago.estado != "CANCELADO" %}
+          <button type="button" class="app-button app-button--secondary" data-review-client data-action="{% url 'k9_finanzas_pago_cliente_revisar' empresa.slug evento.id pago.id %}" data-title="{{ pago.concepto|default:'Pago del cliente'|escape }}">Revisar</button>
+          {% endif %}
+        </div>
+      </article>
+      {% empty %}<div class="finance-empty">No hay pagos de cliente con este filtro.</div>{% endfor %}
+    </div>
+  </section>
+
+  <section class="finance-section">
+    <header class="finance-section__header">
+      <div><span class="workspace-eyebrow">Empresa → operación</span><h3>Gastos del evento</h3></div>
+      <form method="get"><input type="hidden" name="return_to" value="{{ return_to }}"><select class="app-select" name="estado_gasto" onchange="this.form.requestSubmit()"><option value="">Todos</option><option value="PENDIENTE" {% if estado_gasto == "PENDIENTE" %}selected{% endif %}>Pendientes</option><option value="PARCIAL" {% if estado_gasto == "PARCIAL" %}selected{% endif %}>Parciales</option><option value="PAGADO" {% if estado_gasto == "PAGADO" %}selected{% endif %}>Pagados</option><option value="VENCIDO" {% if estado_gasto == "VENCIDO" %}selected{% endif %}>Vencidos</option><option value="CANCELADO" {% if estado_gasto == "CANCELADO" %}selected{% endif %}>Cancelados</option></select></form>
+    </header>
+
+    <div class="finance-list">
+      {% for gasto in gastos %}
+      <article class="finance-expense">
+        <div class="finance-row">
+          <div><strong>{{ gasto.concepto }}</strong><span>{{ gasto.categoria }}{% if gasto.proveedor %} · {{ gasto.proveedor.nombre_comercial }}{% endif %}</span></div>
+          <div><b>${{ gasto.monto_objetivo|floatformat:2 }}</b><span>Pagado ${{ gasto.total_pagado|floatformat:2 }} · Saldo ${{ gasto.saldo_pendiente|floatformat:2 }}</span></div>
+          <div>{% if gasto.esta_vencido %}<span class="finance-status finance-status--vencido">Vencido</span>{% else %}<span class="finance-status finance-status--{{ gasto.estado|lower }}">{{ gasto.get_estado_display }}</span>{% endif %}</div>
+          {% if puede_operar_finanzas %}
+          <div class="finance-row__actions">
+            {% if gasto.estado != "CANCELADO" %}
+            <button type="button" class="app-button app-button--secondary" data-edit-expense data-action="{% url 'k9_finanzas_gasto_editar' empresa.slug evento.id gasto.id %}" data-servicio="{{ gasto.servicio_evento_id|default:'' }}" data-categoria="{{ gasto.categoria_id }}" data-proveedor="{{ gasto.proveedor_id|default:'' }}" data-concepto="{{ gasto.concepto|escape }}" data-estimado="{{ gasto.monto_estimado|unlocalize }}" data-real="{{ gasto.monto_real|unlocalize }}" data-fecha="{{ gasto.fecha_limite|date:'Y-m-d' }}" data-notas="{{ gasto.notas|default:''|escape }}">Editar</button>
+            {% if gasto.saldo_pendiente > 0 %}<button type="button" class="app-button app-button--primary" data-pay-expense data-action="{% url 'k9_finanzas_pago_registrar' empresa.slug evento.id gasto.id %}" data-title="{{ gasto.concepto|escape }}" data-saldo="{{ gasto.saldo_pendiente|unlocalize }}">Registrar pago</button>{% endif %}
+            <button type="button" class="app-button app-button--secondary" data-life-expense data-mode="archive" data-action="{% url 'k9_finanzas_gasto_archivar' empresa.slug evento.id gasto.id %}" data-title="{{ gasto.concepto|escape }}">Archivar</button>
+            <button type="button" class="app-button app-button--danger-soft" data-life-expense data-mode="cancel" data-action="{% url 'k9_finanzas_gasto_cancelar' empresa.slug evento.id gasto.id %}" data-title="{{ gasto.concepto|escape }}">Cancelar</button>
+            {% endif %}
+          </div>
+          {% endif %}
+        </div>
+        {% if gasto.pagos.all %}
+        <details class="finance-payments">
+          <summary>Movimientos de pago</summary>
+          {% for mov in gasto.pagos.all %}
+          <div class="finance-payment-line">
+            <span>{{ mov.fecha_pago|date:"d M Y" }} · {{ mov.get_metodo_pago_display }}</span><strong>${{ mov.monto|floatformat:2 }}</strong><span class="finance-status finance-status--{{ mov.estado|lower }}">{{ mov.get_estado_display }}</span>
+            {% if mov.comprobante %}<a href="{% url 'secure_pago_operativo_comprobante' mov.id %}" target="_blank" rel="noopener" data-workspace-native>Comprobante</a>{% endif %}
+            {% if puede_operar_finanzas and mov.estado == "ACTIVO" %}<button type="button" class="app-link-button" data-annul-payment data-action="{% url 'k9_finanzas_pago_anular' empresa.slug evento.id mov.id %}">Anular</button>{% endif %}
+          </div>
+          {% endfor %}
+        </details>
+        {% endif %}
+      </article>
+      {% empty %}<div class="finance-empty">No hay gastos con este filtro.</div>{% endfor %}
+    </div>
+  </section>
+
+  {% if gastos_archivados %}
+  <section class="finance-section"><details><summary><strong>Gastos archivados ({{ gastos_archivados|length }})</strong></summary><div class="finance-list">{% for gasto in gastos_archivados %}<article class="finance-row"><div><strong>{{ gasto.concepto }}</strong><span>Archivado {{ gasto.archivado_en|date:"d M Y" }}</span></div><div><b>${{ gasto.monto_objetivo|floatformat:2 }}</b></div>{% if puede_operar_finanzas %}<div class="finance-row__actions"><form method="post" action="{% url 'k9_finanzas_gasto_restaurar' empresa.slug evento.id gasto.id %}">{% csrf_token %}<input type="hidden" name="return_to" value="{{ return_to }}"><button class="app-button app-button--secondary" type="submit">Restaurar</button></form></div>{% endif %}</article>{% endfor %}</div></details></section>
+  {% endif %}
+
+  <section class="finance-section"><header class="finance-section__header"><div><span class="workspace-eyebrow">Rentabilidad por servicio</span><h3>Servicios contratados</h3></div></header><div class="finance-services">{% for item in servicios_financieros %}<article><header><strong>{{ item.nombre }}</strong>{% if item.costo_pendiente %}<span class="finance-status finance-status--warning">Costo por definir</span>{% endif %}</header><dl><div><dt>Valor contractual</dt><dd>${{ item.valor_contractual|floatformat:2 }}</dd></div><div><dt>Costo comprometido</dt><dd>${{ item.costo_comprometido|floatformat:2 }}</dd></div><div><dt>Pagado</dt><dd>${{ item.pagado_operativo|floatformat:2 }}</dd></div><div><dt>Saldo</dt><dd>${{ item.saldo_operativo|floatformat:2 }}</dd></div></dl></article>{% empty %}<div class="finance-empty">Sin servicios financieros asociados.</div>{% endfor %}</div></section>
+
+  {% if puede_operar_finanzas %}
+  <dialog class="finance-dialog" data-dialog="new-expense"><form method="dialog" class="finance-dialog__close"><button>×</button></form><div class="finance-dialog__body"><h2>Nuevo gasto</h2><form method="post" action="{% url 'k9_finanzas_gasto_crear' empresa.slug evento.id %}">{% csrf_token %}<input type="hidden" name="return_to" value="{{ return_to }}">{% for field in gasto_form %}<label class="app-field"><span>{{ field.label }}</span>{{ field }}</label>{% endfor %}<button class="app-button app-button--primary" type="submit">Guardar gasto</button></form></div></dialog>
+
+  <dialog class="finance-dialog" data-dialog="edit-expense"><form method="dialog" class="finance-dialog__close"><button>×</button></form><div class="finance-dialog__body"><h2>Editar gasto</h2><form method="post" data-edit-expense-form>{% csrf_token %}<input type="hidden" name="return_to" value="{{ return_to }}">{% for field in gasto_form %}<label class="app-field"><span>{{ field.label }}</span>{{ field }}</label>{% endfor %}<button class="app-button app-button--primary" type="submit">Guardar cambios</button></form></div></dialog>
+
+  <dialog class="finance-dialog" data-dialog="pay-expense"><form method="dialog" class="finance-dialog__close"><button>×</button></form><div class="finance-dialog__body"><h2>Registrar pago operativo</h2><p data-pay-copy></p><form method="post" enctype="multipart/form-data" data-pay-form>{% csrf_token %}<input type="hidden" name="return_to" value="{{ return_to }}">{% for field in pago_form %}<label class="app-field"><span>{{ field.label }}</span>{{ field }}</label>{% endfor %}<button class="app-button app-button--primary" type="submit">Registrar pago</button></form></div></dialog>
+
+  <dialog class="finance-dialog finance-dialog--compact" data-dialog="life-expense"><form method="dialog" class="finance-dialog__close"><button>×</button></form><div class="finance-dialog__body"><h2 data-life-title>Actualizar gasto</h2><p data-life-copy></p><form method="post" data-life-form>{% csrf_token %}<input type="hidden" name="return_to" value="{{ return_to }}"><label class="app-field"><span>Motivo</span>{{ motivo_gasto_form.motivo }}</label><button class="app-button app-button--danger" type="submit" data-life-submit>Continuar</button></form></div></dialog>
+
+  <dialog class="finance-dialog finance-dialog--compact" data-dialog="annul-payment"><form method="dialog" class="finance-dialog__close"><button>×</button></form><div class="finance-dialog__body"><h2>Anular pago</h2><p>El movimiento quedará en historial y el saldo del gasto será recalculado.</p><form method="post" data-annul-form>{% csrf_token %}<input type="hidden" name="return_to" value="{{ return_to }}"><label class="app-field"><span>Motivo</span>{{ motivo_pago_form.motivo }}</label><button class="app-button app-button--danger" type="submit">Anular pago</button></form></div></dialog>
+
+  <dialog class="finance-dialog finance-dialog--compact" data-dialog="review-client"><form method="dialog" class="finance-dialog__close"><button>×</button></form><div class="finance-dialog__body"><h2>Revisar pago del cliente</h2><p data-review-copy></p><form method="post" data-review-form>{% csrf_token %}<input type="hidden" name="return_to" value="{{ return_to }}"><label class="app-field"><span>Resultado</span>{{ revision_pago_cliente_form.estado }}</label><label class="app-field"><span>Comentario</span>{{ revision_pago_cliente_form.comentario_equipo }}</label><button class="app-button app-button--primary" type="submit">Guardar revisión</button></form></div></dialog>
+  {% endif %}
+</section>
+{% endblock %}
+{% block extra_js %}{{ block.super }}<script src="{% static 'eventos/js/workspace_finance_r4.js' %}" defer></script>{% endblock %}

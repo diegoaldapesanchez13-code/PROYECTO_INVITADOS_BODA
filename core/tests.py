@@ -59,7 +59,7 @@ class LoginCentralSaasTests(TestCase):
         follow = self.client.get(response['Location'])
 
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(follow['Location'], '/empresa/casa-cisneros/wedding-planner/dashboard/')
+        self.assertEqual(follow['Location'], '/empresa/casa-cisneros/planner/dashboard/')
 
     def test_recuperacion_password_renderiza_y_envia_en_desarrollo(self):
         User = get_user_model()

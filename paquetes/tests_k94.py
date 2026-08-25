@@ -14,8 +14,8 @@ from invitaciones.models import EventoBoda
 from organizaciones.models import EmpresaSuscriptora, MembresiaEmpresa, SedeEvento
 from proveedores.models import Proveedor
 
-from .models import PaqueteBoda, PaqueteEvento, PaqueteMediaComercial, PaqueteServicio, PropuestaEvento, PropuestaLinea, ServicioPaquete
-from .services import actualizar_totales_propuesta, calcular_propuesta, capturar_snapshot_paquete
+from .models import PaqueteBoda, PaqueteMediaComercial, PaqueteServicio, PropuestaEvento, PropuestaLinea
+from .services import actualizar_totales_propuesta, calcular_propuesta
 
 
 def archivo(nombre, contenido=b"test", content_type="application/octet-stream"):
@@ -404,36 +404,7 @@ class PropuestaComercialK94Tests(TestCase):
         self.assertEqual(legacy.precio_base, Decimal("50000.00"))
         self.assertIsNone(legacy.precio_adulto)
 
-    def test_legacy_serviciopaquete_sigue_funcionando(self):
-        legacy = ServicioPaquete.objects.create(
-            paquete=self.paquete,
-            tipo_servicio="DJ",
-            descripcion="DJ legacy",
-            cantidad=1,
-            precio_incluido=Decimal("1000.00"),
-        )
-        propuesta = self.crear_propuesta()
-        dto = calcular_propuesta(propuesta)
-        self.assertTrue(any(item["clave_origen"] == f"legacy:{legacy.id}" for item in dto["lineas_incluidas"]))
 
-    def test_k8_snapshot_sigue_pasando(self):
-        ServicioPaquete.objects.create(
-            paquete=self.paquete,
-            tipo_servicio="DJ",
-            descripcion="DJ legacy",
-            cantidad=1,
-            precio_incluido=Decimal("1000.00"),
-        )
-        paquete_evento = PaqueteEvento.objects.create(
-            evento=self.evento_a,
-            paquete=self.paquete,
-            precio_acordado=Decimal("52000.00"),
-            descuento=Decimal("2000.00"),
-            estado="CONTRATADO",
-        )
-        snapshot = capturar_snapshot_paquete(paquete_evento)
-        self.assertEqual(snapshot["nombre"], "Paquete 2")
-        self.assertEqual(snapshot["total"], "50000.00")
 
     def test_paquete_servicio_rechaza_cross_tenant(self):
         servicio_b = ServicioCatalogo.objects.create(empresa=self.empresa_b, nombre="Servicio B", categoria="OTRO", unidad="EVENTO")

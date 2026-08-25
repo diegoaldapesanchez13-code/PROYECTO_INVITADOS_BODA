@@ -6,7 +6,9 @@ from django.utils import timezone
 from invitaciones.models import EventoBoda
 from organizaciones.models import EmpresaSuscriptora
 
-from .models import Proveedor, ServicioCatalogoProveedor, ServicioEvento
+from catalogo.models import ServicioCatalogo
+
+from .models import Proveedor, ServicioEvento
 
 
 class ServicioEventoFoundationTests(TestCase):
@@ -29,17 +31,17 @@ class ServicioEventoFoundationTests(TestCase):
             servicio.full_clean()
 
     def test_catalog_snapshot_is_copied(self):
-        catalogo = ServicioCatalogoProveedor.objects.create(
+        catalogo = ServicioCatalogo.objects.create(
             empresa=self.empresa,
-            proveedor=self.proveedor,
             nombre='Decoracion floral',
             descripcion='Base catalogo',
             categoria='DECORACION',
+            unidad='EVENTO',
         )
         servicio = ServicioEvento(
             evento=self.evento,
             proveedor=self.proveedor,
-            servicio_catalogo=catalogo,
+            servicio_catalogo_k9=catalogo,
             nombre_servicio='Decoracion F&D',
             origen='CATALOGO',
         )

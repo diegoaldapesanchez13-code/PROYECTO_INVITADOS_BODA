@@ -53,8 +53,7 @@ class ProviderPortalK7Tests(TestCase):
             proveedor=self.proveedor,
             nombre_servicio="Fotografia completa",
             fecha_servicio=timezone.localdate() + timedelta(days=20),
-            costo_total=15000,
-            anticipo=5000,
+            costo_proveedor=15000,
         )
         self.client.force_login(self.user)
 

@@ -43,7 +43,7 @@ class ProviderPortalV3Tests(TestCase):
             nombre_evento="Boda Provider V3",
             novio="A", novia="B", frase_portada="Test", mensaje_general="Test",
             fecha_misa=now + timedelta(days=20), lugar_misa="Ceremonia",
-            fecha_fiesta=now + timedelta(days=20), lugar_fiesta="Recepción",
+            fecha_fiesta=now + timedelta(days=20), lugar_fiesta="RecepciÃ³n",
         )
         self.evento.clientes.add(self.cliente)
         self.proveedor = Proveedor.objects.create(
@@ -85,7 +85,7 @@ class ProviderPortalV3Tests(TestCase):
         self.assertNotContains(response, "Solicitudes y propuestas")
         self.assertNotContains(response, "Nueva solicitud")
 
-    def test_proveedor_no_ve_precio_cliente_ni_pago_cliente_empresa(self):
+    def test_proveedor_no_ve_importes_comerciales_ni_pago_cliente_empresa(self):
         PagoClienteEvento.objects.create(
             evento=self.evento,
             registrado_por=self.cliente,
@@ -128,7 +128,7 @@ class ProviderPortalV3Tests(TestCase):
         TareaEvento.objects.create(
             evento=self.evento,
             servicio_evento=self.servicio,
-            titulo="Enviar ficha técnica",
+            titulo="Enviar ficha tÃ©cnica",
             responsable=self.provider_user,
             fecha_limite=timezone.localdate() + timedelta(days=2),
         )
@@ -155,7 +155,7 @@ class ProviderPortalV3Tests(TestCase):
             estado="PENDIENTE",
         )
         response = self.client.get(reverse("portal_proveedor"))
-        self.assertContains(response, "Enviar ficha técnica")
+        self.assertContains(response, "Enviar ficha tÃ©cnica")
         self.assertNotContains(response, "Tarea interna Planner")
         self.assertContains(response, "Prueba montaje proveedor")
         self.assertContains(response, "Confirmar cita")
@@ -173,7 +173,7 @@ class ProviderPortalV3Tests(TestCase):
             reverse("colaboracion_k85_cotizacion_crear", args=[self.servicio.id]),
             {
                 "costo_proveedor": "12500.00",
-                "descripcion": "Versión ajustada",
+                "descripcion": "VersiÃ³n ajustada",
             },
         )
         self.assertEqual(response.status_code, 302)

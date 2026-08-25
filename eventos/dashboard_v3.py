@@ -209,7 +209,7 @@ def construir_contexto_dashboard_evento_v3(
 
     servicios_v3 = list(
         ServicioEvento.objects.filter(evento=evento)
-        .select_related('proveedor', 'paquete_evento')
+        .select_related('proveedor')
         .annotate(
             tareas_pendientes_v3=Count(
                 'tareas_operativas',

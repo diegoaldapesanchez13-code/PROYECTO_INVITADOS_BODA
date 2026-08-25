@@ -56,19 +56,7 @@ class PlannerDashboardR3BTests(TestCase):
             **kwargs,
         )
 
-    def test_planner_alias_uses_new_home(self):
-        self.client.force_login(self.planner)
-        response = self.client.get(
-            reverse(
-                "planner_dashboard_empresa_alias",
-                kwargs={"empresa_slug": self.empresa.slug},
-            )
-        )
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Planner Workspace")
-        self.assertContains(response, "planner_dashboard_r3.css")
-
-    def test_legacy_wedding_planner_url_also_uses_new_home(self):
+    def test_planner_canonical_url_uses_new_home(self):
         self.client.force_login(self.planner)
         response = self.client.get(
             reverse(
@@ -78,6 +66,24 @@ class PlannerDashboardR3BTests(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Planner Workspace")
+        self.assertContains(response, "planner_dashboard_r3.css")
+
+    def test_legacy_wedding_planner_url_redirects_to_canonical(self):
+        self.client.force_login(self.planner)
+        response = self.client.get(
+            reverse(
+                "planner_dashboard_empresa_legacy",
+                kwargs={"empresa_slug": self.empresa.slug},
+            )
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(
+            response["Location"],
+            reverse(
+                "planner_dashboard_empresa",
+                kwargs={"empresa_slug": self.empresa.slug},
+            ),
+        )
 
     def test_only_assigned_events_are_visible(self):
         self._evento(nombre="Asignado")
@@ -85,7 +91,7 @@ class PlannerDashboardR3BTests(TestCase):
         self.client.force_login(self.planner)
         response = self.client.get(
             reverse(
-                "planner_dashboard_empresa_alias",
+                "planner_dashboard_empresa",
                 kwargs={"empresa_slug": self.empresa.slug},
             )
         )
@@ -96,7 +102,7 @@ class PlannerDashboardR3BTests(TestCase):
         self.client.force_login(self.admin)
         response = self.client.get(
             reverse(
-                "planner_dashboard_empresa_alias",
+                "planner_dashboard_empresa",
                 kwargs={"empresa_slug": self.empresa.slug},
             )
         )
@@ -113,7 +119,7 @@ class PlannerDashboardR3BTests(TestCase):
         self.client.force_login(self.planner)
         response = self.client.get(
             reverse(
-                "planner_dashboard_empresa_alias",
+                "planner_dashboard_empresa",
                 kwargs={"empresa_slug": self.empresa.slug},
             )
         )
@@ -130,7 +136,7 @@ class PlannerDashboardR3BTests(TestCase):
         self.client.force_login(self.planner)
         response = self.client.get(
             reverse(
-                "planner_dashboard_empresa_alias",
+                "planner_dashboard_empresa",
                 kwargs={"empresa_slug": self.empresa.slug},
             )
         )
@@ -149,7 +155,7 @@ class PlannerDashboardR3BTests(TestCase):
         self.client.force_login(self.planner)
         response = self.client.get(
             reverse(
-                "planner_dashboard_empresa_alias",
+                "planner_dashboard_empresa",
                 kwargs={"empresa_slug": self.empresa.slug},
             )
         )
@@ -160,19 +166,19 @@ class PlannerDashboardR3BTests(TestCase):
         self.client.force_login(self.planner)
         response = self.client.get(
             reverse(
-                "planner_dashboard_empresa_alias",
+                "planner_dashboard_empresa",
                 kwargs={"empresa_slug": self.otra.slug},
             )
         )
         self.assertEqual(response.status_code, 404)
 
-    def test_post_is_legacy_compatible(self):
+    def test_canonical_planner_dashboard_is_read_only_entrypoint(self):
         self.client.force_login(self.planner)
         response = self.client.post(
             reverse(
-                "planner_dashboard_empresa_alias",
+                "planner_dashboard_empresa",
                 kwargs={"empresa_slug": self.empresa.slug},
             ),
             {"accion": "accion-inexistente"},
         )
-        self.assertIn(response.status_code, {200, 302})
+        self.assertEqual(response.status_code, 405)

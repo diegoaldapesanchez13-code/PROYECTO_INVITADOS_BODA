@@ -23,7 +23,7 @@
         <label>Fecha<input type="date" name="fecha_servicio"></label>
         <label>Lugar<input name="lugar_servicio"></label>
       </div>
-      <input type="hidden" name="estado_servicio" value="SOLICITADO"><input type="hidden" name="costo_total_servicio" value="0"><input type="hidden" name="anticipo_servicio" value="0">
+      <input type="hidden" name="estado_servicio" value="SOLICITADO">
       <label>Descripción<textarea name="descripcion_servicio" rows="2"></textarea></label>
       <button class="btn" type="submit">Crear servicio</button>
     </form>
@@ -92,6 +92,4 @@
     </article>
     {% empty %}<div class="event-v3-empty"><h3>Aún no hay servicios</h3><p>Crea el primero manualmente o materializa un paquete contratado.</p></div>{% endfor %}
   </div>
-
-  {% if paquetes_evento %}<section class="event-v3-card event-v3-package-summary"><div class="event-v3-card__head"><div><span>Origen contractual</span><h3>Paquetes del evento</h3></div></div><div class="event-v3-simple-list">{% for pe in paquetes_evento %}<div><strong>{% if pe.snapshot_paquete %}{{ pe.snapshot_paquete.nombre|default:"Paquete" }}{% elif pe.paquete %}{{ pe.paquete.nombre }}{% else %}Paquete{% endif %}</strong><span>{{ pe.get_estado_display }} · ${{ pe.total|floatformat:0 }}</span></div>{% endfor %}</div></section>{% endif %}
 </section>

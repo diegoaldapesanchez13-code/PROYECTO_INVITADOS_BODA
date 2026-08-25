@@ -2,7 +2,6 @@ from datetime import time, timedelta
 from decimal import Decimal
 
 from django.test import TestCase
-from django.template.loader import render_to_string
 from django.utils import timezone
 
 from invitaciones.models import EventoBoda
@@ -13,7 +12,6 @@ from presupuesto.models import CategoriaGasto, GastoEvento, PagoEvento
 from documentos.models import DocumentoEvento
 from eventos.models import ContratoEvento
 from eventos.dashboard_v3 import construir_contexto_dashboard_evento_v3
-from paquetes.models import PaqueteBoda, PaqueteEvento
 
 
 class EventDashboardV3ContextTests(TestCase):
@@ -60,28 +58,3 @@ class EventDashboardV3ContextTests(TestCase):
         self.assertEqual(ctx['saldo_operativo_v3'], Decimal('6000'))
         self.assertEqual(len(ctx['tareas_vencidas_v3']), 1)
         self.assertEqual(ctx['servicios_activos_v3'], 1)
-
-
-class EventDashboardV3TemplateRegressionTests(TestCase):
-    def test_servicios_renderiza_paquete_con_snapshot_vacio(self):
-        now = timezone.now()
-        evento = EventoBoda.objects.create(
-            novio='Diego', novia='Fernanda', frase_portada='F&D', mensaje_general='Evento',
-            fecha_misa=now + timedelta(days=10), lugar_misa='Ceremonia',
-            fecha_fiesta=now + timedelta(days=10), lugar_fiesta='Recepcion',
-        )
-        paquete = PaqueteBoda.objects.create(nombre='Premium', precio_base=Decimal('300000'))
-        paquete_evento = PaqueteEvento.objects.create(
-            evento=evento, paquete=paquete, precio_acordado=Decimal('300000'),
-            snapshot_paquete={},
-        )
-        html = render_to_string(
-            'invitaciones/dashboard/v3/_servicios.html',
-            {
-                'evento': evento,
-                'servicios_v3': [],
-                'proveedores_empresa': [],
-                'paquetes_evento': [paquete_evento],
-            },
-        )
-        self.assertIn('Premium', html)

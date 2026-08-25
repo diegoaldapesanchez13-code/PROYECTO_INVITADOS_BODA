@@ -134,5 +134,5 @@ def construir_contexto_dashboard_empresa_v3(*, empresa, eventos):
         "empresa_sedes_activas_v3": empresa.sedes.filter(activa=True).count(),
         "empresa_proveedores_activos_v3": empresa.proveedores.filter(activo=True).count(),
         "empresa_paquetes_activos_v3": empresa.paquetes.filter(activo=True).count(),
-        "empresa_servicios_catalogo_v3": empresa.servicios_catalogo_proveedor.filter(activo=True).count(),
+        "empresa_servicios_catalogo_v3": empresa.servicios_catalogo.filter(activo=True).count(),
     }

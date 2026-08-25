@@ -9,13 +9,12 @@ from django.utils import timezone
 
 from catalogo.models import ServicioCatalogo
 from organizaciones.models import EmpresaSuscriptora, MembresiaEmpresa, SedeEvento
-from paquetes.models import PaqueteBoda, PaqueteEvento, PaqueteServicio, PropuestaEvento, PropuestaLinea, ServicioPaquete
-from paquetes.services import capturar_snapshot_paquete
+from paquetes.models import PaqueteBoda, PaqueteServicio, PropuestaEvento, PropuestaLinea
 from presupuesto.models import GastoEvento, PagoClienteEvento, PagoEvento
 from proveedores.models import Proveedor, ServicioEvento
 
 from .models import ContratoEvento
-from .services import generar_contrato_v2_desde_propuesta, leer_contrato_publico, leer_contrato_v1_paquete_evento
+from .services import generar_contrato_v2_desde_propuesta, leer_contrato_publico
 
 
 def crear_evento(empresa, *, planner=None, cliente=None, nombre="Evento K95"):
@@ -315,44 +314,7 @@ class ContratoV2K95Tests(TestCase):
         response = self.client.get(self.contrato_url(contrato))
         self.assertEqual(response.status_code, 200)
 
-    def test_snapshot_v1_sigue_legible(self):
-        servicio_legacy = ServicioPaquete.objects.create(
-            paquete=self.paquete,
-            tipo_servicio="DJ",
-            descripcion="DJ legacy",
-            cantidad=1,
-            precio_incluido=Decimal("1000.00"),
-        )
-        paquete_evento = PaqueteEvento.objects.create(
-            evento=self.evento,
-            paquete=self.paquete,
-            precio_acordado=Decimal("52000.00"),
-            descuento=Decimal("2000.00"),
-            estado="CONTRATADO",
-        )
-        capturar_snapshot_paquete(paquete_evento)
-        paquete_evento.refresh_from_db()
-        data = leer_contrato_v1_paquete_evento(paquete_evento)
-        self.assertEqual(data["version"], 1)
-        self.assertEqual(data["incluidos"][0]["nombre"], servicio_legacy.descripcion)
 
-    def test_k8_snapshot_materializacion_sigue_funcionando(self):
-        ServicioPaquete.objects.create(
-            paquete=self.paquete,
-            tipo_servicio="DJ",
-            descripcion="DJ legacy",
-            cantidad=1,
-            precio_incluido=Decimal("1000.00"),
-        )
-        paquete_evento = PaqueteEvento.objects.create(
-            evento=self.evento,
-            paquete=self.paquete,
-            precio_acordado=Decimal("52000.00"),
-            descuento=Decimal("2000.00"),
-            estado="CONTRATADO",
-        )
-        snapshot = capturar_snapshot_paquete(paquete_evento)
-        self.assertEqual(snapshot["nombre"], "Paquete 2")
 
     def test_no_crea_servicio_evento(self):
         self.generar()

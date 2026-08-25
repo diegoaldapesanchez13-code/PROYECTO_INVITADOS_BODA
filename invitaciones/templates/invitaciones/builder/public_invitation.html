@@ -12,9 +12,26 @@
     <link rel="stylesheet" href="{% static 'invitaciones/builder/renderer/renderer.css' %}?v={{ builder_build_version|urlencode }}">
     <link rel="stylesheet" href="{% static 'invitaciones/builder/experience/experience.css' %}?v={{ builder_build_version|urlencode }}">
     <link rel="stylesheet" href="{% static 'invitaciones/builder/public/public.css' %}?v={{ builder_build_version|urlencode }}">
+    <link rel="stylesheet" href="{% static 'invitaciones/public/rsvp_state.css' %}?v=k9-r4s0-1">
 </head>
-<body>
+<body data-rsvp-allowed="{% if rsvp_control.allowed %}1{% else %}0{% endif %}">
+    {% if rsvp_control.phase == "REMINDER" or not rsvp_control.allowed %}
+    <aside
+        class="dirtec-rsvp-state"
+        data-rsvp-phase="{{ rsvp_control.phase }}"
+        data-rsvp-allowed="{% if rsvp_control.allowed %}1{% else %}0{% endif %}"
+        role="status"
+        aria-live="polite"
+    >
+        <strong>{{ rsvp_control.title }}</strong> — {{ rsvp_control.message }}
+        {% if rsvp_control.deadline %}
+        <small>Fecha límite configurada: {{ rsvp_control.deadlineLabel }}</small>
+        {% endif %}
+    </aside>
+    {% endif %}
+
     <main id="dirtec-public-root" class="dirtec-public-root" aria-label="Invitación"></main>
+
     {{ builder_public_bootstrap|json_script:"dirtec-builder-public-bootstrap" }}
     <script type="module" src="{% static 'invitaciones/builder/public/public.js' %}?v={{ builder_build_version|urlencode }}"></script>
 </body>

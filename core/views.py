@@ -105,7 +105,7 @@ def _next_autorizado_para_usuario(user, redirect_to, request):
                 and roles_usuario_empresa(user, empresa).intersection({'ADMIN_EMPRESA', 'VENTAS'})
             )
         return _usuario_puede_dashboard_empresa(user, empresa_slug, {'ADMIN_EMPRESA', 'VENTAS'})
-    if url_name in {'planner_dashboard_empresa', 'planner_dashboard_empresa_alias', 'dashboard_planner'}:
+    if url_name in {'planner_dashboard_empresa', 'planner_dashboard_empresa_legacy', 'dashboard_planner'}:
         empresa_slug = match.kwargs.get('empresa_slug')
         if not empresa_slug:
             empresa = empresa_principal_usuario(user)

@@ -1,0 +1,375 @@
+{% extends "eventos/workspace/base.html" %}
+{% load static %}
+
+{% block title %}Documentos | {{ evento.titulo_evento }}{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'eventos/css/workspace_documents_r4.css' %}">
+{% endblock %}
+
+{% block workspace_content %}
+<section class="documents-workspace" data-documents-workspace>
+    <header class="documents-heading">
+        <div>
+            <span class="workspace-eyebrow">Operación</span>
+            <h2>Documentos</h2>
+            <p>
+                Centraliza contratos, cotizaciones, comprobantes, menús, planos,
+                listas, identificaciones y archivos operativos del evento.
+            </p>
+        </div>
+
+        {% if puede_gestionar %}
+        <button class="app-button app-button--primary" type="button" data-document-upload-open>
+            + Subir documento
+        </button>
+        {% endif %}
+    </header>
+
+    <section class="documents-kpis">
+        <article>
+            <span>Activos</span>
+            <strong>{{ activos_total }}</strong>
+            <small>Disponibles en operación</small>
+        </article>
+        <article>
+            <span>Archivados</span>
+            <strong>{{ archivados_total }}</strong>
+            <small>Conservados como historial</small>
+        </article>
+        <article>
+            <span>Visibles al cliente</span>
+            <strong>{{ cliente_total }}</strong>
+            <small>Solo si su permiso lo autoriza</small>
+        </article>
+        <article>
+            <span>Visibles al proveedor</span>
+            <strong>{{ proveedor_total }}</strong>
+            <small>Ligados a su servicio o proveedor</small>
+        </article>
+    </section>
+
+    <form method="get" class="documents-toolbar">
+        <input type="hidden" name="return_to" value="{{ return_to }}">
+
+        <input
+            class="app-input"
+            name="q"
+            value="{{ busqueda }}"
+            placeholder="Buscar título, proveedor, descripción..."
+        >
+
+        <select class="app-select" name="tipo" onchange="this.form.requestSubmit()">
+            <option value="">Todos los tipos</option>
+            {% for key, label in tipos_documento %}
+            <option value="{{ key }}" {% if tipo_filtro == key %}selected{% endif %}>
+                {{ label }}
+            </option>
+            {% endfor %}
+        </select>
+
+        <select class="app-select" name="estado" onchange="this.form.requestSubmit()">
+            <option value="ACTIVOS" {% if estado_filtro == "ACTIVOS" %}selected{% endif %}>
+                Activos
+            </option>
+            <option value="ARCHIVADOS" {% if estado_filtro == "ARCHIVADOS" %}selected{% endif %}>
+                Archivados
+            </option>
+        </select>
+
+        <button class="app-button app-button--secondary" type="submit">Filtrar</button>
+    </form>
+
+    <section class="documents-grid">
+        {% for documento in documentos %}
+        <article class="document-card {% if documento.archivado_en %}is-archived{% endif %}">
+            <header class="document-card__header">
+                <div class="document-card__type">
+                    <span>{{ documento.get_tipo_documento_display }}</span>
+                    {% if documento.archivado_en %}
+                    <b>Archivado</b>
+                    {% endif %}
+                </div>
+                <time datetime="{{ documento.fecha_carga|date:'c' }}">
+                    {{ documento.fecha_carga|date:"d M Y · H:i" }}
+                </time>
+            </header>
+
+            <div class="document-card__body">
+                <h3>{{ documento.titulo }}</h3>
+
+                {% if documento.descripcion %}
+                <p>{{ documento.descripcion }}</p>
+                {% endif %}
+
+                <dl class="document-meta">
+                    {% if documento.servicio_evento %}
+                    <div>
+                        <dt>Servicio</dt>
+                        <dd>
+                            {{ documento.servicio_evento.categoria|default:"Servicio del evento" }}
+                            {% if documento.servicio_evento.proveedor %}
+                            · {{ documento.servicio_evento.proveedor.nombre_comercial }}
+                            {% endif %}
+                        </dd>
+                    </div>
+                    {% endif %}
+
+                    {% if documento.proveedor %}
+                    <div>
+                        <dt>Proveedor</dt>
+                        <dd>{{ documento.proveedor.nombre_comercial }}</dd>
+                    </div>
+                    {% endif %}
+
+                    {% if documento.cargado_por %}
+                    <div>
+                        <dt>Cargado por</dt>
+                        <dd>{{ documento.cargado_por.get_full_name|default:documento.cargado_por.username }}</dd>
+                    </div>
+                    {% endif %}
+
+                    {% if documento.archivado_en %}
+                    <div>
+                        <dt>Archivado</dt>
+                        <dd>{{ documento.archivado_en|date:"d M Y · H:i" }}</dd>
+                    </div>
+                    {% endif %}
+                </dl>
+
+                <div class="document-visibility">
+                    <span class="{% if documento.visible_cliente %}is-on{% endif %}">
+                        Cliente {% if documento.visible_cliente %}✓{% else %}—{% endif %}
+                    </span>
+                    <span class="{% if documento.visible_proveedor %}is-on{% endif %}">
+                        Proveedor {% if documento.visible_proveedor %}✓{% else %}—{% endif %}
+                    </span>
+                </div>
+
+                {% if documento.archivado_en and documento.motivo_archivo %}
+                <div class="document-archive-reason">
+                    <strong>Motivo</strong>
+                    <span>{{ documento.motivo_archivo }}</span>
+                </div>
+                {% endif %}
+            </div>
+
+            <footer class="document-card__actions">
+                <a
+                    class="app-button app-button--secondary"
+                    href="{% url 'secure_documento_evento' documento.id %}"
+                    target="_blank"
+                    rel="noopener"
+                    data-workspace-native
+                >
+                    Abrir / Descargar
+                </a>
+
+                {% if puede_gestionar %}
+                    <button
+                        class="app-button app-button--ghost"
+                        type="button"
+                        data-document-replace-open
+                        data-document-title="{{ documento.titulo|escape }}"
+                        data-document-action="{% url 'k9_documento_reemplazar' empresa_slug=empresa.slug evento_id=evento.id documento_id=documento.id %}"
+                    >
+                        Reemplazar archivo
+                    </button>
+
+                    {% if documento.archivado_en %}
+                    <form
+                        method="post"
+                        action="{% url 'k9_documento_restaurar' empresa_slug=empresa.slug evento_id=evento.id documento_id=documento.id %}"
+                    >
+                        {% csrf_token %}
+                        <input type="hidden" name="return_to" value="{{ return_to }}">
+                        <button class="app-button app-button--secondary" type="submit">
+                            Restaurar
+                        </button>
+                    </form>
+                    {% else %}
+                    <button
+                        class="app-button app-button--ghost"
+                        type="button"
+                        data-document-archive-open
+                        data-document-id="{{ documento.id }}"
+                        data-document-title="{{ documento.titulo|escape }}"
+                    >
+                        Archivar
+                    </button>
+                    {% endif %}
+
+                    <button
+                        class="app-button app-button--danger-soft"
+                        type="button"
+                        data-document-delete-open
+                        data-document-title="{{ documento.titulo|escape }}"
+                        data-document-action="{% url 'k9_documento_eliminar' empresa_slug=empresa.slug evento_id=evento.id documento_id=documento.id %}"
+                    >
+                        Eliminar
+                    </button>
+                {% endif %}
+            </footer>
+        </article>
+        {% empty %}
+        <div class="documents-empty">
+            <strong>No hay documentos con estos filtros.</strong>
+            <p>
+                {% if estado_filtro == "ARCHIVADOS" %}
+                Cuando archives documentos aparecerán aquí.
+                {% else %}
+                Sube el primer documento cuando lo necesites.
+                {% endif %}
+            </p>
+        </div>
+        {% endfor %}
+    </section>
+
+    {% if puede_gestionar %}
+    <dialog class="document-dialog" data-document-upload-dialog>
+        <form method="dialog" class="document-dialog__close">
+            <button type="submit" aria-label="Cerrar">×</button>
+        </form>
+
+        <div class="document-dialog__body">
+            <span class="workspace-eyebrow">Nuevo archivo</span>
+            <h2>Subir documento</h2>
+            <p>
+                El archivo se guarda asociado exclusivamente a este evento y se
+                descarga por la ruta segura existente.
+            </p>
+
+            <form method="post" enctype="multipart/form-data" class="document-upload-form">
+                {% csrf_token %}
+                <input type="hidden" name="return_to" value="{{ return_to }}">
+
+                <div class="document-form-grid">
+                    {% for field in documento_form %}
+                    <label class="app-field {% if field.name == 'descripcion' or field.name == 'archivo' %}document-form-grid__wide{% endif %}">
+                        <span>{{ field.label }}</span>
+                        {{ field }}
+                        {% if field.help_text %}
+                        <small class="app-field__help">{{ field.help_text }}</small>
+                        {% endif %}
+                        {% if field.errors %}
+                        <small class="app-field__error">{{ field.errors|striptags }}</small>
+                        {% endif %}
+                    </label>
+                    {% endfor %}
+                </div>
+
+                <div class="document-dialog__actions">
+                    <button class="app-button app-button--primary" type="submit">
+                        Guardar documento
+                    </button>
+                </div>
+            </form>
+        </div>
+    </dialog>
+
+    <dialog class="document-dialog document-dialog--compact" data-document-replace-dialog>
+        <form method="dialog" class="document-dialog__close">
+            <button type="submit" aria-label="Cerrar">×</button>
+        </form>
+
+        <div class="document-dialog__body">
+            <span class="workspace-eyebrow">Actualizar archivo</span>
+            <h2>Reemplazar archivo</h2>
+            <p data-document-replace-copy>
+                Se conservarán el documento, su título, tipo, permisos y relaciones.
+                Solo cambiará el archivo físico.
+            </p>
+
+            <form method="post" enctype="multipart/form-data" data-document-replace-form>
+                {% csrf_token %}
+                <input type="hidden" name="return_to" value="{{ return_to }}">
+                <label class="app-field">
+                    <span>Nuevo archivo</span>
+                    {{ reemplazo_form.archivo }}
+                    {% if reemplazo_form.archivo.help_text %}
+                    <small class="app-field__help">{{ reemplazo_form.archivo.help_text }}</small>
+                    {% endif %}
+                </label>
+
+                <div class="document-dialog__actions">
+                    <button class="app-button app-button--primary" type="submit">
+                        Reemplazar archivo
+                    </button>
+                </div>
+            </form>
+        </div>
+    </dialog>
+
+    <dialog class="document-dialog document-dialog--compact document-dialog--danger" data-document-delete-dialog>
+        <form method="dialog" class="document-dialog__close">
+            <button type="submit" aria-label="Cerrar">×</button>
+        </form>
+
+        <div class="document-dialog__body">
+            <span class="workspace-eyebrow">Acción permanente</span>
+            <h2>Eliminar documento</h2>
+            <p data-document-delete-copy>
+                Esta acción eliminará el registro y el archivo físico. No podrá restaurarse.
+            </p>
+
+            <div class="document-delete-warning">
+                <strong>¿Solo quieres dejar de usarlo?</strong>
+                <span>Usa Archivar en lugar de Eliminar para conservar historial.</span>
+            </div>
+
+            <form method="post" data-document-delete-form>
+                {% csrf_token %}
+                <input type="hidden" name="return_to" value="{{ return_to }}">
+                <label class="app-field">
+                    <span>Confirmación</span>
+                    {{ eliminar_form.confirmacion }}
+                    <small class="app-field__help">Escribe ELIMINAR para continuar.</small>
+                </label>
+
+                <div class="document-dialog__actions">
+                    <button class="app-button app-button--danger" type="submit">
+                        Eliminar permanentemente
+                    </button>
+                </div>
+            </form>
+        </div>
+    </dialog>
+
+    <dialog class="document-dialog document-dialog--compact" data-document-archive-dialog>
+        <form method="dialog" class="document-dialog__close">
+            <button type="submit" aria-label="Cerrar">×</button>
+        </form>
+
+        <div class="document-dialog__body">
+            <span class="workspace-eyebrow">Conservar historial</span>
+            <h2>Archivar documento</h2>
+            <p data-document-archive-copy>
+                El documento dejará de aparecer entre los activos, pero no se eliminará.
+            </p>
+
+            <form method="post" data-document-archive-form>
+                {% csrf_token %}
+                <input type="hidden" name="return_to" value="{{ return_to }}">
+
+                <label class="app-field">
+                    <span>Motivo opcional</span>
+                    {{ archivo_form.motivo }}
+                </label>
+
+                <div class="document-dialog__actions">
+                    <button class="app-button app-button--danger" type="submit">
+                        Archivar documento
+                    </button>
+                </div>
+            </form>
+        </div>
+    </dialog>
+    {% endif %}
+</section>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script src="{% static 'eventos/js/workspace_documents_r4.js' %}" defer></script>
+{% endblock %}

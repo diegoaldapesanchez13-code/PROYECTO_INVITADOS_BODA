@@ -10,6 +10,7 @@ from django.views.decorators.http import require_http_methods
 from django.views.decorators.clickjacking import xframe_options_sameorigin
 
 from invitaciones.models import DisenoInvitacion, Grupoinvitacion, Invitado
+from invitaciones.rsvp_control import evaluar_rsvp
 from .assets import listar_assets_builder
 from .event_context import serializar_contexto_evento
 from .invitation_context import serializar_contexto_invitacion
@@ -37,13 +38,7 @@ def _puede_ver_borrador(request, evento):
 
 
 def _invitados_frescos(grupo):
-    """Return the current RSVP roster directly from the database.
-
-    `grupo` can carry a prefetched `invitados` cache. Public RSVP updates a
-    person through a locked queryset, so reusing that cache after the write can
-    expose stale attendance values. RSVP summaries must therefore read a fresh
-    queryset.
-    """
+    """Return the current RSVP roster directly from the database."""
     return list(
         Invitado.objects
         .filter(grupo_id=grupo.pk)
@@ -53,19 +48,17 @@ def _invitados_frescos(grupo):
 
 def _rsvp_payload(grupo):
     invitados = _invitados_frescos(grupo)
-    return serializar_contexto_invitacion(
+    payload = serializar_contexto_invitacion(
         grupo,
         invitados=invitados,
         include_guests=True,
     )
+    payload["rsvpControl"] = evaluar_rsvp(grupo).as_dict()
+    return payload
 
 
 def _sync_group_legacy_summary(grupo):
-    """Keep legacy group reporting coherent while Invitado remains authority.
-
-    These fields are compatibility aggregates only. The individual `Invitado`
-    rows are the source of truth for RSVP.
-    """
+    """Keep legacy group reporting coherent while Invitado remains authority."""
     invitados = _invitados_frescos(grupo)
     total = len(invitados)
     yes_count = sum(
@@ -91,8 +84,6 @@ def _sync_group_legacy_summary(grupo):
     if total == 0:
         grupo.asistira = None
     elif pending:
-        # Partial family/personal roster response cannot be represented by the
-        # old tri-state group field without losing information.
         grupo.asistira = None
     else:
         grupo.asistira = yes_count > 0
@@ -135,6 +126,7 @@ def public_invitation(request, codigo):
             status=404,
         )
 
+    rsvp_control = evaluar_rsvp(grupo).as_dict()
     bootstrap = {
         "schemaVersion": 4,
         "buildVersion": BUILDER_BUILD_VERSION,
@@ -160,6 +152,7 @@ def public_invitation(request, codigo):
             "grupo": grupo,
             "builder_public_bootstrap": bootstrap,
             "builder_build_version": BUILDER_BUILD_VERSION,
+            "rsvp_control": rsvp_control,
         },
     )
 
@@ -167,12 +160,26 @@ def public_invitation(request, codigo):
 @require_http_methods(["GET", "POST"])
 def public_rsvp_api(request, codigo):
     grupo = _grupo(codigo)
+    decision = evaluar_rsvp(grupo)
 
     if request.method == "GET":
         return JsonResponse({
             "ok": True,
             "data": _rsvp_payload(grupo),
         })
+
+    # Server-side enforcement is the authority. Hiding or disabling a browser
+    # control is not considered sufficient protection.
+    if not decision.permitido:
+        return JsonResponse(
+            {
+                "ok": False,
+                "error": decision.message,
+                "code": "RSVP_CLOSED",
+                "rsvpControl": decision.as_dict(),
+            },
+            status=403,
+        )
 
     try:
         payload = json.loads(
@@ -211,8 +218,6 @@ def public_rsvp_api(request, codigo):
         )
 
     with transaction.atomic():
-        # Security boundary: a person can only be updated through the UUID of
-        # the group that owns that person.
         invitado = (
             Invitado.objects
             .select_for_update()
@@ -244,12 +249,8 @@ def public_rsvp_api(request, codigo):
             ]
         )
 
-        # Important: this reads a fresh DB roster and does not reuse the
-        # prefetched cache created by `_grupo`.
         _sync_group_legacy_summary(grupo)
 
-    # Return a fresh payload so the browser immediately sees the committed
-    # state of every person.
     grupo = _grupo(codigo)
 
     return JsonResponse({

@@ -6,7 +6,7 @@ from django.utils import timezone
 
 from invitaciones.models import EventoBoda
 from organizaciones.models import EmpresaSuscriptora, MembresiaEmpresa
-from proveedores.models import Proveedor, ServicioCatalogoProveedor, ServicioEvento
+from proveedores.models import Proveedor, ServicioEvento
 
 from .models import ProveedorServicioCatalogo, ServicioCatalogo
 from .services import proveedores_disponibles_para_servicio, servicios_disponibles_para_proveedor
@@ -276,47 +276,7 @@ class ProveedorServicioCatalogoK93Tests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Proveedor A K93")
 
-    def test_servicio_catalogo_proveedor_legacy_sigue_funcionando(self):
-        legacy = ServicioCatalogoProveedor.objects.create(
-            empresa=self.empresa_a,
-            proveedor=self.proveedor_a,
-            nombre="Legacy decoracion",
-            descripcion="Con costo de referencia",
-            categoria="DECORACION",
-            costo_referencia=100,
-            precio_referencia_cliente=150,
-        )
-        self.assertEqual(legacy.costo_referencia, 100)
-        self.assertEqual(legacy.precio_referencia_cliente, 150)
 
     def test_tipo_proveedor_legacy_sigue_funcionando(self):
         self.assertEqual(self.proveedor_a.tipo_proveedor, "DJ")
         self.assertEqual(self.proveedor_a.get_tipo_proveedor_display(), "DJ")
-
-    def test_servicio_evento_actual_no_se_rompe(self):
-        now = timezone.now()
-        evento = EventoBoda.objects.create(
-            empresa=self.empresa_a,
-            nombre_evento="Evento K93",
-            novio="A",
-            novia="B",
-            frase_portada="x",
-            mensaje_general="x",
-            fecha_misa=now,
-            lugar_misa="x",
-            fecha_fiesta=now,
-            lugar_fiesta="x",
-        )
-        legacy = ServicioCatalogoProveedor.objects.create(
-            empresa=self.empresa_a,
-            proveedor=self.proveedor_a,
-            nombre="Legacy DJ",
-        )
-        servicio_evento = ServicioEvento(
-            evento=evento,
-            proveedor=self.proveedor_a,
-            servicio_catalogo=legacy,
-            nombre_servicio="DJ evento",
-            origen="CATALOGO",
-        )
-        servicio_evento.full_clean()

@@ -16,7 +16,7 @@ from entretenimiento.models import CancionEvento, EntretenimientoEvento
 from itinerario.models import ActividadItinerario
 from notificaciones.models import Notificacion
 from organizaciones.models import EmpresaSuscriptora, MembresiaEmpresa, SedeEvento
-from paquetes.models import PaqueteBoda, PaqueteEvento
+from paquetes.models import PaqueteBoda
 from presupuesto.models import CategoriaGasto, GastoEvento, PagoEvento
 from proveedores.models import PersonalEvento, Proveedor, ServicioEvento
 from mesas.models import AsignacionMesa, Mesa
@@ -1501,7 +1501,7 @@ class DashboardReportesTests(TestCase):
         MembresiaEmpresa.objects.create(empresa=empresa, usuario=admin_empresa, rol='ADMIN_EMPRESA')
         self.client.force_login(admin_empresa)
 
-        response = self.client.post('/empresa/casa-cisneros/dashboard/', {
+        response = self.client.post(f'/dashboard/empresa/?empresa={empresa.id}', {
             'accion': 'crear_planner',
             'username_usuario': 'planner_login',
             'password_usuario': 'temporal123',
@@ -1528,7 +1528,7 @@ class DashboardReportesTests(TestCase):
         self.assertTrue(self.client.login(username='planner_login', password='temporal123'))
         follow = self.client.get('/redirigir/')
         self.assertEqual(follow.status_code, 302)
-        self.assertEqual(follow['Location'], '/empresa/casa-cisneros/wedding-planner/dashboard/')
+        self.assertEqual(follow['Location'], '/empresa/casa-cisneros/planner/dashboard/')
 
     def test_admin_empresa_elimina_acceso_desde_dashboard_avanzado(self):
         User = get_user_model()
@@ -1586,7 +1586,7 @@ class DashboardReportesTests(TestCase):
         self.client.force_login(planner)
         response = self.client.get('/dashboard/profesional/')
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(response['Location'], '/empresa/casa-cisneros/wedding-planner/dashboard/')
+        self.assertEqual(response['Location'], '/empresa/casa-cisneros/planner/dashboard/')
         response = self.client.get('/dashboard/planner/')
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Evento Planner Visible')
@@ -1612,7 +1612,7 @@ class DashboardReportesTests(TestCase):
         )
         self.client.force_login(planner)
 
-        response = self.client.post('/empresa/casa-cisneros/wedding-planner/dashboard/', {
+        response = self.client.post('/empresa/casa-cisneros/planner/dashboard/', {
             'accion': 'asignar_proveedor_evento',
             'evento_id': evento.id,
             'proveedor_id': proveedor.id,
@@ -1626,10 +1626,10 @@ class DashboardReportesTests(TestCase):
 
         servicio = ServicioEvento.objects.get(evento=evento, proveedor=proveedor)
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(response['Location'], '/empresa/casa-cisneros/wedding-planner/dashboard/#proveedores')
+        self.assertEqual(response['Location'], '/empresa/casa-cisneros/planner/dashboard/#proveedores')
         self.assertEqual(servicio.nombre_servicio, 'Banquete cena')
         self.assertEqual(servicio.estado, 'SOLICITADO')
-        self.assertEqual(servicio.costo_total, 0)
+        self.assertEqual(servicio.costo_proveedor, 0)
         self.assertTrue(
             RegistroAuditoria.objects.filter(
                 empresa=empresa,
@@ -1661,13 +1661,13 @@ class DashboardReportesTests(TestCase):
         )
         self.client.force_login(planner)
 
-        response_oculto = self.client.post('/empresa/casa-cisneros/wedding-planner/dashboard/', {
+        response_oculto = self.client.post('/empresa/casa-cisneros/planner/dashboard/', {
             'accion': 'asignar_proveedor_evento',
             'evento_id': evento.id,
             'proveedor_id': proveedor_oculto.id,
             'nombre_servicio': 'Servicio oculto',
         })
-        response_ajeno = self.client.post('/empresa/casa-cisneros/wedding-planner/dashboard/', {
+        response_ajeno = self.client.post('/empresa/casa-cisneros/planner/dashboard/', {
             'accion': 'asignar_proveedor_evento',
             'evento_id': evento.id,
             'proveedor_id': proveedor_ajeno.id,
@@ -1700,7 +1700,7 @@ class DashboardReportesTests(TestCase):
         )
         self.client.force_login(planner)
 
-        response = self.client.post('/empresa/casa-cisneros/wedding-planner/dashboard/', {
+        response = self.client.post('/empresa/casa-cisneros/planner/dashboard/', {
             'accion': 'actualizar_servicio_evento',
             'servicio_id': servicio.id,
             'nombre_servicio': 'Fotografia y video',
@@ -1709,9 +1709,7 @@ class DashboardReportesTests(TestCase):
             'hora_inicio_servicio': '16:00',
             'hora_fin_servicio': '23:30',
             'lugar_servicio': 'Jardin',
-            'costo_total_servicio': '25000',
-            'anticipo_servicio': '10000',
-            'fecha_limite_pago_servicio': '2026-12-01',
+            'costo_proveedor_servicio': '25000',
             'descripcion_servicio': 'Cobertura completa',
             'notas_servicio': 'Llevar dron',
             'cotizacion': SimpleUploadedFile('cotizacion.pdf', b'PDF', content_type='application/pdf'),
@@ -1719,12 +1717,10 @@ class DashboardReportesTests(TestCase):
 
         servicio.refresh_from_db()
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(response['Location'], '/empresa/casa-cisneros/wedding-planner/dashboard/#proveedores')
+        self.assertEqual(response['Location'], '/empresa/casa-cisneros/planner/dashboard/#proveedores')
         self.assertEqual(servicio.nombre_servicio, 'Fotografia y video')
         self.assertEqual(servicio.estado, 'CONTRATADO')
-        self.assertEqual(servicio.costo_total, 25000)
-        self.assertEqual(servicio.anticipo, 10000)
-        self.assertEqual(servicio.saldo_pendiente, 15000)
+        self.assertEqual(servicio.costo_proveedor, 25000)
         self.assertTrue(servicio.cotizacion.name.endswith('.pdf'))
         self.assertTrue(
             RegistroAuditoria.objects.filter(
@@ -1748,22 +1744,22 @@ class DashboardReportesTests(TestCase):
             evento=evento,
             proveedor=proveedor,
             nombre_servicio='Audio',
-            costo_total=10000,
+            costo_proveedor=10000,
         )
         self.client.force_login(planner)
 
-        response = self.client.post('/empresa/casa-cisneros/wedding-planner/dashboard/', {
+        response = self.client.post('/empresa/casa-cisneros/planner/dashboard/', {
             'accion': 'actualizar_servicio_evento',
             'servicio_id': servicio.id,
             'nombre_servicio': 'Audio editado',
             'estado_servicio': 'CONTRATADO',
-            'costo_total_servicio': '20000',
+            'costo_proveedor_servicio': '20000',
         })
 
         servicio.refresh_from_db()
         self.assertEqual(response.status_code, 404)
         self.assertEqual(servicio.nombre_servicio, 'Audio')
-        self.assertEqual(servicio.costo_total, 10000)
+        self.assertEqual(servicio.costo_proveedor, 10000)
 
     def test_dashboard_planner_bloquea_creacion_sin_rol_planner(self):
         User = get_user_model()
@@ -2257,8 +2253,7 @@ class DashboardReportesTests(TestCase):
             'estado_servicio': 'CONTRATADO',
             'fecha_servicio': '2026-12-15',
             'hora_inicio_servicio': '19:00',
-            'costo_total_servicio': '45000',
-            'anticipo_servicio': '10000',
+            'costo_proveedor_servicio': '45000',
         })
         servicio = ServicioEvento.objects.get(evento=evento)
         self.assertEqual(servicio.proveedor, proveedor)
@@ -2428,93 +2423,6 @@ class DashboardReportesTests(TestCase):
         self.assertIn('Cerrar entrada y plato fuerte', titulos)
         self.assertNotIn('Cerrar postre o mesa de postres', titulos)
 
-    def test_dashboard_avanzado_gestiona_paquetes_y_personal_evento(self):
-        User = get_user_model()
-        empresa = EmpresaSuscriptora.objects.create(nombre_comercial='Casa Cisneros', slug='casa-cisneros')
-        admin_empresa = User.objects.create_user(username='admin_paquetes_personal', password='test123')
-        MembresiaEmpresa.objects.create(empresa=empresa, usuario=admin_empresa, rol='ADMIN_EMPRESA')
-        proveedor = Proveedor.objects.create(empresa=empresa, nombre_comercial='Staff Cisneros', tipo_proveedor='MESEROS')
-        paquete = PaqueteBoda.objects.create(
-            empresa=empresa,
-            nombre='Paquete Jardin',
-            precio_base=120000,
-            numero_personas_incluidas=150,
-        )
-        evento = crear_evento()
-        evento.empresa = empresa
-        evento.save()
-        self.client.force_login(admin_empresa)
-
-        response = self.client.get(f'/dashboard/?evento={evento.id}')
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Servicios del evento')
-        self.assertNotContains(response, 'Asignar paquete al evento')
-        self.assertNotContains(response, 'Agregar personal operativo')
-
-        self.client.post('/dashboard/', {
-            'accion': 'agregar_paquete_evento',
-            'evento_id': evento.id,
-            'paquete_id': paquete.id,
-            'estado_paquete': 'APROBADO',
-            'precio_acordado_paquete': '118000',
-            'descuento_paquete': '8000',
-            'servicios_adicionales_paquete': 'Barra extra',
-            'notas_paquete': 'Cliente pidio ajuste',
-        })
-        paquete_evento = PaqueteEvento.objects.get(evento=evento)
-        self.assertEqual(paquete_evento.estado, 'APROBADO')
-        self.assertEqual(paquete_evento.total, 110000)
-
-        self.client.post('/dashboard/', {
-            'accion': 'agregar_personal_evento',
-            'evento_id': evento.id,
-            'proveedor_id': proveedor.id,
-            'nombre_personal': 'Carlos Mesero',
-            'tipo_personal': 'MESERO',
-            'estado_personal': 'CONFIRMADO',
-            'telefono_personal': '555',
-            'hora_entrada_personal': '17:00',
-            'hora_salida_personal': '02:00',
-            'area_personal': 'Salon',
-            'mesas_personal': '1-6',
-            'costo_personal': '900',
-            'uniforme_personal': 'Negro formal',
-        })
-        personal = PersonalEvento.objects.get(evento=evento)
-        self.assertEqual(personal.proveedor, proveedor)
-        self.assertEqual(personal.estado, 'CONFIRMADO')
-
-        self.client.post('/dashboard/', {
-            'accion': 'editar_paquete_evento',
-            'evento_id': evento.id,
-            'paquete_evento_id': paquete_evento.id,
-            'paquete_id': paquete.id,
-            'estado_paquete': 'CONTRATADO',
-            'precio_acordado_paquete': '120000',
-            'descuento_paquete': '5000',
-            'total_paquete': '115000',
-        })
-        self.client.post('/dashboard/', {
-            'accion': 'editar_personal_evento',
-            'evento_id': evento.id,
-            'personal_id': personal.id,
-            'proveedor_id': proveedor.id,
-            'nombre_personal': 'Carlos Capitan',
-            'tipo_personal': 'CAPITAN',
-            'estado_personal': 'EN_SITIO',
-            'costo_personal': '1500',
-        })
-        paquete_evento.refresh_from_db()
-        personal.refresh_from_db()
-        self.assertEqual(paquete_evento.estado, 'CONTRATADO')
-        self.assertEqual(paquete_evento.total, 115000)
-        self.assertEqual(personal.nombre, 'Carlos Capitan')
-        self.assertEqual(personal.tipo_personal, 'CAPITAN')
-
-        self.client.post('/dashboard/', {'accion': 'eliminar_paquete_evento', 'evento_id': evento.id, 'paquete_evento_id': paquete_evento.id})
-        self.client.post('/dashboard/', {'accion': 'eliminar_personal_evento', 'evento_id': evento.id, 'personal_id': personal.id})
-        self.assertFalse(PaqueteEvento.objects.filter(id=paquete_evento.id).exists())
-        self.assertFalse(PersonalEvento.objects.filter(id=personal.id).exists())
 
     @unittest.skip("PRE-K8 monolithic banquet/decor/music CRUD retired from Event Dashboard; use ServicioEvento + service workspace V3.")
     def test_dashboard_avanzado_gestiona_banquete_decoracion_musica_y_canciones(self):
@@ -2725,7 +2633,7 @@ class DashboardReportesTests(TestCase):
             'proveedor_id': proveedor.id,
             'nombre_servicio': 'DJ y audio',
             'estado_servicio': 'APROBADO',
-            'costo_total_servicio': '15000',
+            'costo_proveedor_servicio': '15000',
         })
         self.client.post('/dashboard/', {
             'accion': 'editar_tarea_evento',

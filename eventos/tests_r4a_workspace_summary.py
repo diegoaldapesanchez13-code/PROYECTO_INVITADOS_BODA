@@ -85,7 +85,7 @@ class EventWorkspaceR4ATests(TestCase):
     def test_only_unmigrated_tabs_are_disabled(self):
         """
         R4A registró la estructura completa del Workspace.
-        R4B habilitó Comercial, R4C Servicios, R4D Tareas, R4E Agenda y R4F-A Invitados.
+        R4B habilitó Comercial, R4C Servicios, R4D Tareas, R4E Agenda, R4F Invitados, R4G Documentos y R4H-A Finanzas.
         Los módulos que todavía no han migrado deben continuar deshabilitados
         y sin URLs rotas.
         """
@@ -150,8 +150,24 @@ class EventWorkspaceR4ATests(TestCase):
         )
 
         documents = next(tab for tab in nav["tabs"] if tab["key"] == "documentos")
-        self.assertFalse(documents["enabled"])
-        self.assertIsNone(documents["url"])
+        self.assertTrue(documents["enabled"])
+        self.assertEqual(
+            documents["url"],
+            reverse(
+                "k9_evento_documentos",
+                kwargs={"empresa_slug": self.empresa.slug, "evento_id": evento.id},
+            ),
+        )
+
+        finance = next(tab for tab in nav["tabs"] if tab["key"] == "finanzas")
+        self.assertTrue(finance["enabled"])
+        self.assertEqual(
+            finance["url"],
+            reverse(
+                "k9_evento_finanzas",
+                kwargs={"empresa_slug": self.empresa.slug, "evento_id": evento.id},
+            ),
+        )
 
     def test_summary_progress_reflects_base_data(self):
         evento = self._evento(

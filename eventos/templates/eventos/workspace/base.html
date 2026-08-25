@@ -4,11 +4,12 @@
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'eventos/css/workspace_r2.css' %}">
 <link rel="stylesheet" href="{% static 'eventos/css/workspace_r4.css' %}">
+<link rel="stylesheet" href="{% static 'eventos/css/workspace_runtime.css' %}">
 {% endblock %}
 
 {% block content %}
 {% if evento %}
-<section class="workspace-shell">
+<section class="workspace-shell" data-workspace-shell data-workspace-event="{{ evento.id }}">
     <header class="workspace-header">
         <div class="workspace-header__top">
             <div class="workspace-breadcrumbs">
@@ -18,10 +19,7 @@
                 <span>›</span>
                 <strong>{{ evento.titulo_evento }}</strong>
             </div>
-
-            <span class="workspace-status workspace-status--{{ evento.estado|lower }}">
-                {{ evento.get_estado_display }}
-            </span>
+            <span class="workspace-status workspace-status--{{ evento.estado|lower }}">{{ evento.get_estado_display }}</span>
         </div>
 
         <div class="workspace-header__main">
@@ -29,36 +27,29 @@
                 <span class="workspace-eyebrow">{{ evento.get_tipo_evento_display }}</span>
                 <h1>{{ evento.titulo_evento }}</h1>
                 <p>
-                    {% if evento.fecha_inicio %}
-                        {{ evento.fecha_inicio|date:"d M Y · H:i" }}
-                    {% else %}
-                        Fecha por definir
-                    {% endif %}
+                    {% if evento.fecha_inicio %}{{ evento.fecha_inicio|date:"d M Y · H:i" }}{% else %}Fecha por definir{% endif %}
                     {% if evento.sede %} · {{ evento.sede.nombre }}{% endif %}
                 </p>
             </div>
 
             <div class="workspace-header__actions">
                 {% if puede_editar and workspace_active != "datos" %}
-                <a
-                    class="app-button app-button--secondary"
-                    href="{% url 'k9_evento_datos' empresa_slug=empresa.slug evento_id=evento.id %}?return_to={{ return_to|urlencode }}"
-                >
+                <a class="app-button app-button--secondary"
+                   href="{% url 'k9_evento_datos' empresa_slug=empresa.slug evento_id=evento.id %}?return_to={{ return_to|urlencode }}">
                     Editar datos
                 </a>
                 {% endif %}
-                <a class="app-button app-button--secondary" href="{{ return_to }}">Salir del evento</a>
+                <a class="app-button app-button--secondary" href="{{ return_to }}" data-workspace-native>Salir del evento</a>
             </div>
         </div>
 
-        <nav class="workspace-tabs" aria-label="Módulos del evento">
+        <nav class="workspace-tabs" aria-label="Módulos del evento" data-workspace-tabs>
             {% for tab in workspace_navigation.tabs %}
                 {% if tab.enabled and tab.url %}
-                    <a
-                        href="{{ tab.url }}?return_to={{ return_to|urlencode }}"
-                        class="{% if workspace_navigation.active_key == tab.key %}is-active{% endif %}"
-                        {% if workspace_navigation.active_key == tab.key %}aria-current="page"{% endif %}
-                    >
+                    <a href="{{ tab.url }}?return_to={{ return_to|urlencode }}"
+                       class="{% if workspace_navigation.active_key == tab.key %}is-active{% endif %}"
+                       {% if workspace_navigation.active_key == tab.key %}aria-current="page"{% endif %}
+                       data-workspace-module-link>
                         {{ tab.label }}
                         {% if tab.badge %}<span>{{ tab.badge }}</span>{% endif %}
                     </a>
@@ -69,9 +60,13 @@
         </nav>
     </header>
 
-    <div class="workspace-content">
+    <div class="workspace-content" data-workspace-content>
         {% block workspace_content %}{% endblock %}
     </div>
 </section>
 {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'eventos/js/workspace_runtime.js' %}" defer></script>
 {% endblock %}

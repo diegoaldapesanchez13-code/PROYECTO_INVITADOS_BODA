@@ -60,10 +60,10 @@ class ReturnContextR3CTests(TestCase):
         evento = self._evento(planner=self.planner)
         self.client.force_login(self.planner)
         response = self.client.get(
-            reverse("planner_dashboard_empresa_alias", kwargs={"empresa_slug": self.empresa.slug})
+            reverse("planner_dashboard_empresa", kwargs={"empresa_slug": self.empresa.slug})
         )
         dashboard = reverse(
-            "planner_dashboard_empresa_alias",
+            "planner_dashboard_empresa",
             kwargs={"empresa_slug": self.empresa.slug},
         )
         target = reverse(
@@ -168,7 +168,7 @@ class ReturnContextR3CTests(TestCase):
             reverse("k9_evento_list", kwargs={"empresa_slug": self.empresa.slug})
         )
         expected = reverse(
-            "planner_dashboard_empresa_alias",
+            "planner_dashboard_empresa",
             kwargs={"empresa_slug": self.empresa.slug},
         )
         self.assertEqual(response.context["return_to"], expected)

@@ -112,50 +112,6 @@ class EtiquetaProveedor(models.Model):
         return self.nombre
 
 
-class ServicioCatalogoProveedor(models.Model):
-    empresa = models.ForeignKey(
-        'organizaciones.EmpresaSuscriptora',
-        on_delete=models.CASCADE,
-        related_name='servicios_catalogo_proveedor',
-    )
-    proveedor = models.ForeignKey(
-        Proveedor,
-        on_delete=models.CASCADE,
-        related_name='servicios_catalogo',
-    )
-    nombre = models.CharField(max_length=160)
-    descripcion = models.TextField(blank=True, null=True)
-    categoria = models.CharField(max_length=50, blank=True, null=True)
-    costo_referencia = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    precio_referencia_cliente = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    activo = models.BooleanField(default=True)
-    etiquetas = models.ManyToManyField(EtiquetaProveedor, blank=True, related_name='servicios_catalogo')
-    fecha_creacion = models.DateTimeField(auto_now_add=True)
-    fecha_actualizacion = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        ordering = ['proveedor', 'nombre']
-        constraints = [
-            models.UniqueConstraint(
-                fields=['proveedor', 'nombre'],
-                name='proveedores_servicio_catalogo_proveedor_nombre_unico',
-            ),
-        ]
-        indexes = [
-            models.Index(fields=['empresa', 'activo'], name='prov_cat_emp_act_idx'),
-            models.Index(fields=['proveedor', 'activo'], name='prov_cat_prov_act_idx'),
-        ]
-
-    def __str__(self):
-        return f'{self.nombre} - {self.proveedor}'
-
-    def clean(self):
-        super().clean()
-        if self.proveedor_id and self.empresa_id and self.proveedor.empresa_id not in {None, self.empresa_id}:
-            from django.core.exceptions import ValidationError
-            raise ValidationError({'proveedor': 'El proveedor debe pertenecer a la misma empresa del catalogo.'})
-
-
 class ServicioEvento(models.Model):
     ORIGENES = [
         ('MANUAL', 'Manual'),
@@ -215,13 +171,6 @@ class ServicioEvento(models.Model):
         null=True,
         related_name='servicios_evento',
     )
-    servicio_catalogo = models.ForeignKey(
-        ServicioCatalogoProveedor,
-        on_delete=models.SET_NULL,
-        blank=True,
-        null=True,
-        related_name='instancias_evento',
-    )
     servicio_catalogo_k9 = models.ForeignKey(
         'catalogo.ServicioCatalogo',
         on_delete=models.SET_NULL,
@@ -240,20 +189,6 @@ class ServicioEvento(models.Model):
     snapshot_linea = models.JSONField(default=dict, blank=True)
     materializacion_version = models.PositiveIntegerField(default=1)
     prestacion_tipo = models.CharField(max_length=20, choices=PRESTACIONES, default='POR_DEFINIR')
-    paquete_evento = models.ForeignKey(
-        'paquetes.PaqueteEvento',
-        on_delete=models.SET_NULL,
-        blank=True,
-        null=True,
-        related_name='servicios_materializados',
-    )
-    servicio_paquete_origen = models.ForeignKey(
-        'paquetes.ServicioPaquete',
-        on_delete=models.SET_NULL,
-        blank=True,
-        null=True,
-        related_name='servicios_evento_materializados',
-    )
     origen = models.CharField(max_length=15, choices=ORIGENES, default='MANUAL')
     modalidad = models.CharField(max_length=15, choices=MODALIDADES, default='ADICIONAL')
     categoria = models.CharField(max_length=50, blank=True, null=True)
@@ -269,21 +204,13 @@ class ServicioEvento(models.Model):
     hora_inicio = models.TimeField(blank=True, null=True)
     hora_fin = models.TimeField(blank=True, null=True)
     lugar = models.CharField(max_length=180, blank=True, null=True)
-    # Compatibilidad legacy: costo_total/precio_cliente/ajuste_cliente siguen
-    # existiendo mientras las vistas antiguas migran al dominio financiero nuevo.
-    costo_total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     costo_proveedor = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    precio_cliente = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    ajuste_cliente = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-
     # K.8.3.1: semantica financiera explicita.
     # valor_contratado = valor comercial atribuible al componente dentro del
     # acuerdo/paquete; no implica un cobro extra.
     # cargo_adicional_cliente = importe que se suma al contrato base.
     valor_contratado = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     cargo_adicional_cliente = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    anticipo = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    fecha_limite_pago = models.DateField(blank=True, null=True)
     estado = models.CharField(max_length=30, choices=ESTADOS, default='SOLICITADO')
     estado_comercial = models.CharField(
         max_length=20, choices=ESTADOS_COMERCIALES, default='BORRADOR'
@@ -306,7 +233,6 @@ class ServicioEvento(models.Model):
     fecha_respuesta_proveedor = models.DateTimeField(blank=True, null=True)
     contrato = models.FileField(upload_to='proveedores/contratos/', validators=[validar_documento], blank=True, null=True)
     cotizacion = models.FileField(upload_to='proveedores/cotizaciones/', validators=[validar_documento], blank=True, null=True)
-    comprobante_pago = models.FileField(upload_to='proveedores/comprobantes/', validators=[validar_documento], blank=True, null=True)
     notas = models.TextField(blank=True, null=True)
     notas_internas = models.TextField(blank=True, null=True)
     cancelado_en = models.DateTimeField(blank=True, null=True)
@@ -335,15 +261,10 @@ class ServicioEvento(models.Model):
             models.Index(fields=['evento', 'estado_operativo'], name='prov_srv_evt_oper_idx'),
             models.Index(fields=['evento', 'estado_comercial'], name='prov_srv_evt_com_idx'),
             models.Index(fields=['evento', 'proveedor'], name='prov_srv_evt_prov_idx'),
-            models.Index(fields=['paquete_evento', 'origen'], name='prov_srv_pkg_orig_idx'),
             models.Index(fields=['contrato_origen', 'linea_origen_key'], name='prov_srv_ctr_line_idx'),
             models.Index(fields=['servicio_catalogo_k9'], name='prov_srv_cat_k9_idx'),
         ]
         constraints = [
-            models.UniqueConstraint(
-                fields=['paquete_evento', 'servicio_paquete_origen'],
-                name='prov_srv_pkg_item_unico',
-            ),
             models.UniqueConstraint(
                 fields=['contrato_origen', 'linea_origen_key'],
                 name='prov_srv_contrato_linea_unica',
@@ -360,11 +281,6 @@ class ServicioEvento(models.Model):
             proveedor_empresa_id = self.proveedor.empresa_id
             if evento_empresa_id and proveedor_empresa_id and evento_empresa_id != proveedor_empresa_id:
                 raise ValidationError({'proveedor': 'El proveedor debe pertenecer a la misma empresa del evento.'})
-        if self.servicio_catalogo_id:
-            if self.proveedor_id and self.servicio_catalogo.proveedor_id != self.proveedor_id:
-                raise ValidationError({'servicio_catalogo': 'El servicio de catalogo no pertenece al proveedor seleccionado.'})
-            if self.evento_id and self.evento.empresa_id and self.servicio_catalogo.empresa_id != self.evento.empresa_id:
-                raise ValidationError({'servicio_catalogo': 'El servicio de catalogo debe pertenecer a la empresa del evento.'})
         if self.servicio_catalogo_k9_id:
             if self.evento_id and self.evento.empresa_id and self.servicio_catalogo_k9.empresa_id != self.evento.empresa_id:
                 raise ValidationError({'servicio_catalogo_k9': 'El servicio de catalogo K9 debe pertenecer a la empresa del evento.'})
@@ -386,11 +302,11 @@ class ServicioEvento(models.Model):
     def capturar_snapshot_catalogo(self):
         if self.proveedor_id and not self.proveedor_nombre_snapshot:
             self.proveedor_nombre_snapshot = self.proveedor.nombre_comercial
-        if self.servicio_catalogo_id:
-            self.catalogo_nombre_snapshot = self.servicio_catalogo.nombre
-            self.catalogo_descripcion_snapshot = self.servicio_catalogo.descripcion
+        if self.servicio_catalogo_k9_id:
+            self.catalogo_nombre_snapshot = self.servicio_catalogo_k9.nombre
+            self.catalogo_descripcion_snapshot = self.servicio_catalogo_k9.descripcion
             if not self.categoria:
-                self.categoria = self.servicio_catalogo.categoria
+                self.categoria = self.servicio_catalogo_k9.categoria
         return self
 
     @property
@@ -402,10 +318,6 @@ class ServicioEvento(models.Model):
     def incluido_en_paquete(self):
         return self.modalidad == 'INCLUIDO'
 
-    @property
-    def saldo_pendiente(self):
-        saldo = self.costo_total - self.anticipo
-        return saldo if saldo > 0 else 0
 
 
 class PersonalEvento(models.Model):

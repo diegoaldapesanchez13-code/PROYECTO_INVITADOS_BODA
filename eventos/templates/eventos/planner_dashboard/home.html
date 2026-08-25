@@ -23,17 +23,17 @@
         </div>
 
         <div class="planner-hero__actions">
-            <a class="app-button planner-primary" href="{% url 'k9_evento_create' empresa_slug=empresa.slug %}?return_to={% url 'planner_dashboard_empresa_alias' empresa_slug=empresa.slug %}">
+            <a class="app-button planner-primary" href="{% url 'k9_evento_create' empresa_slug=empresa.slug %}?return_to={% url 'planner_dashboard_empresa' empresa_slug=empresa.slug %}">
                 + Nuevo evento
             </a>
-            <a class="app-button planner-secondary" href="{% url 'k9_evento_list' empresa_slug=empresa.slug %}?return_to={% url 'planner_dashboard_empresa_alias' empresa_slug=empresa.slug %}">
+            <a class="app-button planner-secondary" href="{% url 'k9_evento_list' empresa_slug=empresa.slug %}?return_to={% url 'planner_dashboard_empresa' empresa_slug=empresa.slug %}">
                 Mis eventos
             </a>
         </div>
     </section>
 
     <section class="planner-kpis" aria-label="Resumen de trabajo">
-        <a class="planner-kpi" href="{% url 'k9_evento_list' empresa_slug=empresa.slug %}?return_to={% url 'planner_dashboard_empresa_alias' empresa_slug=empresa.slug %}">
+        <a class="planner-kpi" href="{% url 'k9_evento_list' empresa_slug=empresa.slug %}?return_to={% url 'planner_dashboard_empresa' empresa_slug=empresa.slug %}">
             <span>Mis eventos</span>
             <strong>{{ kpis.eventos }}</strong>
             <small>Asignados y activos</small>
@@ -67,7 +67,7 @@
             {% if tareas_prioritarias %}
             <div class="planner-task-list">
                 {% for tarea in tareas_prioritarias %}
-                <a href="{% url 'k9_evento_resumen' empresa_slug=empresa.slug evento_id=tarea.evento_id %}?return_to={% url 'planner_dashboard_empresa_alias' empresa_slug=empresa.slug %}">
+                <a href="{% url 'k9_evento_resumen' empresa_slug=empresa.slug evento_id=tarea.evento_id %}?return_to={% url 'planner_dashboard_empresa' empresa_slug=empresa.slug %}">
                     <span class="planner-task-state
                         {% if tarea.esta_vencida %}is-danger
                         {% elif tarea.prioridad == 'URGENTE' or tarea.prioridad == 'ALTA' %}is-warning
@@ -103,7 +103,7 @@
             {% if agenda_proxima %}
             <div class="planner-agenda-list">
                 {% for actividad in agenda_proxima %}
-                <a href="{% url 'k9_evento_resumen' empresa_slug=empresa.slug evento_id=actividad.evento_id %}?return_to={% url 'planner_dashboard_empresa_alias' empresa_slug=empresa.slug %}">
+                <a href="{% url 'k9_evento_resumen' empresa_slug=empresa.slug evento_id=actividad.evento_id %}?return_to={% url 'planner_dashboard_empresa' empresa_slug=empresa.slug %}">
                     <time>
                         <strong>{{ actividad.fecha|date:"d" }}</strong>
                         <span>{{ actividad.fecha|date:"M"|upper }}</span>
@@ -135,7 +135,7 @@
 
         <div class="planner-attention-grid">
             {% for item in requiere_atencion %}
-            <a href="{% url 'k9_evento_resumen' empresa_slug=empresa.slug evento_id=item.evento.id %}?return_to={% url 'planner_dashboard_empresa_alias' empresa_slug=empresa.slug %}">
+            <a href="{% url 'k9_evento_resumen' empresa_slug=empresa.slug evento_id=item.evento.id %}?return_to={% url 'planner_dashboard_empresa' empresa_slug=empresa.slug %}">
                 <strong>{{ item.evento.titulo_evento }}</strong>
                 <span>{{ item.atencion|join:" · " }}</span>
                 <b>Revisar →</b>
@@ -151,13 +151,13 @@
                 <span class="planner-eyebrow">Mis eventos</span>
                 <h2>Operación asignada</h2>
             </div>
-            <a href="{% url 'k9_evento_list' empresa_slug=empresa.slug %}?return_to={% url 'planner_dashboard_empresa_alias' empresa_slug=empresa.slug %}">Ver todos →</a>
+            <a href="{% url 'k9_evento_list' empresa_slug=empresa.slug %}?return_to={% url 'planner_dashboard_empresa' empresa_slug=empresa.slug %}">Ver todos →</a>
         </header>
 
         {% if eventos_recientes %}
         <div class="planner-event-grid">
             {% for item in eventos_recientes %}
-            <a href="{% url 'k9_evento_resumen' empresa_slug=empresa.slug evento_id=item.evento.id %}?return_to={% url 'planner_dashboard_empresa_alias' empresa_slug=empresa.slug %}">
+            <a href="{% url 'k9_evento_resumen' empresa_slug=empresa.slug evento_id=item.evento.id %}?return_to={% url 'planner_dashboard_empresa' empresa_slug=empresa.slug %}">
                 <div>
                     <span>{{ item.evento.get_tipo_evento_display }}</span>
                     <em>{{ item.evento.get_estado_display }}</em>

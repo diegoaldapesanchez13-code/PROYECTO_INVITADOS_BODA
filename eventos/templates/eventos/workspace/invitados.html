@@ -9,7 +9,7 @@
 {% endblock %}
 
 {% block workspace_content %}
-<section class="guests-workspace">
+<section class="guests-workspace" data-guests-workspace>
     <header class="guests-heading">
         <div>
             <span class="workspace-eyebrow">Experiencia</span>
@@ -20,10 +20,27 @@
             </p>
         </div>
         {% if puede_gestionar %}
-        <a class="app-button app-button--primary"
-           href="{% url 'k9_evento_invitados' empresa_slug=empresa.slug evento_id=evento.id %}?return_to={{ return_to|urlencode }}">
-            + Nueva invitación
-        </a>
+        <div class="guest-heading-actions">
+            <a class="app-button app-button--primary"
+               href="{% url 'k9_evento_invitados' empresa_slug=empresa.slug evento_id=evento.id %}?return_to={{ return_to|urlencode }}">
+                + Nueva invitación
+            </a>
+            <button class="app-button app-button--secondary" type="button" data-import-guests-open>
+                Importar Excel
+            </button>
+            <a class="app-button app-button--secondary"
+               href="{% url 'k9_evento_invitados_plantilla' empresa_slug=empresa.slug evento_id=evento.id %}"
+               download
+               data-workspace-native>
+                Descargar plantilla
+            </a>
+            <a class="app-button app-button--secondary"
+               href="{% url 'k9_evento_invitados_exportar' empresa_slug=empresa.slug evento_id=evento.id %}"
+               download
+               data-workspace-native>
+                Exportar Excel
+            </a>
+        </div>
         {% endif %}
     </header>
 
@@ -32,6 +49,37 @@
         <article><span>Confirmadas</span><strong>{{ metricas.confirmados }}</strong><small>{{ metricas.porcentaje_asistencia }}% del roster</small></article>
         <article><span>Pendientes</span><strong>{{ metricas.pendientes }}</strong><small>Siguen reservando lugar</small></article>
         <article class="is-released"><span>No asisten</span><strong>{{ metricas.no_asisten }}</strong><small>Lugares liberados</small></article>
+    </section>
+
+    <section class="guest-type-breakdown">
+        <article>
+            <header>
+                <span class="workspace-eyebrow">Adultos</span>
+                <strong>{{ cupo.adultos.reservados }} reservados</strong>
+            </header>
+            <div>
+                <span><b>{{ cupo.adultos.confirmados }}</b> confirmados</span>
+                <span><b>{{ cupo.adultos.pendientes }}</b> pendientes</span>
+                <span><b>{{ cupo.adultos.no_asisten }}</b> no asisten</span>
+                {% if cupo.adultos.capacidad %}
+                <span><b>{{ cupo.adultos.disponibles }}</b> disponibles</span>
+                {% endif %}
+            </div>
+        </article>
+        <article>
+            <header>
+                <span class="workspace-eyebrow">Niños</span>
+                <strong>{{ cupo.ninos.reservados }} reservados</strong>
+            </header>
+            <div>
+                <span><b>{{ cupo.ninos.confirmados }}</b> confirmados</span>
+                <span><b>{{ cupo.ninos.pendientes }}</b> pendientes</span>
+                <span><b>{{ cupo.ninos.no_asisten }}</b> no asisten</span>
+                {% if cupo.ninos.capacidad %}
+                <span><b>{{ cupo.ninos.disponibles }}</b> disponibles</span>
+                {% endif %}
+            </div>
+        </article>
     </section>
 
     <section class="guest-capacity">
@@ -59,16 +107,63 @@
         </div>
     </section>
 
+    {% if puede_gestionar %}
+    <details class="workspace-panel guest-rsvp-controls" {% if rsvp_config %}open{% endif %}>
+        <summary>
+            <div>
+                <span class="workspace-eyebrow">Confirmaciones</span>
+                <strong>
+                    {% if rsvp_config and rsvp_config.estado == "CERRADO" %}
+                    RSVP cerrado
+                    {% else %}
+                    RSVP abierto
+                    {% endif %}
+                </strong>
+            </div>
+            <span>Fecha límite, recordatorio y cierre</span>
+        </summary>
+
+        <form method="post" class="guest-rsvp-config-form">
+            {% csrf_token %}
+            <input type="hidden" name="accion" value="guardar_rsvp_config">
+            <input type="hidden" name="grupo_id" value="{% if grupo %}{{ grupo.id }}{% endif %}">
+            <input type="hidden" name="return_to" value="{{ return_to }}">
+
+            <div class="guest-form-grid">
+                {% for field in rsvp_config_form %}
+                <label class="app-field {% if field.name|slice:":8" == "mensaje_" %}guest-form-grid__wide{% endif %}">
+                    <span>{{ field.label }}</span>
+                    {{ field }}
+                    {% if field.errors %}<small class="app-field__error">{{ field.errors|striptags }}</small>{% endif %}
+                </label>
+                {% endfor %}
+            </div>
+
+            <div class="guest-rsvp-help">
+                <strong>Regla:</strong>
+                cerrar el RSVP no oculta la invitación. Solo impide nuevas respuestas
+                públicas, salvo invitaciones habilitadas manualmente.
+            </div>
+
+            <div class="guest-actions">
+                <button class="app-button app-button--primary" type="submit">
+                    Guardar controles RSVP
+                </button>
+            </div>
+        </form>
+    </details>
+    {% endif %}
+
     <form method="get" class="guests-toolbar">
         <input type="hidden" name="return_to" value="{{ return_to }}">
         <input class="app-input" name="q" value="{{ busqueda }}" placeholder="Buscar familia, persona, teléfono...">
-        <select class="app-select" name="estado" onchange="this.form.submit()">
+        <select class="app-select" name="estado" onchange="this.form.requestSubmit()">
             <option value="TODOS" {% if estado_filtro == "TODOS" %}selected{% endif %}>Todos</option>
             <option value="CONFIRMADOS" {% if estado_filtro == "CONFIRMADOS" %}selected{% endif %}>Con confirmados</option>
             <option value="PENDIENTES" {% if estado_filtro == "PENDIENTES" %}selected{% endif %}>Con pendientes</option>
             <option value="NO_ASISTEN" {% if estado_filtro == "NO_ASISTEN" %}selected{% endif %}>Con no asistencia</option>
         </select>
-        <select class="app-select" name="tipo" onchange="this.form.submit()">
+        <select class="app-select" name="tipo" onchange="this.form.requestSubmit()">
             <option value="">Personal + familiar</option>
             <option value="PERSONAL" {% if tipo_filtro == "PERSONAL" %}selected{% endif %}>Personal</option>
             <option value="FAMILIAR" {% if tipo_filtro == "FAMILIAR" %}selected{% endif %}>Familiar</option>
@@ -110,8 +205,27 @@
                     {% endfor %}
                 </div>
 
-                <footer>
-                    <a href="{% url 'ver_invitacion' item.codigo %}" target="_blank" rel="noopener">Ver invitación ↗</a>
+                {% url 'ver_invitacion' item.codigo as invitation_path %}
+                <footer class="guest-share-actions"
+                        data-invitation-share
+                        data-invitation-path="{{ invitation_path }}"
+                        data-invitation-name="{{ item.nombre_grupo|escape }}">
+                    <a class="guest-share-action guest-share-action--open"
+                       href="{{ invitation_path }}"
+                       target="_blank"
+                       rel="noopener"
+                       data-workspace-native>
+                        Ver invitación ↗
+                    </a>
+                    <button class="guest-share-action" type="button" data-copy-invitation>
+                        Copiar enlace
+                    </button>
+                    <button class="guest-share-action guest-share-action--whatsapp"
+                            type="button"
+                            data-whatsapp-invitation>
+                        WhatsApp
+                    </button>
+                    <span class="guest-share-feedback" data-share-feedback aria-live="polite"></span>
                 </footer>
             </article>
             {% empty %}
@@ -154,6 +268,46 @@
             </article>
 
             {% if grupo %}
+            <article class="workspace-panel guest-rsvp-exception">
+                <header class="workspace-panel__header">
+                    <div>
+                        <span class="workspace-eyebrow">RSVP individual</span>
+                        <h3>Excepción de esta invitación</h3>
+                    </div>
+                    {% if rsvp_decision %}
+                    <span class="guest-rsvp-state {% if rsvp_decision.allowed %}is-open{% else %}is-closed{% endif %}">
+                        {% if rsvp_decision.allowed %}Permitido{% else %}Bloqueado{% endif %}
+                    </span>
+                    {% endif %}
+                </header>
+
+                <form method="post" class="guest-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="accion" value="guardar_rsvp_excepcion">
+                    <input type="hidden" name="grupo_id" value="{{ grupo.id }}">
+                    <input type="hidden" name="return_to" value="{{ return_to }}">
+                    <div class="guest-form-grid">
+                        {% for field in rsvp_exception_form %}
+                        <label class="app-field {% if field.name == 'motivo' %}guest-form-grid__wide{% endif %}">
+                            <span>{{ field.label }}</span>
+                            {{ field }}
+                            {% if field.errors %}<small class="app-field__error">{{ field.errors|striptags }}</small>{% endif %}
+                        </label>
+                        {% endfor %}
+                    </div>
+                    <div class="guest-rsvp-help">
+                        <strong>HEREDA:</strong> respeta el cierre global.
+                        <strong>HABILITADA:</strong> puede confirmar incluso después del cierre.
+                        <strong>BLOQUEADA:</strong> no puede modificar RSVP aunque el evento siga abierto.
+                    </div>
+                    <div class="guest-actions">
+                        <button class="app-button app-button--secondary" type="submit">
+                            Guardar excepción
+                        </button>
+                    </div>
+                </form>
+            </article>
+
             <article class="workspace-panel guest-person-editor">
                 <header class="workspace-panel__header">
                     <div>
@@ -244,5 +398,63 @@
             {% endif %}
         </aside>
     </section>
+
+    {% if puede_gestionar %}
+    <dialog class="guest-import-dialog" data-import-guests-dialog>
+        <form method="dialog" class="guest-import-dialog__close-form">
+            <button type="submit" aria-label="Cerrar">×</button>
+        </form>
+
+        <div class="guest-import-dialog__body">
+            <span class="workspace-eyebrow">Carga masiva</span>
+            <h2>Importar lista de invitados</h2>
+            <p>
+                Usa la plantilla oficial. La importación valida el archivo completo antes
+                de guardar: si encuentra un error, no se crea ninguna invitación.
+            </p>
+
+            <div class="guest-import-rules">
+                <span>Una persona por fila</span>
+                <span>Adultos y niños separados</span>
+                <span>RSVP nunca se sobrescribe</span>
+                <span>UUID nuevos para grupos nuevos</span>
+            </div>
+
+            <form method="post"
+                  enctype="multipart/form-data"
+                  action="{% url 'k9_evento_invitados_importar' empresa_slug=empresa.slug evento_id=evento.id %}"
+                  class="guest-import-form">
+                {% csrf_token %}
+                <input type="hidden" name="return_to" value="{{ return_to }}">
+                <label class="guest-import-dropzone">
+                    <span>Selecciona tu archivo .xlsx</span>
+                    <small>Máximo 8 MB · La hoja puede llamarse “Invitados”.</small>
+                    <input type="file"
+                           name="archivo_invitados"
+                           accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                           required>
+                </label>
+
+                <div class="guest-import-dialog__actions">
+                    <a class="app-button app-button--secondary"
+                       href="{% url 'k9_evento_invitados_plantilla' empresa_slug=empresa.slug evento_id=evento.id %}"
+                       download
+                       data-workspace-native>
+                        Descargar plantilla
+                    </a>
+                    <button class="app-button app-button--primary" type="submit">
+                        Validar e importar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </dialog>
+    {% endif %}
 </section>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script src="{% static 'eventos/js/workspace_guests_share_r4.js' %}" defer></script>
+<script src="{% static 'eventos/js/workspace_guests_io_r4.js' %}" defer></script>
 {% endblock %}

@@ -9,7 +9,6 @@ from django.utils import timezone
 from eventos.models import ContratoEvento, ParticipanteEvento
 from invitaciones.models import EventoBoda
 from organizaciones.models import EmpresaSuscriptora, MembresiaEmpresa
-from paquetes.models import PaqueteBoda, PaqueteEvento
 from proveedores.models import Proveedor, ServicioEvento
 
 from .models import CategoriaGasto, GastoEvento, PagoClienteEvento, PagoEvento
@@ -288,21 +287,3 @@ class FinanzasIntegradasK97Tests(TestCase):
     def test_proveedor_no_ve_pagos_cliente(self):
         with self.assertRaises(PermissionDenied):
             resumen_financiero_interno(self.evento, user=self.proveedor_user)
-
-    def test_k8_legacy_no_rompe(self):
-        evento = crear_evento(self.empresa, cliente=self.cliente, nombre='Legacy K8')
-        paquete = PaqueteBoda.objects.create(
-            empresa=self.empresa,
-            nombre='Legacy',
-            precio_base=Decimal('50000.00'),
-        )
-        PaqueteEvento.objects.create(
-            evento=evento,
-            paquete=paquete,
-            precio_acordado=Decimal('50000.00'),
-            total=Decimal('50000.00'),
-            estado='CONTRATADO',
-        )
-        resumen = obtener_resumen_financiero_evento(evento)
-        self.assertEqual(resumen['fuente_total'], 'PAQUETE_EVENTO_LEGACY')
-        self.assertEqual(resumen['total_contratado'], Decimal('50000.00'))

@@ -66,10 +66,10 @@ class CompanyDashboardR3ATests(TestCase):
         response = self.client.get(reverse("empresa_dashboard", kwargs={"empresa_slug": self.empresa.slug}))
         self.assertContains(response, reverse("k9_evento_list", kwargs={"empresa_slug": self.empresa.slug}))
 
-    def test_post_remains_legacy_compatible(self):
+    def test_canonical_company_dashboard_is_read_only_entrypoint(self):
         self.client.force_login(self.admin)
         response = self.client.post(
             reverse("empresa_dashboard", kwargs={"empresa_slug": self.empresa.slug}),
             {"accion": "accion-inexistente"},
         )
-        self.assertIn(response.status_code, {200, 302})
+        self.assertEqual(response.status_code, 405)

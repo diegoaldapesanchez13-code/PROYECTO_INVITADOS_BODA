@@ -1,5 +1,6 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
+from django.views.decorators.http import require_GET
 
 from core.services.app_context import build_app_context
 from core.services.tenant_context import validar_slug_tenant
@@ -8,18 +9,13 @@ from .company_dashboard import construir_dashboard_empresa_k9
 
 
 @login_required(login_url="/login/")
+@require_GET
 def company_dashboard(request, empresa_slug):
-    """
-    R3A Company Home.
+    """R3A Company Home canónico K9.
 
-    GET usa la nueva experiencia.
-    POST se delega temporalmente al dashboard legacy para no romper acciones
-    administrativas que todavía no han migrado a pantallas canónicas.
+    Las operaciones legacy permanecen aisladas en sus rutas históricas; esta
+    pantalla nueva no delega escrituras a ``invitaciones.views``.
     """
-    if request.method == "POST":
-        from invitaciones.views import dashboard_empresa_slug
-        return dashboard_empresa_slug(request, empresa_slug)
-
     tenant = validar_slug_tenant(
         request,
         empresa_slug,

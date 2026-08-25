@@ -6,7 +6,7 @@ from django.db.models import Max
 from django.utils import timezone
 
 from catalogo.models import ServicioCatalogo
-from paquetes.models import PaqueteEvento, PropuestaEvento
+from paquetes.models import PropuestaEvento
 from paquetes.services import actualizar_totales_propuesta
 from proveedores.models import ServicioEvento
 
@@ -237,7 +237,6 @@ def generar_contrato_v2_desde_propuesta(propuesta_id, *, user=None):
         .select_related('empresa', 'evento', 'sede', 'paquete')
         .prefetch_related(
             'lineas__servicio_catalogo',
-            'paquete__servicios',
             'paquete__servicios_catalogo_k9__servicio_catalogo',
         )
         .get(pk=propuesta_id)
@@ -286,7 +285,6 @@ def _linea_key(tipo, item, posicion):
         item.get('linea_key')
         or item.get('clave_origen')
         or item.get('linea_id')
-        or item.get('servicio_paquete_id')
         or f'{posicion:04d}'
     )
     return f'{tipo}:{base}'
@@ -385,8 +383,6 @@ def _defaults_servicio_materializado(contrato, tipo, linea_key, item):
         'descripcion': descripcion,
         'valor_contratado': valor_contratado,
         'cargo_adicional_cliente': cargo_cliente,
-        'precio_cliente': cargo_cliente if tipo != 'INCLUIDO' else valor_contratado,
-        'ajuste_cliente': Decimal('0.00'),
         'paquete_nombre_snapshot': (contrato.snapshot_comercial.get('paquete') or {}).get('nombre') or '',
         'paquete_servicio_snapshot': item if tipo == 'INCLUIDO' else {},
         'cantidad_paquete': _cantidad_operativa(tipo, item),
@@ -401,7 +397,6 @@ def _crear_servicio_materializado(contrato, tipo, linea_key, item):
         contrato_origen=contrato,
         linea_origen_key=linea_key,
         proveedor=None,
-        costo_total=Decimal('0.00'),
         costo_proveedor=Decimal('0.00'),
         prestacion_tipo='POR_DEFINIR',
         estado='SOLICITADO',
@@ -426,8 +421,6 @@ def _actualizar_servicio_materializado(servicio, contrato, tipo, linea_key, item
         'descripcion',
         'valor_contratado',
         'cargo_adicional_cliente',
-        'precio_cliente',
-        'ajuste_cliente',
         'paquete_nombre_snapshot',
         'paquete_servicio_snapshot',
         'cantidad_paquete',
@@ -510,50 +503,6 @@ def leer_contrato_v2(contrato):
         'totales': snapshot.get('totales') or {},
         'notas_comerciales': snapshot.get('notas_comerciales') or '',
         'metadata': snapshot.get('metadata') or {},
-    }
-
-
-def leer_contrato_v1_paquete_evento(paquete_evento):
-    snapshot = paquete_evento.snapshot_paquete or {}
-    return {
-        'version': snapshot.get('version') or 1,
-        'contrato_id': None,
-        'estado': paquete_evento.estado,
-        'evento': {
-            'id': paquete_evento.evento_id,
-            'nombre': paquete_evento.evento.titulo_evento,
-        },
-        'empresa': _snapshot_empresa(paquete_evento.evento.empresa),
-        'sede': _snapshot_sede(paquete_evento.evento.sede),
-        'paquete': {
-            'id': snapshot.get('paquete_id') or paquete_evento.paquete_id,
-            'nombre': snapshot.get('nombre') or paquete_evento.paquete.nombre,
-            'descripcion': snapshot.get('descripcion') or '',
-        },
-        'cantidades': {},
-        'incluidos': [
-            {
-                'clave_origen': f"legacy:{item.get('servicio_paquete_id')}",
-                'origen': 'SERVICIO_PAQUETE_LEGACY',
-                'nombre': item.get('descripcion') or item.get('tipo_servicio_display') or '',
-                'categoria': item.get('tipo_servicio') or '',
-                'cantidad': str(item.get('cantidad') or '0'),
-                'notas': '',
-                'valor_comercial': str(item.get('precio_incluido') or '0.00'),
-            }
-            for item in snapshot.get('servicios', [])
-        ],
-        'adicionales': [],
-        'cortesias': [],
-        'descuentos': {'monto': str(snapshot.get('descuento') or paquete_evento.descuento)},
-        'totales': {
-            'base': str(snapshot.get('precio_acordado') or paquete_evento.precio_acordado),
-            'adicionales': '0.00',
-            'descuento': str(snapshot.get('descuento') or paquete_evento.descuento),
-            'total_final': str(snapshot.get('total') or paquete_evento.total),
-        },
-        'notas_comerciales': paquete_evento.notas or '',
-        'metadata': {'version_calculo': 1, 'paquete_evento_id': paquete_evento.id},
     }
 
 

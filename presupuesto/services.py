@@ -6,7 +6,6 @@ from django.db.models import Sum
 from core.services.authorization import Actions, usuario_puede_evento
 from core.services.permisos import roles_usuario_empresa, usuario_es_dirtec_operativo
 from eventos.models import ContratoEvento, ParticipanteEvento
-from paquetes.models import PaqueteEvento
 from proveedores.models import ServicioEvento
 
 from .models import GastoEvento, PagoClienteEvento, PagoEvento
@@ -57,19 +56,6 @@ def contrato_financiero_evento(evento):
             'advertencias': ['Contrato legacy: no existe snapshot K9 v2.'],
         }
 
-    paquetes = PaqueteEvento.objects.filter(
-        evento=evento,
-        estado__in=['APROBADO', 'CONTRATADO'],
-    )
-    total_paquetes = _sumar(paquetes, 'total')
-    if total_paquetes > 0:
-        return {
-            'fuente': 'PAQUETE_EVENTO_LEGACY',
-            'contrato': None,
-            'total_contratado': total_paquetes,
-            'advertencias': ['Total legacy calculado desde PaqueteEvento; no hay contrato K9 v2.'],
-        }
-
     return {
         'fuente': 'SIN_CONTRATO',
         'contrato': None,
@@ -94,7 +80,6 @@ def _servicio_detalle(servicio, gastos_por_servicio, pagos_por_gasto):
         servicio.prestacion_tipo == 'POR_DEFINIR'
         and not servicio.proveedor_id
         and not gastos
-        and _money(servicio.costo_total) == 0
         and _money(servicio.costo_proveedor) == 0
     )
     return {

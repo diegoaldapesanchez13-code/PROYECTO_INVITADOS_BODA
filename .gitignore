@@ -55,3 +55,13 @@ logs/
 *.dump
 *.fixture.json
 migration_inventory_*.json
+
+# K9 local consolidation / maintenance artifacts
+_payload/
+backups_local/
+COM6*.py
+COM6*.txt
+COM6*.json
+APLICAR_COM*.ps1
+APLICAR_FIX_COM*.ps1
+APLICAR_R4S*.ps1

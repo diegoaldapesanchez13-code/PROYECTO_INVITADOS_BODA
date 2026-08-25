@@ -20,7 +20,7 @@ def crear_evento():
 
 
 class ServicioEventoTests(TestCase):
-    def test_calcula_saldo_pendiente(self):
+    def test_servicio_conserva_costo_proveedor(self):
         evento = crear_evento()
         proveedor = Proveedor.objects.create(
             nombre_comercial='Foto Luz',
@@ -30,8 +30,7 @@ class ServicioEventoTests(TestCase):
             evento=evento,
             proveedor=proveedor,
             nombre_servicio='Fotografia completa',
-            costo_total=15000,
-            anticipo=5000,
+            costo_proveedor=15000,
         )
 
-        self.assertEqual(servicio.saldo_pendiente, 10000)
+        self.assertEqual(servicio.costo_proveedor, 15000)

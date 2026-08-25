@@ -1,0 +1,65 @@
+.dirtec-rsvp-state {
+    position: relative;
+    z-index: 20;
+    margin: 0;
+    padding: 12px 18px;
+    background: rgba(255, 255, 255, .96);
+    border-bottom: 1px solid rgba(27, 36, 31, .10);
+    color: #34433b;
+    text-align: center;
+    font: 500 13px/1.45 Inter, sans-serif;
+}
+
+.dirtec-rsvp-state strong {
+    font-weight: 700;
+}
+
+.dirtec-rsvp-state small {
+    display: block;
+    margin-top: 2px;
+    color: #6f776f;
+    font-size: 11px;
+}
+
+.dirtec-rsvp-state[data-rsvp-phase="REMINDER"] {
+    background: #fffaf0;
+    color: #795714;
+}
+
+.dirtec-rsvp-state[data-rsvp-allowed="0"] {
+    background: #fbf5f4;
+    color: #704343;
+}
+
+/*
+ * El backend es la autoridad real del RSVP. Estas reglas son solamente la
+ * representacion UX del estado cerrado y se aplican aunque el renderer pinte
+ * el componente despues de cargar sus datos asincronos.
+ */
+body[data-rsvp-allowed="0"] .r3-rsvp__person input[type="radio"],
+body[data-rsvp-allowed="0"] .r3-rsvp__person button[type="submit"] {
+    pointer-events: none;
+}
+
+body[data-rsvp-allowed="0"] .r3-rsvp__choices,
+body[data-rsvp-allowed="0"] .r3-rsvp__submit {
+    opacity: .52;
+}
+
+body[data-rsvp-allowed="0"] .r3-rsvp__choice,
+body[data-rsvp-allowed="0"] .r3-rsvp__submit {
+    cursor: not-allowed;
+}
+
+body[data-rsvp-allowed="0"] .r3-rsvp__description::after {
+    content: " Las confirmaciones no pueden modificarse en este momento.";
+    font-weight: 600;
+    color: #704343;
+}
+
+@media (max-width: 480px) {
+    .dirtec-rsvp-state {
+        padding: 10px 14px;
+        font-size: 12px;
+    }
+}

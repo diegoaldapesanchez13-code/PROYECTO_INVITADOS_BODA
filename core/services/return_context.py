@@ -16,7 +16,7 @@ def _default_return(user, empresa):
     roles = roles_usuario_empresa(user, empresa)
     if "WEDDING_PLANNER" in roles and not roles.intersection({"ADMIN_EMPRESA", "VENTAS"}):
         return reverse(
-            "planner_dashboard_empresa_alias",
+            "planner_dashboard_empresa",
             kwargs={"empresa_slug": empresa.slug},
         )
     return reverse("empresa_dashboard", kwargs={"empresa_slug": empresa.slug})

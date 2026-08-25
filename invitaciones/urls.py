@@ -14,8 +14,10 @@ urlpatterns = [
     path('', views.inicio, name='inicio'),
     path('dirtec/dashboard/', views.dashboard_dirtec, name='dirtec_dashboard'),
     path('empresa/<slug:empresa_slug>/dashboard/', company_dashboard_views.company_dashboard, name='empresa_dashboard'),
-    path('empresa/<slug:empresa_slug>/wedding-planner/dashboard/', planner_dashboard_views.planner_dashboard, name='planner_dashboard_empresa'),
-    path('empresa/<slug:empresa_slug>/planner/dashboard/', planner_dashboard_views.planner_dashboard, name='planner_dashboard_empresa_alias'),
+    # K9 canonical Planner URL. All internal reverse() calls converge here.
+    path('empresa/<slug:empresa_slug>/planner/dashboard/', planner_dashboard_views.planner_dashboard, name='planner_dashboard_empresa'),
+    # Legacy K8 URL: accepted only as a compatibility entry point.
+    path('empresa/<slug:empresa_slug>/wedding-planner/dashboard/', planner_dashboard_views.planner_dashboard_legacy, name='planner_dashboard_empresa_legacy'),
     path('cliente/dashboard/', views.portal_cliente, name='cliente_dashboard'),
     path('proveedor/dashboard/', views.portal_proveedor, name='proveedor_dashboard'),
     path('portal/cliente/', views.portal_cliente, name='portal_cliente'),

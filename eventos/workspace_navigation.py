@@ -60,8 +60,8 @@ def build_workspace_tabs(*, user, empresa, evento, active_key="resumen"):
         WorkspaceTab("tareas", "Tareas", _url("k9_evento_tareas", empresa, evento), "operacion", enabled=True),
         WorkspaceTab("agenda", "Agenda", _url("k9_evento_agenda", empresa, evento), "operacion", enabled=True),
         WorkspaceTab("invitados", "Invitados", _url("k9_evento_invitados", empresa, evento), "experiencia", enabled=True),
-        WorkspaceTab("documentos", "Documentos", None, "operacion", enabled=False),
-        WorkspaceTab("finanzas", "Finanzas", None, "negocio", enabled=False),
+        WorkspaceTab("documentos", "Documentos", _url("k9_evento_documentos", empresa, evento), "operacion", enabled=True),
+        WorkspaceTab("finanzas", "Finanzas", _url("k9_evento_finanzas", empresa, evento), "negocio", enabled=True),
         WorkspaceTab("invitacion", "Invitación", None, "experiencia", enabled=False),
         WorkspaceTab("actividad", "Actividad", None, "control", enabled=False),
         WorkspaceTab(

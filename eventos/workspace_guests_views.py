@@ -26,7 +26,15 @@ from .workspace_guests_forms import (
     WorkspaceGrupoForm,
     WorkspaceInvitadoForm,
     WorkspaceRespuestaForm,
+    WorkspaceRsvpConfigForm,
+    WorkspaceRsvpExceptionForm,
 )
+from .workspace_guests_rsvp import (
+    guardar_configuracion_rsvp,
+    guardar_excepcion_rsvp,
+)
+from invitaciones.rsvp_control import evaluar_rsvp
+from invitaciones.rsvp_models import RsvpConfiguracionEvento, RsvpExcepcionGrupo
 from .workspace_views import (
     _app_context,
     _contexto_empresa,
@@ -133,12 +141,64 @@ def evento_invitados(request, empresa_slug, evento_id):
     grupo_form = None
     invitado_form = None
     respuesta_form = None
+    rsvp_config = RsvpConfiguracionEvento.objects.filter(evento=evento).first()
+    rsvp_config_form = WorkspaceRsvpConfigForm(instance=rsvp_config)
+    rsvp_exception = (
+        RsvpExcepcionGrupo.objects.filter(grupo=grupo).first()
+        if grupo else None
+    )
+    rsvp_exception_form = (
+        WorkspaceRsvpExceptionForm(instance=rsvp_exception)
+        if grupo else None
+    )
 
     if request.method == "POST":
         if not puede_gestionar:
             raise PermissionDenied("No tienes permiso para gestionar invitados.")
 
-        if accion == "guardar_grupo":
+        if accion == "guardar_rsvp_config":
+            rsvp_config_form = WorkspaceRsvpConfigForm(
+                request.POST,
+                instance=rsvp_config,
+            )
+            if rsvp_config_form.is_valid():
+                rsvp_config = guardar_configuracion_rsvp(
+                    evento,
+                    cleaned_data=dict(rsvp_config_form.cleaned_data),
+                    user=request.user,
+                    request=request,
+                )
+                messages.success(request, "Controles RSVP del evento actualizados.")
+                return redirect(_redirect_invitados(
+                    empresa, evento, return_to, grupo_id=grupo.id if grupo else None,
+                    estado=estado,
+                ))
+            messages.error(request, "Revisa la configuración RSVP.")
+
+        elif accion == "guardar_rsvp_excepcion":
+            if grupo is None:
+                raise PermissionDenied("Selecciona una invitación.")
+            rsvp_exception_form = WorkspaceRsvpExceptionForm(
+                request.POST,
+                instance=rsvp_exception,
+            )
+            if rsvp_exception_form.is_valid():
+                rsvp_exception = guardar_excepcion_rsvp(
+                    grupo,
+                    cleaned_data=dict(rsvp_exception_form.cleaned_data),
+                    user=request.user,
+                    request=request,
+                )
+                messages.success(
+                    request,
+                    f"RSVP de {grupo.nombre_grupo}: {rsvp_exception.get_modo_display()}.",
+                )
+                return redirect(_redirect_invitados(
+                    empresa, evento, return_to, grupo_id=grupo.id, estado=estado,
+                ))
+            messages.error(request, "Revisa la excepción RSVP.")
+
+        elif accion == "guardar_grupo":
             grupo_form = WorkspaceGrupoForm(request.POST, instance=grupo)
             if grupo_form.is_valid():
                 try:
@@ -288,6 +348,16 @@ def evento_invitados(request, empresa_slug, evento_id):
     cupo = resumen_cupo_evento(evento).as_dict()
 
     grupo_delete = grupo_puede_eliminarse(grupo) if grupo else (False, "")
+    if grupo:
+        rsvp_exception = RsvpExcepcionGrupo.objects.filter(grupo=grupo).first()
+        rsvp_exception_form = WorkspaceRsvpExceptionForm(instance=rsvp_exception)
+        rsvp_decision = evaluar_rsvp(grupo).as_dict()
+    else:
+        rsvp_decision = None
+
+    # Rebuild after POST validation success paths / initial load.
+    if request.method != "POST" or accion != "guardar_rsvp_config":
+        rsvp_config_form = WorkspaceRsvpConfigForm(instance=rsvp_config)
 
     context = _app_context(
         request,
@@ -320,5 +390,10 @@ def evento_invitados(request, empresa_slug, evento_id):
         "busqueda": q,
         "grupo_puede_eliminar": grupo_delete[0],
         "grupo_motivo_no_eliminar": grupo_delete[1],
+        "rsvp_config": rsvp_config,
+        "rsvp_config_form": rsvp_config_form,
+        "rsvp_exception": rsvp_exception,
+        "rsvp_exception_form": rsvp_exception_form,
+        "rsvp_decision": rsvp_decision,
     })
     return render(request, "eventos/workspace/invitados.html", context)

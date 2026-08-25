@@ -1,9 +1,0 @@
-K.8.7.2 - Planner Dashboard V3
-
-Copiar el CONTENIDO de K8_7_2_UPDATE sobre la raiz del mismo proyecto.
-No requiere migraciones. No incluye db.sqlite3, venv, media ni Builder.
-
-Ejecutar:
-  python scripts/verify_phase_k8_7_2.py
-
-Después realizar MANUAL_TESTS_K8_7_2.md.

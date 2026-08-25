@@ -188,7 +188,7 @@ Politica:
 
 - Cliente -> `/cliente/dashboard/` o portal con `evento` autorizado.
 - Proveedor -> `/proveedor/dashboard/`.
-- Planner -> `/empresa/<slug>/wedding-planner/dashboard/` o evento asignado.
+- Planner -> `/empresa/<slug>/planner/dashboard/` o evento asignado. La ruta `/wedding-planner/dashboard/` queda sólo como alias legacy temporal.
 - Empresa -> `/empresa/<slug>/dashboard/`.
 - DIRTEC -> `/dirtec/dashboard/`.
 - Workspace -> dashboard/portal por rol y servicio autorizado.

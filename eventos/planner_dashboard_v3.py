@@ -86,7 +86,7 @@ def _orden_accion(item):
 def construir_contexto_dashboard_planner_v3(*, eventos, planner, empresa):
     """Bandeja de trabajo Event-Centric para Wedding Planner.
 
-    No usa ExpedienteServicio, costo_total/saldo_pendiente legacy ni CRUD paralelo
+    No usa ExpedienteServicio ni CRUD financiero paralelo.
     de proveedores. El Planner coordina y abre Evento/ServicioEvento.
     """
     eventos = list(eventos)
@@ -96,7 +96,7 @@ def construir_contexto_dashboard_planner_v3(*, eventos, planner, empresa):
 
     servicios = list(
         ServicioEvento.objects.filter(evento_id__in=evento_ids)
-        .select_related("evento", "proveedor", "paquete_evento")
+        .select_related("evento", "proveedor")
         .order_by("evento__fecha_fiesta", "nombre_servicio")
     )
     _enriquecer_servicios(servicios, None, hoy)

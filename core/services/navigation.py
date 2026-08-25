@@ -53,13 +53,13 @@ def _company_navigation(empresa, active_key="inicio"):
         _item("clientes", "Clientes", legacy + "#clientes", "◎", active_key=active_key),
         _item("equipo", "Planners", legacy + "#equipo", "◌", active_key=active_key),
         _item("proveedores", "Proveedores", legacy + "#proveedores", "◈", active_key=active_key),
-        _item("catalogo", "Catálogo", legacy + "#catalogos", "▦", active_key=active_key),
+        _item("catalogo", "Catálogo", reverse("catalogo_servicio_list", kwargs={"empresa_slug": empresa.slug}), "▦", active_key=active_key),
         _item("configuracion", "Configuración", legacy + "#configuracion", "⚙", active_key=active_key),
     ]
 
 
 def _planner_navigation(empresa, active_key="inicio"):
-    dashboard = reverse("planner_dashboard_empresa_alias", kwargs={"empresa_slug": empresa.slug})
+    dashboard = reverse("planner_dashboard_empresa", kwargs={"empresa_slug": empresa.slug})
     return [
         _item("inicio", "Inicio", dashboard, "⌂", active_key=active_key),
         _item("eventos", "Mis eventos", reverse("k9_evento_list", kwargs={"empresa_slug": empresa.slug}), "◇", short_label="Eventos", active_key=active_key),

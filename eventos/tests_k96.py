@@ -266,12 +266,10 @@ class MaterializacionContratoV2K96Tests(TestCase):
         self.materializar()
         servicio = self.servicios().get(nombre_servicio='Alcohol')
         servicio.costo_proveedor = Decimal('12500.00')
-        servicio.costo_total = Decimal('13000.00')
-        servicio.save(update_fields=['costo_proveedor', 'costo_total'])
+        servicio.save(update_fields=['costo_proveedor'])
         self.materializar()
         servicio.refresh_from_db()
         self.assertEqual(servicio.costo_proveedor, Decimal('12500.00'))
-        self.assertEqual(servicio.costo_total, Decimal('13000.00'))
 
     def test_notas_operativas_se_conservan(self):
         self.materializar()

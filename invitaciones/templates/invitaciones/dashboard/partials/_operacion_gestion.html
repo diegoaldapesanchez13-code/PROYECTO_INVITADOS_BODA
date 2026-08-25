@@ -1,15 +1,14 @@
 <section class="catalog-panel operation-manager" id="operacion-gestion" data-subnav-scope="operacion-evento">
     <div class="workspace-header">
         <div>
-            <h2>Operación del evento</h2>
-            <p class="muted">Trabaja por módulo. Solo se muestra la información necesaria para la tarea que estás realizando.</p>
+            <h2>OperaciÃ³n del evento</h2>
+            <p class="muted">Trabaja por mÃ³dulo. Solo se muestra la informaciÃ³n necesaria para la tarea que estÃ¡s realizando.</p>
         </div>
         <a class="btn secondary" href="{% url 'mesas_visual' %}?evento={{ evento.id }}">Acomodar mesas</a>
     </div>
 
     <div class="module-tabs operation-tabs" role="tablist" aria-label="Gestion operativa">
         <button type="button" data-subpanel-button="servicios">Proveedores <span>{{ total_servicios_evento }}</span></button>
-        <button type="button" data-subpanel-button="paquetes">Paquetes <span>{{ total_paquetes_evento }}</span></button>
         <button type="button" data-subpanel-button="contrato">Contrato <span>{% if detalle_produccion %}1{% else %}0{% endif %}</span></button>
         <button type="button" data-subpanel-button="personal">Personal <span>{{ total_personal_evento }}</span></button>
         <button type="button" data-subpanel-button="banquete">Banquete <span>{{ total_catering_evento }}</span></button>
@@ -45,14 +44,14 @@
                 <label>Fecha<input type="date" name="fecha_servicio"></label>
                 <label>Inicio<input type="time" name="hora_inicio_servicio"></label>
                 <label>Fin<input type="time" name="hora_fin_servicio"></label>
-                <label>Costo total<input type="number" name="costo_total_servicio" min="0" step="0.01" value="0"></label>
-                <label>Anticipo<input type="number" name="anticipo_servicio" min="0" step="0.01" value="0"></label>
-                <label>Limite pago<input type="date" name="fecha_limite_pago_servicio"></label>
+                <label>Costo proveedor<input type="number" name="costo_proveedor_servicio" min="0" step="0.01" value="0"></label>
+
+
                 <label class="wide">Lugar<input type="text" name="lugar_servicio" placeholder="Salon, jardin, ceremonia..."></label>
                 <label class="wide">Descripcion<textarea name="descripcion_servicio" rows="2"></textarea></label>
                 <label>Contrato<input type="file" name="contrato_servicio"></label>
                 <label>Cotizacion<input type="file" name="cotizacion_servicio"></label>
-                <label>Comprobante<input type="file" name="comprobante_pago_servicio"></label>
+
                 <label class="wide">Notas<textarea name="notas_servicio" rows="2"></textarea></label>
             </div>
             <div class="actions form-actions"><button class="btn" type="submit">Agregar servicio</button></div>
@@ -65,7 +64,7 @@
                     <article class="saved-item">
                         <div>
                             <strong>{{ servicio.nombre_servicio }}</strong>
-                            <span>{{ servicio.get_estado_display }} - ${{ servicio.costo_total|floatformat:0 }}</span>
+                            <span>{{ servicio.get_estado_display }} - ${{ servicio.costo_proveedor|floatformat:0 }}</span>
                         </div>
                         <p>{{ servicio.proveedor.nombre_comercial|default:"Proveedor por definir" }}{% if servicio.fecha_servicio %} - {{ servicio.fecha_servicio|date:"d/m/Y" }}{% endif %}</p>
                         <p><a href="{% url 'colaboracion_workspace_servicio' servicio.id %}">Abrir workspace del servicio</a></p>
@@ -95,14 +94,12 @@
                                     <label>Fecha<input type="date" name="fecha_servicio" value="{{ servicio.fecha_servicio|date:'Y-m-d' }}"></label>
                                     <label>Inicio<input type="time" name="hora_inicio_servicio" value="{{ servicio.hora_inicio|time:'H:i' }}"></label>
                                     <label>Fin<input type="time" name="hora_fin_servicio" value="{{ servicio.hora_fin|time:'H:i' }}"></label>
-                                    <label>Costo<input type="number" name="costo_total_servicio" min="0" step="0.01" value="{{ servicio.costo_total }}"></label>
-                                    <label>Anticipo<input type="number" name="anticipo_servicio" min="0" step="0.01" value="{{ servicio.anticipo }}"></label>
-                                    <label>Limite pago<input type="date" name="fecha_limite_pago_servicio" value="{{ servicio.fecha_limite_pago|date:'Y-m-d' }}"></label>
+                                    <label>Costo proveedor<input type="number" name="costo_proveedor_servicio" min="0" step="0.01" value="{{ servicio.costo_proveedor }}"></label>
+                                    <p class="muted">Anticipos, saldos y comprobantes se gestionan desde Finanzas.</p>
                                     <label class="wide">Lugar<input type="text" name="lugar_servicio" value="{{ servicio.lugar|default_if_none:'' }}"></label>
                                     <label class="wide">Descripcion<textarea name="descripcion_servicio" rows="2">{{ servicio.descripcion|default_if_none:'' }}</textarea></label>
                                     <label>Contrato<input type="file" name="contrato_servicio">{% if servicio.contrato %}<span class="checkline"><input type="checkbox" name="eliminar_contrato_servicio"> Quitar</span>{% endif %}</label>
                                     <label>Cotizacion<input type="file" name="cotizacion_servicio">{% if servicio.cotizacion %}<span class="checkline"><input type="checkbox" name="eliminar_cotizacion_servicio"> Quitar</span>{% endif %}</label>
-                                    <label>Comprobante<input type="file" name="comprobante_pago_servicio">{% if servicio.comprobante_pago %}<span class="checkline"><input type="checkbox" name="eliminar_comprobante_pago_servicio"> Quitar</span>{% endif %}</label>
                                     <label class="wide">Notas<textarea name="notas_servicio" rows="2">{{ servicio.notas|default_if_none:'' }}</textarea></label>
                                 </div>
                                 <button class="btn" type="submit">Guardar servicio</button>
@@ -123,86 +120,6 @@
         </section>
     </div>
 
-    <div class="operation-panel-grid" data-subpanel="paquetes">
-        <form class="mini-admin-form" method="post">
-            {% csrf_token %}
-            <input type="hidden" name="accion" value="agregar_paquete_evento">
-            <input type="hidden" name="evento_id" value="{{ evento.id }}">
-            <h3>Asignar paquete al evento</h3>
-            <div class="design-grid">
-                <label>Paquete
-                    <select name="paquete_id" required>
-                        <option value="">Seleccionar paquete</option>
-                        {% for paquete in paquetes_empresa %}
-                            <option value="{{ paquete.id }}">{{ paquete.nombre }} - ${{ paquete.precio_base|floatformat:0 }}</option>
-                        {% endfor %}
-                    </select>
-                </label>
-                <label>Estado
-                    <select name="estado_paquete">
-                        {% for valor, texto in estados_paquete_evento %}<option value="{{ valor }}">{{ texto }}</option>{% endfor %}
-                    </select>
-                </label>
-                <label>Precio acordado<input type="number" name="precio_acordado_paquete" min="0" step="0.01" value="0"></label>
-                <label>Descuento<input type="number" name="descuento_paquete" min="0" step="0.01" value="0"></label>
-                <label>Total manual<input type="number" name="total_paquete" min="0" step="0.01" placeholder="Opcional"></label>
-                <label class="wide">Servicios adicionales<textarea name="servicios_adicionales_paquete" rows="2"></textarea></label>
-                <label class="wide">Notas<textarea name="notas_paquete" rows="2"></textarea></label>
-            </div>
-            <div class="actions form-actions"><button class="btn" type="submit">Asignar paquete</button></div>
-        </form>
-
-        <section class="saved-items">
-            <h3>Paquetes del evento</h3>
-            <div class="saved-list">
-                {% for paquete_evento in paquetes_evento %}
-                    <article class="saved-item">
-                        <div>
-                            <strong>{{ paquete_evento.paquete.nombre }}</strong>
-                            <span>{{ paquete_evento.get_estado_display }} - total ${{ paquete_evento.total|floatformat:0 }}</span>
-                        </div>
-                        <p>{{ paquete_evento.paquete.numero_personas_incluidas }} pax incluidos - precio ${{ paquete_evento.precio_acordado|floatformat:0 }} - descuento ${{ paquete_evento.descuento|floatformat:0 }}</p>
-                        {% if paquete_evento.servicios_adicionales %}<p>{{ paquete_evento.servicios_adicionales }}</p>{% endif %}
-                        <details>
-                            <summary>Editar paquete asignado</summary>
-                            <form class="inline-edit-form" method="post">
-                                {% csrf_token %}
-                                <input type="hidden" name="accion" value="editar_paquete_evento">
-                                <input type="hidden" name="evento_id" value="{{ evento.id }}">
-                                <input type="hidden" name="paquete_evento_id" value="{{ paquete_evento.id }}">
-                                <div class="design-grid">
-                                    <label>Paquete
-                                        <select name="paquete_id">
-                                            {% for paquete in paquetes_empresa %}
-                                                <option value="{{ paquete.id }}" {% if paquete_evento.paquete_id == paquete.id %}selected{% endif %}>{{ paquete.nombre }}</option>
-                                            {% endfor %}
-                                        </select>
-                                    </label>
-                                    <label>Estado<select name="estado_paquete">{% for valor, texto in estados_paquete_evento %}<option value="{{ valor }}" {% if paquete_evento.estado == valor %}selected{% endif %}>{{ texto }}</option>{% endfor %}</select></label>
-                                    <label>Precio acordado<input type="number" name="precio_acordado_paquete" min="0" step="0.01" value="{{ paquete_evento.precio_acordado }}"></label>
-                                    <label>Descuento<input type="number" name="descuento_paquete" min="0" step="0.01" value="{{ paquete_evento.descuento }}"></label>
-                                    <label>Total manual<input type="number" name="total_paquete" min="0" step="0.01" value="{{ paquete_evento.total }}"></label>
-                                    <label class="wide">Servicios adicionales<textarea name="servicios_adicionales_paquete" rows="2">{{ paquete_evento.servicios_adicionales|default_if_none:'' }}</textarea></label>
-                                    <label class="wide">Notas<textarea name="notas_paquete" rows="2">{{ paquete_evento.notas|default_if_none:'' }}</textarea></label>
-                                </div>
-                                <button class="btn" type="submit">Guardar paquete</button>
-                            </form>
-                            <form method="post" data-confirm="Eliminar este paquete del evento?">
-                                {% csrf_token %}
-                                <input type="hidden" name="accion" value="eliminar_paquete_evento">
-                                <input type="hidden" name="evento_id" value="{{ evento.id }}">
-                                <input type="hidden" name="paquete_evento_id" value="{{ paquete_evento.id }}">
-                                <button class="btn danger" type="submit">Eliminar paquete</button>
-                            </form>
-                        </details>
-                    </article>
-                {% empty %}
-                    <p class="muted">Todavia no hay paquetes asignados.</p>
-                {% endfor %}
-            </div>
-        </section>
-    </div>
-
     <div class="operation-panel-grid" data-subpanel="contrato">
         <form class="mini-admin-form" method="post">
             {% csrf_token %}
@@ -215,7 +132,7 @@
                 <label>Arrendador<input type="text" name="arrendador" value="{{ detalle_produccion.arrendador|default_if_none:'' }}"></label>
                 <label>Lugar contrato<input type="text" name="lugar_contrato" value="{{ detalle_produccion.lugar_contrato|default_if_none:'' }}"></label>
                 <label>Adultos<input type="number" name="adultos_contratados" min="0" value="{{ detalle_produccion.adultos_contratados|default:0 }}"></label>
-                <label>Niños<input type="number" name="ninos_contratados" min="0" value="{{ detalle_produccion.ninos_contratados|default:0 }}"></label>
+                <label>NiÃ±os<input type="number" name="ninos_contratados" min="0" value="{{ detalle_produccion.ninos_contratados|default:0 }}"></label>
                 <label>Horas evento<input type="number" name="horas_evento" min="0" value="{{ detalle_produccion.horas_evento|default:0 }}"></label>
                 <label>Recepcion<input type="time" name="recepcion_hora" value="{{ detalle_produccion.recepcion_hora|time:'H:i' }}"></label>
                 <label>Inicio<input type="time" name="inicio_evento" value="{{ detalle_produccion.inicio_evento|time:'H:i' }}"></label>
@@ -245,9 +162,9 @@
                     <label>Color mantel<input type="text" name="color_mantel" value="{{ detalle_produccion.color_mantel|default_if_none:'' }}"></label>
                     <label>Color servilleta<input type="text" name="color_servilleta" value="{{ detalle_produccion.color_servilleta|default_if_none:'' }}"></label>
                     <label>Tipo de mesa<input type="text" name="tipo_mesa" value="{{ detalle_produccion.tipo_mesa|default_if_none:'' }}"></label>
-                    <label>Tamaño mesa<input type="text" name="tamano_mesa" value="{{ detalle_produccion.tamano_mesa|default_if_none:'' }}"></label>
-                    <label>Diseño carpa<input type="text" name="diseno_carpa" value="{{ detalle_produccion.diseno_carpa|default_if_none:'' }}"></label>
-                    <label>Tamaño carpa<input type="text" name="tamano_carpa" value="{{ detalle_produccion.tamano_carpa|default_if_none:'' }}"></label>
+                    <label>TamaÃ±o mesa<input type="text" name="tamano_mesa" value="{{ detalle_produccion.tamano_mesa|default_if_none:'' }}"></label>
+                    <label>DiseÃ±o carpa<input type="text" name="diseno_carpa" value="{{ detalle_produccion.diseno_carpa|default_if_none:'' }}"></label>
+                    <label>TamaÃ±o carpa<input type="text" name="tamano_carpa" value="{{ detalle_produccion.tamano_carpa|default_if_none:'' }}"></label>
                     <label>Color carpa<input type="text" name="color_carpa" value="{{ detalle_produccion.color_carpa|default_if_none:'' }}"></label>
                     <label class="wide">Mobiliario<textarea name="mobiliario" rows="2">{{ detalle_produccion.mobiliario|default_if_none:'' }}</textarea></label>
                     <label class="wide">Loza y cristaleria<textarea name="tipo_loza_cristaleria" rows="2">{{ detalle_produccion.tipo_loza_cristaleria|default_if_none:'' }}</textarea></label>
@@ -292,10 +209,10 @@
                 {% if detalle_produccion %}
                     <article class="saved-item">
                         <div><strong>{{ detalle_produccion.cliente_contrato|default:"Cliente por definir" }}</strong><span>{{ detalle_produccion.total_personas_contratadas }} personas</span></div>
-                        <p>{{ detalle_produccion.horas_evento }} hrs · inicio {{ detalle_produccion.inicio_evento|time:"H:i"|default:"--" }} · termino {{ detalle_produccion.fin_evento|time:"H:i"|default:"--" }}</p>
-                        <p>Renta ${{ detalle_produccion.precio_renta_salon|floatformat:0 }} · anticipo ${{ detalle_produccion.anticipo_recibido|floatformat:0 }} · saldo ${{ detalle_produccion.saldo_contrato|floatformat:0 }}</p>
+                        <p>{{ detalle_produccion.horas_evento }} hrs Â· inicio {{ detalle_produccion.inicio_evento|time:"H:i"|default:"--" }} Â· termino {{ detalle_produccion.fin_evento|time:"H:i"|default:"--" }}</p>
+                        <p>Renta ${{ detalle_produccion.precio_renta_salon|floatformat:0 }} Â· anticipo ${{ detalle_produccion.anticipo_recibido|floatformat:0 }} Â· saldo ${{ detalle_produccion.saldo_contrato|floatformat:0 }}</p>
                         {% if detalle_produccion.color_mantel or detalle_produccion.tipo_mesa or detalle_produccion.diseno_carpa %}
-                            <p>Mantel {{ detalle_produccion.color_mantel|default:"por definir" }} · mesa {{ detalle_produccion.tipo_mesa|default:"por definir" }} · carpa {{ detalle_produccion.diseno_carpa|default:"por definir" }}</p>
+                            <p>Mantel {{ detalle_produccion.color_mantel|default:"por definir" }} Â· mesa {{ detalle_produccion.tipo_mesa|default:"por definir" }} Â· carpa {{ detalle_produccion.diseno_carpa|default:"por definir" }}</p>
                         {% endif %}
                     </article>
                 {% else %}
@@ -384,8 +301,8 @@
             <div class="design-grid">
                 <label>Proveedor<select name="proveedor_id"><option value="">Sin proveedor</option>{% for proveedor in proveedores_empresa %}<option value="{{ proveedor.id }}">{{ proveedor.nombre_comercial }}</option>{% endfor %}</select></label>
                 <label>Paquete buffet<select name="paquete_buffet_id"><option value="">Sin paquete</option>{% for paquete in paquetes_buffet %}<option value="{{ paquete.id }}">{{ paquete.nombre }}</option>{% endfor %}</select></label>
-                <label>Menús adulto<input type="number" name="cantidad_adultos_catering" min="0" value="{{ total_adultos }}"></label>
-                <label>Menús infantiles<input type="number" name="cantidad_ninos_catering" min="0" value="{{ total_ninos }}"></label>
+                <label>MenÃºs adulto<input type="number" name="cantidad_adultos_catering" min="0" value="{{ total_adultos }}"></label>
+                <label>MenÃºs infantiles<input type="number" name="cantidad_ninos_catering" min="0" value="{{ total_ninos }}"></label>
                 <label>Proveedores<input type="number" name="cantidad_proveedores_catering" min="0" value="0"></label>
                 <label>Precio total<input type="number" name="precio_total_catering" min="0" step="0.01" value="0"></label>
                 <label>Degustacion<input type="date" name="fecha_degustacion_catering"></label>
@@ -417,7 +334,7 @@
                                     <label>Proveedor<select name="proveedor_id"><option value="">Sin proveedor</option>{% for proveedor in proveedores_empresa %}<option value="{{ proveedor.id }}" {% if catering.proveedor_id == proveedor.id %}selected{% endif %}>{{ proveedor.nombre_comercial }}</option>{% endfor %}</select></label>
                                     <label>Paquete buffet<select name="paquete_buffet_id"><option value="">Sin paquete</option>{% for paquete in paquetes_buffet %}<option value="{{ paquete.id }}" {% if catering.paquete_buffet_id == paquete.id %}selected{% endif %}>{{ paquete.nombre }}</option>{% endfor %}</select></label>
                                     <label>Adultos<input type="number" name="cantidad_adultos_catering" min="0" value="{{ catering.cantidad_adultos }}"></label>
-                                    <label>Niños<input type="number" name="cantidad_ninos_catering" min="0" value="{{ catering.cantidad_ninos }}"></label>
+                                    <label>NiÃ±os<input type="number" name="cantidad_ninos_catering" min="0" value="{{ catering.cantidad_ninos }}"></label>
                                     <label>Proveedores<input type="number" name="cantidad_proveedores_catering" min="0" value="{{ catering.cantidad_proveedores }}"></label>
                                     <label>Precio total<input type="number" name="precio_total_catering" min="0" step="0.01" value="{{ catering.precio_total }}"></label>
                                     <label>Degustacion<input type="date" name="fecha_degustacion_catering" value="{{ catering.fecha_degustacion|date:'Y-m-d' }}"></label>
@@ -687,16 +604,16 @@
                         <p>
                             {{ tarea.get_categoria_display }}
                             {% if tarea.fecha_inicio %}
-                                · {{ tarea.fecha_inicio|date:"d/m/Y" }}{% if tarea.hora_inicio %} {{ tarea.hora_inicio|time:"H:i" }}{% endif %}
+                                Â· {{ tarea.fecha_inicio|date:"d/m/Y" }}{% if tarea.hora_inicio %} {{ tarea.hora_inicio|time:"H:i" }}{% endif %}
                             {% elif tarea.fecha_limite %}
-                                · {{ tarea.fecha_limite|date:"d/m/Y" }}{% if tarea.hora_inicio %} {{ tarea.hora_inicio|time:"H:i" }}{% endif %}
+                                Â· {{ tarea.fecha_limite|date:"d/m/Y" }}{% if tarea.hora_inicio %} {{ tarea.hora_inicio|time:"H:i" }}{% endif %}
                             {% endif %}
                             {% if tarea.hora_fin %}
                                 - {% if tarea.fecha_limite and tarea.fecha_limite != tarea.fecha_inicio %}{{ tarea.fecha_limite|date:"d/m/Y" }} {% endif %}{{ tarea.hora_fin|time:"H:i" }}
                             {% elif tarea.fecha_limite and tarea.fecha_inicio %}
-                                · limite {{ tarea.fecha_limite|date:"d/m/Y" }}
+                                Â· limite {{ tarea.fecha_limite|date:"d/m/Y" }}
                             {% endif %}
-                            {% if tarea.responsable %} · {{ tarea.responsable.get_full_name|default:tarea.responsable.username }}{% endif %}
+                            {% if tarea.responsable %} Â· {{ tarea.responsable.get_full_name|default:tarea.responsable.username }}{% endif %}
                         </p>
                         <details>
                             <summary>Editar tarea</summary>
