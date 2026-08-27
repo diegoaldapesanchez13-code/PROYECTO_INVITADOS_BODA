@@ -39,7 +39,58 @@
 
   function setLoading(active) {
     document.documentElement.classList.toggle("workspace-is-loading", active);
-    getShell()?.setAttribute("aria-busy", active ? "true" : "false");
+    const shell = getShell();
+    if (shell) {
+      shell.setAttribute("aria-busy", active ? "true" : "false");
+      if (active) shell.setAttribute("data-workspace-loading", "true");
+      else shell.removeAttribute("data-workspace-loading");
+    }
+    announce(active ? "Cargando modulo del evento." : "Modulo del evento listo.");
+  }
+
+  function announce(message) {
+    const region = document.querySelector("[data-workspace-live]");
+    if (!region) return;
+    region.textContent = "";
+    window.setTimeout(() => {
+      region.textContent = message;
+    }, 20);
+  }
+
+  function focusWorkspace() {
+    const target = document.querySelector("[data-workspace-focus]") || document.querySelector("[data-workspace-content]");
+    if (!target) return;
+    if (!target.hasAttribute("tabindex")) target.setAttribute("tabindex", "-1");
+    try {
+      target.focus({ preventScroll: true });
+    } catch (_) {
+      target.focus();
+    }
+  }
+
+  function ensureActiveTabVisible() {
+    const tabs = document.querySelector("[data-workspace-tabs]");
+    const active = tabs?.querySelector("[aria-current='page'], .is-active");
+    if (!tabs || !active) return;
+    const tabsRect = tabs.getBoundingClientRect();
+    const activeRect = active.getBoundingClientRect();
+    if (activeRect.left >= tabsRect.left && activeRect.right <= tabsRect.right) return;
+    active.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+  }
+
+  function setFormSubmitting(form, active) {
+    if (!form) return;
+    if (active) form.setAttribute("data-workspace-submitting", "true");
+    else form.removeAttribute("data-workspace-submitting");
+    form.querySelectorAll('button[type="submit"], input[type="submit"]').forEach((button) => {
+      if (active) {
+        button.setAttribute("data-workspace-submitting", "true");
+        button.setAttribute("aria-disabled", "true");
+      } else {
+        button.removeAttribute("data-workspace-submitting");
+        button.removeAttribute("aria-disabled");
+      }
+    });
   }
 
   function shouldHandleLink(link, event) {
@@ -59,6 +110,7 @@
     if (!form || !getShell() || !form.closest(SHELL)) return false;
     if (form.hasAttribute("data-workspace-native")) return false;
     if (form.target && form.target !== "_self") return false;
+    if ((form.getAttribute("method") || "").toLowerCase() === "dialog") return false;
 
     const action = new URL(form.getAttribute("action") || window.location.href, window.location.href);
     return sameOrigin(action);
@@ -144,6 +196,7 @@
     replace = false,
     popstate = false,
     moduleNavigation = false,
+    sourceForm = null,
   } = {}) {
     if (!getShell()) {
       window.location.assign(url);
@@ -214,6 +267,8 @@
         moduleNavigation,
         popstate,
       });
+      ensureActiveTabVisible();
+      focusWorkspace();
 
       document.dispatchEvent(new CustomEvent("dirtec:workspace:loaded", {
         detail: { url: finalUrl, moduleNavigation },
@@ -223,6 +278,7 @@
       console.error("DIRTEC Workspace navigation failed:", error);
       window.location.assign(url);
     } finally {
+      setFormSubmitting(sourceForm, false);
       setLoading(false);
     }
   }
@@ -242,10 +298,20 @@
     if (!shouldHandleForm(form)) return;
 
     event.preventDefault();
+    if (form.hasAttribute("data-workspace-submitting")) return;
+    setFormSubmitting(form, true);
 
     const method = (form.method || "GET").toUpperCase();
     const action = new URL(form.getAttribute("action") || location.href, location.href);
     const data = new FormData(form);
+
+    // FormData(form) does not include the submit button that triggered the
+    // SubmitEvent. Preserve its name/value so multi-action forms (guardar,
+    // aceptar, eliminar, etc.) reach the correct Django branch.
+    const submitter = event.submitter;
+    if (submitter && submitter.name && !submitter.disabled) {
+      data.set(submitter.name, submitter.value || "");
+    }
 
     if (method === "GET") {
       const params = new URLSearchParams();
@@ -253,11 +319,18 @@
         if (typeof value === "string") params.append(key, value);
       }
       action.search = params.toString();
-      navigate(action.href);
+      navigate(action.href, { sourceForm: form });
       return;
     }
 
-    navigate(action.href, { method, body: data });
+    navigate(action.href, { method, body: data, sourceForm: form });
+  });
+
+  document.addEventListener("change", (event) => {
+    const control = event.target.closest("[data-workspace-autosubmit]");
+    if (!control || !control.form || !shouldHandleForm(control.form)) return;
+    if (control.form.requestSubmit) control.form.requestSubmit();
+    else control.form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
   });
 
   window.addEventListener("popstate", () => {
@@ -269,6 +342,8 @@
   if ("scrollRestoration" in history) {
     history.scrollRestoration = "manual";
   }
+
+  ensureActiveTabVisible();
 
   history.replaceState(
     { ...(history.state || {}), dirtecWorkspace: true },

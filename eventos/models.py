@@ -141,3 +141,86 @@ class ContratoEvento(models.Model):
 
     def __str__(self):
         return f'{self.evento} - contrato v{self.version}'
+
+
+class ExpedienteHistoricoEvento(models.Model):
+    """
+    D6.1 receipt for an externally downloaded structured event archive.
+
+    The ZIP itself is intentionally NOT stored in DIRTEC. Only its digest,
+    manifest and generation metadata remain for audit purposes.
+    """
+    FORMATOS = [
+        ("K9_D6_STRUCTURED_V1", "K9 D6 structured v1"),
+        ("K9_D6_FULL_V2", "K9 D6 full v2"),
+        ("K9_D6_PURGE_READY_V3", "K9 D6 purge-ready v3"),
+    ]
+
+    empresa = models.ForeignKey(
+        "organizaciones.EmpresaSuscriptora",
+        on_delete=models.PROTECT,
+        related_name="expedientes_historicos_evento",
+    )
+    evento = models.ForeignKey(
+        "invitaciones.EventoBoda",
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name="expedientes_historicos_generados",
+    )
+    evento_id_snapshot = models.PositiveBigIntegerField()
+    evento_nombre_snapshot = models.CharField(max_length=200)
+    formato = models.CharField(max_length=40, choices=FORMATOS, default="K9_D6_STRUCTURED_V1")
+    sha256 = models.CharField(max_length=64)
+    tamano_bytes = models.PositiveBigIntegerField(default=0)
+    manifest = models.JSONField(default=dict, blank=True)
+    incluye_binarios = models.BooleanField(default=False)
+    completo_para_purga_historica = models.BooleanField(default=False)
+    integridad_verificada = models.BooleanField(default=False)
+    binarios_encontrados = models.PositiveIntegerField(default=0)
+    binarios_faltantes = models.PositiveIntegerField(default=0)
+    respaldo_externo_confirmado_en = models.DateTimeField(blank=True, null=True)
+    respaldo_externo_confirmado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name="expedientes_historicos_evento_confirmados",
+    )
+    retencion_hasta = models.DateTimeField(blank=True, null=True)
+    purga_historica_autorizada_en = models.DateTimeField(blank=True, null=True)
+    purga_historica_autorizada_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name="expedientes_historicos_evento_autorizados",
+    )
+    motivo_autorizacion_purga = models.TextField(blank=True, null=True)
+    purga_ejecutada_en = models.DateTimeField(blank=True, null=True)
+    purga_ejecutada_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name="expedientes_historicos_evento_purgados",
+    )
+    resultado_purga = models.JSONField(default=dict, blank=True)
+    generado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name="expedientes_historicos_evento_generados",
+    )
+    generado_en = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-generado_en", "-id"]
+        indexes = [
+            models.Index(fields=["empresa", "generado_en"], name="evt_exp_emp_gen_idx"),
+            models.Index(fields=["evento_id_snapshot"], name="evt_exp_evt_snap_idx"),
+        ]
+
+    def __str__(self):
+        return f"{self.evento_nombre_snapshot} · {self.generado_en:%Y-%m-%d %H:%M}"

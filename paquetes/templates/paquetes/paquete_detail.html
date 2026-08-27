@@ -1,11 +1,11 @@
 {% extends "paquetes/base.html" %}
-{% block title %}{{ paquete.nombre }} | DIRTEC{% endblock %}
+{% block package_title %}{{ paquete.nombre }} | DIRTEC{% endblock %}
 {% block heading %}{{ paquete.nombre }}{% endblock %}
-{% block content %}
-<section class="pkg-detail">
+{% block package_content %}
+<section class="pkg-detail pkg-detail-page">
     <div class="pkg-main">
         <div>
-            <span>{% if paquete.activo %}Activo{% else %}Inactivo{% endif %}</span>
+            <span class="pkg-status {% if paquete.activo %}is-active{% else %}is-inactive{% endif %}">{% if paquete.activo %}Activo{% else %}Inactivo{% endif %}</span>
             <h2>{{ paquete.nombre }}</h2>
             <p>{{ paquete.descripcion|default:"Sin descripcion comercial." }}</p>
         </div>
@@ -36,17 +36,30 @@
                     <strong>{{ item.servicio_catalogo.nombre }}</strong>
                     <span>{{ item.cantidad }} / orden {{ item.orden }}</span>
                     {% if item.notas %}<p>{{ item.notas }}</p>{% endif %}
+                    {% if puede_gestionar and composicion_editable %}
+                    <form method="post" action="{% url 'paquetes_servicio_delete' empresa.slug paquete.id item.id %}">
+                        {% csrf_token %}
+                        <button class="text-btn" type="submit">Eliminar</button>
+                    </form>
+                    {% endif %}
                 </article>
             {% empty %}
                 <p class="empty">Sin servicios K9 incluidos.</p>
             {% endfor %}
         </div>
-        {% if puede_gestionar %}
+        {% if puede_gestionar and composicion_editable %}
             <form class="pkg-form compact-form" method="post" action="{% url 'paquetes_servicio_create' empresa.slug paquete.id %}">
                 {% csrf_token %}
                 {{ servicio_form.as_p }}
                 <button class="btn" type="submit">Agregar servicio</button>
             </form>
+        {% elif puede_gestionar %}
+            <div class="pkg-lock-note">
+                <strong>Composicion protegida</strong>
+                <span>Este paquete ya fue utilizado en una propuesta. Sus servicios incluidos conservan el historial comercial.</span>
+            </div>
+        {% endif %}
+        {% if puede_gestionar %}
             <form class="pkg-form compact-form" method="post" enctype="multipart/form-data" action="{% url 'paquetes_media_create' empresa.slug paquete.id %}">
                 {% csrf_token %}
                 {{ media_form.as_p }}

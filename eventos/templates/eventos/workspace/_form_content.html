@@ -1,5 +1,5 @@
-<section class="event-form-shell">
-    <header class="event-page-heading event-page-heading--form">
+<section class="event-form-shell workspace-form-shell">
+    <header class="{% if modo == 'editar' %}workspace-page-header{% else %}event-page-heading event-page-heading--form{% endif %}">
         <div>
             {% if modo == "crear" %}
                 <a class="event-context__back" href="{{ cancel_url }}">← Eventos</a>
@@ -7,25 +7,25 @@
                 <h1>Empieza con lo esencial.</h1>
                 <p>No necesitas definir todo ahora. Cliente, planner, sede y fecha pueden completarse después.</p>
             {% else %}
-                <span class="event-eyebrow">Datos del evento</span>
+                <span class="workspace-eyebrow">Datos del evento</span>
                 <h2>Información general</h2>
-                <p>Actualiza solo lo que ya conozcas. Guardar te mantiene dentro de esta misma sección.</p>
+                <p>Actualiza sólo lo que ya conozcas. Guardar te mantiene dentro de esta sección.</p>
             {% endif %}
         </div>
     </header>
 
     {% if form.non_field_errors %}
-    <div class="event-form-error" role="alert">
+    <div class="{% if modo == 'editar' %}workspace-alert workspace-alert--danger{% else %}event-form-error{% endif %}" role="alert">
         {{ form.non_field_errors }}
     </div>
     {% endif %}
 
-    <form method="post" class="event-form-card">
+    <form method="post" class="{% if modo == 'editar' %}workspace-panel workspace-form{% else %}event-form-card{% endif %}">
         {% csrf_token %}
         <input type="hidden" name="return_to" value="{{ return_to }}">
 
-        <div class="event-form-grid">
-            <div class="app-field event-form-grid__wide">
+        <div class="{% if modo == 'editar' %}workspace-form-grid{% else %}event-form-grid{% endif %}">
+            <div class="app-field {% if modo == 'editar' %}workspace-form-grid__wide{% else %}event-form-grid__wide{% endif %}">
                 <label for="{{ form.nombre_evento.id_for_label }}">{{ form.nombre_evento.label }} *</label>
                 {{ form.nombre_evento }}
                 {% if form.nombre_evento.errors %}<div class="app-field__error">{{ form.nombre_evento.errors|striptags }}</div>{% endif %}
@@ -70,12 +70,12 @@
             </div>
         </div>
 
-        <div class="event-form-note">
+        <div class="{% if modo == 'editar' %}workspace-form-note{% else %}event-form-note{% endif %}">
             <strong>Práctico desde el inicio</strong>
             <span>Los campos vacíos se guardan como “Por definir”; no insertamos datos ficticios para poder continuar.</span>
         </div>
 
-        <div class="app-form-actions event-form-actions">
+        <div class="{% if modo == 'editar' %}workspace-form-actions{% else %}app-form-actions event-form-actions{% endif %}">
             <a class="app-button app-button--secondary" href="{{ cancel_url }}">Cancelar</a>
             <button class="app-button app-button--primary" type="submit">
                 {% if modo == "crear" %}Crear evento{% else %}Guardar cambios{% endif %}

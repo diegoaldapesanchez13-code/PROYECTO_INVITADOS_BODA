@@ -10,7 +10,7 @@
 
 {% block workspace_content %}
 <section class="documents-workspace" data-documents-workspace>
-    <header class="documents-heading">
+    <header class="documents-heading workspace-page-header">
         <div>
             <span class="workspace-eyebrow">Operación</span>
             <h2>Documentos</h2>
@@ -50,7 +50,7 @@
         </article>
     </section>
 
-    <form method="get" class="documents-toolbar">
+    <form method="get" class="documents-toolbar workspace-toolbar">
         <input type="hidden" name="return_to" value="{{ return_to }}">
 
         <input
@@ -60,7 +60,7 @@
             placeholder="Buscar título, proveedor, descripción..."
         >
 
-        <select class="app-select" name="tipo" onchange="this.form.requestSubmit()">
+        <select class="app-select" name="tipo" data-workspace-autosubmit>
             <option value="">Todos los tipos</option>
             {% for key, label in tipos_documento %}
             <option value="{{ key }}" {% if tipo_filtro == key %}selected{% endif %}>
@@ -69,7 +69,7 @@
             {% endfor %}
         </select>
 
-        <select class="app-select" name="estado" onchange="this.form.requestSubmit()">
+        <select class="app-select" name="estado" data-workspace-autosubmit>
             <option value="ACTIVOS" {% if estado_filtro == "ACTIVOS" %}selected{% endif %}>
                 Activos
             </option>

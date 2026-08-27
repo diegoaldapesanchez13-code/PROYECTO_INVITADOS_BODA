@@ -3,40 +3,39 @@
 {% block title %}{{ evento.titulo_evento }} | DIRTEC Event Studio{% endblock %}
 
 {% block workspace_content %}
-<section class="workspace-summary">
-    <div class="workspace-summary__hero">
+<section class="workspace-summary workspace-module-stack">
+    <header class="workspace-page-header workspace-page-header--summary">
         <div>
-            <span class="workspace-eyebrow">Estado del evento</span>
-            <h2>{{ workspace_progress }}% de datos base listos</h2>
-            <p>
-                Este resumen concentra lo que necesita tu atención sin obligarte
-                a recorrer cada módulo.
-            </p>
+            <span class="workspace-eyebrow">Resumen operativo</span>
+            <h2>Estado del evento</h2>
+            <p>Lo importante del evento en una sola vista, con acceso directo a cada módulo.</p>
         </div>
-        <div class="workspace-progress" aria-label="{{ workspace_progress }} por ciento completado">
-            <div class="workspace-progress__ring" style="--progress: {{ workspace_progress }}%">
-                <strong>{{ workspace_progress }}%</strong>
+        <div class="workspace-progress-compact" aria-label="{{ workspace_progress }} por ciento de datos base completados">
+            <span>Datos base</span>
+            <strong>{{ workspace_progress }}%</strong>
+            <div class="workspace-progress-track" aria-hidden="true">
+                <span style="width: {{ workspace_progress }}%"></span>
             </div>
         </div>
-    </div>
+    </header>
 
-    <section class="workspace-kpis" aria-label="Resumen operativo">
-        <article class="workspace-kpi">
+    <section class="workspace-metric-grid" aria-label="Resumen operativo">
+        <article class="workspace-metric-card">
             <span>Tareas pendientes</span>
             <strong>{{ workspace_kpis.tareas_pendientes }}</strong>
             <small>{% if workspace_kpis.tareas_vencidas %}{{ workspace_kpis.tareas_vencidas }} vencida(s){% else %}Sin vencidas{% endif %}</small>
         </article>
-        <article class="workspace-kpi">
+        <article class="workspace-metric-card">
             <span>Servicios activos</span>
             <strong>{{ workspace_kpis.servicios_activos }}</strong>
             <small>Operación registrada</small>
         </article>
-        <article class="workspace-kpi">
+        <article class="workspace-metric-card">
             <span>Agenda próxima</span>
             <strong>{{ workspace_kpis.agenda_proxima }}</strong>
             <small>Actividades futuras</small>
         </article>
-        <article class="workspace-kpi">
+        <article class="workspace-metric-card">
             <span>Documentos</span>
             <strong>{{ workspace_kpis.documentos }}</strong>
             <small>Archivos del evento</small>
@@ -51,7 +50,7 @@
                     <h3>Información general</h3>
                 </div>
                 {% if puede_editar %}
-                <a href="{% url 'k9_evento_datos' empresa_slug=empresa.slug evento_id=evento.id %}?return_to={{ return_to|urlencode }}">Editar →</a>
+                <a class="workspace-text-action" href="{% url 'k9_evento_datos' empresa_slug=empresa.slug evento_id=evento.id %}?return_to={{ return_to|urlencode }}">Editar datos</a>
                 {% endif %}
             </header>
 
@@ -86,7 +85,7 @@
                 {% endfor %}
             </div>
             {% else %}
-            <div class="workspace-empty">
+            <div class="workspace-empty-state workspace-empty-state--compact">
                 <strong>Todo se ve en orden.</strong>
                 <p>No hay alertas básicas en este momento.</p>
             </div>
@@ -101,7 +100,7 @@
                     <span class="workspace-eyebrow">Tareas</span>
                     <h3>Prioridades</h3>
                 </div>
-                <span class="workspace-panel__coming">R4D</span>
+                <a class="workspace-text-action" href="{% url 'k9_evento_tareas' empresa_slug=empresa.slug evento_id=evento.id %}?return_to={{ return_to|urlencode }}">Ver tareas</a>
             </header>
 
             {% if workspace_tareas %}
@@ -118,7 +117,7 @@
                 {% endfor %}
             </div>
             {% else %}
-            <div class="workspace-empty">
+            <div class="workspace-empty-state workspace-empty-state--compact">
                 <strong>Sin tareas pendientes.</strong>
                 <p>Las nuevas tareas aparecerán aquí.</p>
             </div>
@@ -131,7 +130,7 @@
                     <span class="workspace-eyebrow">Agenda</span>
                     <h3>Próximas actividades</h3>
                 </div>
-                <span class="workspace-panel__coming">R4E</span>
+                <a class="workspace-text-action" href="{% url 'k9_evento_agenda' empresa_slug=empresa.slug evento_id=evento.id %}?return_to={{ return_to|urlencode }}">Ver agenda</a>
             </header>
 
             {% if workspace_agenda %}
@@ -150,7 +149,7 @@
                 {% endfor %}
             </div>
             {% else %}
-            <div class="workspace-empty">
+            <div class="workspace-empty-state workspace-empty-state--compact">
                 <strong>Agenda libre.</strong>
                 <p>No hay actividades futuras registradas.</p>
             </div>
@@ -165,7 +164,7 @@
                 <span class="workspace-eyebrow">Servicios</span>
                 <h3>Requieren proveedor</h3>
             </div>
-            <span class="workspace-panel__coming">R4C</span>
+            <a class="workspace-text-action" href="{% url 'k9_evento_servicios' empresa_slug=empresa.slug evento_id=evento.id %}?return_to={{ return_to|urlencode }}">Ver servicios</a>
         </header>
         <div class="workspace-provider-grid">
             {% for servicio in workspace_servicios_sin_proveedor %}

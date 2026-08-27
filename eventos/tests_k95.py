@@ -15,6 +15,7 @@ from proveedores.models import Proveedor, ServicioEvento
 
 from .models import ContratoEvento
 from .services import generar_contrato_v2_desde_propuesta, leer_contrato_publico
+from .workspace_commercial import aceptar_propuesta
 
 
 def crear_evento(empresa, *, planner=None, cliente=None, nombre="Evento K95"):
@@ -95,6 +96,7 @@ class ContratoV2K95Tests(TestCase):
         self.propuesta = self.crear_propuesta()
 
     def crear_propuesta(self, *, estado="ACEPTADO"):
+        estado_inicial = "BORRADOR" if estado == "ACEPTADO" else estado
         propuesta = PropuestaEvento.objects.create(
             empresa=self.empresa_a,
             evento=self.evento,
@@ -103,7 +105,7 @@ class ContratoV2K95Tests(TestCase):
             adultos=250,
             ninos=40,
             descuento=Decimal("5000.00"),
-            estado=estado,
+            estado=estado_inicial,
             notas_comerciales="Condiciones comerciales visibles.",
         )
         PropuestaLinea.objects.create(
@@ -123,6 +125,8 @@ class ContratoV2K95Tests(TestCase):
             tarifa=Decimal("8000.00"),
             valor_informativo=Decimal("8000.00"),
         )
+        if estado == "ACEPTADO":
+            propuesta = aceptar_propuesta(propuesta, user=self.admin_a)
         return propuesta
 
     def generar(self, propuesta=None):

@@ -182,6 +182,38 @@ class RsvpControlsR4FBTests(TestCase):
         self.assertNotContains(response, "dirtec-rsvp-dialog")
         self.assertNotContains(response, "rsvp_control.js")
 
+    def test_public_invitation_reminder_renders_acknowledgement_dialog(self):
+        document = {
+            "schemaVersion": 3,
+            "page": {"name": "RSVP reminder public test"},
+            "sections": [],
+            "nodes": [],
+        }
+        DisenoInvitacion.objects.create(
+            evento=self.evento,
+            documento_builder_borrador=document,
+            documento_builder_publicado=document,
+            estado="PUBLICADO",
+        )
+        RsvpConfiguracionEvento.objects.create(
+            evento=self.evento,
+            estado="ABIERTO",
+            recordatorio_desde=timezone.now() - timezone.timedelta(days=1),
+            fecha_limite=timezone.now() + timezone.timedelta(days=2),
+            mostrar_recordatorio=True,
+            mensaje_recordatorio="Confirma antes de la fecha indicada.",
+        )
+
+        response = self.client.get(
+            reverse("ver_invitacion", args=[self.grupo.codigo])
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'data-rsvp-phase="REMINDER"')
+        self.assertContains(response, "data-rsvp-reminder-dialog")
+        self.assertContains(response, "Entendido")
+        self.assertContains(response, "dirtec-rsvp-reminder:")
+
     def test_admin_can_save_global_controls_from_workspace(self):
         self.client.force_login(self.admin)
         response = self.client.post(

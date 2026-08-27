@@ -7,10 +7,19 @@ from django.utils import timezone
 
 from catalogo.models import ServicioCatalogo
 from paquetes.models import PropuestaEvento
-from paquetes.services import actualizar_totales_propuesta
+from paquetes.services import (
+    PROPUESTA_SNAPSHOT_ACEPTACION_VERSION,
+    propuesta_tiene_snapshot_aceptacion,
+)
 from proveedores.models import ServicioEvento
+from proveedores.service_lifecycle import (
+    aplicar_estado_comercial,
+    aplicar_estado_operativo,
+    sincronizar_estado_legacy,
+)
 
 from .models import ContratoEvento, ParticipanteEvento
+from .selectors import CONTRATO_ESTADOS_VIGENTES
 
 
 @transaction.atomic
@@ -143,6 +152,7 @@ def _snapshot_paquete(paquete):
 def _limpiar_linea_incluida(linea):
     return {
         'clave_origen': linea.get('clave_origen') or '',
+        'operational_lineage_key': linea.get('operational_lineage_key') or '',
         'origen': linea.get('origen') or '',
         'servicio_catalogo_id': linea.get('servicio_catalogo_id'),
         'servicio_paquete_id': linea.get('servicio_paquete_id'),
@@ -158,6 +168,7 @@ def _limpiar_linea_incluida(linea):
 
 def _limpiar_linea_adicional(linea):
     return {
+        'operational_lineage_key': linea.get('operational_lineage_key') or '',
         'origen': linea.get('origen') or '',
         'servicio_catalogo_id': linea.get('servicio_catalogo_id'),
         'nombre': linea.get('nombre') or '',
@@ -172,6 +183,7 @@ def _limpiar_linea_adicional(linea):
 
 def _limpiar_linea_cortesia(linea):
     return {
+        'operational_lineage_key': linea.get('operational_lineage_key') or '',
         'origen': linea.get('origen') or '',
         'servicio_catalogo_id': linea.get('servicio_catalogo_id'),
         'nombre': linea.get('nombre') or '',
@@ -225,6 +237,43 @@ def construir_snapshot_v2_desde_propuesta(propuesta, dto, *, user=None):
     }
 
 
+def construir_snapshot_v2_desde_aceptacion(propuesta, *, user=None):
+    if not propuesta_tiene_snapshot_aceptacion(propuesta):
+        raise ValidationError(
+            'La propuesta aceptada no tiene snapshot de aceptacion D1. Reabre y acepta nuevamente.'
+        )
+
+    aceptacion = propuesta.snapshot_aceptacion
+    fecha = timezone.now()
+    metadata = dict(aceptacion.get('metadata') or {})
+    metadata.update(
+        {
+            'snapshot_aceptacion_version': PROPUESTA_SNAPSHOT_ACEPTACION_VERSION,
+            'fecha_aceptacion': aceptacion.get('fecha_aceptacion'),
+            'aceptado_por': aceptacion.get('aceptado_por'),
+            'contrato_creado_por': user.id if user else None,
+            'fecha': fecha.isoformat(),
+        }
+    )
+
+    return {
+        'version': CONTRATO_SNAPSHOT_VERSION_K9,
+        'fecha_generacion': fecha.isoformat(),
+        'evento': aceptacion.get('evento') or {},
+        'empresa': aceptacion.get('empresa') or {},
+        'paquete': aceptacion.get('paquete') or {},
+        'sede': aceptacion.get('sede') or {},
+        'cantidades': aceptacion.get('cantidades') or {},
+        'incluidos': aceptacion.get('incluidos') or [],
+        'adicionales': aceptacion.get('adicionales') or [],
+        'cortesias': aceptacion.get('cortesias') or [],
+        'descuentos': aceptacion.get('descuentos') or {},
+        'totales': aceptacion.get('totales') or {},
+        'notas_comerciales': aceptacion.get('notas_comerciales') or '',
+        'metadata': metadata,
+    }
+
+
 def _siguiente_version_contrato(evento):
     version = ContratoEvento.objects.filter(evento=evento).aggregate(max_version=Max('version'))['max_version']
     return (version or 0) + 1
@@ -248,11 +297,14 @@ def generar_contrato_v2_desde_propuesta(propuesta_id, *, user=None):
 
     if propuesta.estado != 'ACEPTADO':
         raise ValidationError('Solo una propuesta aceptada puede convertirse en contrato.')
+    if not propuesta_tiene_snapshot_aceptacion(propuesta):
+        raise ValidationError(
+            'La propuesta aceptada no tiene snapshot de aceptacion D1. Reabre y acepta nuevamente.'
+        )
 
     propuesta.full_clean()
-    dto = actualizar_totales_propuesta(propuesta, user=user)
-    propuesta.refresh_from_db()
-    snapshot = construir_snapshot_v2_desde_propuesta(propuesta, dto, user=user)
+    snapshot = construir_snapshot_v2_desde_aceptacion(propuesta, user=user)
+    total_contratado = _money((snapshot.get('totales') or {}).get('total_final'))
 
     try:
         with transaction.atomic():
@@ -261,7 +313,7 @@ def generar_contrato_v2_desde_propuesta(propuesta_id, *, user=None):
                 numero_contrato=f'K9-{propuesta.evento_id}-{propuesta.id}',
                 version=_siguiente_version_contrato(propuesta.evento),
                 estado='CONTRATADO',
-                monto_base=dto['total'],
+                monto_base=total_contratado,
                 moneda='MXN',
                 fecha_emision=timezone.localdate(),
                 snapshot_comercial=snapshot,
@@ -273,6 +325,18 @@ def generar_contrato_v2_desde_propuesta(propuesta_id, *, user=None):
     except IntegrityError:
         contrato = ContratoEvento.objects.select_for_update().get(propuesta_origen=propuesta)
 
+    # D2: the freshly generated K9 contract becomes the single current
+    # contract. Older active contracts are history, never deleted.
+    (
+        ContratoEvento.objects.select_for_update()
+        .filter(
+            evento=propuesta.evento,
+            estado__in=CONTRATO_ESTADOS_VIGENTES,
+        )
+        .exclude(pk=contrato.pk)
+        .update(estado='REEMPLAZADO')
+    )
+
     propuesta.estado = 'CONTRATADO'
     if user is not None:
         propuesta.updated_by = user
@@ -281,6 +345,9 @@ def generar_contrato_v2_desde_propuesta(propuesta_id, *, user=None):
 
 
 def _linea_key(tipo, item, posicion):
+    lineage = (item.get('operational_lineage_key') or '').strip()
+    if lineage:
+        return lineage
     base = (
         item.get('linea_key')
         or item.get('clave_origen')
@@ -391,6 +458,144 @@ def _defaults_servicio_materializado(contrato, tipo, linea_key, item):
     }
 
 
+
+def _lineage_history(servicio):
+    snapshot = dict(servicio.snapshot_linea or {})
+    history = list(snapshot.get('historial_contractual') or [])
+    if servicio.contrato_origen_id:
+        current = {
+            'contrato_id': servicio.contrato_origen_id,
+            'linea_key': servicio.linea_origen_key,
+            'snapshot': {
+                key: value
+                for key, value in snapshot.items()
+                if key != 'historial_contractual'
+            },
+        }
+        if not history or history[-1].get('contrato_id') != current['contrato_id']:
+            history.append(current)
+    return history
+
+
+def _candidate_previous_service(contrato, tipo, linea_key, item):
+    qs = (
+        ServicioEvento.objects.select_for_update()
+        .filter(evento=contrato.evento)
+        .exclude(contrato_origen=contrato)
+        .exclude(estado_comercial='CANCELADO')
+    )
+
+    exact = qs.filter(linea_origen_key=linea_key).order_by('-contrato_origen__version', '-id').first()
+    if exact:
+        return exact
+
+    # Compatibility for pre-D3 snapshots that did not persist the lineage key.
+    catalogo_id = item.get('servicio_catalogo_id')
+    semantic = qs.filter(modalidad=tipo)
+    if catalogo_id:
+        semantic = semantic.filter(servicio_catalogo_k9_id=catalogo_id)
+    else:
+        semantic = semantic.filter(nombre_servicio__iexact=(item.get('nombre') or '').strip())
+
+    candidates = list(semantic.order_by('-contrato_origen__version', '-id')[:2])
+    if len(candidates) == 1:
+        return candidates[0]
+    if len(candidates) > 1:
+        raise ValidationError(
+            f'No se puede reconciliar automaticamente la linea "{item.get("nombre") or linea_key}": '
+            'hay mas de un servicio operativo compatible.'
+        )
+    return None
+
+
+def _related_exists(servicio, related_name):
+    relation = getattr(servicio, related_name, None)
+    if relation is None:
+        return False
+    try:
+        return relation.exists()
+    except Exception:
+        return False
+
+
+def _servicio_tiene_huella_operativa(servicio):
+    if servicio.estado_operativo == 'CANCELADO':
+        return False
+    if servicio.proveedor_id:
+        return True
+    if servicio.costo_proveedor and servicio.costo_proveedor != Decimal('0.00'):
+        return True
+    if servicio.estado_operativo not in {'PENDIENTE', 'EN_DEFINICION'}:
+        return True
+    if servicio.estado_proveedor != 'PENDIENTE':
+        return True
+
+    related_names = (
+        'expediente_colaboracion',
+        'temas_workspace',
+        'conversaciones_workspace',
+        'referencias_workspace',
+        'decisiones_workspace',
+        'cotizaciones_workspace',
+        'propuestas_workspace',
+        'ajustes_contractuales',
+        'aprobaciones_workspace',
+        'documentos_operativos',
+        'tareas_operativas',
+        'actividades_agenda',
+        'gastos_operativos',
+        'pagos_cliente_evento',
+    )
+    for related_name in related_names:
+        relation = getattr(servicio, related_name, None)
+        if relation is None:
+            continue
+        try:
+            if hasattr(relation, 'exists') and relation.exists():
+                return True
+            if getattr(relation, 'pk', None):
+                return True
+        except Exception:
+            continue
+    return False
+
+
+def _reconciliar_servicio_existente(servicio, contrato, tipo, linea_key, item):
+    history = _lineage_history(servicio)
+    servicio = _actualizar_servicio_materializado(
+        servicio, contrato, tipo, linea_key, item, history=history
+    )
+    return servicio
+
+
+def _retirar_servicio_por_revision(servicio, contrato, *, user=None):
+    if servicio.estado_operativo == 'CANCELADO':
+        return 'ya_cancelado'
+    if _servicio_tiene_huella_operativa(servicio):
+        raise ValidationError(
+            f'El servicio "{servicio.nombre_servicio}" fue retirado del contrato v{contrato.version}, '
+            'pero ya tiene operacion vinculada. Cancela/resuelve ese servicio explicitamente y vuelve a materializar.'
+        )
+
+    aplicar_estado_operativo(servicio, 'CANCELADO')
+    servicio.cancelado_en = timezone.now()
+    servicio.cancelado_por = user
+    servicio.motivo_cancelacion = (
+        f'Retirado automaticamente por revision contractual v{contrato.version}.'
+    )
+    servicio.save(
+        update_fields=[
+            'estado',
+            'estado_comercial',
+            'estado_operativo',
+            'cancelado_en',
+            'cancelado_por',
+            'motivo_cancelacion',
+            'fecha_actualizacion',
+        ]
+    )
+    return 'cancelado'
+
 def _crear_servicio_materializado(contrato, tipo, linea_key, item):
     defaults = _defaults_servicio_materializado(contrato, tipo, linea_key, item)
     servicio = ServicioEvento(
@@ -399,18 +604,21 @@ def _crear_servicio_materializado(contrato, tipo, linea_key, item):
         proveedor=None,
         costo_proveedor=Decimal('0.00'),
         prestacion_tipo='POR_DEFINIR',
-        estado='SOLICITADO',
+        estado='CONTRATADO',
         estado_comercial='CONTRATADO',
         estado_operativo='PENDIENTE',
         **defaults,
     )
+    sincronizar_estado_legacy(servicio)
     servicio.full_clean()
     servicio.save()
     return servicio
 
 
-def _actualizar_servicio_materializado(servicio, contrato, tipo, linea_key, item):
+def _actualizar_servicio_materializado(servicio, contrato, tipo, linea_key, item, history=None):
     defaults = _defaults_servicio_materializado(contrato, tipo, linea_key, item)
+    if history:
+        defaults['snapshot_linea']['historial_contractual'] = history
     campos_contractuales = [
         'evento',
         'servicio_catalogo_k9',
@@ -429,8 +637,25 @@ def _actualizar_servicio_materializado(servicio, contrato, tipo, linea_key, item
     ]
     for campo in campos_contractuales:
         setattr(servicio, campo, defaults[campo])
+    servicio.contrato_origen = contrato
+    servicio.linea_origen_key = linea_key
+    aplicar_estado_comercial(servicio, 'CONTRATADO')
+    if servicio.estado_operativo == 'CANCELADO' and not servicio.cancelado_en:
+        # Compatibility only for a malformed historical row with no real
+        # cancellation metadata.
+        servicio.estado_operativo = 'PENDIENTE'
+        sincronizar_estado_legacy(servicio)
     servicio.full_clean()
-    servicio.save(update_fields=campos_contractuales + ['fecha_actualizacion'])
+    servicio.save(
+        update_fields=campos_contractuales
+        + [
+            'contrato_origen',
+            'linea_origen_key',
+            'estado_comercial',
+            'estado_operativo',
+            'fecha_actualizacion',
+        ]
+    )
     return servicio
 
 
@@ -450,28 +675,69 @@ def materializar_servicios_contrato_v2(contrato_id, *, user=None):
     if contrato.snapshot_version != CONTRATO_SNAPSHOT_VERSION_K9 or snapshot.get('version') != CONTRATO_SNAPSHOT_VERSION_K9:
         raise ValidationError('Solo se puede materializar snapshot comercial v2.')
 
+    # Only the current K9 contract may own the current operation.
+    from .selectors import contrato_es_materializable
+    if not contrato_es_materializable(contrato):
+        raise ValidationError('Solo el contrato K9 vigente puede materializar o reconciliar operacion.')
+
     creados = 0
     actualizados = 0
+    reutilizados = 0
+    retirados = 0
     ids = []
     lineas = list(_lineas_snapshot_v2(snapshot))
     keys = [linea_key for _, linea_key, _ in lineas]
     if len(keys) != len(set(keys)):
         raise ValidationError('El snapshot contiene claves de linea duplicadas.')
 
+    previous_services = list(
+        ServicioEvento.objects.select_for_update()
+        .filter(evento=contrato.evento, contrato_origen__version__lt=contrato.version)
+        .exclude(estado_comercial='CANCELADO')
+        .order_by('-contrato_origen__version', 'id')
+    )
+    matched_previous_ids = set()
+
     for tipo, linea_key, item in lineas:
         servicio = ServicioEvento.objects.select_for_update().filter(
             contrato_origen=contrato,
             linea_origen_key=linea_key,
         ).first()
+
         if servicio:
             servicio = _actualizar_servicio_materializado(servicio, contrato, tipo, linea_key, item)
-            created = False
+            actualizados += 1
         else:
-            servicio = _crear_servicio_materializado(contrato, tipo, linea_key, item)
-            created = True
+            servicio = _candidate_previous_service(contrato, tipo, linea_key, item)
+            if servicio:
+                matched_previous_ids.add(servicio.id)
+                servicio = _reconciliar_servicio_existente(servicio, contrato, tipo, linea_key, item)
+                reutilizados += 1
+            else:
+                servicio = _crear_servicio_materializado(contrato, tipo, linea_key, item)
+                creados += 1
+
         ids.append(servicio.id)
-        creados += int(created)
-        actualizados += int(not created)
+
+    # Anything from the immediately previous operational contract that did
+    # not continue in the new snapshot is a removed line. Pristine services
+    # are cancelled; real operation must be resolved explicitly by the user.
+    previous_contract = (
+        ContratoEvento.objects.filter(evento=contrato.evento, version__lt=contrato.version)
+        .order_by('-version', '-id')
+        .first()
+    )
+    if previous_contract:
+        removed = (
+            ServicioEvento.objects.select_for_update()
+            .filter(evento=contrato.evento, contrato_origen=previous_contract)
+            .exclude(pk__in=matched_previous_ids)
+            .exclude(pk__in=ids)
+        )
+        for servicio in removed:
+            result = _retirar_servicio_por_revision(servicio, contrato, user=user)
+            if result == 'cancelado':
+                retirados += 1
 
     contrato.materializado_en = timezone.now()
     contrato.materializacion_version = MATERIALIZACION_VERSION_K9
@@ -480,6 +746,8 @@ def materializar_servicios_contrato_v2(contrato_id, *, user=None):
     return {
         'creados': creados,
         'actualizados': actualizados,
+        'reutilizados': reutilizados,
+        'retirados': retirados,
         'servicio_evento_ids': ids,
         'materializacion_version': MATERIALIZACION_VERSION_K9,
     }

@@ -1,31 +1,28 @@
+{% extends "core/app/base.html" %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Catalogo | DIRTEC{% endblock %}</title>
-    <link rel="stylesheet" href="{% static 'catalogo/css/catalogo.css' %}">
-</head>
-<body>
-<div class="catalog-shell">
-    <header class="catalog-topbar">
+
+{% block title %}{% block catalog_title %}Catalogo{% endblock %} | {{ empresa.nombre_comercial }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'eventos/css/company_dashboard_r3.css' %}">
+<link rel="stylesheet" href="{% static 'eventos/css/company_workspace.css' %}">
+<link rel="stylesheet" href="{% static 'catalogo/css/catalogo.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="company-workspace catalog-shell">
+    <header class="company-workspace__header catalog-topbar">
         <div>
-            <span>DIRTEC Event Studio</span>
-            <h1>{% block heading %}Catalogo general{% endblock %}</h1>
-            <p>{{ empresa.nombre_comercial }}</p>
+            <span class="company-eyebrow">{{ empresa.nombre_comercial }}</span>
+            <h1>{% block heading %}Catalogo{% endblock %}</h1>
+            <p>Servicios, referencias y relaciones de proveedores del runtime existente.</p>
         </div>
-        <nav>
-            <a href="{% url 'catalogo_servicio_list' empresa.slug %}">Catalogo</a>
-            {% if dashboard_url %}<a href="{{ dashboard_url }}">Dashboard</a>{% endif %}
+        <nav class="company-workspace__quicknav catalog-nav" aria-label="Catalogo">
+            <a class="is-active" href="{% url 'empresa_catalogo' empresa.slug %}">Catalogo</a>
+            <a href="{% url 'paquetes_paquete_list' empresa.slug %}">Paquetes</a>
+            {% if dashboard_url %}<a href="{{ dashboard_url }}">Inicio</a>{% endif %}
         </nav>
     </header>
-    {% if messages %}
-        <section class="catalog-messages">
-            {% for message in messages %}<div class="notice {{ message.tags }}">{{ message }}</div>{% endfor %}
-        </section>
-    {% endif %}
-    {% block content %}{% endblock %}
+    {% block content_inner %}{% endblock %}
 </div>
-</body>
-</html>
+{% endblock %}

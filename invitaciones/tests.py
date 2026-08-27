@@ -2228,13 +2228,26 @@ class DashboardReportesTests(TestCase):
         self.assertFalse(Proveedor.objects.filter(id=proveedor.id).exists())
         self.assertFalse(PaqueteBoda.objects.filter(id=paquete.id).exists())
 
+
     def test_dashboard_avanzado_empresa_crea_operacion_sin_admin(self):
         User = get_user_model()
-        empresa = EmpresaSuscriptora.objects.create(nombre_comercial='Casa Cisneros', slug='casa-cisneros')
-        admin_empresa = User.objects.create_user(username='admin_operacion', password='test123')
-        MembresiaEmpresa.objects.create(empresa=empresa, usuario=admin_empresa, rol='ADMIN_EMPRESA')
-        proveedor = Proveedor.objects.create(empresa=empresa, nombre_comercial='Banquetes Cisneros')
-        categoria = CategoriaGasto.objects.create(nombre='Banquete')
+        empresa = EmpresaSuscriptora.objects.create(
+            nombre_comercial='Casa Cisneros',
+            slug='casa-cisneros',
+        )
+        admin_empresa = User.objects.create_user(
+            username='admin_operacion',
+            password='test123',
+        )
+        MembresiaEmpresa.objects.create(
+            empresa=empresa,
+            usuario=admin_empresa,
+            rol='ADMIN_EMPRESA',
+        )
+        proveedor = Proveedor.objects.create(
+            empresa=empresa,
+            nombre_comercial='Banquetes Cisneros',
+        )
         evento = crear_evento()
         evento.empresa = empresa
         evento.save()
@@ -2243,87 +2256,18 @@ class DashboardReportesTests(TestCase):
         response = self.client.get(f'/dashboard/?evento={evento.id}')
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Servicios del evento')
-        self.assertNotContains(response, '/admin/proveedores/servicioevento/')
 
-        self.client.post('/dashboard/', {
+        response = self.client.post('/dashboard/', {
             'accion': 'agregar_servicio_evento',
             'evento_id': evento.id,
             'proveedor_id': proveedor.id,
             'nombre_servicio': 'Banquete premium',
-            'estado_servicio': 'CONTRATADO',
-            'fecha_servicio': '2026-12-15',
-            'hora_inicio_servicio': '19:00',
-            'costo_proveedor_servicio': '45000',
         })
-        servicio = ServicioEvento.objects.get(evento=evento)
-        self.assertEqual(servicio.proveedor, proveedor)
-        self.assertEqual(servicio.estado, 'CONTRATADO')
 
-        self.client.post('/dashboard/', {
-            'accion': 'agregar_tarea_evento',
-            'evento_id': evento.id,
-            'titulo_tarea': 'Confirmar menu',
-            'estado_tarea': 'EN_PROCESO',
-            'prioridad_tarea': 'ALTA',
-            'categoria_tarea': 'CATERING',
-            'fecha_limite_tarea': '2026-12-01',
-            'porcentaje_avance_tarea': '40',
-        })
-        tarea = TareaEvento.objects.get(evento=evento)
-        self.assertEqual(tarea.titulo, 'Confirmar menu')
-        self.assertEqual(tarea.porcentaje_avance, 40)
-
-        self.client.post('/dashboard/', {
-            'accion': 'agregar_gasto_evento',
-            'evento_id': evento.id,
-            'concepto_gasto': 'Anticipo banquete',
-            'categoria_gasto_id': categoria.id,
-            'proveedor_id': proveedor.id,
-            'monto_estimado_gasto': '50000',
-            'monto_real_gasto': '45000',
-            'fecha_limite_gasto': '2026-11-20',
-            'estado_gasto': 'PARCIAL',
-        })
-        gasto = GastoEvento.objects.get(evento=evento)
-        self.assertEqual(gasto.categoria, categoria)
-        self.assertEqual(gasto.proveedor, proveedor)
-
-        self.client.post('/dashboard/', {
-            'accion': 'agregar_pago_evento',
-            'evento_id': evento.id,
-            'gasto_id': gasto.id,
-            'monto_pago': '10000',
-            'fecha_pago': '2026-10-15',
-            'metodo_pago': 'TRANSFERENCIA',
-            'referencia_pago': 'TRX-1',
-        })
-        pago = PagoEvento.objects.get(gasto=gasto)
-        self.assertEqual(pago.monto, 10000)
-
-        self.client.post('/dashboard/', {
-            'accion': 'agregar_documento_evento',
-            'evento_id': evento.id,
-            'tipo_documento': 'CONTRATO',
-            'titulo_documento': 'Contrato banquete',
-            'proveedor_id': proveedor.id,
-            'visible_cliente_documento': 'on',
-            'archivo_documento': SimpleUploadedFile('contrato.pdf', b'%PDF-1.4', content_type='application/pdf'),
-        })
-        documento = DocumentoEvento.objects.get(evento=evento)
-        self.assertTrue(documento.visible_cliente)
-
-        self.client.post('/dashboard/', {
-            'accion': 'agregar_aprobacion_evento',
-            'evento_id': evento.id,
-            'tipo_aprobacion': 'MENU',
-            'titulo_aprobacion': 'Aprobar menu',
-            'descripcion_aprobacion': 'Menu de tres tiempos',
-            'estado_aprobacion': 'PENDIENTE',
-            'comentario_aprobacion': 'Esperando cliente',
-        })
-        aprobacion = AprobacionEvento.objects.get(evento=evento)
-        self.assertEqual(aprobacion.solicitado_por, admin_empresa)
-        self.assertEqual(aprobacion.comentario, 'Esperando cliente')
+        # K9-S2.2 guardrail: the old dashboard is no longer a write path for
+        # ServicioEvento. The request is redirected to the canonical workspace.
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(ServicioEvento.objects.filter(evento=evento).exists())
 
     @unittest.skip("PRE-K8 contract-detail production panel retired; ServicioEvento and V3 finance/agenda are the current operational contracts.")
     def test_dashboard_guarda_detalle_produccion_de_contrato_y_sincroniza_menu(self):
@@ -2598,85 +2542,58 @@ class DashboardReportesTests(TestCase):
         self.assertFalse(ElementoDecoracion.objects.filter(id=decoracion.id).exists())
         self.assertFalse(CateringEvento.objects.filter(id=catering.id).exists())
 
+
     def test_planner_asignado_edita_y_elimina_operacion_del_evento(self):
         User = get_user_model()
-        empresa = EmpresaSuscriptora.objects.create(nombre_comercial='Casa Cisneros', slug='casa-cisneros')
-        planner = User.objects.create_user(username='planner_operacion', password='test123')
-        MembresiaEmpresa.objects.create(empresa=empresa, usuario=planner, rol='WEDDING_PLANNER')
-        proveedor = Proveedor.objects.create(empresa=empresa, nombre_comercial='DJ Eventos')
-        categoria = CategoriaGasto.objects.create(nombre='Musica')
+        empresa = EmpresaSuscriptora.objects.create(
+            nombre_comercial='Casa Cisneros',
+            slug='casa-cisneros',
+        )
+        planner = User.objects.create_user(
+            username='planner_operacion',
+            password='test123',
+        )
+        MembresiaEmpresa.objects.create(
+            empresa=empresa,
+            usuario=planner,
+            rol='WEDDING_PLANNER',
+        )
+        proveedor = Proveedor.objects.create(
+            empresa=empresa,
+            nombre_comercial='DJ Eventos',
+        )
         evento = crear_evento()
         evento.empresa = empresa
         evento.wedding_planner = planner
         evento.save()
-        servicio = ServicioEvento.objects.create(evento=evento, proveedor=proveedor, nombre_servicio='DJ', estado='SOLICITADO')
-        tarea = TareaEvento.objects.create(evento=evento, titulo='Enviar playlist')
-        gasto = GastoEvento.objects.create(evento=evento, categoria=categoria, proveedor=proveedor, concepto='DJ', monto_estimado=12000)
-        pago = PagoEvento.objects.create(gasto=gasto, monto=1000)
-        documento = DocumentoEvento.objects.create(
+        servicio = ServicioEvento.objects.create(
             evento=evento,
-            titulo='Cotizacion DJ',
-            tipo_documento='COTIZACION',
-            archivo=SimpleUploadedFile('cotizacion.pdf', b'%PDF-1.4', content_type='application/pdf'),
+            proveedor=proveedor,
+            nombre_servicio='DJ',
+            estado='SOLICITADO',
         )
-        aprobacion = AprobacionEvento.objects.create(evento=evento, tipo='MUSICA', titulo='Playlist')
         self.client.force_login(planner)
 
-        response = self.client.get(f'/dashboard/?evento={evento.id}')
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Servicios del evento')
-
-        self.client.post('/dashboard/', {
+        response = self.client.post('/dashboard/', {
             'accion': 'editar_servicio_evento',
             'evento_id': evento.id,
             'servicio_id': servicio.id,
             'proveedor_id': proveedor.id,
             'nombre_servicio': 'DJ y audio',
             'estado_servicio': 'APROBADO',
-            'costo_proveedor_servicio': '15000',
         })
-        self.client.post('/dashboard/', {
-            'accion': 'editar_tarea_evento',
-            'evento_id': evento.id,
-            'tarea_id': tarea.id,
-            'titulo_tarea': 'Enviar playlist final',
-            'estado_tarea': 'COMPLETADA',
-            'prioridad_tarea': 'MEDIA',
-            'categoria_tarea': 'MUSICA',
-            'porcentaje_avance_tarea': '90',
-        })
-        self.client.post('/dashboard/', {
-            'accion': 'editar_pago_evento',
-            'evento_id': evento.id,
-            'pago_id': pago.id,
-            'monto_pago': '2500',
-            'metodo_pago': 'EFECTIVO',
-        })
-        self.client.post('/dashboard/', {
-            'accion': 'editar_aprobacion_evento',
-            'evento_id': evento.id,
-            'aprobacion_id': aprobacion.id,
-            'tipo_aprobacion': 'MUSICA',
-            'titulo_aprobacion': 'Playlist final',
-            'estado_aprobacion': 'CAMBIOS',
-            'comentario_aprobacion': 'Cliente pidio cambios',
-        })
-
+        self.assertEqual(response.status_code, 302)
         servicio.refresh_from_db()
-        tarea.refresh_from_db()
-        pago.refresh_from_db()
-        aprobacion.refresh_from_db()
-        self.assertEqual(servicio.nombre_servicio, 'DJ y audio')
-        self.assertEqual(servicio.estado, 'APROBADO')
-        self.assertEqual(tarea.estado, 'COMPLETADA')
-        self.assertEqual(tarea.porcentaje_avance, 100)
-        self.assertEqual(pago.monto, 2500)
-        self.assertEqual(aprobacion.estado, 'CAMBIOS')
+        self.assertEqual(servicio.nombre_servicio, 'DJ')
+        self.assertEqual(servicio.estado, 'SOLICITADO')
 
-        self.client.post('/dashboard/', {'accion': 'eliminar_documento_evento', 'evento_id': evento.id, 'documento_id': documento.id})
-        self.client.post('/dashboard/', {'accion': 'eliminar_servicio_evento', 'evento_id': evento.id, 'servicio_id': servicio.id})
-        self.assertFalse(DocumentoEvento.objects.filter(id=documento.id).exists())
-        self.assertFalse(ServicioEvento.objects.filter(id=servicio.id).exists())
+        response = self.client.post('/dashboard/', {
+            'accion': 'eliminar_servicio_evento',
+            'evento_id': evento.id,
+            'servicio_id': servicio.id,
+        })
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(ServicioEvento.objects.filter(id=servicio.id).exists())
 
     def test_dashboard_guarda_sede_y_capacidad_del_evento(self):
         empresa = EmpresaSuscriptora.objects.create(nombre_comercial='Casa Cisneros', slug='casa-cisneros')
@@ -2844,6 +2761,7 @@ class DashboardReportesTests(TestCase):
         self.assertEqual(regalo.nombre, 'Liverpool boda')
         self.assertEqual(regalo.url, 'https://example.com/mesa')
 
+
     def test_dashboard_crea_grupo_familiar_con_integrantes(self):
         evento = crear_evento()
 
@@ -2854,20 +2772,33 @@ class DashboardReportesTests(TestCase):
             'nombre_grupo': 'Familia Perez',
             'telefono_contacto': '555',
             'cantidad_maxima': '2',
-            'invitados_familia': 'Ana Perez | Adulto\nSofia Perez | Niño',
+            'invitados_familia': 'Ana Perez | Adulto\\nSofia Perez | Niño',
         })
 
-        grupo = Grupoinvitacion.objects.get(evento=evento, nombre_grupo='Familia Perez')
+        # Guest mutations moved to the canonical K9 invitados workspace.
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(grupo.invitados.count(), 2)
-        self.assertEqual(grupo.invitados.filter(tipo_persona='NINO').count(), 1)
+        self.assertFalse(
+            Grupoinvitacion.objects.filter(
+                evento=evento,
+                nombre_grupo='Familia Perez',
+            ).exists()
+        )
+
 
     def test_dashboard_edita_y_elimina_invitado_familiar(self):
         evento = crear_evento()
-        grupo = Grupoinvitacion.objects.create(evento=evento, nombre_grupo='Familia Perez', tipo='FAMILIAR')
-        invitado = Invitado.objects.create(grupo=grupo, nombre='Ana', tipo_persona='ADULTO')
+        grupo = Grupoinvitacion.objects.create(
+            evento=evento,
+            nombre_grupo='Familia Perez',
+            tipo='FAMILIAR',
+        )
+        invitado = Invitado.objects.create(
+            grupo=grupo,
+            nombre='Ana',
+            tipo_persona='ADULTO',
+        )
 
-        self.client.post('/dashboard/', {
+        response = self.client.post('/dashboard/', {
             'accion': 'editar_invitado',
             'evento_id': evento.id,
             'invitado_id': invitado.id,
@@ -2876,20 +2807,18 @@ class DashboardReportesTests(TestCase):
             'orden_invitado': '3',
             'menu_asignado': 'INFANTIL',
         })
-
+        self.assertEqual(response.status_code, 302)
         invitado.refresh_from_db()
-        self.assertEqual(invitado.nombre, 'Ana Perez')
-        self.assertEqual(invitado.tipo_persona, 'NINO')
-        self.assertEqual(invitado.menu_asignado, 'INFANTIL')
+        self.assertEqual(invitado.nombre, 'Ana')
+        self.assertEqual(invitado.tipo_persona, 'ADULTO')
 
         response = self.client.post('/dashboard/', {
             'accion': 'eliminar_invitado',
             'evento_id': evento.id,
             'invitado_id': invitado.id,
         })
-
         self.assertEqual(response.status_code, 302)
-        self.assertFalse(Invitado.objects.filter(id=invitado.id).exists())
+        self.assertTrue(Invitado.objects.filter(id=invitado.id).exists())
 
     def test_regalo_con_datos_bancarios_se_guarda_como_deposito(self):
         evento = crear_evento()

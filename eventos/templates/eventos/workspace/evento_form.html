@@ -1,54 +1,30 @@
-{% extends "core/app/base.html" %}
+{% extends base_template %}
 {% load static %}
 
 {% block title %}{% if modo == "crear" %}Nuevo evento{% else %}Datos del evento{% endif %} | DIRTEC Event Studio{% endblock %}
 
 {% block extra_css %}
+{{ block.super }}
+{% if modo == "crear" %}
 <link rel="stylesheet" href="{% static 'eventos/css/workspace_r2.css' %}">
+<link rel="stylesheet" href="{% static 'eventos/css/workspace.css' %}">
+{% endif %}
 {% endblock %}
 
 {% block content %}
-{% if modo == "editar" and evento %}
-<section class="event-context">
-    <div class="event-context__main">
-        <a class="event-context__back" href="{% url 'k9_evento_list' empresa_slug=empresa.slug %}">← Eventos</a>
-        <div>
-            <div class="event-context__title-row">
-                <h1>{{ evento.titulo_evento }}</h1>
-                <span class="app-badge app-badge--neutral">{{ evento.get_estado_display }}</span>
-            </div>
-            <p>
-                {{ evento.get_tipo_evento_display }}
-                {% if evento.fecha_inicio %}
-                    · {{ evento.fecha_inicio|date:"d M Y · H:i" }}
-                {% else %}
-                    · Fecha por definir
-                {% endif %}
-                {% if evento.sede %} · {{ evento.sede.nombre }}{% endif %}
-            </p>
-        </div>
-    </div>
-
-    <nav class="event-tabs" aria-label="Secciones del evento">
-        <a href="{% url 'k9_evento_resumen' empresa_slug=empresa.slug evento_id=evento.id %}">
-            Resumen
-        </a>
-        <a
-            href="{% url 'k9_evento_datos' empresa_slug=empresa.slug evento_id=evento.id %}"
-            class="is-active"
-            aria-current="page"
-        >
-            Datos
-        </a>
-        <span>Comercial</span>
-        <span>Servicios</span>
-        <span>Invitados</span>
-        <span>Más</span>
-    </nav>
-</section>
-{% endif %}
-
-<div class="event-form-page{% if modo == 'crear' %} event-form-page--create{% endif %}">
+{% if modo == "crear" %}
+<div class="event-form-page event-form-page--create workspace-standalone-form">
     {% include "eventos/workspace/_form_content.html" %}
 </div>
+{% else %}
+{{ block.super }}
+{% endif %}
+{% endblock %}
+
+{% block workspace_content %}
+{% if modo == "editar" %}
+<section class="workspace-module-stack workspace-data-page">
+    {% include "eventos/workspace/_form_content.html" %}
+</section>
+{% endif %}
 {% endblock %}

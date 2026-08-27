@@ -1,0 +1,147 @@
+{% extends "eventos/workspace/base.html" %}
+{% load static %}
+
+{% block title %}Mesas | {{ evento.titulo_evento }}{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'eventos/css/workspace_tables_r4.css' %}">
+{% endblock %}
+
+{% block workspace_content %}
+<section class="tables-workspace workspace-module-stack">
+    <header class="workspace-page-header tables-heading">
+        <div>
+            <span class="workspace-eyebrow">Experiencia</span>
+            <h2>Mesas</h2>
+            <p>
+                Revisa capacidad, ocupación y pendientes de acomodo.
+                El plano visual conserva el editor especializado existente.
+            </p>
+        </div>
+        <a
+            class="app-button app-button--primary"
+            href="{{ plano_url }}"
+            data-workspace-native
+        >
+            Abrir plano y acomodo
+        </a>
+    </header>
+
+    <section class="tables-kpis" aria-label="Resumen de mesas">
+        <article>
+            <span>Mesas</span>
+            <strong>{{ total_mesas }}</strong>
+            <small>Configuradas en el evento</small>
+        </article>
+        <article>
+            <span>Capacidad</span>
+            <strong>{{ capacidad_total }}</strong>
+            <small>Lugares disponibles en mesas</small>
+        </article>
+        <article>
+            <span>Ocupados</span>
+            <strong>{{ lugares_ocupados }}</strong>
+            <small>{{ lugares_disponibles }} todavía libres</small>
+        </article>
+        <article class="{% if confirmados_sin_mesa or mesas_excedidas %}needs-attention{% endif %}">
+            <span>Requieren atención</span>
+            <strong>{{ confirmados_sin_mesa }}</strong>
+            <small>
+                Confirmados sin mesa
+                {% if mesas_excedidas %} · {{ mesas_excedidas }} excedida{{ mesas_excedidas|pluralize }}{% endif %}
+            </small>
+        </article>
+    </section>
+
+    {% if confirmados_sin_mesa %}
+    <aside class="tables-attention">
+        <div>
+            <span class="workspace-eyebrow">Pendiente</span>
+            <strong>{{ confirmados_sin_mesa }} confirmado{{ confirmados_sin_mesa|pluralize }} sin mesa</strong>
+            <p>El RSVP ya ocupa un lugar confirmado, pero todavía falta asignarlo al acomodo.</p>
+        </div>
+        <a
+            class="app-button app-button--secondary"
+            href="{{ plano_url }}"
+            data-workspace-native
+        >
+            Acomodar ahora
+        </a>
+    </aside>
+    {% endif %}
+
+    <section class="workspace-panel tables-list-panel">
+        <header class="tables-section-heading">
+            <div>
+                <span class="workspace-eyebrow">Acomodo actual</span>
+                <h3>Distribución por mesa</h3>
+            </div>
+            <span>{{ lugares_ocupados }} / {{ capacidad_total }} lugares</span>
+        </header>
+
+        <div class="tables-list">
+            {% for mesa in mesas %}
+            <article class="tables-row {% if mesa.excedida %}is-overflow{% endif %}">
+                <div class="tables-row__identity">
+                    <span>{{ mesa.get_tipo_display }}</span>
+                    <strong>{{ mesa.nombre }}</strong>
+                    <small>
+                        {{ mesa.zona|default:"Sin zona" }}
+                        {% if mesa.mesero %} · {{ mesa.mesero.nombre }}{% endif %}
+                    </small>
+                </div>
+
+                <div class="tables-row__capacity">
+                    <strong>{{ mesa.lugares_ocupados }}/{{ mesa.capacidad }}</strong>
+                    <span>{{ mesa.lugares_disponibles }} libres</span>
+                </div>
+
+                <div
+                    class="tables-meter"
+                    aria-label="{{ mesa.lugares_ocupados }} de {{ mesa.capacidad }} lugares ocupados"
+                >
+                    <span style="width:{% widthratio mesa.lugares_ocupados mesa.capacidad 100 %}%"></span>
+                </div>
+
+                <div class="tables-row__people">
+                    {% for asignacion in mesa.asignaciones.all|slice:":4" %}
+                    <span>
+                        {{ asignacion.invitado }}
+                        {% if asignacion.numero_asiento %}<b>#{{ asignacion.numero_asiento }}</b>{% endif %}
+                    </span>
+                    {% empty %}
+                    <span class="is-empty">Sin personas asignadas</span>
+                    {% endfor %}
+                    {% if mesa.lugares_ocupados > 4 %}
+                    <span class="is-more">+{{ mesa.lugares_ocupados|add:"-4" }} más</span>
+                    {% endif %}
+                </div>
+            </article>
+            {% empty %}
+            <div class="workspace-empty-state">
+                <strong>Aún no hay mesas.</strong>
+                <p>Abre el plano para crear la primera mesa y comenzar el acomodo.</p>
+                <a class="app-button app-button--primary" href="{{ plano_url }}" data-workspace-native>
+                    Crear mesas
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <footer class="tables-specialized-note">
+        <div>
+            <span class="workspace-eyebrow">Workspace especializado</span>
+            <strong>Plano visual de mesas</strong>
+            <p>
+                Crear, editar, asignar personas y arrastrar mesas continúa en el
+                módulo especializado para conservar su comportamiento actual.
+            </p>
+        </div>
+        <a class="app-button app-button--secondary" href="{{ plano_url }}" data-workspace-native>
+            Ir al plano visual
+        </a>
+    </footer>
+</section>
+{% endblock %}

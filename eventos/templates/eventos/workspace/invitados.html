@@ -10,7 +10,7 @@
 
 {% block workspace_content %}
 <section class="guests-workspace" data-guests-workspace>
-    <header class="guests-heading">
+    <header class="guests-heading workspace-page-header">
         <div>
             <span class="workspace-eyebrow">Experiencia</span>
             <h2>Invitados</h2>
@@ -154,16 +154,16 @@
     </details>
     {% endif %}
 
-    <form method="get" class="guests-toolbar">
+    <form method="get" class="guests-toolbar workspace-toolbar">
         <input type="hidden" name="return_to" value="{{ return_to }}">
         <input class="app-input" name="q" value="{{ busqueda }}" placeholder="Buscar familia, persona, teléfono...">
-        <select class="app-select" name="estado" onchange="this.form.requestSubmit()">
+        <select class="app-select" name="estado" data-workspace-autosubmit>
             <option value="TODOS" {% if estado_filtro == "TODOS" %}selected{% endif %}>Todos</option>
             <option value="CONFIRMADOS" {% if estado_filtro == "CONFIRMADOS" %}selected{% endif %}>Con confirmados</option>
             <option value="PENDIENTES" {% if estado_filtro == "PENDIENTES" %}selected{% endif %}>Con pendientes</option>
             <option value="NO_ASISTEN" {% if estado_filtro == "NO_ASISTEN" %}selected{% endif %}>Con no asistencia</option>
         </select>
-        <select class="app-select" name="tipo" onchange="this.form.requestSubmit()">
+        <select class="app-select" name="tipo" data-workspace-autosubmit>
             <option value="">Personal + familiar</option>
             <option value="PERSONAL" {% if tipo_filtro == "PERSONAL" %}selected{% endif %}>Personal</option>
             <option value="FAMILIAR" {% if tipo_filtro == "FAMILIAR" %}selected{% endif %}>Familiar</option>

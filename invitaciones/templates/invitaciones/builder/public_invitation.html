@@ -30,6 +30,91 @@
     </aside>
     {% endif %}
 
+    {% if rsvp_control.phase == "REMINDER" %}
+    <dialog
+        class="dirtec-rsvp-dialog"
+        data-rsvp-reminder-dialog
+        data-reminder-key="dirtec-rsvp-reminder:{{ grupo.codigo }}:{{ rsvp_control.reminderFrom }}:{{ rsvp_control.deadline }}"
+        aria-labelledby="dirtec-rsvp-reminder-title"
+        aria-describedby="dirtec-rsvp-reminder-message"
+    >
+        <button
+            class="dirtec-rsvp-dialog__close"
+            type="button"
+            aria-label="Cerrar recordatorio"
+            data-rsvp-reminder-close
+        >×</button>
+
+        <div class="dirtec-rsvp-dialog__icon" aria-hidden="true">!</div>
+        <strong class="dirtec-rsvp-dialog__eyebrow">Recordatorio RSVP</strong>
+        <h2 id="dirtec-rsvp-reminder-title">{{ rsvp_control.title }}</h2>
+        <p id="dirtec-rsvp-reminder-message">{{ rsvp_control.message }}</p>
+
+        {% if rsvp_control.deadline %}
+        <div class="dirtec-rsvp-dialog__deadline">
+            <span>Fecha límite</span>
+            <strong>{{ rsvp_control.deadlineLabel }}</strong>
+        </div>
+        {% endif %}
+
+        <button
+            class="dirtec-rsvp-dialog__accept"
+            type="button"
+            data-rsvp-reminder-ok
+        >
+            Entendido
+        </button>
+    </dialog>
+
+    <script>
+    (() => {
+        const dialog = document.querySelector("[data-rsvp-reminder-dialog]");
+        if (!dialog) return;
+
+        const key = dialog.dataset.reminderKey || "";
+        let acknowledged = false;
+        try {
+            acknowledged = key && window.localStorage.getItem(key) === "1";
+        } catch (error) {
+            acknowledged = false;
+        }
+
+        if (!acknowledged) {
+            if (typeof dialog.showModal === "function") {
+                dialog.showModal();
+            } else {
+                dialog.setAttribute("open", "");
+            }
+        }
+
+        const closeOnly = () => {
+            if (typeof dialog.close === "function") {
+                dialog.close();
+            } else {
+                dialog.removeAttribute("open");
+            }
+        };
+
+        dialog.querySelector("[data-rsvp-reminder-close]")?.addEventListener(
+            "click",
+            closeOnly,
+        );
+
+        dialog.querySelector("[data-rsvp-reminder-ok]")?.addEventListener(
+            "click",
+            () => {
+                try {
+                    if (key) window.localStorage.setItem(key, "1");
+                } catch (error) {
+                    // La invitación sigue siendo utilizable aunque storage esté bloqueado.
+                }
+                closeOnly();
+            },
+        );
+    })();
+    </script>
+    {% endif %}
+
     <main id="dirtec-public-root" class="dirtec-public-root" aria-label="Invitación"></main>
 
     {{ builder_public_bootstrap|json_script:"dirtec-builder-public-bootstrap" }}

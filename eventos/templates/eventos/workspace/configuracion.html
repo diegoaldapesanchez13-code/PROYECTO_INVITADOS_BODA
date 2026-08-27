@@ -3,23 +3,33 @@
 {% block title %}Configuración | {{ evento.titulo_evento }}{% endblock %}
 
 {% block workspace_content %}
-<section class="event-settings">
-    <header class="event-page-heading">
+<section class="event-settings workspace-module-stack">
+    <header class="workspace-page-header event-settings__heading">
         <div>
-            <span class="event-eyebrow">Configuración</span>
+            <span class="workspace-eyebrow">Configuración</span>
             <h2>Lifecycle del evento</h2>
             <p>
-                Editar, finalizar, cancelar, archivar y eliminar son acciones distintas.
-                El historial real nunca se borra a ciegas.
+                Controla el estado operativo del evento sin perder historial.
+                Finalizar, cancelar, archivar y eliminar son acciones distintas.
             </p>
         </div>
+        <span class="event-settings__state">{{ evento.get_estado_display }}</span>
     </header>
 
     <div class="event-settings__grid">
-        <article class="app-card event-setting-card">
-            <span class="event-eyebrow">Estado actual</span>
-            <h3>{{ evento.get_estado_display }}</h3>
-            <p>El estado define si el evento sigue en operación diaria.</p>
+        <article class="workspace-panel event-setting-card">
+            <header class="event-setting-card__header">
+                <div>
+                    <span class="workspace-eyebrow">Estado actual</span>
+                    <h3>{{ evento.get_estado_display }}</h3>
+                </div>
+                <span class="event-setting-card__indicator" aria-hidden="true"></span>
+            </header>
+
+            <p>
+                El estado define si el evento continúa en operación diaria.
+                El historial permanece disponible durante las transiciones.
+            </p>
 
             {% if puede_editar %}
             <div class="event-setting-actions">
@@ -45,14 +55,20 @@
                     <form method="post" action="{% url 'k9_evento_finalizar' empresa_slug=empresa.slug evento_id=evento.id %}">
                         {% csrf_token %}
                         <input type="hidden" name="return_to" value="{{ return_to }}">
-                        <button class="app-button app-button--secondary" type="submit">Marcar finalizado</button>
+                        <button class="app-button app-button--primary" type="submit">Marcar finalizado</button>
+                    </form>
+
+                    <form method="post" action="{% url 'k9_evento_archivar' empresa_slug=empresa.slug evento_id=evento.id %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="return_to" value="{{ return_to }}">
+                        <button class="app-button app-button--secondary" type="submit">Archivar evento</button>
                     </form>
 
                     <details class="event-action-disclosure">
                         <summary>Cancelar evento</summary>
                         <form method="post" action="{% url 'k9_evento_cancelar' empresa_slug=empresa.slug evento_id=evento.id %}">
                             {% csrf_token %}
-                        <input type="hidden" name="return_to" value="{{ return_to }}">
+                            <input type="hidden" name="return_to" value="{{ return_to }}">
                             <label class="app-field">
                                 <span class="app-label">Motivo</span>
                                 <textarea class="app-textarea" name="motivo" rows="3" placeholder="Opcional"></textarea>
@@ -60,25 +76,37 @@
                             <button class="app-button app-button--danger" type="submit">Confirmar cancelación</button>
                         </form>
                     </details>
-
-                    <form method="post" action="{% url 'k9_evento_archivar' empresa_slug=empresa.slug evento_id=evento.id %}">
-                        {% csrf_token %}
-                        <input type="hidden" name="return_to" value="{{ return_to }}">
-                        <button class="app-button app-button--secondary" type="submit">Archivar evento</button>
-                    </form>
                 {% endif %}
             </div>
             {% endif %}
         </article>
 
-        <article class="app-card event-setting-card">
-            <span class="event-eyebrow">Integridad</span>
-            <h3>¿Se puede eliminar?</h3>
+        <article class="workspace-panel event-setting-card event-setting-card--integrity">
+            <header class="event-setting-card__header">
+                <div>
+                    <span class="workspace-eyebrow">Integridad</span>
+                    <h3>¿Se puede eliminar?</h3>
+                </div>
+            </header>
+
             {% if evaluacion_eliminacion.permitido %}
-                <p>Este evento todavía no tiene historial protegido y puede tratarse como un error de captura.</p>
-                <span class="app-badge app-badge--success">Eliminación segura disponible</span>
+                <p>
+                    Este evento todavía no tiene historial protegido y puede tratarse
+                    como un error de captura.
+                </p>
+                <div class="event-integrity-status event-integrity-status--safe">
+                    <strong>Eliminación segura disponible</strong>
+                    <span>No se detectó historial que deba conservarse.</span>
+                </div>
             {% else %}
-                <p>Ya existe historial relevante. El flujo correcto es cancelar o archivar.</p>
+                <p>
+                    Ya existe historial relevante. El flujo correcto es cancelar,
+                    finalizar o archivar.
+                </p>
+                <div class="event-integrity-status event-integrity-status--protected">
+                    <strong>Historial protegido</strong>
+                    <span>La eliminación definitiva está bloqueada.</span>
+                </div>
                 <ul class="event-protection-list">
                     {% for motivo in evaluacion_eliminacion.motivos %}
                     <li>{{ motivo }}</li>
@@ -88,12 +116,212 @@
         </article>
     </div>
 
+    <section class="event-settings__grid">
+        <article class="workspace-panel event-setting-card">
+            <header class="event-setting-card__header">
+                <div>
+                    <span class="workspace-eyebrow">Historial</span>
+                    <h3>Expediente del evento</h3>
+                </div>
+            </header>
+            <p>
+                Descarga una copia estructurada de datos, snapshots, contratos,
+                servicios, finanzas, invitados y referencias de archivos.
+            </p>
+
+            {% if puede_exportar_expediente %}
+                <a class="app-button app-button--secondary"
+                   data-workspace-native
+                   href="{% url 'k9_evento_exportar_expediente' empresa_slug=empresa.slug evento_id=evento.id %}">
+                    Descargar expediente ZIP
+                </a>
+            {% else %}
+                <span class="app-badge app-badge--neutral">
+                    Disponible al finalizar, cancelar o archivar
+                </span>
+            {% endif %}
+
+            {% if ultimo_expediente %}
+                <p>
+                    Última exportación:
+                    {{ ultimo_expediente.generado_en|date:"d/m/Y H:i" }}
+                    · {{ ultimo_expediente.tamano_bytes }} bytes
+                </p>
+                <p><small>SHA-256: {{ ultimo_expediente.sha256 }}</small></p>
+                {% if ultimo_expediente.integridad_verificada %}
+                    <div class="event-integrity-status event-integrity-status--safe">
+                        <strong>Integridad verificada</strong>
+                        <span>
+                            {{ ultimo_expediente.binarios_encontrados }} binarios incluidos ·
+                            {{ ultimo_expediente.binarios_faltantes }} faltantes
+                        </span>
+                    </div>
+                    {% if not ultimo_expediente.respaldo_externo_confirmado_en and puede_confirmar_respaldo %}
+                    <form method="post"
+                          action="{% url 'k9_evento_confirmar_respaldo_externo' empresa_slug=empresa.slug evento_id=evento.id %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="expediente_id" value="{{ ultimo_expediente.id }}">
+                        <label class="app-field">
+                            <span class="app-label">Confirma el SHA-256 del archivo que conservaste fuera de DIRTEC</span>
+                            <input class="app-input" name="sha256" autocomplete="off"
+                                   placeholder="{{ ultimo_expediente.sha256 }}" required>
+                        </label>
+                        <button class="app-button app-button--secondary" type="submit">
+                            Confirmar respaldo externo
+                        </button>
+                    </form>
+                    {% elif ultimo_expediente.respaldo_externo_confirmado_en %}
+                    <div class="event-integrity-status event-integrity-status--safe">
+                        <strong>Custodia externa confirmada</strong>
+                        <span>
+                            Retención mínima hasta
+                            {{ ultimo_expediente.retencion_hasta|date:"d/m/Y H:i" }}.
+                        </span>
+                    </div>
+                    {% endif %}
+
+                    {% if ultimo_expediente.respaldo_externo_confirmado_en and ciclo_datos.retencion_cumplida and puede_autorizar_purga_historica and not ultimo_expediente.purga_historica_autorizada_en %}
+                    <form method="post"
+                          action="{% url 'k9_evento_autorizar_purga_historica' empresa_slug=empresa.slug evento_id=evento.id %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="expediente_id" value="{{ ultimo_expediente.id }}">
+                        <label class="app-field">
+                            <span class="app-label">Motivo de autorización DIRTEC</span>
+                            <textarea class="app-textarea" name="motivo" rows="2" required></textarea>
+                        </label>
+                        <button class="app-button app-button--danger" type="submit">
+                            Autorizar purga histórica
+                        </button>
+                    </form>
+                    {% elif ultimo_expediente.purga_historica_autorizada_en %}
+                    <div class="event-integrity-status event-integrity-status--safe">
+                        <strong>Purga histórica autorizada</strong>
+                        <span>
+                            Aún no ejecutable: D6.4 validará la eliminación física completa.
+                        </span>
+                    </div>
+                    {% endif %}
+                {% else %}
+                    <div class="event-integrity-status">
+                        <strong>Expediente incompleto</strong>
+                        <span>
+                            {{ ultimo_expediente.binarios_faltantes }} binarios faltantes.
+                            No es apto para retención histórica externa.
+                        </span>
+                    </div>
+                {% endif %}
+            {% endif %}
+
+            <p>
+                <strong>D6.2:</strong> el expediente incluye datos y binarios
+                del grafo canónico. Su integridad se valida antes de marcarlo completo.
+                La purga histórica destructiva seguirá bloqueada hasta la validación D6.4.
+            </p>
+        </article>
+
+        <article class="workspace-panel event-setting-card event-setting-card--integrity">
+            <header class="event-setting-card__header">
+                <div>
+                    <span class="workspace-eyebrow">Retención</span>
+                    <h3>{{ ciclo_datos.politica }}</h3>
+                </div>
+            </header>
+
+            {% if ciclo_datos.purga_descartable_permitida %}
+                <p>El evento archivado es descartable y puede purgarse.</p>
+                <div class="event-integrity-status event-integrity-status--safe">
+                    <strong>Elegible para purga</strong>
+                    <span>No se detectó historial real protegido.</span>
+                </div>
+            {% else %}
+                <p>Este evento conserva historial que DIRTEC debe proteger.</p>
+                {% if ciclo_datos.motivos_proteccion %}
+                    <ul class="event-protection-list">
+                        {% for motivo in ciclo_datos.motivos_proteccion %}
+                            <li>{{ motivo }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            {% endif %}
+        </article>
+    </section>
+
+    {% if evento.estado == "ARCHIVADO" and evaluacion_purga.motivos %}
+    <section class="workspace-panel event-setting-card event-setting-card--integrity">
+        <header class="event-setting-card__header">
+            <div>
+                <span class="workspace-eyebrow">D6.4</span>
+                <h3>Expediente listo para purga histórica</h3>
+            </div>
+        </header>
+
+        <p>
+            Genera el respaldo del mismo grafo que Django eliminaría. Si el evento
+            cambia después, la huella ya no coincidirá y la purga será bloqueada.
+        </p>
+
+        <a class="app-button app-button--secondary"
+           data-workspace-native
+           href="{% url 'k9_evento_exportar_expediente_purge_ready' empresa_slug=empresa.slug evento_id=evento.id %}">
+            Generar ZIP purge-ready
+        </a>
+
+        {% if expediente_purge_ready %}
+            <p>
+                Último purge-ready:
+                {{ expediente_purge_ready.generado_en|date:"d/m/Y H:i" }}
+            </p>
+            <p><small>SHA-256: {{ expediente_purge_ready.sha256 }}</small></p>
+
+            {% if expediente_purge_ready.purga_historica_autorizada_en and ciclo_datos.retencion_cumplida and puede_autorizar_purga_historica and not expediente_purge_ready.purga_ejecutada_en %}
+            <div class="event-integrity-status">
+                <strong>Última confirmación destructiva</strong>
+                <span>
+                    Si cualquier dato o archivo cambió desde el ZIP, el servidor
+                    rechazará automáticamente esta operación.
+                </span>
+            </div>
+
+            <form method="post"
+                  action="{% url 'k9_evento_ejecutar_purga_historica' empresa_slug=empresa.slug evento_id=evento.id %}">
+                {% csrf_token %}
+                <input type="hidden" name="expediente_id" value="{{ expediente_purge_ready.id }}">
+
+                <label class="app-field">
+                    <span class="app-label">
+                        SHA-256 del ZIP purge-ready bajo custodia externa
+                    </span>
+                    <input class="app-input" name="sha256" required autocomplete="off">
+                </label>
+
+                <label class="app-field">
+                    <span class="app-label">
+                        Escribe PURGAR HISTORICO {{ evento.id }}
+                    </span>
+                    <input class="app-input" name="confirmacion" required autocomplete="off">
+                </label>
+
+                <button class="app-button app-button--danger" type="submit">
+                    Ejecutar purga histórica irreversible
+                </button>
+            </form>
+            {% endif %}
+        {% endif %}
+    </section>
+    {% endif %}
+
     <section class="event-danger-zone">
-        <div>
-            <span class="event-eyebrow">Danger Zone</span>
-            <h3>Acciones destructivas</h3>
-            <p>Estas acciones no deben confundirse con archivar.</p>
-        </div>
+        <header class="event-danger-zone__header">
+            <div>
+                <span class="workspace-eyebrow">Danger Zone</span>
+                <h3>Acciones destructivas</h3>
+                <p>
+                    Utiliza estas acciones únicamente para errores de captura o
+                    limpieza permitida. Archivar no elimina información.
+                </p>
+            </div>
+            <span class="event-danger-zone__badge">Acceso restringido</span>
+        </header>
 
         {% if puede_eliminar_error %}
         <div class="event-danger-action">
@@ -103,8 +331,11 @@
             </div>
             <form method="post" action="{% url 'k9_evento_eliminar_error' empresa_slug=empresa.slug evento_id=evento.id %}">
                 {% csrf_token %}
-                        <input type="hidden" name="return_to" value="{{ return_to }}">
-                <input class="app-input" name="confirmacion" placeholder="Escribe ELIMINAR" autocomplete="off">
+                <input type="hidden" name="return_to" value="{{ return_to }}">
+                <label class="app-field">
+                    <span class="app-label">Confirmación</span>
+                    <input class="app-input" name="confirmacion" placeholder="Escribe ELIMINAR" autocomplete="off">
+                </label>
                 <button class="app-button app-button--danger" type="submit">Eliminar definitivamente</button>
             </form>
         </div>
@@ -114,17 +345,36 @@
         <div class="event-danger-action">
             <div>
                 <strong>Purgar archivado</strong>
-                <p>
-                    Disponible para DIRTEC/Admin Empresa, pero seguirá bloqueado si existen
-                    contratos, pagos, servicios u otro historial protegido.
-                </p>
+                {% if ciclo_datos.purga_descartable_permitida %}
+                    <p>
+                        Este evento está clasificado como descartable y no conserva
+                        historial real protegido.
+                    </p>
+                {% else %}
+                    <p>
+                        Bloqueado: este evento contiene historial real. Incluso con un
+                        expediente D6.2 completo, la purga histórica requiere la política
+                        de retención y autorización D6.3.
+                    </p>
+                {% endif %}
             </div>
+            {% if ciclo_datos.purga_descartable_permitida %}
             <form method="post" action="{% url 'k9_evento_purgar' empresa_slug=empresa.slug evento_id=evento.id %}">
                 {% csrf_token %}
-                        <input type="hidden" name="return_to" value="{{ return_to }}">
-                <input class="app-input" name="confirmacion" placeholder="Escribe PURGAR" autocomplete="off">
+                <input type="hidden" name="return_to" value="{{ return_to }}">
+                <label class="app-field">
+                    <span class="app-label">Confirmación</span>
+                    <input class="app-input" name="confirmacion" placeholder="Escribe PURGAR" autocomplete="off">
+                </label>
                 <button class="app-button app-button--danger" type="submit">Purgar permanentemente</button>
             </form>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        {% if not puede_eliminar_error and not evento.estado == "ARCHIVADO" %}
+        <div class="event-danger-zone__empty">
+            No hay ninguna operación destructiva disponible para el estado actual.
         </div>
         {% endif %}
     </section>

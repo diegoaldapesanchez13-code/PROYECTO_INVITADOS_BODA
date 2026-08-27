@@ -1,11 +1,11 @@
 {% extends "paquetes/base.html" %}
-{% block title %}Paquetes comerciales | DIRTEC{% endblock %}
+{% block package_title %}Paquetes comerciales | DIRTEC{% endblock %}
 {% block heading %}Paquetes comerciales{% endblock %}
-{% block content %}
-<section class="pkg-section">
+{% block package_content %}
+<section class="pkg-section pkg-list-page">
     <div class="section-heading">
         <div>
-            <span>Catalogo comercial</span>
+            <span class="pkg-eyebrow">Catalogo comercial</span>
             <h2>Paquetes</h2>
         </div>
         {% if puede_gestionar %}
@@ -29,7 +29,7 @@
         {% for paquete in paquetes %}
             <article class="pkg-card">
                 <div>
-                    <span>{% if paquete.activo %}Activo{% else %}Inactivo{% endif %}</span>
+                    <span class="pkg-status {% if paquete.activo %}is-active{% else %}is-inactive{% endif %}">{% if paquete.activo %}Activo{% else %}Inactivo{% endif %}</span>
                     <h3><a href="{% url 'paquetes_paquete_detail' empresa.slug paquete.id %}">{{ paquete.nombre }}</a></h3>
                     <p>{{ paquete.descripcion|default:"Sin descripcion" }}</p>
                 </div>

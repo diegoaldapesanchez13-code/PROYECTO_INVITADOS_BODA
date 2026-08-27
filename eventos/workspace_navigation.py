@@ -42,6 +42,7 @@ def build_workspace_tabs(*, user, empresa, evento, active_key="resumen"):
     """
     can_view = usuario_puede_evento(user, evento, Actions.EVENT_VIEW)
     can_edit = usuario_puede_evento(user, evento, Actions.EVENT_EDIT)
+    can_tables = usuario_puede_evento(user, evento, Actions.EVENT_TABLES)
 
     if not can_view:
         return {"active_key": active_key, "tabs": [], "groups": []}
@@ -60,10 +61,11 @@ def build_workspace_tabs(*, user, empresa, evento, active_key="resumen"):
         WorkspaceTab("tareas", "Tareas", _url("k9_evento_tareas", empresa, evento), "operacion", enabled=True),
         WorkspaceTab("agenda", "Agenda", _url("k9_evento_agenda", empresa, evento), "operacion", enabled=True),
         WorkspaceTab("invitados", "Invitados", _url("k9_evento_invitados", empresa, evento), "experiencia", enabled=True),
+        WorkspaceTab("mesas", "Mesas", _url("k9_evento_mesas", empresa, evento), "experiencia", enabled=can_tables),
         WorkspaceTab("documentos", "Documentos", _url("k9_evento_documentos", empresa, evento), "operacion", enabled=True),
         WorkspaceTab("finanzas", "Finanzas", _url("k9_evento_finanzas", empresa, evento), "negocio", enabled=True),
-        WorkspaceTab("invitacion", "Invitación", None, "experiencia", enabled=False),
-        WorkspaceTab("actividad", "Actividad", None, "control", enabled=False),
+        WorkspaceTab("invitacion", "Invitación", _url("k9_evento_invitacion", empresa, evento), "experiencia", enabled=is_internal),
+        WorkspaceTab("actividad", "Actividad", _url("k9_evento_actividad", empresa, evento), "control", enabled=is_internal),
         WorkspaceTab(
             "configuracion",
             "Configuración",

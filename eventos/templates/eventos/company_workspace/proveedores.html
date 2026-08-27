@@ -1,0 +1,119 @@
+{% extends "eventos/company_workspace/base.html" %}
+
+{% block company_title %}Proveedores{% endblock %}
+{% block company_heading %}Proveedores{% endblock %}
+{% block company_subheading %}Directorio administrativo de proveedores, servicios relacionados y acceso operativo existente.{% endblock %}
+
+{% block company_content %}
+<section class="company-module-toolbar">
+    <form method="get" class="company-search">
+        <label>
+            <span>Buscar</span>
+            <input class="app-input" type="search" name="q" value="{{ busqueda }}" placeholder="Proveedor, contacto, correo o telefono">
+        </label>
+        <button class="app-button app-button--secondary" type="submit">Filtrar</button>
+    </form>
+    {% if puede_catalogos %}
+    <details class="company-inline-panel">
+        <summary>Nuevo proveedor</summary>
+        <form method="post" class="company-form-grid">
+            {% csrf_token %}
+            <input type="hidden" name="accion" value="crear_proveedor">
+            <input type="hidden" name="empresa_id" value="{{ empresa.id }}">
+            <label>Nombre comercial<input class="app-input" name="nombre_proveedor" required></label>
+            <label>Tipo
+                <select class="app-select" name="tipo_proveedor">
+                    {% for value, label in tipos_proveedor %}
+                    <option value="{{ value }}">{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label>Contacto<input class="app-input" name="contacto_proveedor"></label>
+            <label>Telefono<input class="app-input" name="telefono_proveedor"></label>
+            <label>Correo<input class="app-input" type="email" name="correo_proveedor"></label>
+            <label>Usuario portal<input class="app-input" name="username_usuario" autocomplete="username"></label>
+            <label>Correo de acceso<input class="app-input" type="email" name="email_usuario"></label>
+            <label>Contraseña portal<input class="app-input" type="password" name="password_usuario" minlength="8" autocomplete="new-password" placeholder="Obligatoria si defines usuario portal"></label>
+            <label>Confirmar contraseña<input class="app-input" type="password" name="password_usuario_confirmar" minlength="8" autocomplete="new-password"></label>
+            <label>Contacto planner<input class="app-input" name="contacto_operativo_proveedor"></label>
+            <label>Telefono planner<input class="app-input" name="telefono_operativo_proveedor"></label>
+            <label>Correo planner<input class="app-input" type="email" name="correo_operativo_proveedor"></label>
+            <label class="company-check"><input type="checkbox" name="visible_wedding_planners_proveedor" checked> Visible para planners</label>
+            <div class="company-form-actions"><button class="app-button app-button--primary" type="submit">Crear proveedor</button></div>
+        </form>
+    </details>
+    {% endif %}
+</section>
+
+<section class="company-record-list" aria-label="Proveedores">
+    {% for proveedor in proveedores %}
+    <article class="company-record">
+        <div class="company-record__main">
+            <div class="company-record__title">
+                <span class="company-state {% if proveedor.activo %}is-active{% endif %}">{% if proveedor.activo %}Activo{% else %}Inactivo{% endif %}</span>
+                <h2>{{ proveedor.nombre_comercial }}</h2>
+                <p>{{ proveedor.get_tipo_proveedor_display }} · {{ proveedor.contacto_visible|default:"Sin contacto" }}</p>
+            </div>
+            <div class="company-record__meta">
+                <span>{{ proveedor.servicios_evento_count }} servicios evento</span>
+                <span>{{ proveedor.servicios_catalogo_count }} catalogo</span>
+                <a href="{% url 'catalogo_proveedor_servicios' empresa.slug proveedor.id %}">Servicios</a>
+            </div>
+        </div>
+        {% if puede_catalogos %}
+        <details class="company-record__details">
+            <summary>Editar proveedor</summary>
+            <form method="post" class="company-form-grid">
+                {% csrf_token %}
+                <input type="hidden" name="accion" value="editar_proveedor">
+                <input type="hidden" name="empresa_id" value="{{ empresa.id }}">
+                <input type="hidden" name="proveedor_id" value="{{ proveedor.id }}">
+                <label>Nombre comercial<input class="app-input" name="nombre_proveedor" value="{{ proveedor.nombre_comercial }}" required></label>
+                <label>Tipo
+                    <select class="app-select" name="tipo_proveedor">
+                        {% for value, label in tipos_proveedor %}
+                        <option value="{{ value }}" {% if proveedor.tipo_proveedor == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label>Contacto<input class="app-input" name="contacto_proveedor" value="{{ proveedor.nombre_contacto|default:'' }}"></label>
+                <label>Telefono<input class="app-input" name="telefono_proveedor" value="{{ proveedor.telefono|default:'' }}"></label>
+                <label>Correo<input class="app-input" type="email" name="correo_proveedor" value="{{ proveedor.correo|default:'' }}"></label>
+                <label>Usuario portal<input class="app-input" name="username_usuario" value="{{ proveedor.usuario.username|default:'' }}" autocomplete="username"></label>
+                <label>Correo de acceso<input class="app-input" type="email" name="email_usuario" value="{{ proveedor.usuario.email|default:'' }}"></label>
+                <label>Nueva contraseña portal<input class="app-input" type="password" name="password_usuario" minlength="8" autocomplete="new-password" placeholder="Dejar vacío para conservar la actual"></label>
+                <label>Confirmar nueva contraseña<input class="app-input" type="password" name="password_usuario_confirmar" minlength="8" autocomplete="new-password"></label>
+                <label>Contacto planner<input class="app-input" name="contacto_operativo_proveedor" value="{{ proveedor.contacto_operativo|default:'' }}"></label>
+                <label>Telefono planner<input class="app-input" name="telefono_operativo_proveedor" value="{{ proveedor.telefono_operativo|default:'' }}"></label>
+                <label>Correo planner<input class="app-input" type="email" name="correo_operativo_proveedor" value="{{ proveedor.correo_operativo|default:'' }}"></label>
+                <label class="company-check"><input type="checkbox" name="visible_wedding_planners_proveedor" {% if proveedor.visible_para_wedding_planners %}checked{% endif %}> Visible para planners</label>
+                <label class="company-check"><input type="checkbox" name="activo_proveedor" {% if proveedor.activo %}checked{% endif %}> Activo</label>
+                <div class="company-form-actions"><button class="app-button app-button--primary" type="submit">Guardar</button></div>
+            </form>
+            <div class="company-danger-actions">
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="accion" value="desactivar_proveedor">
+                    <input type="hidden" name="empresa_id" value="{{ empresa.id }}">
+                    <input type="hidden" name="proveedor_id" value="{{ proveedor.id }}">
+                    <button class="app-button app-button--secondary" type="submit">Desactivar</button>
+                </form>
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="accion" value="eliminar_proveedor">
+                    <input type="hidden" name="empresa_id" value="{{ empresa.id }}">
+                    <input type="hidden" name="proveedor_id" value="{{ proveedor.id }}">
+                    <button class="app-button app-button--danger" type="submit">Eliminar proveedor</button>
+                </form>
+            </div>
+        </details>
+        {% endif %}
+    </article>
+    {% empty %}
+    <div class="company-empty company-empty--large">
+        <strong>No hay proveedores registrados.</strong>
+        <p>El directorio empresarial de proveedores aparecera aqui.</p>
+    </div>
+    {% endfor %}
+</section>
+{% endblock %}

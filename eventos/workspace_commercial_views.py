@@ -6,16 +6,20 @@ from django.urls import reverse
 
 from core.services.authorization import Actions, usuario_puede_evento
 from eventos.models import ContratoEvento
+from eventos.selectors import contrato_es_materializable, contrato_vigente
 from eventos.services import leer_contrato_interno, materializar_servicios_contrato_v2
 from paquetes.models import PropuestaEvento, PropuestaLinea
 from paquetes.services import actualizar_totales_propuesta, calcular_propuesta, propuestas_empresa_qs
 
 from .workspace_commercial import (
+    aceptar_propuesta,
     cancelar_contrato,
     crear_revision_desde_contrato,
     eliminar_propuesta_error,
     generar_version_contractual,
     propuesta_es_editable,
+    propuesta_permite_editar_lineas,
+    reabrir_propuesta,
 )
 from .workspace_commercial_forms import WorkspaceLineaForm, WorkspacePropuestaForm
 from .workspace_views import (
@@ -61,6 +65,7 @@ def evento_comercial(request, empresa_slug, evento_id):
     elif propuestas.exists():
         propuesta = propuestas.first()
 
+    lineas_editables = propuesta_permite_editar_lineas(propuesta)
     accion = request.POST.get("accion")
     if request.method == "POST":
         if not puede_editar:
@@ -89,8 +94,10 @@ def evento_comercial(request, empresa_slug, evento_id):
             messages.error(request, "Revisa los datos de la propuesta.")
 
         elif accion == "agregar_linea":
-            if propuesta is None or not propuesta_es_editable(propuesta):
-                raise PermissionDenied("La propuesta debe estar editable.")
+            if propuesta is None or not propuesta_permite_editar_lineas(propuesta):
+                raise PermissionDenied(
+                    "Los adicionales y cortesias solo pueden modificarse antes de aceptar la propuesta."
+                )
             linea_form = WorkspaceLineaForm(request.POST, propuesta=propuesta)
             if linea_form.is_valid():
                 linea_form.save()
@@ -100,8 +107,10 @@ def evento_comercial(request, empresa_slug, evento_id):
             messages.error(request, "Revisa la linea comercial.")
 
         elif accion == "toggle_linea":
-            if propuesta is None or not propuesta_es_editable(propuesta):
-                raise PermissionDenied("La propuesta debe estar editable.")
+            if propuesta is None or not propuesta_permite_editar_lineas(propuesta):
+                raise PermissionDenied(
+                    "Los adicionales y cortesias ya estan protegidos por el estado comercial."
+                )
             linea = get_object_or_404(
                 PropuestaLinea,
                 propuesta=propuesta,
@@ -111,6 +120,22 @@ def evento_comercial(request, empresa_slug, evento_id):
             linea.save(update_fields=["activo", "updated_at"])
             actualizar_totales_propuesta(propuesta, user=request.user)
             messages.success(request, "Linea reactivada." if linea.activo else "Linea retirada.")
+            return redirect(_redirect_comercial(empresa, evento, return_to, propuesta.id))
+
+        elif accion == "eliminar_linea":
+            if propuesta is None or not propuesta_permite_editar_lineas(propuesta):
+                raise PermissionDenied(
+                    "Los adicionales y cortesias solo pueden eliminarse antes de aceptar la propuesta."
+                )
+            linea = get_object_or_404(
+                PropuestaLinea,
+                propuesta=propuesta,
+                pk=request.POST.get("linea_id"),
+            )
+            nombre = linea.nombre
+            linea.delete()
+            actualizar_totales_propuesta(propuesta, user=request.user)
+            messages.success(request, f"Linea eliminada: {nombre}.")
             return redirect(_redirect_comercial(empresa, evento, return_to, propuesta.id))
 
         elif accion == "eliminar_propuesta_error":
@@ -123,6 +148,36 @@ def evento_comercial(request, empresa_slug, evento_id):
             else:
                 messages.success(request, "Borrador eliminado.")
             return redirect(_redirect_comercial(empresa, evento, return_to))
+
+        elif accion == "aceptar_propuesta":
+            if propuesta is None:
+                raise PermissionDenied("Selecciona una propuesta.")
+            try:
+                propuesta = aceptar_propuesta(
+                    propuesta,
+                    user=request.user,
+                    request=request,
+                )
+            except ValidationError as exc:
+                messages.error(request, " ".join(exc.messages))
+            else:
+                messages.success(request, "Propuesta aceptada y congelada.")
+            return redirect(_redirect_comercial(empresa, evento, return_to, propuesta.id))
+
+        elif accion == "reabrir_propuesta":
+            if propuesta is None:
+                raise PermissionDenied("Selecciona una propuesta.")
+            try:
+                propuesta = reabrir_propuesta(
+                    propuesta,
+                    user=request.user,
+                    request=request,
+                )
+            except ValidationError as exc:
+                messages.error(request, " ".join(exc.messages))
+            else:
+                messages.success(request, "Negociacion reabierta.")
+            return redirect(_redirect_comercial(empresa, evento, return_to, propuesta.id))
 
         elif accion == "generar_contrato":
             if propuesta is None:
@@ -177,6 +232,9 @@ def evento_comercial(request, empresa_slug, evento_id):
             )
             if not usuario_puede_evento(request.user, evento, Actions.EVENT_OPERATIONS):
                 raise PermissionDenied("No tienes permiso para preparar la operacion.")
+            if not contrato_es_materializable(contrato):
+                messages.error(request, "Solo el contrato K9 vigente puede preparar o actualizar la operacion.")
+                return redirect(_redirect_comercial(empresa, evento, return_to, propuesta.id if propuesta else None))
             try:
                 resultado = materializar_servicios_contrato_v2(contrato.id, user=request.user)
             except ValidationError as exc:
@@ -203,9 +261,7 @@ def evento_comercial(request, empresa_slug, evento_id):
     )
     dto = calcular_propuesta(propuesta) if propuesta is not None else None
 
-    contrato_actual = contratos.filter(estado__in=["CONTRATADO", "FIRMADO"]).first()
-    if contrato_actual is None:
-        contrato_actual = contratos.first()
+    contrato_actual = contrato_vigente(evento)
     contrato_data = leer_contrato_interno(contrato_actual) if contrato_actual else None
 
     context = _app_context(
@@ -229,6 +285,13 @@ def evento_comercial(request, empresa_slug, evento_id):
             "propuestas": propuestas,
             "propuesta": propuesta,
             "propuesta_editable": propuesta_es_editable(propuesta),
+            "propuesta_lineas_editables": propuesta_permite_editar_lineas(propuesta),
+            "propuesta_puede_aceptar": propuesta is not None and propuesta_permite_editar_lineas(propuesta),
+            "propuesta_puede_reabrir": (
+                propuesta is not None
+                and propuesta.estado == "ACEPTADO"
+                and not ContratoEvento.objects.filter(propuesta_origen=propuesta).exists()
+            ),
             "form": form,
             "linea_form": linea_form,
             "dto": dto,

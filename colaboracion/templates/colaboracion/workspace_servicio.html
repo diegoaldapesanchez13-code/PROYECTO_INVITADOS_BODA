@@ -7,8 +7,8 @@
     {% load static %}
     <link rel="stylesheet" href="{% static 'colaboracion/workspace_k84.css' %}">
 </head>
-<body>
-<main class="ws-shell">
+<body class="ws-uix-c4b">
+<main class="ws-shell" id="service-collaboration-workspace">
     <header class="ws-header">
         <div>
             <a class="ws-back" href="javascript:history.back()">← Regresar</a>
@@ -219,8 +219,8 @@
 
         {% if es_operador_workspace or es_cliente_workspace %}<article class="ws-panel ws-k85-card">
             <h3>Propuestas al cliente</h3>
-            {% for p in propuestas_workspace %}{% if es_operador_workspace or p.estado != 'BORRADOR' %}<div class="ws-record"><strong>v{{ p.version }} · {{ p.get_modalidad_display }}</strong><span>{{ p.get_estado_display }}</span><p>{{ p.descripcion|default:"" }}</p><small>Cargo adicional: ${{ p.cargo_adicional_cliente }}</small>{% if es_cliente_workspace and p.estado == 'ENVIADA' %}<form method="post" action="{% url 'colaboracion_k85_propuesta_responder' p.id %}" class="ws-inline-actions">{% csrf_token %}<input name="comentario" placeholder="Comentario opcional"><button name="estado" value="APROBADA">Aprobar</button><button name="estado" value="CAMBIOS_SOLICITADOS">Pedir cambios</button><button name="estado" value="RECHAZADA">Rechazar</button></form>{% endif %}</div>{% endif %}{% empty %}<p class="ws-muted">Sin propuestas.</p>{% endfor %}
-            {% if es_operador_workspace %}<form method="post" action="{% url 'colaboracion_k85_propuesta_crear' servicio.id %}" class="ws-mini-form">{% csrf_token %}<select name="modalidad"><option value="INCLUIDO">Incluido</option><option value="UPGRADE">Upgrade</option><option value="ADICIONAL">Adicional</option></select><input type="number" step="0.01" min="0" name="cargo_adicional_cliente" value="{{ servicio.cargo_adicional_cliente }}" placeholder="Cargo adicional"><textarea name="descripcion" rows="2" placeholder="Propuesta para cliente"></textarea><select name="cotizacion_id"><option value="">Sin cotización vinculada</option>{% for c in cotizaciones_workspace %}<option value="{{ c.id }}">Cotización v{{ c.version }} · ${{ c.costo_proveedor }}</option>{% endfor %}</select><button>Enviar propuesta</button></form>{% endif %}
+            {% for p in propuestas_workspace %}{% if es_operador_workspace or p.estado != 'BORRADOR' %}<div class="ws-record"><strong>v{{ p.version }} · {{ p.get_modalidad_display }}</strong><span>{{ p.get_estado_display }}</span><p>{{ p.descripcion|default:"" }}</p><small>Cargo adicional: ${{ p.cargo_adicional_cliente }}</small>{% if p.estado == "APROBADA" and p.ajuste_contractual %}<small> · Ajuste contractual vigente</small>{% endif %}{% if es_cliente_workspace and p.estado == 'ENVIADA' %}<form method="post" action="{% url 'colaboracion_k85_propuesta_responder' p.id %}" class="ws-inline-actions">{% csrf_token %}<input name="comentario" placeholder="Comentario opcional"><button name="estado" value="APROBADA">Aprobar</button><button name="estado" value="CAMBIOS_SOLICITADOS">Pedir cambios</button><button name="estado" value="RECHAZADA">Rechazar</button></form>{% endif %}</div>{% endif %}{% empty %}<p class="ws-muted">Sin propuestas.</p>{% endfor %}
+            {% if es_operador_workspace %}<form method="post" action="{% url 'colaboracion_k85_propuesta_crear' servicio.id %}" class="ws-mini-form">{% csrf_token %}<select name="modalidad"><option value="INCLUIDO">Incluido</option><option value="UPGRADE">Upgrade</option><option value="ADICIONAL">Adicional</option><option value="CORTESIA">Cortesía</option></select><input type="number" step="0.01" min="0" name="cargo_adicional_cliente" value="{{ servicio.cargo_adicional_cliente }}" placeholder="Cargo adicional"><textarea name="descripcion" rows="2" placeholder="Propuesta para cliente"></textarea><select name="cotizacion_id"><option value="">Sin cotización vinculada</option>{% for c in cotizaciones_workspace %}<option value="{{ c.id }}">Cotización v{{ c.version }} · ${{ c.costo_proveedor }}</option>{% endfor %}</select><button>Enviar propuesta</button></form>{% endif %}
         </article>{% endif %}
 
         {% if es_operador_workspace or es_cliente_workspace %}<article class="ws-panel ws-k85-card">

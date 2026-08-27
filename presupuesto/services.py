@@ -6,6 +6,8 @@ from django.db.models import Sum
 from core.services.authorization import Actions, usuario_puede_evento
 from core.services.permisos import roles_usuario_empresa, usuario_es_dirtec_operativo
 from eventos.models import ContratoEvento, ParticipanteEvento
+from eventos.selectors import contrato_vigente
+from colaboracion.models import AjusteContractualServicio, PropuestaServicioCliente
 from proveedores.models import ServicioEvento
 
 from .models import GastoEvento, PagoClienteEvento, PagoEvento
@@ -33,34 +35,61 @@ def _pct(margen, total):
 
 
 def contrato_financiero_evento(evento):
-    contrato = (
-        ContratoEvento.objects.filter(evento=evento)
-        .exclude(estado__in=['CANCELADO', 'REEMPLAZADO'])
-        .order_by('-snapshot_version', '-version', '-id')
-        .first()
+    contrato = contrato_vigente(evento)
+    ajustes = list(
+        AjusteContractualServicio.objects.filter(evento=evento, estado="VIGENTE")
+        .select_related("servicio_evento", "contrato_base", "propuesta_origen")
+        .order_by("aprobado_en", "id")
     )
+    total_ajustes = sum((_money(item.monto_cliente) for item in ajustes), Decimal("0.00"))
+    advertencias = []
+
+    legacy_aprobadas = (
+        PropuestaServicioCliente.objects.filter(
+            servicio_evento__evento=evento,
+            estado="APROBADA",
+            cargo_adicional_cliente__gt=0,
+            ajuste_contractual__isnull=True,
+        ).count()
+    )
+    if legacy_aprobadas:
+        advertencias.append(
+            f"{legacy_aprobadas} cambio(s) aprobado(s) legacy no tienen ajuste contractual D5 normalizado."
+        )
+
     if contrato and contrato.snapshot_version == 2:
         snapshot = contrato.snapshot_comercial or {}
-        total = (snapshot.get('totales') or {}).get('total_final')
+        total = (snapshot.get("totales") or {}).get("total_final")
+        total_base = _money(total if total is not None else contrato.monto_base)
         return {
-            'fuente': 'K9_CONTRATO_V2',
-            'contrato': contrato,
-            'total_contratado': _money(total if total is not None else contrato.monto_base),
-            'advertencias': [],
+            "fuente": "K9_CONTRATO_V2",
+            "contrato": contrato,
+            "total_base_contrato": total_base,
+            "total_ajustes_contractuales": _money(total_ajustes),
+            "ajustes_contractuales": ajustes,
+            "total_contratado": _money(total_base + total_ajustes),
+            "advertencias": advertencias,
         }
     if contrato:
+        total_base = _money(contrato.monto_base)
+        advertencias.append("Contrato legacy: no existe snapshot K9 v2.")
         return {
-            'fuente': 'CONTRATO_LEGACY',
-            'contrato': contrato,
-            'total_contratado': _money(contrato.monto_base),
-            'advertencias': ['Contrato legacy: no existe snapshot K9 v2.'],
+            "fuente": "CONTRATO_LEGACY",
+            "contrato": contrato,
+            "total_base_contrato": total_base,
+            "total_ajustes_contractuales": _money(total_ajustes),
+            "ajustes_contractuales": ajustes,
+            "total_contratado": _money(total_base + total_ajustes),
+            "advertencias": advertencias,
         }
-
     return {
-        'fuente': 'SIN_CONTRATO',
-        'contrato': None,
-        'total_contratado': Decimal('0.00'),
-        'advertencias': ['Sin contrato K9 v2 para este evento.'],
+        "fuente": "SIN_CONTRATO",
+        "contrato": None,
+        "total_base_contrato": Decimal("0.00"),
+        "total_ajustes_contractuales": Decimal("0.00"),
+        "ajustes_contractuales": [],
+        "total_contratado": Decimal("0.00"),
+        "advertencias": ["Sin contrato K9 v2 para este evento.", *advertencias],
     }
 
 
@@ -154,6 +183,9 @@ def obtener_resumen_financiero_evento(evento):
         'evento_id': evento.id,
         'fuente_total': contrato_data['fuente'],
         'contrato': contrato_data['contrato'],
+        'total_base_contrato': contrato_data.get('total_base_contrato', total_contratado),
+        'total_ajustes_contractuales': contrato_data.get('total_ajustes_contractuales', Decimal('0.00')),
+        'ajustes_contractuales': contrato_data.get('ajustes_contractuales', []),
         'total_contratado': total_contratado,
         'pagos_cliente_recibidos': pagos_cliente_recibidos,
         'saldo_cliente': saldo_cliente,
@@ -212,6 +244,9 @@ def resumen_financiero_cliente(evento, *, user):
     return {
         'evento_id': data['evento_id'],
         'fuente_total': data['fuente_total'],
+        'total_base_contrato': data.get('total_base_contrato', data['total_contratado']),
+        'total_ajustes_contractuales': data.get('total_ajustes_contractuales', Decimal('0.00')),
+        'ajustes_contractuales': data.get('ajustes_contractuales', []),
         'total_contratado': data['total_contratado'],
         'pagos_cliente_recibidos': data['pagos_cliente_recibidos'],
         'saldo_cliente': data['saldo_cliente'],

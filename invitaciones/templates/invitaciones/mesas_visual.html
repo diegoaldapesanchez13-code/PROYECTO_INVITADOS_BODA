@@ -12,7 +12,7 @@
         <div class="topbar">
             <h1>Acomodo de mesas</h1>
             <div class="actions">
-                <a href="{% url 'dashboard' %}{% if evento %}?evento={{ evento.id }}{% endif %}">Dashboard</a>
+                <a href="{{ return_to }}">Regresar</a>
                 <form method="post" action="{% url 'logout' %}">
                     {% csrf_token %}
                     <button class="btn secondary" type="submit">Cerrar sesión</button>
@@ -40,6 +40,7 @@
             </div>
 
             <form method="get">
+                <input type="hidden" name="return_to" value="{{ return_to }}">
                 <label for="evento">Evento</label>
                 <select id="evento" name="evento" onchange="this.form.submit()">
                     {% for item in eventos %}
@@ -64,6 +65,7 @@
                     {% csrf_token %}
                     <input type="hidden" name="accion" value="crear_mesa">
                     <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                    <input type="hidden" name="return_to" value="{{ return_to }}">
                     <h3>Nueva mesa</h3>
                     <div class="design-grid">
                         <label>Nombre<input type="text" name="nombre_mesa" placeholder="Mesa 1" required></label>
@@ -88,6 +90,7 @@
                     {% csrf_token %}
                     <input type="hidden" name="accion" value="asignar_mesa">
                     <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                    <input type="hidden" name="return_to" value="{{ return_to }}">
                     <h3>Asignar lugar</h3>
                     <div class="design-grid">
                         <label>Mesa
@@ -182,6 +185,7 @@
                                 {% csrf_token %}
                                 <input type="hidden" name="accion" value="eliminar_asignacion">
                                 <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                    <input type="hidden" name="return_to" value="{{ return_to }}">
                                 <input type="hidden" name="asignacion_id" value="{{ asignacion.id }}">
                                 <span>
                                     {% if asignacion.numero_asiento %}{{ asignacion.numero_asiento }}. {% endif %}
@@ -201,6 +205,7 @@
                             {% csrf_token %}
                             <input type="hidden" name="accion" value="editar_mesa">
                             <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                    <input type="hidden" name="return_to" value="{{ return_to }}">
                             <input type="hidden" name="mesa_id" value="{{ mesa.id }}">
                             <div class="design-grid">
                                 <label>Nombre<input type="text" name="nombre_mesa" value="{{ mesa.nombre }}" required></label>
@@ -224,6 +229,7 @@
                             {% csrf_token %}
                             <input type="hidden" name="accion" value="eliminar_mesa">
                             <input type="hidden" name="evento_id" value="{{ evento.id }}">
+                    <input type="hidden" name="return_to" value="{{ return_to }}">
                             <input type="hidden" name="mesa_id" value="{{ mesa.id }}">
                             <button class="btn danger" type="submit">Eliminar mesa</button>
                         </form>

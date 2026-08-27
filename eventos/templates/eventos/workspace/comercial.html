@@ -10,7 +10,7 @@
 
 {% block workspace_content %}
 <section class="commercial-workspace">
-    <header class="commercial-heading">
+    <header class="workspace-page-header commercial-heading">
         <div>
             <span class="workspace-eyebrow">Comercial</span>
             <h2>Propuesta y contrato</h2>
@@ -21,26 +21,26 @@
         </div>
     </header>
 
-    <section class="commercial-status-grid">
-        <article class="commercial-status-card">
+    <section class="commercial-status-grid workspace-metric-grid">
+        <article class="commercial-status-card workspace-metric-card">
             <span>Propuestas</span>
             <strong>{{ propuestas|length }}</strong>
             <small>{% if propuesta %}Seleccionada: {{ propuesta.get_estado_display }}{% else %}Sin propuesta{% endif %}</small>
         </article>
-        <article class="commercial-status-card">
+        <article class="commercial-status-card workspace-metric-card">
             <span>Contrato vigente</span>
             <strong>{% if contrato_actual %}v{{ contrato_actual.version }}{% else %}—{% endif %}</strong>
             <small>{% if contrato_actual %}{{ contrato_actual.get_estado_display }}{% else %}Aún no generado{% endif %}</small>
         </article>
-        <article class="commercial-status-card">
+        <article class="commercial-status-card workspace-metric-card">
             <span>Total propuesta</span>
             <strong>{% if dto %}${{ dto.total }}{% else %}$0.00{% endif %}</strong>
-            <small>Calculado server-side</small>
+            <small>{% if propuesta.estado == "ACEPTADO" or propuesta.estado == "CONTRATADO" %}Snapshot aceptado{% else %}Calculado server-side{% endif %}</small>
         </article>
     </section>
 
     <section class="commercial-layout">
-        <aside class="commercial-sidebar">
+        <aside class="commercial-sidebar workspace-panel">
             <div class="commercial-sidebar__title">
                 <strong>Versiones comerciales</strong>
             </div>
@@ -87,7 +87,7 @@
                     {% endif %}
                 </header>
 
-                {% if puede_editar %}
+                {% if puede_editar and propuesta_editable %}
                 <form method="post" class="commercial-form">
                     {% csrf_token %}
                     <input type="hidden" name="accion" value="guardar_propuesta">
@@ -145,8 +145,33 @@
                         <button class="app-button app-button--primary" type="submit" {% if not propuesta_editable %}disabled{% endif %}>
                             Guardar propuesta
                         </button>
+                        {% if propuesta and propuesta_puede_aceptar %}
+                        <button
+                            class="app-button app-button--secondary"
+                            type="submit"
+                            name="accion"
+                            value="aceptar_propuesta"
+                        >
+                            Aceptar propuesta
+                        </button>
+                        {% endif %}
                     </div>
                 </form>
+                {% elif propuesta %}
+                <div class="commercial-empty">
+                    {% if propuesta.estado == "ACEPTADO" %}
+                    <strong>PROPUESTA ACEPTADA</strong>
+                    <span>Contenido comercial congelado.</span>
+                    {% elif propuesta.estado == "CONTRATADO" %}
+                    <strong>Propuesta contratada</strong>
+                    <span>La propuesta origen contractual es solo lectura.</span>
+                    {% elif propuesta.estado == "CANCELADO" %}
+                    <strong>Propuesta cancelada</strong>
+                    <span>Estado terminal precontractual.</span>
+                    {% else %}
+                    <strong>Solo lectura.</strong>
+                    {% endif %}
+                </div>
                 {% else %}
                 <div class="commercial-empty"><strong>Solo lectura.</strong></div>
                 {% endif %}
@@ -195,14 +220,14 @@
                                 <strong>{{ item.nombre }}</strong>
                                 <span>{{ item.get_tipo_display }} · {{ item.get_modo_precio_display }} · ${{ item.subtotal }}</span>
                             </div>
-                            {% if puede_editar and propuesta_editable %}
+                            {% if puede_editar and propuesta_lineas_editables %}
                             <form method="post">
                                 {% csrf_token %}
-                                <input type="hidden" name="accion" value="toggle_linea">
+                                <input type="hidden" name="accion" value="eliminar_linea">
                                 <input type="hidden" name="propuesta_id" value="{{ propuesta.id }}">
                                 <input type="hidden" name="linea_id" value="{{ item.id }}">
                                 <input type="hidden" name="return_to" value="{{ return_to }}">
-                                <button type="submit">{% if item.activo %}Retirar{% else %}Reactivar{% endif %}</button>
+                                <button class="commercial-delete-line" type="submit">Eliminar</button>
                             </form>
                             {% endif %}
                         </div>
@@ -213,7 +238,14 @@
                 </article>
             </section>
 
-            {% if linea_form and puede_editar %}
+            {% if propuesta and not propuesta_lineas_editables %}
+            <div class="commercial-line-lock">
+                <strong>Adicionales y cortesias protegidos</strong>
+                <span>Solo pueden agregarse o eliminarse antes de que la propuesta pase a Aceptado.</span>
+            </div>
+            {% endif %}
+
+            {% if linea_form and puede_editar and propuesta_lineas_editables %}
             <details class="workspace-panel commercial-add-line">
                 <summary>+ Agregar adicional o cortesía</summary>
                 <form method="post">
@@ -237,12 +269,12 @@
             </details>
             {% endif %}
 
-            {% if propuesta.estado == "ACEPTADO" and puede_editar and propuesta_editable %}
+            {% if propuesta.estado == "ACEPTADO" and puede_editar %}
             <section class="commercial-contract-cta">
                 <div>
-                    <span class="workspace-eyebrow">Listo para congelar</span>
+                    <span class="workspace-eyebrow">PROPUESTA ACEPTADA</span>
                     <h3>Convertir propuesta en contrato</h3>
-                    <p>El total y las líneas se recalculan en servidor antes de crear el snapshot contractual.</p>
+                    <p>Contenido comercial congelado. El contrato se generara desde el snapshot aceptado.</p>
                 </div>
                 <form method="post">
                     {% csrf_token %}
@@ -251,6 +283,15 @@
                     <input type="hidden" name="return_to" value="{{ return_to }}">
                     <button class="app-button app-button--primary" type="submit">Generar contrato</button>
                 </form>
+                {% if propuesta_puede_reabrir %}
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="accion" value="reabrir_propuesta">
+                    <input type="hidden" name="propuesta_id" value="{{ propuesta.id }}">
+                    <input type="hidden" name="return_to" value="{{ return_to }}">
+                    <button class="app-button app-button--secondary" type="submit">Reabrir negociacion</button>
+                </form>
+                {% endif %}
             </section>
             {% endif %}
             {% endif %}
@@ -296,6 +337,9 @@
                             {% if contrato_actual.materializado_en %}Actualizar operación{% else %}Preparar operación{% endif %}
                         </button>
                     </form>
+                    {% elif contrato_actual.estado == "FIRMADO" %}
+                    <span class="app-badge">Contrato legacy firmado · solo lectura operacional</span>
+                    {% endif %}
 
                     <details class="commercial-cancel-contract">
                         <summary>Cancelar contrato</summary>
@@ -309,7 +353,6 @@
                             <button class="app-button app-button--danger" type="submit">Confirmar cancelación</button>
                         </form>
                     </details>
-                    {% endif %}
                 </div>
                 {% endif %}
 

@@ -1,0 +1,112 @@
+{% extends "eventos/company_workspace/base.html" %}
+
+{% block company_title %}Equipo{% endblock %}
+{% block company_heading %}Equipo{% endblock %}
+{% block company_subheading %}Usuarios internos, planners y permisos existentes de la empresa.{% endblock %}
+
+{% block company_content %}
+<section class="company-module-toolbar">
+    <form method="get" class="company-search">
+        <label>
+            <span>Buscar</span>
+            <input class="app-input" type="search" name="q" value="{{ busqueda }}" placeholder="Nombre, usuario, correo o rol">
+        </label>
+        <button class="app-button app-button--secondary" type="submit">Filtrar</button>
+    </form>
+    {% if puede_usuarios %}
+    <details class="company-inline-panel">
+        <summary>Nuevo integrante</summary>
+        <form method="post" class="company-form-grid">
+            {% csrf_token %}
+            <input type="hidden" name="accion" value="crear_planner">
+            <input type="hidden" name="empresa_id" value="{{ empresa.id }}">
+            <label>Usuario<input class="app-input" name="username_usuario" required></label>
+            <label>Contraseña<input class="app-input" type="password" name="password_usuario" minlength="8" autocomplete="new-password" required></label>
+            <label>Confirmar contraseña<input class="app-input" type="password" name="password_usuario_confirmar" minlength="8" autocomplete="new-password" required></label>
+            <label>Correo<input class="app-input" type="email" name="email_usuario"></label>
+            <label>Nombre<input class="app-input" name="first_name_usuario"></label>
+            <label>Apellido<input class="app-input" name="last_name_usuario"></label>
+            <label>Telefono<input class="app-input" name="telefono_usuario"></label>
+            <label>Rol
+                <select class="app-select" name="rol_usuario">
+                    {% for value, label in roles_equipo %}
+                    <option value="{{ value }}">{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label class="company-check"><input type="checkbox" name="activo_usuario" checked> Activo</label>
+            <label class="company-check"><input type="checkbox" name="puede_gestionar_catalogos_usuario"> Puede gestionar catalogo</label>
+            <div class="company-form-actions"><button class="app-button app-button--primary" type="submit">Crear integrante</button></div>
+        </form>
+    </details>
+    {% endif %}
+</section>
+
+<section class="company-record-list" aria-label="Equipo">
+    {% for membresia in membresias_equipo %}
+    <article class="company-record">
+        <div class="company-record__main">
+            <div class="company-record__title">
+                <span class="company-state {% if membresia.activo %}is-active{% endif %}">{% if membresia.activo %}Activo{% else %}Inactivo{% endif %}</span>
+                <h2>{{ membresia.usuario.get_full_name|default:membresia.usuario.username }}</h2>
+                <p>{{ membresia.get_rol_display }} · {{ membresia.usuario.email|default:"Sin correo" }}</p>
+            </div>
+            <div class="company-record__meta">
+                <span>{{ membresia.eventos_planeados_count }} eventos</span>
+                {% if membresia.puede_gestionar_catalogos %}<span>Catalogo</span>{% endif %}
+            </div>
+        </div>
+        {% if puede_usuarios %}
+        <details class="company-record__details">
+            <summary>Editar integrante</summary>
+            <form method="post" class="company-form-grid">
+                {% csrf_token %}
+                <input type="hidden" name="accion" value="editar_usuario_empresa">
+                <input type="hidden" name="empresa_id" value="{{ empresa.id }}">
+                <input type="hidden" name="membresia_id" value="{{ membresia.id }}">
+                <input type="hidden" name="origen" value="equipo">
+                <label>Usuario<input class="app-input" name="username_usuario" value="{{ membresia.usuario.username }}" required></label>
+                <label>Nueva contraseña<input class="app-input" type="password" name="password_usuario" minlength="8" autocomplete="new-password" placeholder="Dejar vacío para conservar la actual"></label>
+                <label>Confirmar nueva contraseña<input class="app-input" type="password" name="password_usuario_confirmar" minlength="8" autocomplete="new-password"></label>
+                <label>Correo<input class="app-input" type="email" name="email_usuario" value="{{ membresia.usuario.email }}"></label>
+                <label>Nombre<input class="app-input" name="first_name_usuario" value="{{ membresia.usuario.first_name }}"></label>
+                <label>Apellido<input class="app-input" name="last_name_usuario" value="{{ membresia.usuario.last_name }}"></label>
+                <label>Telefono<input class="app-input" name="telefono_usuario" value="{{ membresia.usuario.profile.phone|default:'' }}"></label>
+                <label>Rol
+                    <select class="app-select" name="rol_usuario">
+                        {% for value, label in roles_equipo %}
+                        <option value="{{ value }}" {% if membresia.rol == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label class="company-check"><input type="checkbox" name="activo_usuario" {% if membresia.activo %}checked{% endif %}> Activo</label>
+                <label class="company-check"><input type="checkbox" name="puede_gestionar_catalogos_usuario" {% if membresia.puede_gestionar_catalogos %}checked{% endif %}> Puede gestionar catalogo</label>
+                <div class="company-form-actions"><button class="app-button app-button--primary" type="submit">Guardar</button></div>
+            </form>
+            <div class="company-danger-actions">
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="accion" value="desactivar_usuario_empresa">
+                    <input type="hidden" name="empresa_id" value="{{ empresa.id }}">
+                    <input type="hidden" name="membresia_id" value="{{ membresia.id }}">
+                    <button class="app-button app-button--secondary" type="submit">Desactivar</button>
+                </form>
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="accion" value="eliminar_usuario_empresa">
+                    <input type="hidden" name="empresa_id" value="{{ empresa.id }}">
+                    <input type="hidden" name="membresia_id" value="{{ membresia.id }}">
+                    <button class="app-button app-button--danger" type="submit">Eliminar acceso</button>
+                </form>
+            </div>
+        </details>
+        {% endif %}
+    </article>
+    {% empty %}
+    <div class="company-empty company-empty--large">
+        <strong>No hay usuarios internos registrados.</strong>
+        <p>Los administradores, ventas y planners apareceran aqui.</p>
+    </div>
+    {% endfor %}
+</section>
+{% endblock %}

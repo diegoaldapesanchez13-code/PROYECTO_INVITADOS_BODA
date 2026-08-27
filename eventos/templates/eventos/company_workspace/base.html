@@ -1,0 +1,34 @@
+{% extends "core/app/base.html" %}
+{% load static %}
+
+{% block title %}{% block company_title %}Company Workspace{% endblock %} | {{ empresa.nombre_comercial }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'eventos/css/company_dashboard_r3.css' %}">
+<link rel="stylesheet" href="{% static 'eventos/css/company_workspace.css' %}">
+{% block company_extra_css %}{% endblock %}
+{% endblock %}
+
+{% block content %}
+<div class="company-workspace">
+    <header class="company-workspace__header">
+        <div>
+            <span class="company-eyebrow">{{ empresa.nombre_comercial }}</span>
+            <h1>{% block company_heading %}Company Workspace{% endblock %}</h1>
+            <p>{% block company_subheading %}Gestion operativa de empresa con runtime existente.{% endblock %}</p>
+        </div>
+        <nav class="company-workspace__quicknav" aria-label="Company workspace">
+            <a href="{% url 'empresa_dashboard' empresa.slug %}" {% if app_context.page_title == "Inicio" %}class="is-active"{% endif %}>Inicio</a>
+            <a href="{% url 'k9_evento_list' empresa.slug %}" {% if app_context.page_title == "Eventos" %}class="is-active"{% endif %}>Eventos</a>
+            <a href="{% url 'empresa_clientes' empresa.slug %}" {% if app_context.page_title == "Clientes" %}class="is-active"{% endif %}>Clientes</a>
+            <a href="{% url 'empresa_equipo' empresa.slug %}" {% if app_context.page_title == "Equipo" %}class="is-active"{% endif %}>Equipo</a>
+            <a href="{% url 'empresa_proveedores' empresa.slug %}" {% if app_context.page_title == "Proveedores" %}class="is-active"{% endif %}>Proveedores</a>
+            <a href="{% url 'empresa_catalogo' empresa.slug %}" {% if app_context.page_title == "Catalogo" %}class="is-active"{% endif %}>Catalogo</a>
+            <a href="{% url 'paquetes_paquete_list' empresa.slug %}" {% if app_context.page_title == "Paquetes" %}class="is-active"{% endif %}>Paquetes</a>
+            <a href="{% url 'empresa_configuracion' empresa.slug %}" {% if app_context.page_title == "Configuracion" %}class="is-active"{% endif %}>Configuracion</a>
+        </nav>
+    </header>
+
+    {% block company_content %}{% endblock %}
+</div>
+{% endblock %}

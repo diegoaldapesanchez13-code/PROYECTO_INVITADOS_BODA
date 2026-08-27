@@ -2,7 +2,8 @@ from django.urls import path
 from . import views, client_guest_views
 from .builder import views as builder_views
 from .builder import public_views as builder_public_views
-from eventos import company_dashboard_views, planner_dashboard_views
+from catalogo import views as catalogo_views
+from eventos import company_dashboard_views, company_workspace_views, planner_dashboard_views
 
 urlpatterns = [
     path('cliente/eventos/<int:evento_id>/invitados/grupos/crear/', client_guest_views.crear_grupo_cliente, name='cliente_grupo_crear'),
@@ -14,6 +15,11 @@ urlpatterns = [
     path('', views.inicio, name='inicio'),
     path('dirtec/dashboard/', views.dashboard_dirtec, name='dirtec_dashboard'),
     path('empresa/<slug:empresa_slug>/dashboard/', company_dashboard_views.company_dashboard, name='empresa_dashboard'),
+    path('empresa/<slug:empresa_slug>/clientes/', company_workspace_views.company_clientes, name='empresa_clientes'),
+    path('empresa/<slug:empresa_slug>/equipo/', company_workspace_views.company_equipo, name='empresa_equipo'),
+    path('empresa/<slug:empresa_slug>/proveedores/', company_workspace_views.company_proveedores, name='empresa_proveedores'),
+    path('empresa/<slug:empresa_slug>/catalogo/', catalogo_views.servicio_list, name='empresa_catalogo'),
+    path('empresa/<slug:empresa_slug>/configuracion/', company_workspace_views.company_configuracion, name='empresa_configuracion'),
     # K9 canonical Planner URL. All internal reverse() calls converge here.
     path('empresa/<slug:empresa_slug>/planner/dashboard/', planner_dashboard_views.planner_dashboard, name='planner_dashboard_empresa'),
     # Legacy K8 URL: accepted only as a compatibility entry point.

@@ -1,0 +1,267 @@
+/* K9 S2.3C3A — centro operativo de Invitación.
+   Builder permanece congelado e independiente. */
+
+.invitation-workspace {
+    display: grid;
+    gap: 1rem;
+}
+
+.invitation-heading {
+    align-items: flex-end;
+}
+
+.invitation-heading h2 {
+    margin: .2rem 0 .3rem;
+}
+
+.invitation-heading p {
+    max-width: 68ch;
+    margin: 0;
+    color: var(--text-muted);
+    line-height: 1.5;
+}
+
+.invitation-heading__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: .5rem;
+    flex-wrap: wrap;
+}
+
+.invitation-kpis {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: .75rem;
+}
+
+.invitation-kpis article {
+    display: grid;
+    gap: .18rem;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+    padding: .9rem 1rem;
+    box-shadow: var(--shadow-sm);
+}
+
+.invitation-kpis span,
+.invitation-kpis small {
+    color: var(--text-muted);
+}
+
+.invitation-kpis span {
+    font-size: .7rem;
+    font-weight: 850;
+}
+
+.invitation-kpis strong {
+    font-size: 1.2rem;
+    letter-spacing: -.025em;
+}
+
+.invitation-kpis small {
+    font-size: .66rem;
+}
+
+.invitation-layout {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .85rem;
+}
+
+.invitation-design,
+.invitation-rsvp-summary,
+.invitation-groups {
+    display: grid;
+    align-content: start;
+    gap: .85rem;
+    padding: 1rem;
+}
+
+.invitation-section-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: .8rem;
+}
+
+.invitation-section-heading h3 {
+    margin: .15rem 0 0;
+    font-size: 1.05rem;
+}
+
+.invitation-section-heading > span {
+    color: var(--text-muted);
+    font-size: .7rem;
+}
+
+.invitation-status {
+    display: inline-flex;
+    width: max-content;
+    border-radius: 999px;
+    background: var(--surface-muted);
+    padding: .25rem .5rem;
+    color: var(--text-muted);
+    font-size: .62rem;
+    font-weight: 850;
+}
+
+.invitation-status.is-published {
+    background: color-mix(in srgb, var(--success) 9%, var(--surface));
+    color: var(--success);
+}
+
+.invitation-status.is-draft {
+    background: color-mix(in srgb, var(--warning) 10%, var(--surface));
+    color: var(--warning);
+}
+
+.invitation-design-meta {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .55rem;
+    margin: 0;
+}
+
+.invitation-design-meta > div {
+    display: grid;
+    gap: .12rem;
+    border-radius: 9px;
+    background: var(--surface-muted);
+    padding: .6rem .7rem;
+}
+
+.invitation-design-meta > div.is-wide {
+    grid-column: 1 / -1;
+}
+
+.invitation-design-meta dt {
+    color: var(--text-muted);
+    font-size: .62rem;
+    font-weight: 800;
+}
+
+.invitation-design-meta dd {
+    margin: 0;
+    font-size: .75rem;
+    font-weight: 750;
+    overflow-wrap: anywhere;
+}
+
+.invitation-design__builder {
+    justify-self: start;
+}
+
+.invitation-group-list {
+    display: grid;
+    border-top: 1px solid var(--border);
+}
+
+.invitation-group-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(160px, .5fr) auto;
+    align-items: center;
+    gap: .8rem;
+    border-bottom: 1px solid var(--border);
+    padding: .7rem .1rem;
+}
+
+.invitation-group-row__identity {
+    display: grid;
+    gap: .12rem;
+}
+
+.invitation-group-row__identity strong {
+    font-size: .8rem;
+}
+
+.invitation-group-row__identity span,
+.invitation-group-row__state span {
+    color: var(--text-muted);
+    font-size: .66rem;
+}
+
+.invitation-group-row__state {
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+    flex-wrap: wrap;
+}
+
+.invitation-group-row__state b {
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--success) 9%, var(--surface));
+    padding: .2rem .42rem;
+    color: var(--success);
+    font-size: .58rem;
+}
+
+.invitation-group-row__actions {
+    justify-self: end;
+}
+
+.invitation-group-row__actions .app-button {
+    min-height: 34px;
+    padding: .42rem .65rem;
+    border-radius: 9px;
+    font-size: .68rem;
+}
+
+.invitation-group-row__unavailable {
+    color: var(--text-muted);
+    font-size: .65rem;
+}
+
+@media (max-width: 900px) {
+    .invitation-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .invitation-kpis {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 620px) {
+    .invitation-heading {
+        display: grid;
+    }
+
+    .invitation-heading__actions {
+        display: grid;
+        grid-template-columns: 1fr;
+        width: 100%;
+    }
+
+    .invitation-heading__actions .app-button {
+        width: 100%;
+        text-align: center;
+    }
+
+    .invitation-design-meta {
+        grid-template-columns: 1fr;
+    }
+
+    .invitation-design-meta > div.is-wide {
+        grid-column: auto;
+    }
+
+    .invitation-group-row {
+        grid-template-columns: 1fr;
+    }
+
+    .invitation-group-row__actions {
+        justify-self: stretch;
+    }
+
+    .invitation-group-row__actions .app-button {
+        width: 100%;
+        text-align: center;
+    }
+
+    .invitation-design__builder,
+    .invitation-rsvp-summary > .app-button {
+        width: 100%;
+        text-align: center;
+    }
+}

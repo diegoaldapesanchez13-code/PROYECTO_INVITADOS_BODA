@@ -226,6 +226,16 @@ class PropuestaEvento(models.Model):
     total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     version_calculo = models.PositiveIntegerField(default=1)
     desglose_calculado = models.JSONField(default=dict, blank=True)
+    aceptado_en = models.DateTimeField(blank=True, null=True)
+    aceptado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='propuestas_k9_aceptadas',
+    )
+    snapshot_aceptacion = models.JSONField(default=dict, blank=True)
+    snapshot_aceptacion_version = models.PositiveIntegerField(default=0)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -267,6 +277,30 @@ class PropuestaEvento(models.Model):
             raise ValidationError({'paquete': 'El paquete debe pertenecer a la misma empresa.'})
         if self.descuento < 0:
             raise ValidationError({'descuento': 'El descuento no puede ser negativo.'})
+        if self.pk:
+            original = type(self).objects.filter(pk=self.pk).values(
+                'sede_id',
+                'paquete_id',
+                'adultos',
+                'ninos',
+                'descuento',
+                'estado',
+                'notas_comerciales',
+            ).first()
+            if original and original['estado'] in {'ACEPTADO', 'CONTRATADO', 'CANCELADO'}:
+                campos = {
+                    'sede_id': self.sede_id,
+                    'paquete_id': self.paquete_id,
+                    'adultos': self.adultos,
+                    'ninos': self.ninos,
+                    'descuento': self.descuento,
+                    'estado': self.estado,
+                    'notas_comerciales': self.notas_comerciales,
+                }
+                if any(original[campo] != campos[campo] for campo in campos):
+                    raise ValidationError(
+                        'Una propuesta aceptada, contratada o cancelada no se puede modificar directamente.'
+                    )
 
 
 class PropuestaLinea(models.Model):
@@ -332,8 +366,9 @@ class PropuestaLinea(models.Model):
                 })
             if not self.servicio_catalogo.activo:
                 raise ValidationError({'servicio_catalogo': 'No puedes agregar un servicio de catalogo inactivo.'})
-            if not self.nombre:
-                self.nombre = self.servicio_catalogo.nombre
+            # El servicio de catalogo es la fuente canonica del nombre de la
+            # linea. Esto tambien protege creaciones fuera del ModelForm.
+            self.nombre = self.servicio_catalogo.nombre
         if not (self.nombre or '').strip():
             raise ValidationError({'nombre': 'El nombre de la linea es obligatorio.'})
         self.nombre = self.nombre.strip()

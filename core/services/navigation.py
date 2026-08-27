@@ -44,52 +44,114 @@ def _item(key, label, url, icon="", short_label="", active_key=""):
 
 def _company_navigation(empresa, active_key="inicio"):
     dashboard = reverse("empresa_dashboard", kwargs={"empresa_slug": empresa.slug})
-    legacy = reverse("dashboard_empresa") + f"?empresa={empresa.id}"
     return [
-        _item("inicio", "Inicio", dashboard, "⌂", active_key=active_key),
-        _item("eventos", "Eventos", reverse("k9_evento_list", kwargs={"empresa_slug": empresa.slug}), "◇", active_key=active_key),
-        # R3A mantiene temporalmente estos módulos en el dashboard legacy hasta
-        # que sus fases específicas los migren a pantallas canónicas.
-        _item("clientes", "Clientes", legacy + "#clientes", "◎", active_key=active_key),
-        _item("equipo", "Planners", legacy + "#equipo", "◌", active_key=active_key),
-        _item("proveedores", "Proveedores", legacy + "#proveedores", "◈", active_key=active_key),
-        _item("catalogo", "Catálogo", reverse("catalogo_servicio_list", kwargs={"empresa_slug": empresa.slug}), "▦", active_key=active_key),
-        _item("configuracion", "Configuración", legacy + "#configuracion", "⚙", active_key=active_key),
+        _item("inicio", "Inicio", dashboard, "I", active_key=active_key),
+        _item(
+            "eventos",
+            "Eventos",
+            reverse("k9_evento_list", kwargs={"empresa_slug": empresa.slug}),
+            "E",
+            active_key=active_key,
+        ),
+        _item(
+            "clientes",
+            "Clientes",
+            reverse("empresa_clientes", kwargs={"empresa_slug": empresa.slug}),
+            "C",
+            active_key=active_key,
+        ),
+        _item(
+            "equipo",
+            "Equipo",
+            reverse("empresa_equipo", kwargs={"empresa_slug": empresa.slug}),
+            "Eq",
+            active_key=active_key,
+        ),
+        _item(
+            "proveedores",
+            "Proveedores",
+            reverse("empresa_proveedores", kwargs={"empresa_slug": empresa.slug}),
+            "P",
+            active_key=active_key,
+        ),
+        _item(
+            "catalogo",
+            "Catalogo",
+            reverse("empresa_catalogo", kwargs={"empresa_slug": empresa.slug}),
+            "Ca",
+            active_key=active_key,
+        ),
+        _item(
+            "paquetes",
+            "Paquetes",
+            reverse("paquetes_paquete_list", kwargs={"empresa_slug": empresa.slug}),
+            "Pa",
+            active_key=active_key,
+        ),
+        _item(
+            "configuracion",
+            "Configuracion",
+            reverse("empresa_configuracion", kwargs={"empresa_slug": empresa.slug}),
+            "Co",
+            active_key=active_key,
+        ),
     ]
+
+
+def _company_mobile_navigation(empresa, items, active_key="inicio"):
+    mobile_items = _mobile_subset(items, ["inicio", "eventos", "clientes"])
+    mobile_items.append(
+        NavigationItem(
+            key="mas",
+            label="Mas",
+            url=reverse("empresa_configuracion", kwargs={"empresa_slug": empresa.slug}),
+            icon="+",
+            short_label="Mas",
+            active=active_key in {"equipo", "proveedores", "catalogo", "paquetes", "configuracion"},
+        ).as_dict()
+    )
+    return mobile_items
 
 
 def _planner_navigation(empresa, active_key="inicio"):
     dashboard = reverse("planner_dashboard_empresa", kwargs={"empresa_slug": empresa.slug})
     return [
-        _item("inicio", "Inicio", dashboard, "⌂", active_key=active_key),
-        _item("eventos", "Mis eventos", reverse("k9_evento_list", kwargs={"empresa_slug": empresa.slug}), "◇", short_label="Eventos", active_key=active_key),
-        _item("agenda", "Agenda", dashboard + "#agenda", "◷", active_key=active_key),
-        _item("tareas", "Mis tareas", dashboard + "#tareas", "✓", short_label="Tareas", active_key=active_key),
+        _item("inicio", "Inicio", dashboard, "I", active_key=active_key),
+        _item(
+            "eventos",
+            "Mis eventos",
+            reverse("k9_evento_list", kwargs={"empresa_slug": empresa.slug}),
+            "E",
+            short_label="Eventos",
+            active_key=active_key,
+        ),
+        _item("agenda", "Agenda", dashboard + "#agenda", "A", active_key=active_key),
+        _item("tareas", "Mis tareas", dashboard + "#tareas", "T", short_label="Tareas", active_key=active_key),
     ]
 
 
 def _dirtec_navigation(active_key="inicio"):
     dashboard = reverse("dirtec_dashboard")
     return [
-        _item("inicio", "Inicio", dashboard + "#resumen", "⌂", active_key=active_key),
-        _item("empresas", "Empresas", dashboard + "#empresas", "▣", active_key=active_key),
-        _item("usuarios", "Usuarios", dashboard + "#usuarios", "◎", active_key=active_key),
-        _item("suscripciones", "Suscripciones", dashboard + "#suscripciones", "◫", active_key=active_key),
-        _item("planes", "Planes", dashboard + "#planes", "▤", active_key=active_key),
+        _item("inicio", "Inicio", dashboard + "#resumen", "I", active_key=active_key),
+        _item("empresas", "Empresas", dashboard + "#empresas", "Em", active_key=active_key),
+        _item("usuarios", "Usuarios", dashboard + "#usuarios", "U", active_key=active_key),
+        _item("suscripciones", "Suscripciones", dashboard + "#suscripciones", "S", active_key=active_key),
+        _item("planes", "Planes", dashboard + "#planes", "P", active_key=active_key),
     ]
 
 
 def _client_navigation(active_key="inicio"):
     dashboard = reverse("cliente_dashboard")
     return [
-        _item("inicio", "Mi evento", dashboard, "⌂", short_label="Inicio", active_key=active_key),
+        _item("inicio", "Mi evento", dashboard, "I", short_label="Inicio", active_key=active_key),
     ]
 
 
 def _provider_navigation(active_key="inicio"):
     dashboard = reverse("proveedor_dashboard")
     return [
-        _item("inicio", "Mis servicios", dashboard, "⌂", short_label="Inicio", active_key=active_key),
+        _item("inicio", "Mis servicios", dashboard, "I", short_label="Inicio", active_key=active_key),
     ]
 
 
@@ -130,7 +192,7 @@ def build_navigation(user, *, empresa=None, active_key="inicio"):
         return {
             "role": "EMPRESA",
             "items": items,
-            "mobile_items": _mobile_subset(items, ["inicio", "eventos", "clientes", "proveedores"]),
+            "mobile_items": _company_mobile_navigation(empresa, items, active_key),
         }
 
     if empresa and "WEDDING_PLANNER" in roles:

@@ -11,6 +11,7 @@ from django.utils import timezone
 from catalogo.models import ServicioCatalogo
 from documentos.models import DocumentoEvento
 from eventos.models import ContratoEvento
+from eventos.workspace_commercial import aceptar_propuesta
 from invitaciones.models import DisenoInvitacion, EventoBoda, Grupoinvitacion, Invitado
 from itinerario.models import ActividadItinerario
 from mesas.models import Mesa
@@ -148,16 +149,17 @@ class K9RuntimeGuardrailsTests(TestCase):
         return reverse(name, kwargs=kwargs)
 
     def accepted_proposal(self):
-        return PropuestaEvento.objects.create(
+        propuesta = PropuestaEvento.objects.create(
             empresa=self.empresa,
             evento=self.evento,
             paquete=self.paquete,
             adultos=10,
             ninos=0,
-            estado="ACEPTADO",
+            estado="BORRADOR",
             created_by=self.admin,
             updated_by=self.admin,
         )
+        return aceptar_propuesta(propuesta, user=self.admin)
 
     def test_legacy_payment_review_is_blocked_but_k9_review_updates(self):
         pago = PagoClienteEvento.objects.create(

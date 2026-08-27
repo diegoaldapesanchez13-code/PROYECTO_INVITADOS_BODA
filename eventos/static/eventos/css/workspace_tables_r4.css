@@ -1,0 +1,283 @@
+/* K9 S2.3C3B — integración del workspace especializado de Mesas. */
+
+.tables-workspace {
+    display: grid;
+    gap: 1rem;
+}
+
+.tables-heading {
+    align-items: flex-end;
+}
+
+.tables-heading h2 {
+    margin: .2rem 0 .3rem;
+}
+
+.tables-heading p {
+    max-width: 68ch;
+    margin: 0;
+    color: var(--text-muted);
+    line-height: 1.5;
+}
+
+.tables-kpis {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: .75rem;
+}
+
+.tables-kpis article {
+    display: grid;
+    gap: .18rem;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+    padding: .9rem 1rem;
+    box-shadow: var(--shadow-sm);
+}
+
+.tables-kpis article.needs-attention {
+    border-color: color-mix(in srgb, var(--warning) 30%, var(--border));
+    background: color-mix(in srgb, var(--warning) 3%, var(--surface));
+}
+
+.tables-kpis span,
+.tables-kpis small {
+    color: var(--text-muted);
+}
+
+.tables-kpis span {
+    font-size: .7rem;
+    font-weight: 850;
+}
+
+.tables-kpis strong {
+    font-size: 1.55rem;
+    letter-spacing: -.035em;
+}
+
+.tables-kpis small {
+    font-size: .66rem;
+}
+
+.tables-attention,
+.tables-specialized-note {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: .9rem 1rem;
+}
+
+.tables-attention {
+    border-left: 3px solid var(--warning);
+    background: color-mix(in srgb, var(--warning) 4%, var(--surface));
+}
+
+.tables-specialized-note {
+    background: color-mix(in srgb, var(--brand-primary) 2.5%, var(--surface));
+}
+
+.tables-attention > div,
+.tables-specialized-note > div {
+    display: grid;
+    gap: .15rem;
+}
+
+.tables-attention strong,
+.tables-specialized-note strong {
+    font-size: .82rem;
+}
+
+.tables-attention p,
+.tables-specialized-note p {
+    margin: 0;
+    max-width: 70ch;
+    color: var(--text-muted);
+    font-size: .72rem;
+    line-height: 1.45;
+}
+
+.tables-list-panel {
+    display: grid;
+    gap: .8rem;
+    padding: 1rem;
+}
+
+.tables-section-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: .8rem;
+}
+
+.tables-section-heading h3 {
+    margin: .15rem 0 0;
+    font-size: 1.05rem;
+}
+
+.tables-section-heading > span {
+    color: var(--text-muted);
+    font-size: .7rem;
+}
+
+.tables-list {
+    display: grid;
+    border-top: 1px solid var(--border);
+}
+
+.tables-row {
+    display: grid;
+    grid-template-columns: minmax(180px, .8fr) 90px minmax(140px, .55fr) minmax(240px, 1fr);
+    align-items: center;
+    gap: .8rem;
+    border-bottom: 1px solid var(--border);
+    padding: .75rem .1rem;
+}
+
+.tables-row.is-overflow {
+    background: color-mix(in srgb, var(--danger) 3%, transparent);
+}
+
+.tables-row__identity {
+    display: grid;
+    gap: .08rem;
+}
+
+.tables-row__identity > span {
+    color: var(--text-muted);
+    font-size: .6rem;
+    font-weight: 850;
+    text-transform: uppercase;
+}
+
+.tables-row__identity strong {
+    font-size: .82rem;
+}
+
+.tables-row__identity small,
+.tables-row__capacity span {
+    color: var(--text-muted);
+    font-size: .64rem;
+}
+
+.tables-row__capacity {
+    display: grid;
+    gap: .08rem;
+}
+
+.tables-row__capacity strong {
+    font-size: .82rem;
+}
+
+.tables-meter {
+    height: 7px;
+    border-radius: 999px;
+    background: var(--surface-muted);
+    overflow: hidden;
+}
+
+.tables-meter span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--brand-primary);
+}
+
+.tables-row.is-overflow .tables-meter span {
+    background: var(--danger);
+}
+
+.tables-row__people {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: .3rem;
+    flex-wrap: wrap;
+}
+
+.tables-row__people span {
+    display: inline-flex;
+    align-items: center;
+    gap: .2rem;
+    border-radius: 999px;
+    background: var(--surface-muted);
+    padding: .24rem .45rem;
+    color: var(--text-muted);
+    font-size: .61rem;
+}
+
+.tables-row__people span b {
+    color: var(--text);
+    font-size: .57rem;
+}
+
+.tables-row__people .is-empty {
+    background: transparent;
+}
+
+.tables-row__people .is-more {
+    background: color-mix(in srgb, var(--brand-primary) 7%, var(--surface));
+    color: var(--brand-primary);
+    font-weight: 800;
+}
+
+@media (max-width: 1000px) {
+    .tables-kpis {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .tables-row {
+        grid-template-columns: minmax(0, 1fr) 90px minmax(140px, .6fr);
+    }
+
+    .tables-row__people {
+        grid-column: 1 / -1;
+        justify-content: flex-start;
+    }
+}
+
+@media (max-width: 620px) {
+    .tables-heading {
+        display: grid;
+    }
+
+    .tables-heading .app-button {
+        width: 100%;
+        text-align: center;
+    }
+
+    .tables-attention,
+    .tables-specialized-note,
+    .tables-section-heading {
+        display: grid;
+    }
+
+    .tables-attention .app-button,
+    .tables-specialized-note .app-button {
+        width: 100%;
+        text-align: center;
+    }
+
+    .tables-row {
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: .55rem;
+    }
+
+    .tables-meter,
+    .tables-row__people {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 430px) {
+    .tables-kpis {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .tables-kpis article {
+        padding: .75rem;
+    }
+}

@@ -14,6 +14,7 @@ from presupuesto.models import GastoEvento, PagoClienteEvento, PagoEvento
 from proveedores.models import Proveedor, ServicioEvento
 
 from .models import ContratoEvento
+from .workspace_commercial import aceptar_propuesta
 from .services import (
     generar_contrato_v2_desde_propuesta,
     materializar_servicios_contrato_v2,
@@ -102,7 +103,7 @@ class MaterializacionContratoV2K96Tests(TestCase):
             adultos=250,
             ninos=40,
             descuento=Decimal('5000.00'),
-            estado='ACEPTADO',
+            estado='BORRADOR',
         )
         PropuestaLinea.objects.create(
             propuesta=self.propuesta,
@@ -132,6 +133,8 @@ class MaterializacionContratoV2K96Tests(TestCase):
             valor_informativo=Decimal('8000.00'),
             orden=3,
         )
+        aceptar_propuesta(self.propuesta, user=self.admin)
+        self.propuesta.refresh_from_db()
         self.contrato = generar_contrato_v2_desde_propuesta(self.propuesta.id, user=self.admin)
 
     def materializar(self, contrato=None):

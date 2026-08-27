@@ -7,6 +7,7 @@ se conectaran en K9.8B; K9.8A define solamente el dominio y su auditoria.
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
+from proveedores.service_lifecycle import aplicar_estado_operativo, servicio_cerrado
 
 from core.services.auditoria import registrar_auditoria
 
@@ -54,9 +55,7 @@ def cancelar_servicio_evento(servicio, *, actor=None, motivo=None, request=None)
         'estado_comercial': servicio.estado_comercial,
         'estado_operativo': servicio.estado_operativo,
     }
-    servicio.estado = 'CANCELADO'
-    servicio.estado_comercial = 'CANCELADO'
-    servicio.estado_operativo = 'CANCELADO'
+    aplicar_estado_operativo(servicio, 'CANCELADO')
     servicio.cancelado_en = timezone.now()
     servicio.cancelado_por = _actor(actor)
     servicio.motivo_cancelacion = _texto(motivo)
@@ -83,8 +82,11 @@ def archivar_servicio_evento(servicio, *, actor=None, request=None):
     servicio = ServicioEvento.objects.select_for_update().get(pk=servicio.pk)
     if servicio.archivado_en:
         return servicio
-    if servicio.estado_operativo not in {'CANCELADO', 'COMPLETADO'} and servicio.estado not in {'CANCELADO', 'SERVICIO_COMPLETADO'}:
-        raise ValidationError('Solo se puede archivar un servicio cancelado o completado.')
+    if not servicio_cerrado(servicio):
+        # Compatibility for untouched pre-D4 rows whose old terminal state was
+        # written only into the legacy field.
+        if servicio.estado not in {'CANCELADO', 'SERVICIO_COMPLETADO'}:
+            raise ValidationError('Solo se puede archivar un servicio cancelado o completado.')
     servicio.archivado_en = timezone.now()
     servicio.archivado_por = _actor(actor)
     servicio.save(update_fields=['archivado_en', 'archivado_por', 'fecha_actualizacion'])

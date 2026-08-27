@@ -1,8 +1,8 @@
 {% extends "paquetes/base.html" %}
-{% block title %}Propuesta comercial | DIRTEC{% endblock %}
+{% block package_title %}Propuesta comercial | DIRTEC{% endblock %}
 {% block heading %}Propuesta comercial{% endblock %}
-{% block content %}
-<section class="proposal-layout">
+{% block package_content %}
+<section class="proposal-layout pkg-proposal-page">
     <div class="pkg-main">
         <div class="section-heading compact">
             <div>
@@ -10,12 +10,36 @@
                 <h2>Datos comerciales</h2>
             </div>
         </div>
+        {% if not propuesta or propuesta_editable %}
         <form class="pkg-form" method="post">
             {% csrf_token %}
             <input type="hidden" name="accion" value="guardar_propuesta">
             {{ form.as_p }}
-            <button class="btn" type="submit">Guardar propuesta</button>
+            <div class="contract-actions">
+                <button class="btn" type="submit">Guardar propuesta</button>
+                {% if propuesta and propuesta_puede_aceptar %}
+                    <button class="btn secondary" type="submit" name="accion" value="aceptar_propuesta">
+                        Aceptar propuesta
+                    </button>
+                {% endif %}
+            </div>
         </form>
+        {% elif propuesta %}
+            <div class="pkg-lock-note">
+                {% if propuesta.estado == "ACEPTADO" %}
+                    <strong>PROPUESTA ACEPTADA</strong>
+                    <span>Contenido comercial congelado.</span>
+                {% elif propuesta.estado == "CONTRATADO" %}
+                    <strong>Propuesta contratada</strong>
+                    <span>La propuesta origen contractual es solo lectura.</span>
+                {% elif propuesta.estado == "CANCELADO" %}
+                    <strong>Propuesta cancelada</strong>
+                    <span>Estado terminal precontractual.</span>
+                {% else %}
+                    <strong>Solo lectura</strong>
+                {% endif %}
+            </div>
+        {% endif %}
         {% if propuesta %}
             <div class="contract-actions">
                 {% if contrato_existente %}
@@ -25,11 +49,18 @@
                         {% csrf_token %}
                         <button class="btn" type="submit">Generar contrato</button>
                     </form>
+                    {% if propuesta_puede_reabrir %}
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="accion" value="reabrir_propuesta">
+                            <button class="btn secondary" type="submit">Reabrir negociacion</button>
+                        </form>
+                    {% endif %}
                 {% endif %}
             </div>
         {% endif %}
 
-        {% if propuesta and linea_form %}
+        {% if propuesta and lineas_editables and linea_form %}
             <div class="section-heading compact stack-top">
                 <div>
                     <span>Adicionales y cortesias</span>
@@ -80,16 +111,24 @@
                     <p class="empty">Sin incluidos.</p>
                 {% endfor %}
             </div>
+            {% if propuesta and not lineas_editables %}
+            <div class="pkg-lock-note">
+                <strong>Extras protegidos</strong>
+                <span>Al aceptar la propuesta, adicionales y cortesias dejan de poder eliminarse.</span>
+            </div>
+            {% endif %}
             <h3>Adicionales</h3>
             <div class="line-list">
                 {% for item in dto.lineas_adicionales %}
                     <article class="line-item">
                         <strong>{{ item.nombre }}</strong>
                         <span>{{ item.modo_precio }} / ${{ item.subtotal }}</span>
-                        <form method="post" action="{% url 'paquetes_propuesta_linea_toggle' empresa.slug evento.id propuesta.id item.linea_id %}">
+                        {% if lineas_editables %}
+                        <form method="post" action="{% url 'paquetes_propuesta_linea_delete' empresa.slug evento.id propuesta.id item.linea_id %}">
                             {% csrf_token %}
-                            <button class="text-btn" type="submit">Retirar</button>
+                            <button class="text-btn" type="submit">Eliminar</button>
                         </form>
+                        {% endif %}
                     </article>
                 {% empty %}
                     <p class="empty">Sin adicionales.</p>
@@ -101,10 +140,12 @@
                     <article class="line-item">
                         <strong>{{ item.nombre }}</strong>
                         <span>Cargo cliente $0.00</span>
-                        <form method="post" action="{% url 'paquetes_propuesta_linea_toggle' empresa.slug evento.id propuesta.id item.linea_id %}">
+                        {% if lineas_editables %}
+                        <form method="post" action="{% url 'paquetes_propuesta_linea_delete' empresa.slug evento.id propuesta.id item.linea_id %}">
                             {% csrf_token %}
-                            <button class="text-btn" type="submit">Retirar</button>
+                            <button class="text-btn" type="submit">Eliminar</button>
                         </form>
+                        {% endif %}
                     </article>
                 {% empty %}
                     <p class="empty">Sin cortesias.</p>

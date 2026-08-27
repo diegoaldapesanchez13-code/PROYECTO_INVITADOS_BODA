@@ -7,6 +7,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST
 
+from core.services.app_context import build_app_context
 from core.services.permisos import roles_usuario_empresa, usuario_es_dirtec_operativo
 from core.services.tenant_context import validar_slug_tenant
 from core.secure_files import _file_response
@@ -50,10 +51,14 @@ def _dashboard_url(user, empresa):
 
 
 def _template_context(request, empresa, **extra):
-    context = {
-        'empresa': empresa,
-        'dashboard_url': _dashboard_url(request.user, empresa),
-    }
+    context = build_app_context(
+        request,
+        empresa=empresa,
+        page_title=extra.pop('page_title', 'Catalogo'),
+        section_label=empresa.nombre_comercial,
+        active_key='catalogo',
+    )
+    context['dashboard_url'] = _dashboard_url(request.user, empresa)
     context.update(extra)
     return context
 
@@ -86,6 +91,7 @@ def servicio_list(request, empresa_slug):
             request,
             empresa,
             page_obj=page_obj,
+            page_title='Catalogo',
             servicios=page_obj.object_list,
             categorias=ServicioCatalogo.CATEGORIAS,
             estado=estado,
@@ -108,6 +114,7 @@ def servicio_detail(request, empresa_slug, servicio_id):
             request,
             empresa,
             servicio=servicio,
+            page_title=servicio.nombre,
             archivos=servicio.archivos.all(),
             archivo_form=ServicioCatalogoArchivoForm(),
             proveedores_servicio=proveedores_disponibles_para_servicio(servicio),
@@ -127,7 +134,11 @@ def servicio_create(request, empresa_slug):
         servicio = form.save()
         messages.success(request, 'Servicio agregado al catalogo.')
         return redirect('catalogo_servicio_detail', empresa_slug=empresa.slug, servicio_id=servicio.id)
-    return render(request, 'catalogo/servicio_form.html', _template_context(request, empresa, form=form, modo='crear'))
+    return render(
+        request,
+        'catalogo/servicio_form.html',
+        _template_context(request, empresa, form=form, modo='crear', page_title='Nuevo servicio'),
+    )
 
 
 @login_required(login_url='/login/')
@@ -145,7 +156,7 @@ def servicio_update(request, empresa_slug, servicio_id):
     return render(
         request,
         'catalogo/servicio_form.html',
-        _template_context(request, empresa, form=form, servicio=servicio, modo='editar'),
+        _template_context(request, empresa, form=form, servicio=servicio, modo='editar', page_title='Editar servicio'),
     )
 
 
@@ -245,6 +256,7 @@ def proveedor_servicios(request, empresa_slug, proveedor_id):
             request,
             empresa,
             proveedor=proveedor,
+            page_title='Servicios de proveedor',
             relaciones=relaciones,
             form=form,
             busqueda=busqueda,

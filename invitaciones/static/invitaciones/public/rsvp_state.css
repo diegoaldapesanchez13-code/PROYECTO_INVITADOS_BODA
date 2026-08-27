@@ -1,6 +1,7 @@
 .dirtec-rsvp-state {
-    position: relative;
-    z-index: 20;
+    position: sticky;
+    top: 0;
+    z-index: 90;
     margin: 0;
     padding: 12px 18px;
     background: rgba(255, 255, 255, .96);
@@ -61,5 +62,123 @@ body[data-rsvp-allowed="0"] .r3-rsvp__description::after {
     .dirtec-rsvp-state {
         padding: 10px 14px;
         font-size: 12px;
+    }
+}
+
+
+/* K9 S2.3C3A — recordatorio visible, fuera del renderer/Builder. */
+.dirtec-rsvp-dialog {
+    width: min(420px, calc(100vw - 32px));
+    border: 1px solid rgba(121, 87, 20, .16);
+    border-radius: 18px;
+    background: #fff;
+    padding: 26px;
+    color: #26312c;
+    text-align: center;
+    box-shadow: 0 28px 90px rgba(24, 31, 27, .25);
+    font-family: Inter, sans-serif;
+}
+
+.dirtec-rsvp-dialog::backdrop {
+    background: rgba(25, 31, 27, .48);
+    backdrop-filter: blur(4px);
+}
+
+.dirtec-rsvp-dialog__close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 34px;
+    height: 34px;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: #69726d;
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.dirtec-rsvp-dialog__icon {
+    display: grid;
+    place-items: center;
+    width: 54px;
+    height: 54px;
+    margin: 0 auto 14px;
+    border-radius: 50%;
+    background: #fff4d6;
+    color: #a8750c;
+    font-size: 24px;
+    font-weight: 800;
+}
+
+.dirtec-rsvp-dialog__eyebrow {
+    display: block;
+    margin-bottom: 5px;
+    color: #8a681e;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+.dirtec-rsvp-dialog h2 {
+    margin: 0;
+    color: #202824;
+    font-size: 24px;
+    line-height: 1.2;
+}
+
+.dirtec-rsvp-dialog p {
+    margin: 12px auto 0;
+    max-width: 34ch;
+    color: #66706a;
+    font-size: 14px;
+    line-height: 1.55;
+}
+
+.dirtec-rsvp-dialog__deadline {
+    display: grid;
+    gap: 3px;
+    margin: 18px 0;
+    border-radius: 11px;
+    background: #fff9eb;
+    padding: 12px;
+    color: #795714;
+}
+
+.dirtec-rsvp-dialog__deadline span {
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.dirtec-rsvp-dialog__deadline strong {
+    font-size: 13px;
+}
+
+.dirtec-rsvp-dialog__accept {
+    width: 100%;
+    min-height: 46px;
+    border: 0;
+    border-radius: 11px;
+    background: #202a36;
+    color: #fff;
+    font: 700 14px/1 Inter, sans-serif;
+    cursor: pointer;
+}
+
+.dirtec-rsvp-dialog__accept:hover {
+    background: #17202a;
+}
+
+@media (max-width: 480px) {
+    .dirtec-rsvp-dialog {
+        width: calc(100vw - 24px);
+        padding: 24px 18px 18px;
+        border-radius: 16px;
+    }
+
+    .dirtec-rsvp-dialog h2 {
+        font-size: 21px;
     }
 }

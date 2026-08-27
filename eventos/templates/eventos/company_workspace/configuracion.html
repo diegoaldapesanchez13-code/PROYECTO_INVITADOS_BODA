@@ -1,0 +1,101 @@
+{% extends "eventos/company_workspace/base.html" %}
+
+{% block company_title %}Configuracion{% endblock %}
+{% block company_heading %}Configuracion{% endblock %}
+{% block company_subheading %}Identidad, capacidad y permisos existentes del tenant. Esta fase no agrega nuevas preferencias.{% endblock %}
+
+{% block company_content %}
+<section class="company-config-grid">
+    <article class="company-panel">
+        <header class="company-panel__header">
+            <div>
+                <span class="company-eyebrow">Identidad</span>
+                <h2>Empresa</h2>
+            </div>
+        </header>
+        <dl class="company-definition-list">
+            <div><dt>Nombre comercial</dt><dd>{{ empresa.nombre_comercial }}</dd></div>
+            <div><dt>Razon social</dt><dd>{{ empresa.razon_social|default:"Sin definir" }}</dd></div>
+            <div><dt>RFC</dt><dd>{{ empresa.rfc|default:"Sin definir" }}</dd></div>
+            <div><dt>Contacto</dt><dd>{{ empresa.contacto_nombre|default:"Sin definir" }}</dd></div>
+            <div><dt>Correo</dt><dd>{{ empresa.contacto_email|default:"Sin definir" }}</dd></div>
+            <div><dt>Telefono</dt><dd>{{ empresa.contacto_telefono|default:"Sin definir" }}</dd></div>
+        </dl>
+    </article>
+
+    <article class="company-panel">
+        <header class="company-panel__header">
+            <div>
+                <span class="company-eyebrow">Plan</span>
+                <h2>Capacidad</h2>
+            </div>
+        </header>
+        <dl class="company-definition-list">
+            <div><dt>Plan</dt><dd>{% if uso_plan.plan %}{{ uso_plan.plan.nombre }}{% else %}{{ empresa.get_plan_display }}{% endif %}</dd></div>
+            <div><dt>Estado</dt><dd>{{ empresa.get_estado_display }}</dd></div>
+            <div><dt>Eventos activos</dt><dd>{{ uso_plan.eventos_activos }}{% if uso_plan.limite_eventos_activos %} / {{ uso_plan.limite_eventos_activos }}{% endif %}</dd></div>
+            <div><dt>Usuarios</dt><dd>{{ uso_plan.usuarios }}{% if uso_plan.limite_usuarios %} / {{ uso_plan.limite_usuarios }}{% endif %}</dd></div>
+            <div><dt>Planners</dt><dd>{{ uso_plan.planners }}{% if uso_plan.limite_planners %} / {{ uso_plan.limite_planners }}{% endif %}</dd></div>
+        </dl>
+    </article>
+
+    <article class="company-panel">
+        <header class="company-panel__header">
+            <div>
+                <span class="company-eyebrow">Operacion</span>
+                <h2>Datos relacionados</h2>
+            </div>
+        </header>
+        <div class="company-metric-grid">
+            <a href="{% url 'k9_evento_list' empresa.slug %}"><strong>{{ eventos_activos_count }}</strong><span>Eventos activos</span></a>
+            <a href="{% url 'empresa_equipo' empresa.slug %}"><strong>{{ membresias.count }}</strong><span>Usuarios</span></a>
+            <a href="{% url 'empresa_proveedores' empresa.slug %}"><strong>{{ proveedores_count }}</strong><span>Proveedores</span></a>
+            <a href="{% url 'empresa_catalogo' empresa.slug %}"><strong>{{ catalogo_count }}</strong><span>Servicios catalogo</span></a>
+            <span><strong>{{ relaciones_catalogo_count }}</strong><span>Relaciones proveedor</span></span>
+            <span><strong>{{ servicios_evento_count }}</strong><span>Servicios evento</span></span>
+        </div>
+    </article>
+
+    <article class="company-panel">
+        <header class="company-panel__header">
+            <div>
+                <span class="company-eyebrow">Permisos</span>
+                <h2>Tu acceso</h2>
+            </div>
+        </header>
+        <div class="company-permission-list">
+            {% for rol in roles_usuario_actual %}<span>{{ rol }}</span>{% endfor %}
+            {% if puede_usuarios %}<span>Gestiona usuarios</span>{% endif %}
+            {% if puede_catalogos %}<span>Gestiona catalogo</span>{% endif %}
+        </div>
+    </article>
+</section>
+
+<section class="company-panel">
+    <header class="company-panel__header">
+        <div>
+            <span class="company-eyebrow">Sedes</span>
+            <h2>Configuracion operativa existente</h2>
+        </div>
+    </header>
+    <div class="company-table-wrap">
+        <table class="company-table">
+            <thead>
+                <tr><th>Sede</th><th>Tipo</th><th>Capacidad</th><th>Estado</th></tr>
+            </thead>
+            <tbody>
+                {% for sede in sedes %}
+                <tr>
+                    <td>{{ sede.nombre }}</td>
+                    <td>{{ sede.get_tipo_display }}</td>
+                    <td>{{ sede.capacidad_minima }} - {{ sede.capacidad_maxima }}</td>
+                    <td>{% if sede.activa %}Activa{% else %}Inactiva{% endif %}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4">No hay sedes registradas.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

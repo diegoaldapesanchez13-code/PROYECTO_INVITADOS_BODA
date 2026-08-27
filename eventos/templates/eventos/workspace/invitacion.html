@@ -1,0 +1,259 @@
+{% extends "eventos/workspace/base.html" %}
+{% load static %}
+
+{% block title %}Invitación | {{ evento.titulo_evento }}{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'eventos/css/workspace_invitation_r4.css' %}">
+{% endblock %}
+
+{% block workspace_content %}
+<section class="invitation-workspace workspace-module-stack">
+    <header class="workspace-page-header invitation-heading">
+        <div>
+            <span class="workspace-eyebrow">Experiencia</span>
+            <h2>Invitación</h2>
+            <p>
+                Controla el estado del diseño y abre las invitaciones reales de cada grupo.
+                El Builder continúa siendo el editor especializado.
+            </p>
+        </div>
+        <div class="invitation-heading__actions">
+            {% if puede_builder %}
+            <a
+                class="app-button app-button--primary"
+                href="{% url 'editor_invitacion_visual' evento.id %}"
+                data-workspace-native
+            >
+                Abrir Builder
+            </a>
+            {% endif %}
+            {% if grupo_preview and publicado %}
+            <a
+                class="app-button app-button--secondary"
+                href="{% url 'ver_invitacion' grupo_preview.codigo %}"
+                target="_blank"
+                rel="noopener"
+                data-workspace-native
+            >
+                Ver invitación publicada
+            </a>
+            {% elif grupo_preview and tiene_borrador and puede_builder %}
+            <a
+                class="app-button app-button--secondary"
+                href="{% url 'ver_invitacion' grupo_preview.codigo %}?preview=1"
+                target="_blank"
+                rel="noopener"
+                data-workspace-native
+            >
+                Vista previa
+            </a>
+            {% endif %}
+        </div>
+    </header>
+
+    <section class="invitation-kpis" aria-label="Estado de invitación">
+        <article>
+            <span>Diseño</span>
+            <strong>
+                {% if publicado %}Publicado
+                {% elif tiene_borrador %}Borrador
+                {% else %}Sin diseño
+                {% endif %}
+            </strong>
+            <small>
+                {% if diseno %}Revisión {{ diseno.builder_revision }}{% else %}Builder disponible{% endif %}
+            </small>
+        </article>
+        <article>
+            <span>Invitaciones</span>
+            <strong>{{ grupos|length }}</strong>
+            <small>Grupos creados</small>
+        </article>
+        <article>
+            <span>Personas</span>
+            <strong>{{ total_personas }}</strong>
+            <small>Roster nominal actual</small>
+        </article>
+        <article>
+            <span>Preparadas</span>
+            <strong>{{ grupos_preparados }}</strong>
+            <small>Envío o recordatorio preparado</small>
+        </article>
+    </section>
+
+    <div class="invitation-layout">
+        <section class="workspace-panel invitation-design">
+            <header class="invitation-section-heading">
+                <div>
+                    <span class="workspace-eyebrow">Diseño</span>
+                    <h3>DIRTEC Builder</h3>
+                </div>
+                <span class="invitation-status {% if publicado %}is-published{% elif tiene_borrador %}is-draft{% endif %}">
+                    {% if publicado %}Publicado
+                    {% elif tiene_borrador %}Borrador
+                    {% else %}Sin iniciar
+                    {% endif %}
+                </span>
+            </header>
+
+            {% if diseno %}
+            <dl class="invitation-design-meta">
+                <div>
+                    <dt>Nombre</dt>
+                    <dd>{{ diseno.nombre }}</dd>
+                </div>
+                <div>
+                    <dt>Revisión</dt>
+                    <dd>{{ diseno.builder_revision }}</dd>
+                </div>
+                <div>
+                    <dt>Última actualización</dt>
+                    <dd>{{ diseno.fecha_actualizacion|date:"d/m/Y H:i" }}</dd>
+                </div>
+                <div>
+                    <dt>Publicado</dt>
+                    <dd>
+                        {% if diseno.publicado_en %}
+                            {{ diseno.publicado_en|date:"d/m/Y H:i" }}
+                        {% else %}
+                            Aún no
+                        {% endif %}
+                    </dd>
+                </div>
+            </dl>
+            {% else %}
+            <div class="workspace-empty-state">
+                <strong>Aún no hay un diseño iniciado.</strong>
+                <p>Abre Builder para comenzar utilizando el editor que ya existe.</p>
+            </div>
+            {% endif %}
+
+            {% if puede_builder %}
+            <a
+                class="app-button app-button--secondary invitation-design__builder"
+                href="{% url 'editor_invitacion_visual' evento.id %}"
+                data-workspace-native
+            >
+                Gestionar diseño en Builder
+            </a>
+            {% endif %}
+        </section>
+
+        <section class="workspace-panel invitation-rsvp-summary">
+            <header class="invitation-section-heading">
+                <div>
+                    <span class="workspace-eyebrow">Confirmaciones</span>
+                    <h3>RSVP</h3>
+                </div>
+                {% if rsvp_config %}
+                <span class="invitation-status {% if rsvp_config.estado == 'ABIERTO' %}is-published{% endif %}">
+                    {{ rsvp_config.get_estado_display }}
+                </span>
+                {% endif %}
+            </header>
+
+            {% if rsvp_config %}
+            <dl class="invitation-design-meta">
+                <div>
+                    <dt>Fecha límite</dt>
+                    <dd>
+                        {% if rsvp_config.fecha_limite %}
+                            {{ rsvp_config.fecha_limite|date:"d/m/Y H:i" }}
+                        {% else %}
+                            Sin límite
+                        {% endif %}
+                    </dd>
+                </div>
+                <div>
+                    <dt>Recordatorio</dt>
+                    <dd>
+                        {% if rsvp_config.mostrar_recordatorio %}
+                            Activo
+                        {% else %}
+                            Oculto
+                        {% endif %}
+                    </dd>
+                </div>
+                <div class="is-wide">
+                    <dt>Mensaje recordatorio</dt>
+                    <dd>{{ rsvp_config.mensaje_recordatorio|default:"Sin mensaje" }}</dd>
+                </div>
+            </dl>
+            {% else %}
+            <div class="workspace-empty-state">
+                <strong>RSVP usa la compatibilidad abierta.</strong>
+                <p>Configura fecha límite, recordatorio y cierre desde Invitados.</p>
+            </div>
+            {% endif %}
+
+            <a
+                class="app-button app-button--secondary"
+                href="{% url 'k9_evento_invitados' empresa_slug=empresa.slug evento_id=evento.id %}?return_to={{ return_to|urlencode }}"
+            >
+                Gestionar RSVP e invitados
+            </a>
+        </section>
+    </div>
+
+    <section class="workspace-panel invitation-groups">
+        <header class="invitation-section-heading">
+            <div>
+                <span class="workspace-eyebrow">Invitaciones reales</span>
+                <h3>Grupos</h3>
+            </div>
+            <span>{{ grupos|length }} grupo{{ grupos|length|pluralize }}</span>
+        </header>
+
+        <div class="invitation-group-list">
+            {% for grupo in grupos %}
+            <article class="invitation-group-row">
+                <div class="invitation-group-row__identity">
+                    <strong>{{ grupo.nombre_grupo }}</strong>
+                    <span>
+                        {{ grupo.get_tipo_display }} · {{ grupo.invitados.count }} persona{{ grupo.invitados.count|pluralize }}
+                    </span>
+                </div>
+                <div class="invitation-group-row__state">
+                    <span>{{ grupo.get_estado_envio_display }}</span>
+                    {% if grupo.confirmado %}
+                    <b>Respondida</b>
+                    {% endif %}
+                </div>
+                <div class="invitation-group-row__actions">
+                    {% if publicado %}
+                    <a
+                        class="app-button app-button--secondary"
+                        href="{% url 'ver_invitacion' grupo.codigo %}"
+                        target="_blank"
+                        rel="noopener"
+                        data-workspace-native
+                    >
+                        Abrir
+                    </a>
+                    {% elif tiene_borrador and puede_builder %}
+                    <a
+                        class="app-button app-button--secondary"
+                        href="{% url 'ver_invitacion' grupo.codigo %}?preview=1"
+                        target="_blank"
+                        rel="noopener"
+                        data-workspace-native
+                    >
+                        Preview
+                    </a>
+                    {% else %}
+                    <span class="invitation-group-row__unavailable">Sin publicación</span>
+                    {% endif %}
+                </div>
+            </article>
+            {% empty %}
+            <div class="workspace-empty-state">
+                <strong>Aún no existen invitaciones.</strong>
+                <p>Crea los grupos y personas desde el módulo Invitados.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+</section>
+{% endblock %}

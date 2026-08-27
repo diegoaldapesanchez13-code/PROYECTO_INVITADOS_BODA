@@ -5,6 +5,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from invitaciones.models import EventoBoda
+from eventos.models import ContratoEvento
 from organizaciones.models import EmpresaSuscriptora, MembresiaEmpresa
 from proveedores.models import Proveedor, ServicioEvento
 
@@ -334,6 +335,17 @@ class ServiceWorkspaceK84Tests(TestCase):
 
     def test_k85_propuesta_cliente_aprobada_actualiza_cargo(self):
         from .models import PropuestaServicioCliente
+        ContratoEvento.objects.create(
+            evento=self.evento,
+            version=1,
+            estado="CONTRATADO",
+            monto_base=0,
+            snapshot_version=2,
+            snapshot_comercial={
+                "version": 2,
+                "totales": {"total_final": "0.00"},
+            },
+        )
         self.client.force_login(self.planner)
         response = self.client.post(
             reverse("colaboracion_k85_propuesta_crear", args=[self.servicio.id]),

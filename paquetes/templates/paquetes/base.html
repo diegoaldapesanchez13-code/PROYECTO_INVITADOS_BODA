@@ -1,31 +1,37 @@
+{% extends "core/app/base.html" %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Paquetes | DIRTEC{% endblock %}</title>
-    <link rel="stylesheet" href="{% static 'paquetes/css/paquetes.css' %}">
-</head>
-<body>
-<div class="pkg-shell">
-    <header class="pkg-topbar">
+
+{% block title %}{% block package_title %}Paquetes{% endblock %} | {{ empresa.nombre_comercial }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'eventos/css/company_dashboard_r3.css' %}">
+<link rel="stylesheet" href="{% static 'eventos/css/company_workspace.css' %}">
+<link rel="stylesheet" href="{% static 'paquetes/css/paquetes.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="company-workspace pkg-shell">
+    <header class="company-workspace__header pkg-topbar">
         <div>
-            <span>DIRTEC Event Studio</span>
+            <span class="company-eyebrow">{{ empresa.nombre_comercial }}</span>
             <h1>{% block heading %}Paquetes comerciales{% endblock %}</h1>
-            <p>{{ empresa.nombre_comercial }}</p>
+            <p>{% block package_subheading %}Oferta comercial reutilizable construida sobre el runtime existente.{% endblock %}</p>
         </div>
-        <nav>
-            <a href="{% url 'paquetes_paquete_list' empresa.slug %}">Paquetes</a>
-            {% if dashboard_url %}<a href="{{ dashboard_url }}">Dashboard</a>{% endif %}
+        <nav class="company-workspace__quicknav pkg-nav" aria-label="Paquetes">
+            <a class="is-active" href="{% url 'paquetes_paquete_list' empresa.slug %}">Paquetes</a>
+            <a href="{% url 'empresa_catalogo' empresa.slug %}">Catalogo</a>
+            {% if dashboard_url %}<a href="{{ dashboard_url }}">Inicio</a>{% endif %}
         </nav>
     </header>
+
     {% if messages %}
-        <section class="pkg-messages">
-            {% for message in messages %}<div class="notice {{ message.tags }}">{{ message }}</div>{% endfor %}
+        <section class="pkg-messages" aria-live="polite">
+            {% for message in messages %}
+                <div class="pkg-notice {{ message.tags }}">{{ message }}</div>
+            {% endfor %}
         </section>
     {% endif %}
-    {% block content %}{% endblock %}
+
+    {% block package_content %}{% endblock %}
 </div>
-</body>
-</html>
+{% endblock %}

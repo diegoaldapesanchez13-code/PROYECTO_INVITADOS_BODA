@@ -3,6 +3,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from eventos.models import ContratoEvento
+from eventos.workspace_commercial import aceptar_propuesta
 from invitaciones.models import EventoBoda
 from organizaciones.models import EmpresaSuscriptora, MembresiaEmpresa
 from paquetes.models import PaqueteBoda, PropuestaEvento
@@ -57,16 +58,20 @@ class CommercialWorkspaceR4BTests(TestCase):
         )
 
     def crear_propuesta(self, estado="BORRADOR"):
-        return PropuestaEvento.objects.create(
+        estado_inicial = "BORRADOR" if estado == "ACEPTADO" else estado
+        propuesta = PropuestaEvento.objects.create(
             empresa=self.empresa,
             evento=self.evento,
             paquete=self.paquete,
             adultos=10,
             ninos=2,
-            estado=estado,
+            estado=estado_inicial,
             created_by=self.admin,
             updated_by=self.admin,
         )
+        if estado == "ACEPTADO":
+            propuesta = aceptar_propuesta(propuesta, user=self.admin)
+        return propuesta
 
     def test_commercial_tab_is_enabled(self):
         self.client.force_login(self.admin)
@@ -181,8 +186,7 @@ class CommercialWorkspaceR4BTests(TestCase):
             {"accion": "crear_revision", "contrato_id": contrato_v1.id},
         )
         nueva = PropuestaEvento.objects.exclude(pk=propuesta.id).get(evento=self.evento)
-        nueva.estado = "ACEPTADO"
-        nueva.save(update_fields=["estado"])
+        nueva = aceptar_propuesta(nueva, user=self.admin)
 
         self.client.post(
             self.url() + f"?propuesta={nueva.id}",

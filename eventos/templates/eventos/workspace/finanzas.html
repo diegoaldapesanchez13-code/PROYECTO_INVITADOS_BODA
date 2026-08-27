@@ -4,7 +4,7 @@
 {% block extra_css %}{{ block.super }}<link rel="stylesheet" href="{% static 'eventos/css/workspace_finance_r4.css' %}">{% endblock %}
 {% block workspace_content %}
 <section class="finance-workspace" data-finance-workspace>
-  <header class="finance-heading">
+  <header class="finance-heading workspace-page-header">
     <div><span class="workspace-eyebrow">Negocio</span><h2>Finanzas</h2><p>Control interno de ingresos, costos, pagos operativos y margen del evento.</p></div>
     <div class="finance-heading__actions">
       <span class="finance-source">Fuente: {{ resumen.fuente_total }}</span>
@@ -31,7 +31,7 @@
   <section class="finance-section">
     <header class="finance-section__header">
       <div><span class="workspace-eyebrow">Cliente → empresa</span><h3>Pagos reportados por clientes</h3></div>
-      <form method="get"><input type="hidden" name="return_to" value="{{ return_to }}"><select class="app-select" name="estado_cliente" onchange="this.form.requestSubmit()"><option value="">Todos</option><option value="PENDIENTE" {% if estado_cliente == "PENDIENTE" %}selected{% endif %}>Pendientes</option><option value="RECIBIDO" {% if estado_cliente == "RECIBIDO" %}selected{% endif %}>Recibidos</option><option value="OBSERVADO" {% if estado_cliente == "OBSERVADO" %}selected{% endif %}>Observados</option></select></form>
+      <form method="get"><input type="hidden" name="return_to" value="{{ return_to }}"><select class="app-select" name="estado_cliente" data-workspace-autosubmit><option value="">Todos</option><option value="PENDIENTE" {% if estado_cliente == "PENDIENTE" %}selected{% endif %}>Pendientes</option><option value="RECIBIDO" {% if estado_cliente == "RECIBIDO" %}selected{% endif %}>Recibidos</option><option value="OBSERVADO" {% if estado_cliente == "OBSERVADO" %}selected{% endif %}>Observados</option></select></form>
     </header>
     <div class="finance-list">
       {% for pago in pagos_cliente %}
@@ -52,7 +52,7 @@
   <section class="finance-section">
     <header class="finance-section__header">
       <div><span class="workspace-eyebrow">Empresa → operación</span><h3>Gastos del evento</h3></div>
-      <form method="get"><input type="hidden" name="return_to" value="{{ return_to }}"><select class="app-select" name="estado_gasto" onchange="this.form.requestSubmit()"><option value="">Todos</option><option value="PENDIENTE" {% if estado_gasto == "PENDIENTE" %}selected{% endif %}>Pendientes</option><option value="PARCIAL" {% if estado_gasto == "PARCIAL" %}selected{% endif %}>Parciales</option><option value="PAGADO" {% if estado_gasto == "PAGADO" %}selected{% endif %}>Pagados</option><option value="VENCIDO" {% if estado_gasto == "VENCIDO" %}selected{% endif %}>Vencidos</option><option value="CANCELADO" {% if estado_gasto == "CANCELADO" %}selected{% endif %}>Cancelados</option></select></form>
+      <form method="get"><input type="hidden" name="return_to" value="{{ return_to }}"><select class="app-select" name="estado_gasto" data-workspace-autosubmit><option value="">Todos</option><option value="PENDIENTE" {% if estado_gasto == "PENDIENTE" %}selected{% endif %}>Pendientes</option><option value="PARCIAL" {% if estado_gasto == "PARCIAL" %}selected{% endif %}>Parciales</option><option value="PAGADO" {% if estado_gasto == "PAGADO" %}selected{% endif %}>Pagados</option><option value="VENCIDO" {% if estado_gasto == "VENCIDO" %}selected{% endif %}>Vencidos</option><option value="CANCELADO" {% if estado_gasto == "CANCELADO" %}selected{% endif %}>Cancelados</option></select></form>
     </header>
 
     <div class="finance-list">

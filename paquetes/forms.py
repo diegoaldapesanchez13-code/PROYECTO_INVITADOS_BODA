@@ -118,6 +118,17 @@ class PropuestaEventoForm(forms.ModelForm):
                     pk=self.instance.paquete_id
                 ) | paquetes
             self.fields['paquete'].queryset = paquetes.distinct()
+        allowed_states = {'BORRADOR', 'PROPUESTA', 'EN_REVISION', 'CANCELADO'}
+        if self.instance and self.instance.pk and self.instance.estado in {'ACEPTADO', 'CONTRATADO', 'CANCELADO'}:
+            allowed_states.add(self.instance.estado)
+        self.fields['estado'].choices = [
+            choice
+            for choice in self.fields['estado'].choices
+            if choice[0] in allowed_states
+        ]
+        if self.instance and self.instance.pk and self.instance.estado in {'ACEPTADO', 'CONTRATADO', 'CANCELADO'}:
+            for field in self.fields.values():
+                field.disabled = True
 
     def save(self, commit=True):
         instance = super().save(commit=False)
@@ -156,6 +167,16 @@ class PropuestaLineaForm(forms.ModelForm):
         if propuesta is not None:
             self.instance.propuesta = propuesta
         self.fields['servicio_catalogo'].required = False
+        self.fields['nombre'].required = False
+        self.fields['nombre'].label = 'Nombre manual (solo fuera de catalogo)'
+        self.fields['nombre'].help_text = (
+            'Si eliges un servicio del catalogo, DIRTEC usara automaticamente su nombre. '
+            'Solo escribe este campo para un servicio fuera de catalogo.'
+        )
+        self.fields['nombre'].widget.attrs.setdefault(
+            'placeholder',
+            'Solo para servicio fuera de catalogo',
+        )
         self.fields['servicio_catalogo'].queryset = ServicioCatalogo.objects.none()
         if propuesta and propuesta.empresa_id:
             self.fields['servicio_catalogo'].queryset = ServicioCatalogo.objects.filter(
@@ -167,10 +188,14 @@ class PropuestaLineaForm(forms.ModelForm):
         cleaned = super().clean()
         servicio = cleaned.get('servicio_catalogo')
         nombre = (cleaned.get('nombre') or '').strip()
-        if servicio and not nombre:
+        if servicio:
+            # El catalogo es la fuente canonica del nombre. No obligamos al
+            # usuario a repetirlo ni aceptamos un alias enviado por POST.
             cleaned['nombre'] = servicio.nombre
-        if not servicio and not nombre:
-            self.add_error('nombre', 'Escribe un nombre para el servicio manual.')
+        elif not nombre:
+            self.add_error('nombre', 'Escribe un nombre para el servicio fuera de catalogo.')
+        else:
+            cleaned['nombre'] = nombre
         return cleaned
 
     def save(self, commit=True):

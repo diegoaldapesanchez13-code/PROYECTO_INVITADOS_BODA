@@ -18,9 +18,10 @@ class WorkspacePropuestaForm(PropuestaEventoForm):
             "BORRADOR",
             "PROPUESTA",
             "EN_REVISION",
-            "ACEPTADO",
             "CANCELADO",
         }
+        if self.instance and self.instance.pk and self.instance.estado in {"ACEPTADO", "CONTRATADO", "CANCELADO"}:
+            allowed_states.add(self.instance.estado)
         self.fields["estado"].choices = [
             choice
             for choice in self.fields["estado"].choices
@@ -39,7 +40,7 @@ class WorkspacePropuestaForm(PropuestaEventoForm):
         self.fields["ninos"].widget.attrs.setdefault("min", "0")
         self.fields["descuento"].widget.attrs.setdefault("min", "0")
 
-        if self.instance and self.instance.pk and self.instance.estado == "CONTRATADO":
+        if self.instance and self.instance.pk and self.instance.estado in {"ACEPTADO", "CONTRATADO", "CANCELADO"}:
             for field in self.fields.values():
                 field.disabled = True
 

@@ -1,0 +1,174 @@
+{% extends "eventos/workspace/base.html" %}
+{% load static %}
+
+{% block title %}Actividad | {{ evento.titulo_evento }}{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'eventos/css/workspace_activity_r4.css' %}">
+{% endblock %}
+
+{% block workspace_content %}
+<section class="activity-workspace workspace-module-stack">
+    <header class="workspace-page-header activity-heading">
+        <div>
+            <span class="workspace-eyebrow">Control</span>
+            <h2>Actividad</h2>
+            <p>
+                Historial operativo y de auditoría del evento. Esta vista utiliza los
+                registros que el sistema ya genera; no crea un historial paralelo.
+            </p>
+        </div>
+        <div class="activity-heading__count">
+            <strong>{{ total_registros }}</strong>
+            <span>registro{{ total_registros|pluralize }}</span>
+        </div>
+    </header>
+
+    <form class="workspace-toolbar activity-toolbar" method="get">
+        {% if return_to %}
+        <input type="hidden" name="return_to" value="{{ return_to }}">
+        {% endif %}
+
+        <label class="app-field activity-toolbar__search">
+            <span class="app-label">Buscar</span>
+            <input
+                class="app-input"
+                type="search"
+                name="q"
+                value="{{ actividad_q }}"
+                placeholder="Acción, descripción, usuario u objeto"
+            >
+        </label>
+
+        <label class="app-field">
+            <span class="app-label">Modelo</span>
+            <select class="app-select" name="modelo">
+                <option value="">Todos</option>
+                {% for item in modelos_actividad %}
+                <option value="{{ item }}" {% if actividad_modelo == item %}selected{% endif %}>{{ item }}</option>
+                {% endfor %}
+            </select>
+        </label>
+
+        <label class="app-field">
+            <span class="app-label">Acción</span>
+            <select class="app-select" name="accion">
+                <option value="">Todas</option>
+                {% for item in acciones_actividad %}
+                <option value="{{ item }}" {% if actividad_accion == item %}selected{% endif %}>{{ item }}</option>
+                {% endfor %}
+            </select>
+        </label>
+
+        <div class="activity-toolbar__actions">
+            <button class="app-button app-button--primary" type="submit">Filtrar</button>
+            {% if actividad_q or actividad_modelo or actividad_accion %}
+            <a
+                class="app-button app-button--secondary"
+                href="{% url 'k9_evento_actividad' empresa_slug=empresa.slug evento_id=evento.id %}{% if return_to %}?return_to={{ return_to|urlencode }}{% endif %}"
+            >
+                Limpiar
+            </a>
+            {% endif %}
+        </div>
+    </form>
+
+    <section class="workspace-panel activity-panel">
+        <header class="activity-panel__header">
+            <div>
+                <span class="workspace-eyebrow">Bitácora</span>
+                <h3>Historial del evento</h3>
+            </div>
+            {% if total_registros > 250 %}
+            <span>Mostrando los 250 más recientes</span>
+            {% else %}
+            <span>Más reciente primero</span>
+            {% endif %}
+        </header>
+
+        <div class="activity-timeline">
+            {% for registro in registros %}
+            <article class="activity-entry">
+                <div class="activity-entry__rail" aria-hidden="true">
+                    <span></span>
+                </div>
+
+                <time datetime="{{ registro.fecha|date:'c' }}">
+                    <strong>{{ registro.fecha|date:"d M" }}</strong>
+                    <span>{{ registro.fecha|date:"H:i" }}</span>
+                </time>
+
+                <div class="activity-entry__body">
+                    <header>
+                        <div>
+                            <strong>{{ registro.accion }}</strong>
+                            {% if registro.modelo %}
+                            <span class="activity-chip">{{ registro.modelo }}</span>
+                            {% endif %}
+                        </div>
+                        <span class="activity-entry__actor">
+                            {% if registro.usuario %}
+                                {{ registro.usuario.get_full_name|default:registro.usuario.username }}
+                            {% else %}
+                                Sistema
+                            {% endif %}
+                        </span>
+                    </header>
+
+                    {% if registro.descripcion %}
+                    <p>{{ registro.descripcion }}</p>
+                    {% endif %}
+
+                    <div class="activity-entry__meta">
+                        {% if registro.objeto_id %}
+                        <span>Objeto #{{ registro.objeto_id }}</span>
+                        {% endif %}
+                        {% if registro.direccion_ip %}
+                        <span>IP {{ registro.direccion_ip }}</span>
+                        {% endif %}
+                    </div>
+
+                    {% if registro.valores_anteriores or registro.valores_nuevos %}
+                    <details class="activity-entry__details">
+                        <summary>Ver cambios registrados</summary>
+                        <div>
+                            {% if registro.valores_anteriores %}
+                            <section>
+                                <span>Antes</span>
+                                <pre>{{ registro.valores_anteriores }}</pre>
+                            </section>
+                            {% endif %}
+                            {% if registro.valores_nuevos %}
+                            <section>
+                                <span>Después</span>
+                                <pre>{{ registro.valores_nuevos }}</pre>
+                            </section>
+                            {% endif %}
+                        </div>
+                    </details>
+                    {% endif %}
+                </div>
+            </article>
+            {% empty %}
+            <div class="workspace-empty-state">
+                <strong>No hay actividad para mostrar.</strong>
+                {% if actividad_q or actividad_modelo or actividad_accion %}
+                <p>Los filtros actuales no encontraron registros.</p>
+                {% else %}
+                <p>Cuando el sistema registre operaciones auditables aparecerán aquí.</p>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <footer class="activity-integrity-note">
+        <strong>Historial de solo lectura</strong>
+        <span>
+            La actividad se alimenta de <code>RegistroAuditoria</code>. Esta pantalla
+            no modifica, duplica ni elimina registros.
+        </span>
+    </footer>
+</section>
+{% endblock %}

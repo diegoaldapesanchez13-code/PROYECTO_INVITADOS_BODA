@@ -611,6 +611,7 @@ class PropuestaServicioCliente(models.Model):
         ("INCLUIDO", "Incluido en paquete"),
         ("UPGRADE", "Upgrade / diferencia"),
         ("ADICIONAL", "Servicio adicional"),
+        ("CORTESIA", "Cortesia"),
     ]
     ESTADOS = [
         ("BORRADOR", "Borrador"),
@@ -655,6 +656,63 @@ class PropuestaServicioCliente(models.Model):
 
     def __str__(self):
         return f"{self.servicio_evento} · propuesta v{self.version}"
+
+
+class AjusteContractualServicio(models.Model):
+    """Append-only change order approved after a base contract."""
+    TIPOS = [
+        ("UPGRADE", "Upgrade / diferencia"),
+        ("ADICIONAL", "Servicio adicional"),
+        ("CORTESIA", "Cortesia"),
+    ]
+    ESTADOS = [("VIGENTE", "Vigente"), ("ANULADO", "Anulado")]
+
+    evento = models.ForeignKey(
+        "invitaciones.EventoBoda", on_delete=models.CASCADE,
+        related_name="ajustes_contractuales_servicio",
+    )
+    contrato_base = models.ForeignKey(
+        "eventos.ContratoEvento", on_delete=models.PROTECT,
+        related_name="ajustes_contractuales",
+    )
+    servicio_evento = models.ForeignKey(
+        "proveedores.ServicioEvento", on_delete=models.SET_NULL,
+        blank=True, null=True, related_name="ajustes_contractuales",
+    )
+    propuesta_origen = models.OneToOneField(
+        PropuestaServicioCliente, on_delete=models.PROTECT,
+        related_name="ajuste_contractual",
+    )
+    tipo = models.CharField(max_length=20, choices=TIPOS)
+    descripcion_snapshot = models.TextField(blank=True, null=True)
+    monto_cliente = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    valor_informativo = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    moneda = models.CharField(max_length=3, default="MXN")
+    estado = models.CharField(max_length=15, choices=ESTADOS, default="VIGENTE")
+    aprobado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        blank=True, null=True, related_name="ajustes_contractuales_aprobados",
+    )
+    aprobado_en = models.DateTimeField(default=timezone.now)
+    anulado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        blank=True, null=True, related_name="ajustes_contractuales_anulados",
+    )
+    anulado_en = models.DateTimeField(blank=True, null=True)
+    motivo_anulacion = models.TextField(blank=True, null=True)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["evento", "aprobado_en", "id"]
+        indexes = [
+            models.Index(fields=["evento", "estado"], name="colab_ajuste_evt_est_idx"),
+            models.Index(fields=["contrato_base", "estado"], name="colab_ajuste_ctr_est_idx"),
+        ]
+
+    def __str__(self):
+        return f"{self.evento} · {self.get_tipo_display()} · ${self.monto_cliente}"
+
 
 
 class AprobacionServicio(models.Model):

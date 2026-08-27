@@ -1,8 +1,8 @@
 {% extends "paquetes/base.html" %}
-{% block title %}{% if modo == "crear" %}Nuevo paquete{% else %}Editar paquete{% endif %} | DIRTEC{% endblock %}
+{% block package_title %}{% if modo == "crear" %}Nuevo paquete{% else %}Editar paquete{% endif %} | DIRTEC{% endblock %}
 {% block heading %}{% if modo == "crear" %}Nuevo paquete{% else %}Editar paquete{% endif %}{% endblock %}
-{% block content %}
-<section class="pkg-section narrow">
+{% block package_content %}
+<section class="pkg-section narrow pkg-editor-page">
     <form class="pkg-form" method="post" enctype="multipart/form-data">
         {% csrf_token %}
         {{ form.as_p }}

@@ -3,6 +3,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from eventos.models import ContratoEvento
+from paquetes.models import PaqueteBoda, PropuestaEvento
 from invitaciones.models import EventoBoda
 from organizaciones.models import EmpresaSuscriptora, MembresiaEmpresa
 
@@ -182,6 +183,88 @@ class EventLifecycleVisibleR2CTests(TestCase):
             {"confirmacion": "PURGAR"},
         )
         self.assertFalse(EventoBoda.objects.filter(pk=evento_id).exists())
+
+    def test_admin_can_purge_archived_event_with_draft_proposal(self):
+        evento = self._evento(estado="ARCHIVADO", activo=False)
+        paquete = PaqueteBoda.objects.create(
+            empresa=self.empresa,
+            nombre="Paquete prueba R2C",
+            precio_base=1000,
+        )
+        propuesta = PropuestaEvento.objects.create(
+            empresa=self.empresa,
+            evento=evento,
+            paquete=paquete,
+            estado="BORRADOR",
+        )
+        evento_id = evento.id
+        propuesta_id = propuesta.id
+
+        self.client.force_login(self.admin)
+        response = self.client.post(
+            reverse(
+                "k9_evento_purgar",
+                kwargs={"empresa_slug": self.empresa.slug, "evento_id": evento.id},
+            ),
+            {"confirmacion": "PURGAR"},
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(EventoBoda.objects.filter(pk=evento_id).exists())
+        self.assertFalse(PropuestaEvento.objects.filter(pk=propuesta_id).exists())
+        self.assertTrue(PaqueteBoda.objects.filter(pk=paquete.id).exists())
+
+    def test_accepted_proposal_blocks_archived_event_purge(self):
+        evento = self._evento(estado="ARCHIVADO", activo=False)
+        paquete = PaqueteBoda.objects.create(
+            empresa=self.empresa,
+            nombre="Paquete protegido R2C",
+            precio_base=1000,
+        )
+        PropuestaEvento.objects.create(
+            empresa=self.empresa,
+            evento=evento,
+            paquete=paquete,
+            estado="ACEPTADO",
+        )
+
+        self.client.force_login(self.admin)
+        self.client.post(
+            reverse(
+                "k9_evento_purgar",
+                kwargs={"empresa_slug": self.empresa.slug, "evento_id": evento.id},
+            ),
+            {"confirmacion": "PURGAR"},
+        )
+
+        self.assertTrue(EventoBoda.objects.filter(pk=evento.id).exists())
+
+    def test_cancelled_precontractual_proposal_can_be_purged_with_event(self):
+        evento = self._evento(estado="ARCHIVADO", activo=False)
+        paquete = PaqueteBoda.objects.create(
+            empresa=self.empresa,
+            nombre="Paquete cancelado R2C",
+            precio_base=1000,
+        )
+        PropuestaEvento.objects.create(
+            empresa=self.empresa,
+            evento=evento,
+            paquete=paquete,
+            estado="CANCELADO",
+        )
+        evento_id = evento.id
+
+        self.client.force_login(self.admin)
+        self.client.post(
+            reverse(
+                "k9_evento_purgar",
+                kwargs={"empresa_slug": self.empresa.slug, "evento_id": evento.id},
+            ),
+            {"confirmacion": "PURGAR"},
+        )
+
+        self.assertFalse(EventoBoda.objects.filter(pk=evento_id).exists())
+        self.assertTrue(PaqueteBoda.objects.filter(pk=paquete.id).exists())
 
     def test_cross_tenant_event_is_not_reachable(self):
         evento = self._evento()

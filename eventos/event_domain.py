@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field
+﻿from dataclasses import dataclass, field
 
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
@@ -438,28 +438,67 @@ def usuario_puede_purgar_evento(usuario, evento):
     return "ADMIN_EMPRESA" in roles
 
 
+def _propuestas_descartables_para_purga(evento):
+    return evento.propuestas_k9.filter(
+        estado__in={"BORRADOR", "PROPUESTA", "EN_REVISION", "CANCELADO"}
+    )
+
+
+def evaluar_purga_evento(evento):
+    """
+    D6.1 purge policy.
+
+    Only a truly discardable archived event may be hard-deleted.
+    A generated structured archive does NOT weaken the protection of real
+    commercial/financial/operational history.
+    """
+    propuestas_protegidas = evento.propuestas_k9.exclude(
+        estado__in={"BORRADOR", "PROPUESTA", "EN_REVISION", "CANCELADO"}
+    )
+    checks = [
+        ("Tiene una propuesta comercial aceptada o contratada.", propuestas_protegidas.exists()),
+        ("Tiene un contrato.", evento.contratos_evento.exists()),
+        ("Tiene servicios operativos.", evento.servicios_contratados.exists()),
+        ("Tiene gastos.", evento.gastos_evento.exists()),
+        ("Tiene pagos de cliente.", evento.pagos_cliente_reportados.exists()),
+        ("Tiene documentos.", evento.documentos_evento.exists()),
+        ("Tiene tareas.", evento.tareas_evento.exists()),
+        ("Tiene actividades de agenda.", evento.actividades_itinerario.exists()),
+        ("Tiene grupos de invitados.", evento.grupos.exists()),
+        ("Tiene expedientes de colaboracion.", evento.expedientes_servicio.exists()),
+    ]
+    ajustes = getattr(evento, "ajustes_contractuales_servicio", None)
+    if ajustes is not None and ajustes.exists():
+        checks.append(("Tiene ajustes contractuales post-contrato.", True))
+
+    motivos = tuple(label for label, exists in checks if exists)
+    return EvaluacionEliminacionEvento(permitido=not motivos, motivos=motivos)
+
+
 @transaction.atomic
 def purgar_evento_archivado(evento, *, usuario, request=None):
     """
-    Purga administrativa R2C.
+    Hard-delete only for an archived, discardable event.
 
-    Solo DIRTEC/Admin Empresa y únicamente después de ARCHIVAR.
-    Aun así respeta la misma evaluación de integridad que error-delete.
+    Structured export receipts survive through SET_NULL and therefore do not
+    block deleting a test/error event. Real event history remains protected
+    until a future complete-binary archive policy is implemented.
     """
     if not usuario_puede_purgar_evento(usuario, evento):
         raise PermissionDenied("No tienes permiso para purgar eventos.")
     if evento.estado != "ARCHIVADO":
         raise ValidationError("El evento debe estar archivado antes de purgarse.")
 
-    evaluacion = evaluar_eliminacion_evento(evento)
+    evaluacion = evaluar_purga_evento(evento)
     if not evaluacion.permitido:
         raise ValidationError(
-            ["El evento archivado todavía tiene historial protegido.", *evaluacion.motivos]
+            ["El evento archivado todavÃ­a tiene historial protegido.", *evaluacion.motivos]
         )
 
     empresa = evento.empresa
     evento_id = evento.id
     nombre = evento.titulo_evento
+    propuestas_descartadas = _propuestas_descartables_para_purga(evento).count()
 
     registrar_auditoria(
         usuario=usuario,
@@ -468,13 +507,20 @@ def purgar_evento_archivado(evento, *, usuario, request=None):
         accion="PURGAR_EVENTO_K9",
         modelo="EventoBoda",
         objeto_id=evento_id,
-        descripcion=f"Se purgo permanentemente el evento archivado: {nombre}.",
+        descripcion=f"Se purgo permanentemente el evento archivado descartable: {nombre}.",
         valores_anteriores={
             "nombre_evento": evento.nombre_evento,
             "tipo_evento": evento.tipo_evento,
             "estado": evento.estado,
+            "propuestas_precontractuales_descartadas": propuestas_descartadas,
         },
         request=request,
     )
+
+    _propuestas_descartables_para_purga(evento).delete()
     evento.delete()
-    return {"evento_id": evento_id, "nombre": nombre}
+    return {
+        "evento_id": evento_id,
+        "nombre": nombre,
+        "propuestas_descartadas": propuestas_descartadas,
+    }

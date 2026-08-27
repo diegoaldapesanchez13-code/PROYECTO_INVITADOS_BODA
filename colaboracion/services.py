@@ -9,6 +9,7 @@ from core.services.authorization import (
     usuario_puede_evento,
     usuario_tiene_permiso,
 )
+from eventos.selectors import contrato_vigente
 from notificaciones.models import Notificacion
 from proveedores.models import Proveedor
 
@@ -562,7 +563,7 @@ def archivar_tema_workspace(tema, *, user):
 
 # K.8.5 ---------------------------------------------------------------------
 from django.utils import timezone
-from .models import DecisionServicio, CotizacionServicio, PropuestaServicioCliente, AprobacionServicio
+from .models import AjusteContractualServicio, DecisionServicio, CotizacionServicio, PropuestaServicioCliente, AprobacionServicio
 
 
 def _siguiente_version_servicio(model, servicio):
@@ -629,8 +630,8 @@ def crear_propuesta_servicio(servicio, *, user, descripcion="", modalidad=None, 
     cargo = Decimal(str(cargo_adicional_cliente if cargo_adicional_cliente not in (None, "") else servicio.cargo_adicional_cliente or 0))
     if cargo < 0:
         raise ValueError("El cargo adicional no puede ser negativo.")
-    if modalidad == "INCLUIDO" and cargo != 0:
-        raise ValueError("Un servicio incluido no puede generar cargo adicional al cliente.")
+    if modalidad in {"INCLUIDO", "CORTESIA"} and cargo != 0:
+        raise ValueError("Un servicio incluido o una cortesia no puede generar cargo adicional al cliente.")
     PropuestaServicioCliente.objects.filter(servicio_evento=servicio, estado__in=["BORRADOR", "ENVIADA", "CAMBIOS_SOLICITADOS"]).update(estado="REEMPLAZADA")
     propuesta = PropuestaServicioCliente.objects.create(
         servicio_evento=servicio,
@@ -648,7 +649,13 @@ def crear_propuesta_servicio(servicio, *, user, descripcion="", modalidad=None, 
     return propuesta
 
 
+@transaction.atomic
 def responder_propuesta_servicio(propuesta, *, user, estado, comentario=""):
+    propuesta = (
+        PropuestaServicioCliente.objects.select_for_update()
+        .select_related("servicio_evento", "servicio_evento__evento")
+        .get(pk=propuesta.pk)
+    )
     servicio = propuesta.servicio_evento
     if not es_cliente_servicio_workspace(user, servicio):
         raise PermissionDenied("Solo un cliente del evento puede responder esta propuesta.")
@@ -656,15 +663,52 @@ def responder_propuesta_servicio(propuesta, *, user, estado, comentario=""):
         raise ValueError("Esta propuesta ya no esta pendiente de respuesta.")
     if estado not in {"APROBADA", "CAMBIOS_SOLICITADOS", "RECHAZADA"}:
         raise ValueError("Respuesta de propuesta no valida.")
+
+    if estado == "APROBADA":
+        cargo = Decimal(str(propuesta.cargo_adicional_cliente or 0))
+        if propuesta.modalidad in {"INCLUIDO", "CORTESIA"} and cargo != 0:
+            raise ValueError("Un servicio incluido o una cortesia debe aprobarse con cargo cero.")
+
+        contrato = contrato_vigente(servicio.evento)
+        requiere_ajuste = propuesta.modalidad in {"UPGRADE", "ADICIONAL", "CORTESIA"}
+        if requiere_ajuste and contrato is None:
+            raise ValueError(
+                "No existe un contrato vigente. Los cambios post-contrato deben aprobarse contra un contrato base."
+            )
+        if requiere_ajuste:
+            AjusteContractualServicio.objects.create(
+                evento=servicio.evento,
+                contrato_base=contrato,
+                servicio_evento=servicio,
+                propuesta_origen=propuesta,
+                tipo=propuesta.modalidad,
+                descripcion_snapshot=(propuesta.descripcion or "").strip() or None,
+                monto_cliente=cargo,
+                valor_informativo=propuesta.valor_contratado_snapshot or 0,
+                moneda=contrato.moneda or "MXN",
+                aprobado_por=user,
+                aprobado_en=timezone.now(),
+            )
+
     propuesta.estado = estado
     propuesta.respondido_por = user
     propuesta.comentario_cliente = (comentario or "").strip() or None
     propuesta.fecha_respuesta = timezone.now()
-    propuesta.save(update_fields=["estado", "respondido_por", "comentario_cliente", "fecha_respuesta", "fecha_actualizacion"])
+    propuesta.save(update_fields=[
+        "estado", "respondido_por", "comentario_cliente",
+        "fecha_respuesta", "fecha_actualizacion",
+    ])
+
     if estado == "APROBADA":
         servicio.modalidad = propuesta.modalidad
-        servicio.cargo_adicional_cliente = propuesta.cargo_adicional_cliente
+        total_ajustes = (
+            AjusteContractualServicio.objects.filter(
+                servicio_evento=servicio, estado="VIGENTE"
+            ).aggregate(total=Sum("monto_cliente"))["total"] or Decimal("0")
+        )
+        servicio.cargo_adicional_cliente = total_ajustes
         servicio.save(update_fields=["modalidad", "cargo_adicional_cliente"])
+
     return propuesta
 
 

@@ -83,6 +83,7 @@ from core.services.identity import (
     perfil_acceso_de,
 )
 from core.services.runtime_guardrails import block_replaced_legacy_post
+from core.services.return_context import safe_return_to
 from core.services.tenant_context import (
     exigir_tenant,
     tenant_desde_request,
@@ -3888,7 +3889,15 @@ def mesas_visual(request):
             asignacion.delete()
             messages.success(request, 'Asignación eliminada.')
 
-        return redirect(f'/dashboard/mesas/?evento={evento.id}')
+        destino = f'/dashboard/mesas/?evento={evento.id}'
+        if evento.empresa_id:
+            destino = safe_return_to(
+                request,
+                empresa=evento.empresa,
+                raw=request.POST.get('return_to'),
+                default=destino,
+            )
+        return redirect(destino)
 
     mesas = (
         Mesa.objects.filter(evento=evento)
@@ -3912,6 +3921,15 @@ def mesas_visual(request):
             )
         )
 
+    return_to = reverse('dashboard')
+    if evento and evento.empresa_id:
+        return_to = safe_return_to(
+            request,
+            empresa=evento.empresa,
+            raw=request.GET.get('return_to'),
+            default=return_to,
+        )
+
     context = {
         'evento': evento,
         'eventos': eventos,
@@ -3919,6 +3937,7 @@ def mesas_visual(request):
         'tipos_mesa': Mesa.TIPOS,
         'invitados_sin_mesa': invitados_sin_mesa,
         'es_dirtec': usuario_es_dirtec(request.user),
+        'return_to': return_to,
     }
     return render(request, 'invitaciones/mesas_visual.html', context)
 

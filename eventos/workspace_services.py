@@ -7,6 +7,7 @@ from django.db import transaction
 from core.services.auditoria import registrar_auditoria
 from core.services.permisos import roles_usuario_empresa, usuario_es_dirtec_operativo
 from proveedores.models import ServicioEvento
+from proveedores.service_lifecycle import aplicar_estado_operativo, sincronizar_estado_legacy
 
 
 ZERO = Decimal("0.00")
@@ -111,7 +112,10 @@ def guardar_servicio_operativo(
 
     servicio.evento = evento
 
+    requested_operational = cleaned_data.get("estado_operativo")
     for field, value in cleaned_data.items():
+        if field == "estado_operativo":
+            continue
         if field == "costo_proveedor" and value in {None, ""}:
             value = ZERO
         setattr(servicio, field, value)
@@ -121,6 +125,7 @@ def guardar_servicio_operativo(
         servicio.modalidad = "ADICIONAL"
         servicio.estado = "SOLICITADO"
         servicio.estado_comercial = "BORRADOR"
+        servicio.estado_operativo = "PENDIENTE"
         servicio.cargo_adicional_cliente = ZERO
         servicio.valor_contratado = ZERO
 
@@ -135,6 +140,11 @@ def guardar_servicio_operativo(
 
     if nuevo and servicio.proveedor_id and not servicio.proveedor_nombre_snapshot:
         servicio.proveedor_nombre_snapshot = servicio.proveedor.nombre_comercial
+
+    if requested_operational:
+        aplicar_estado_operativo(servicio, requested_operational)
+    else:
+        sincronizar_estado_legacy(servicio)
 
     servicio.full_clean()
     servicio.save()

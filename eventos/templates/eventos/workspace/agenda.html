@@ -10,67 +10,92 @@
 
 {% block workspace_content %}
 <section class="agenda-workspace">
-    <header class="agenda-heading">
+    <header class="workspace-page-header">
         <div>
-            <span class="workspace-eyebrow">Operación</span>
+            <span class="workspace-eyebrow">Operacion</span>
             <h2>Agenda</h2>
-            <p>Citas, actividades e hitos del evento en una sola línea de tiempo.</p>
+            <p>Cronograma y actividades operativas del evento.</p>
         </div>
         {% if puede_operar %}
-        <a class="app-button app-button--primary"
+        <a class="app-button app-button--primary workspace-primary-action"
            href="{% url 'k9_evento_agenda' empresa_slug=empresa.slug evento_id=evento.id %}?modo={{ modo }}&return_to={{ return_to|urlencode }}">
             + Nueva actividad
         </a>
         {% endif %}
     </header>
 
-    <form method="get" class="agenda-toolbar">
+    <form method="get" class="workspace-toolbar agenda-toolbar" aria-label="Filtros de agenda">
         <input type="hidden" name="return_to" value="{{ return_to }}">
         <input type="hidden" name="modo" value="{{ modo }}">
-        <input class="app-input" type="search" name="q" value="{{ busqueda }}" placeholder="Buscar en agenda...">
-        <select class="app-select" name="vista" onchange="this.form.submit()">
-            <option value="proximas" {% if vista == "proximas" %}selected{% endif %}>Próximas</option>
-            <option value="todas" {% if vista == "todas" %}selected{% endif %}>Todas</option>
-            <option value="completadas" {% if vista == "completadas" %}selected{% endif %}>Completadas</option>
-            <option value="canceladas" {% if vista == "canceladas" %}selected{% endif %}>Canceladas</option>
-            <option value="archivadas" {% if vista == "archivadas" %}selected{% endif %}>Archivadas</option>
-        </select>
-        <select class="app-select" name="tipo" onchange="this.form.submit()">
-            <option value="">Todos los tipos</option>
-            <option value="CITA" {% if tipo_filtro == "CITA" %}selected{% endif %}>Citas</option>
-            <option value="ACTIVIDAD" {% if tipo_filtro == "ACTIVIDAD" %}selected{% endif %}>Actividades</option>
-            <option value="HITO" {% if tipo_filtro == "HITO" %}selected{% endif %}>Hitos</option>
-        </select>
-        <div class="agenda-view-toggle">
-            <a class="{% if modo == 'timeline' %}is-active{% endif %}" href="?vista={{ vista }}&modo=timeline&return_to={{ return_to|urlencode }}">Timeline</a>
-            <a class="{% if modo == 'lista' %}is-active{% endif %}" href="?vista={{ vista }}&modo=lista&return_to={{ return_to|urlencode }}">Lista</a>
+
+        <label class="workspace-toolbar__search">
+            <span>Buscar</span>
+            <input class="app-input" type="search" name="q" value="{{ busqueda }}" placeholder="Buscar actividad, lugar o proveedor">
+        </label>
+
+        <label>
+            <span>Estado</span>
+            <select class="app-select" name="vista" data-workspace-autosubmit>
+                <option value="proximas" {% if vista == "proximas" %}selected{% endif %}>Proximas</option>
+                <option value="todas" {% if vista == "todas" %}selected{% endif %}>Todas</option>
+                <option value="completadas" {% if vista == "completadas" %}selected{% endif %}>Completadas</option>
+                <option value="canceladas" {% if vista == "canceladas" %}selected{% endif %}>Canceladas</option>
+                <option value="archivadas" {% if vista == "archivadas" %}selected{% endif %}>Archivadas</option>
+            </select>
+        </label>
+
+        <label>
+            <span>Tipo</span>
+            <select class="app-select" name="tipo" data-workspace-autosubmit>
+                <option value="">Todos</option>
+                <option value="CITA" {% if tipo_filtro == "CITA" %}selected{% endif %}>Citas</option>
+                <option value="ACTIVIDAD" {% if tipo_filtro == "ACTIVIDAD" %}selected{% endif %}>Actividades</option>
+                <option value="HITO" {% if tipo_filtro == "HITO" %}selected{% endif %}>Hitos</option>
+            </select>
+        </label>
+
+        <div class="workspace-segmented" role="group" aria-label="Vista de agenda">
+            <a class="{% if modo == 'timeline' %}is-active{% endif %}"
+               href="?vista={{ vista }}&tipo={{ tipo_filtro|urlencode }}&q={{ busqueda|urlencode }}&modo=timeline&return_to={{ return_to|urlencode }}">
+                Timeline
+            </a>
+            <a class="{% if modo == 'lista' %}is-active{% endif %}"
+               href="?vista={{ vista }}&tipo={{ tipo_filtro|urlencode }}&q={{ busqueda|urlencode }}&modo=lista&return_to={{ return_to|urlencode }}">
+                Lista
+            </a>
         </div>
+
+        <button class="app-button app-button--secondary" type="submit">Filtrar</button>
     </form>
 
     {% if modo == "timeline" %}
     {% regroup actividades by fecha as fechas %}
-    <div class="agenda-timeline">
+    <div class="agenda-timeline" aria-label="Timeline de actividades">
         {% for grupo in fechas %}
         <section class="agenda-day">
-            <header>
+            <header class="agenda-day__date">
                 <strong>{{ grupo.grouper|date:"d" }}</strong>
-                <div><span>{{ grupo.grouper|date:"M"|upper }}</span><small>{{ grupo.grouper|date:"l" }}</small></div>
+                <div>
+                    <span>{{ grupo.grouper|date:"M"|upper }}</span>
+                    <small>{{ grupo.grouper|date:"l" }}</small>
+                </div>
             </header>
             <div class="agenda-day__items">
                 {% for item in grupo.list %}
                 <a class="agenda-item {% if actividad and actividad.id == item.id %}is-selected{% endif %}"
-                   href="?actividad={{ item.id }}&vista={{ vista }}&modo={{ modo }}&return_to={{ return_to|urlencode }}">
-                    <time>{{ item.hora_inicio|time:"H:i" }}</time>
-                    <span class="agenda-line-dot agenda-line-dot--{{ item.tipo|lower }}"></span>
-                    <div>
+                   href="?actividad={{ item.id }}&vista={{ vista }}&tipo={{ tipo_filtro|urlencode }}&q={{ busqueda|urlencode }}&modo={{ modo }}&return_to={{ return_to|urlencode }}"
+                   {% if actividad and actividad.id == item.id %}aria-current="true"{% endif %}>
+                    <time>{% if item.hora_inicio %}{{ item.hora_inicio|time:"H:i" }}{% else %}--:--{% endif %}</time>
+                    <span class="agenda-line-dot agenda-line-dot--{{ item.tipo|lower }}" aria-hidden="true"></span>
+                    <div class="agenda-item__body">
                         <div class="agenda-item__meta">
                             <span>{{ item.get_tipo_display }}</span>
-                            <b>{{ item.get_estado_display }}</b>
+                            <b class="workspace-badge workspace-badge--{{ item.estado|lower }}">{{ item.get_estado_display }}</b>
                         </div>
                         <h3>{{ item.titulo }}</h3>
                         <p>
-                            {% if item.ubicacion %}{{ item.ubicacion }}{% else %}Ubicación por definir{% endif %}
-                            {% if item.responsable %} · {{ item.responsable.get_full_name|default:item.responsable.username }}{% endif %}
+                            {% if item.ubicacion %}{{ item.ubicacion }}{% else %}Ubicacion por definir{% endif %}
+                            {% if item.responsable %}<span>{{ item.responsable.get_full_name|default:item.responsable.username }}</span>{% endif %}
                         </p>
                     </div>
                 </a>
@@ -78,28 +103,48 @@
             </div>
         </section>
         {% empty %}
-        <div class="agenda-empty"><strong>No hay actividades en esta vista.</strong></div>
+        <div class="workspace-empty-state">
+            <strong>No hay actividades en esta vista.</strong>
+            <p>Ajusta los filtros o crea la primera actividad del cronograma.</p>
+            {% if puede_operar %}
+            <a class="app-button app-button--primary" href="{% url 'k9_evento_agenda' empresa_slug=empresa.slug evento_id=evento.id %}?modo={{ modo }}&return_to={{ return_to|urlencode }}">Nueva actividad</a>
+            {% endif %}
+        </div>
         {% endfor %}
     </div>
     {% else %}
-    <div class="agenda-list">
+    <div class="workspace-list agenda-list" aria-label="Lista de actividades">
         {% for item in actividades %}
-        <a href="?actividad={{ item.id }}&vista={{ vista }}&modo={{ modo }}&return_to={{ return_to|urlencode }}">
-            <time><strong>{{ item.fecha|date:"d M" }}</strong><span>{{ item.hora_inicio|time:"H:i" }}</span></time>
+        <a class="workspace-list-row {% if actividad and actividad.id == item.id %}is-selected{% endif %}"
+           href="?actividad={{ item.id }}&vista={{ vista }}&tipo={{ tipo_filtro|urlencode }}&q={{ busqueda|urlencode }}&modo={{ modo }}&return_to={{ return_to|urlencode }}">
+            <time>
+                <strong>{{ item.fecha|date:"d M" }}</strong>
+                <span>{% if item.hora_inicio %}{{ item.hora_inicio|time:"H:i" }}{% else %}--:--{% endif %}</span>
+            </time>
             <span class="agenda-type">{{ item.get_tipo_display }}</span>
-            <div><strong>{{ item.titulo }}</strong><small>{{ item.get_estado_display }}</small></div>
-            <span>{% if item.responsable %}{{ item.responsable.get_short_name|default:item.responsable.username }}{% else %}—{% endif %}</span>
+            <div>
+                <strong>{{ item.titulo }}</strong>
+                <small>{% if item.ubicacion %}{{ item.ubicacion }}{% else %}Ubicacion por definir{% endif %}</small>
+            </div>
+            <b class="workspace-badge workspace-badge--{{ item.estado|lower }}">{{ item.get_estado_display }}</b>
+            <span>{% if item.responsable %}{{ item.responsable.get_short_name|default:item.responsable.username }}{% else %}Sin responsable{% endif %}</span>
         </a>
         {% empty %}
-        <div class="agenda-empty"><strong>No hay actividades en esta vista.</strong></div>
+        <div class="workspace-empty-state">
+            <strong>No hay actividades en esta vista.</strong>
+            <p>Ajusta los filtros o crea la primera actividad del cronograma.</p>
+            {% if puede_operar %}
+            <a class="app-button app-button--primary" href="{% url 'k9_evento_agenda' empresa_slug=empresa.slug evento_id=evento.id %}?modo={{ modo }}&return_to={{ return_to|urlencode }}">Nueva actividad</a>
+            {% endif %}
+        </div>
         {% endfor %}
     </div>
     {% endif %}
 
-    <section class="agenda-editor-layout">
+    <section class="workspace-split agenda-editor-layout">
         {% if puede_operar %}
         <article class="workspace-panel">
-            <header class="workspace-panel__header">
+            <header class="workspace-section-header">
                 <div>
                     <span class="workspace-eyebrow">{% if actividad %}Actividad #{{ actividad.id }}{% else %}Nueva agenda{% endif %}</span>
                     <h3>{% if actividad %}Editar actividad{% else %}Agregar actividad{% endif %}</h3>
@@ -107,31 +152,34 @@
             </header>
 
             {% if actividad and actividad.archivado_en %}
-            <div class="agenda-archived-note">Restaura la actividad para volver a editarla.</div>
+            <div class="workspace-alert workspace-alert--info">Restaura la actividad para volver a editarla.</div>
             {% else %}
-            <form method="post" class="agenda-form">
+            <form method="post" class="workspace-form">
                 {% csrf_token %}
                 <input type="hidden" name="accion" value="guardar">
                 <input type="hidden" name="actividad_id" value="{% if actividad %}{{ actividad.id }}{% endif %}">
                 <input type="hidden" name="vista" value="{{ vista }}">
                 <input type="hidden" name="modo" value="{{ modo }}">
                 <input type="hidden" name="return_to" value="{{ return_to }}">
-                <div class="agenda-form-grid">
+                <div class="workspace-form-grid">
                     {% for field in form %}
-                    <label class="app-field {% if field.name == 'titulo' or field.name == 'descripcion' or field.name == 'notas' %}agenda-form-grid__wide{% endif %}">
+                    <label class="app-field {% if field.name == 'titulo' or field.name == 'descripcion' or field.name == 'notas' %}workspace-form-grid__wide{% endif %}">
                         <span>{{ field.label }}</span>
                         {{ field }}
+                        {% if field.help_text %}<small class="app-field__help">{{ field.help_text }}</small>{% endif %}
                         {% if field.errors %}<small class="app-field__error">{{ field.errors|striptags }}</small>{% endif %}
                     </label>
                     {% endfor %}
                 </div>
-                <div class="agenda-actions"><button class="app-button app-button--primary" type="submit">Guardar actividad</button></div>
+                <div class="workspace-form-actions">
+                    <button class="app-button app-button--primary" type="submit">Guardar actividad</button>
+                </div>
             </form>
             {% endif %}
         </article>
 
         {% if actividad %}
-        <aside class="agenda-side">
+        <aside class="workspace-side-panel agenda-side">
             {% if actividad.tipo == "CITA" %}
             <article class="workspace-panel agenda-participants">
                 <span class="workspace-eyebrow">Confirmaciones</span>
@@ -140,7 +188,7 @@
                     {% for participante in actividad.participantes.all %}
                     <div>
                         <span>{{ participante.nombre_visible }}</span>
-                        <b class="participant-state participant-state--{{ participante.estado|lower }}">{{ participante.get_estado_display }}</b>
+                        <b class="workspace-badge workspace-badge--{{ participante.estado|lower }}">{{ participante.get_estado_display }}</b>
                     </div>
                     {% empty %}
                     <p>Sin participantes registrados.</p>
@@ -150,7 +198,7 @@
             </article>
             {% endif %}
 
-            <article class="workspace-panel agenda-actions-panel">
+            <article class="workspace-panel workspace-actions-panel">
                 <span class="workspace-eyebrow">Lifecycle</span>
                 <div>
                     {% if not actividad.archivado_en and actividad.estado != "CANCELADA" and actividad.estado != "COMPLETADA" %}
@@ -158,18 +206,25 @@
                         {% csrf_token %}
                         <input type="hidden" name="accion" value="completar">
                         <input type="hidden" name="actividad_id" value="{{ actividad.id }}">
+                        <input type="hidden" name="vista" value="{{ vista }}">
+                        <input type="hidden" name="modo" value="{{ modo }}">
                         <input type="hidden" name="return_to" value="{{ return_to }}">
-                        <button class="app-button app-button--secondary" type="submit">✓ Completar</button>
+                        <button class="app-button app-button--secondary" type="submit">Completar</button>
                     </form>
                     <details>
-                        <summary>Cancelar</summary>
+                        <summary>Cancelar actividad</summary>
                         <form method="post">
                             {% csrf_token %}
                             <input type="hidden" name="accion" value="cancelar">
                             <input type="hidden" name="actividad_id" value="{{ actividad.id }}">
+                            <input type="hidden" name="vista" value="{{ vista }}">
+                            <input type="hidden" name="modo" value="{{ modo }}">
                             <input type="hidden" name="return_to" value="{{ return_to }}">
-                            <textarea class="app-textarea" name="motivo" rows="2" placeholder="Motivo opcional"></textarea>
-                            <button class="app-button app-button--danger" type="submit">Confirmar cancelación</button>
+                            <label class="app-field">
+                                <span>Motivo</span>
+                                <textarea class="app-textarea" name="motivo" rows="2" placeholder="Motivo opcional"></textarea>
+                            </label>
+                            <button class="app-button app-button--danger" type="submit">Confirmar cancelacion</button>
                         </form>
                     </details>
                     {% endif %}
@@ -180,6 +235,8 @@
                             {% csrf_token %}
                             <input type="hidden" name="accion" value="restaurar">
                             <input type="hidden" name="actividad_id" value="{{ actividad.id }}">
+                            <input type="hidden" name="vista" value="{{ vista }}">
+                            <input type="hidden" name="modo" value="{{ modo }}">
                             <input type="hidden" name="return_to" value="{{ return_to }}">
                             <button class="app-button app-button--secondary" type="submit">Restaurar</button>
                         </form>
@@ -188,6 +245,8 @@
                             {% csrf_token %}
                             <input type="hidden" name="accion" value="archivar">
                             <input type="hidden" name="actividad_id" value="{{ actividad.id }}">
+                            <input type="hidden" name="vista" value="{{ vista }}">
+                            <input type="hidden" name="modo" value="{{ modo }}">
                             <input type="hidden" name="return_to" value="{{ return_to }}">
                             <button class="app-button app-button--secondary" type="submit">Archivar</button>
                         </form>
@@ -197,7 +256,7 @@
             </article>
 
             {% if not actividad.archivado_en and selected_eval and selected_eval.permitido %}
-            <article class="workspace-panel agenda-delete-zone">
+            <article class="workspace-panel workspace-danger-zone">
                 <span class="workspace-eyebrow">Error de captura</span>
                 <h3>Eliminar definitivamente</h3>
                 <p>Solo mientras no exista historial protegido.</p>
@@ -205,13 +264,18 @@
                     {% csrf_token %}
                     <input type="hidden" name="accion" value="eliminar_error">
                     <input type="hidden" name="actividad_id" value="{{ actividad.id }}">
+                    <input type="hidden" name="vista" value="{{ vista }}">
+                    <input type="hidden" name="modo" value="{{ modo }}">
                     <input type="hidden" name="return_to" value="{{ return_to }}">
-                    <input class="app-input" name="confirmacion" placeholder="Escribe ELIMINAR">
+                    <label class="app-field">
+                        <span>Confirmacion</span>
+                        <input class="app-input" name="confirmacion" placeholder="Escribe ELIMINAR" autocomplete="off">
+                    </label>
                     <button class="app-button app-button--danger" type="submit">Eliminar</button>
                 </form>
             </article>
             {% elif actividad.archivado_en and puede_purgar %}
-            <article class="workspace-panel agenda-delete-zone">
+            <article class="workspace-panel workspace-danger-zone">
                 <span class="workspace-eyebrow">Purge</span>
                 <h3>Purgar archivada</h3>
                 {% if selected_eval.permitido %}
@@ -220,8 +284,13 @@
                     {% csrf_token %}
                     <input type="hidden" name="accion" value="purgar">
                     <input type="hidden" name="actividad_id" value="{{ actividad.id }}">
+                    <input type="hidden" name="vista" value="{{ vista }}">
+                    <input type="hidden" name="modo" value="{{ modo }}">
                     <input type="hidden" name="return_to" value="{{ return_to }}">
-                    <input class="app-input" name="confirmacion" placeholder="Escribe PURGAR">
+                    <label class="app-field">
+                        <span>Confirmacion</span>
+                        <input class="app-input" name="confirmacion" placeholder="Escribe PURGAR" autocomplete="off">
+                    </label>
                     <button class="app-button app-button--danger" type="submit">Purgar</button>
                 </form>
                 {% else %}

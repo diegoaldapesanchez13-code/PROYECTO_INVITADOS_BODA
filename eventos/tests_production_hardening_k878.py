@@ -178,7 +178,7 @@ class ProductionHardeningK878Tests(TestCase):
                     'nombre_servicio': 'Servicio bloqueado',
                 },
             )
-            self.assertEqual(response.status_code, 404)
+            self.assertEqual(response.status_code, 302)
 
         self.assertFalse(
             ServicioEvento.objects.filter(

@@ -95,6 +95,21 @@ class ServicesWorkspaceR4CTests(TestCase):
         self.assertContains(response, "Servicios y proveedores")
         self.assertContains(response, "workspace_services_r4.css")
 
+    def test_selected_service_exposes_existing_collaboration_workspace(self):
+        servicio = ServicioEvento.objects.create(
+            evento=self.evento,
+            nombre_servicio="Servicio con colaboración",
+            origen="MANUAL",
+        )
+        self.client.force_login(self.admin)
+        response = self.client.get(self.url() + f"?servicio={servicio.id}")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Conversaciones del servicio")
+        self.assertContains(
+            response,
+            reverse("colaboracion_workspace_servicio", kwargs={"servicio_id": servicio.id}),
+        )
+
     def test_create_minimal_operational_service_without_provider_or_cost(self):
         self.client.force_login(self.admin)
         response = self.client.post(

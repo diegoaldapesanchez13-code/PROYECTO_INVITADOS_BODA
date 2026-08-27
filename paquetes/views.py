@@ -11,6 +11,12 @@ from core.secure_files import _file_response
 from core.services.permisos import roles_usuario_empresa, usuario_es_dirtec_operativo
 from core.services.tenant_context import validar_slug_tenant
 from eventos.models import ContratoEvento
+from eventos.workspace_commercial import (
+    aceptar_propuesta,
+    propuesta_es_editable,
+    propuesta_permite_editar_lineas,
+    reabrir_propuesta,
+)
 from invitaciones.models import EventoBoda
 
 from .forms import (
@@ -137,7 +143,37 @@ def paquete_update(request, empresa_slug, paquete_id):
     )
 
 
-@login_required(login_url='/login/')
+def _paquete_composicion_editable(paquete):
+    """
+    La composicion se protege por uso comercial vigente o historico contractual.
+
+    Una referencia descartada/cancelada no debe bloquear el paquete para
+    siempre. En cambio, una propuesta aceptada/contratada o con contrato
+    conserva la composicion historica aunque el evento se cancele despues.
+    """
+    propuestas = paquete.propuestas_k9.select_related("evento").prefetch_related("contratos_v2")
+
+    for propuesta in propuestas:
+        if propuesta.estado in {"ACEPTADO", "CONTRATADO"}:
+            return False
+        if propuesta.contratos_v2.exists():
+            return False
+
+        # Mientras la propuesta siga viva y el evento no este cancelado,
+        # el paquete esta realmente en uso.
+        if (
+            propuesta.estado in {"BORRADOR", "PROPUESTA", "EN_REVISION"}
+            and propuesta.evento.estado != "CANCELADO"
+        ):
+            return False
+
+    return True
+
+
+def _propuesta_lineas_editables(propuesta):
+    return propuesta_permite_editar_lineas(propuesta)
+
+
 def paquete_detail(request, empresa_slug, paquete_id):
     context = _paquetes_context(request, empresa_slug)
     empresa = context.empresa
@@ -154,6 +190,7 @@ def paquete_detail(request, empresa_slug, paquete_id):
             media_form=PaqueteMediaComercialForm(),
             dto_incluidos=calcular_propuesta,
             puede_gestionar=puede_gestionar,
+            composicion_editable=_paquete_composicion_editable(paquete),
         ),
     )
 
@@ -166,6 +203,16 @@ def paquete_servicio_create(request, empresa_slug, paquete_id):
     if not puede_gestionar_paquetes(request.user, empresa):
         raise PermissionDenied('No tienes permiso para modificar paquetes.')
     paquete = get_object_or_404(paquetes_empresa_qs(empresa), pk=paquete_id)
+    if not _paquete_composicion_editable(paquete):
+        messages.error(
+            request,
+            'Este paquete ya esta en uso y su composicion esta protegida.',
+        )
+        return redirect(
+            'paquetes_paquete_detail',
+            empresa_slug=empresa.slug,
+            paquete_id=paquete.id,
+        )
     form = PaqueteServicioForm(request.POST, paquete=paquete)
     if form.is_valid():
         try:
@@ -176,6 +223,38 @@ def paquete_servicio_create(request, empresa_slug, paquete_id):
     else:
         messages.error(request, 'No se pudo agregar el servicio. Revisa los datos.')
     return redirect('paquetes_paquete_detail', empresa_slug=empresa.slug, paquete_id=paquete.id)
+
+
+@login_required(login_url='/login/')
+@require_POST
+def paquete_servicio_delete(request, empresa_slug, paquete_id, servicio_id):
+    context = _paquetes_context(request, empresa_slug)
+    empresa = context.empresa
+    if not puede_gestionar_paquetes(request.user, empresa):
+        raise PermissionDenied('No tienes permiso para modificar paquetes.')
+
+    paquete = get_object_or_404(paquetes_empresa_qs(empresa), pk=paquete_id)
+    item = get_object_or_404(PaqueteServicio, paquete=paquete, pk=servicio_id)
+
+    if not _paquete_composicion_editable(paquete):
+        messages.error(
+            request,
+            'Este paquete ya esta en uso y su composicion esta protegida.',
+        )
+        return redirect(
+            'paquetes_paquete_detail',
+            empresa_slug=empresa.slug,
+            paquete_id=paquete.id,
+        )
+
+    nombre = item.servicio_catalogo.nombre
+    item.delete()
+    messages.success(request, f'Servicio incluido eliminado: {nombre}.')
+    return redirect(
+        'paquetes_paquete_detail',
+        empresa_slug=empresa.slug,
+        paquete_id=paquete.id,
+    )
 
 
 @login_required(login_url='/login/')
@@ -237,6 +316,8 @@ def propuesta_editor(request, empresa_slug, evento_id, propuesta_id=None):
 
     if request.method == 'POST' and request.POST.get('accion') == 'guardar_propuesta':
         form = PropuestaEventoForm(request.POST, instance=propuesta, empresa=empresa, evento=evento)
+        if propuesta is not None and not propuesta_es_editable(propuesta):
+            raise PermissionDenied('Esta propuesta esta congelada; reabre negociacion antes de editarla.')
         if form.is_valid():
             propuesta = form.save(commit=False)
             if not propuesta.pk:
@@ -252,15 +333,48 @@ def propuesta_editor(request, empresa_slug, evento_id, propuesta_id=None):
                 evento_id=evento.id,
                 propuesta_id=propuesta.id,
             )
+    elif request.method == 'POST' and request.POST.get('accion') == 'aceptar_propuesta':
+        if not propuesta:
+            raise PermissionDenied('Guarda la propuesta antes de aceptarla.')
+        try:
+            propuesta = aceptar_propuesta(propuesta, user=request.user, request=request)
+            messages.success(request, 'Propuesta aceptada y congelada.')
+        except ValidationError as exc:
+            messages.error(request, ' '.join(exc.messages))
+        return redirect(
+            'paquetes_propuesta_editor',
+            empresa_slug=empresa.slug,
+            evento_id=evento.id,
+            propuesta_id=propuesta.id,
+        )
+    elif request.method == 'POST' and request.POST.get('accion') == 'reabrir_propuesta':
+        if not propuesta:
+            raise PermissionDenied('Selecciona una propuesta.')
+        try:
+            propuesta = reabrir_propuesta(propuesta, user=request.user, request=request)
+            messages.success(request, 'Negociacion reabierta.')
+        except ValidationError as exc:
+            messages.error(request, ' '.join(exc.messages))
+        return redirect(
+            'paquetes_propuesta_editor',
+            empresa_slug=empresa.slug,
+            evento_id=evento.id,
+            propuesta_id=propuesta.id,
+        )
     else:
         form = PropuestaEventoForm(instance=propuesta, empresa=empresa, evento=evento)
 
-    linea_form = PropuestaLineaForm(propuesta=propuesta) if propuesta else None
+    lineas_editables = _propuesta_lineas_editables(propuesta)
+    linea_form = PropuestaLineaForm(propuesta=propuesta) if lineas_editables else None
     dto = calcular_propuesta(propuesta) if propuesta else None
 
     if request.method == 'POST' and request.POST.get('accion') == 'agregar_linea':
         if not propuesta:
             raise PermissionDenied('Guarda la propuesta antes de agregar lineas.')
+        if not _propuesta_lineas_editables(propuesta):
+            raise PermissionDenied(
+                'Los adicionales y cortesias solo pueden modificarse antes de aceptar la propuesta.'
+            )
         linea_form = PropuestaLineaForm(request.POST, propuesta=propuesta)
         if linea_form.is_valid():
             linea_form.save()
@@ -291,6 +405,17 @@ def propuesta_editor(request, empresa_slug, evento_id, propuesta_id=None):
             linea_form=linea_form,
             dto=dto,
             contrato_existente=contrato_existente,
+            lineas_editables=lineas_editables,
+            propuesta_editable=propuesta_es_editable(propuesta),
+            propuesta_puede_aceptar=(
+                propuesta is not None
+                and propuesta_permite_editar_lineas(propuesta)
+            ),
+            propuesta_puede_reabrir=(
+                propuesta is not None
+                and propuesta.estado == 'ACEPTADO'
+                and not ContratoEvento.objects.filter(propuesta_origen=propuesta).exists()
+            ),
         ),
     )
 
@@ -304,11 +429,46 @@ def propuesta_linea_toggle(request, empresa_slug, evento_id, propuesta_id, linea
     propuesta = get_object_or_404(propuestas_empresa_qs(empresa), evento=evento, pk=propuesta_id)
     if not puede_editar_propuesta(request.user, propuesta):
         raise PermissionDenied('No tienes permiso para modificar esta propuesta.')
+    if not _propuesta_lineas_editables(propuesta):
+        raise PermissionDenied(
+            'Los adicionales y cortesias ya estan protegidos por el estado comercial.'
+        )
     linea = get_object_or_404(PropuestaLinea, propuesta=propuesta, pk=linea_id)
     linea.activo = not linea.activo
     linea.save(update_fields=['activo', 'updated_at'])
     actualizar_totales_propuesta(propuesta, user=request.user)
     messages.success(request, 'Linea reactivada.' if linea.activo else 'Linea retirada de la propuesta.')
+    return redirect(
+        'paquetes_propuesta_editor',
+        empresa_slug=empresa.slug,
+        evento_id=evento.id,
+        propuesta_id=propuesta.id,
+    )
+
+
+@login_required(login_url='/login/')
+@require_POST
+def propuesta_linea_delete(request, empresa_slug, evento_id, propuesta_id, linea_id):
+    context = _paquetes_context(request, empresa_slug)
+    empresa = context.empresa
+    evento = _evento_empresa(empresa, evento_id)
+    propuesta = get_object_or_404(
+        propuestas_empresa_qs(empresa),
+        evento=evento,
+        pk=propuesta_id,
+    )
+    if not puede_editar_propuesta(request.user, propuesta):
+        raise PermissionDenied('No tienes permiso para modificar esta propuesta.')
+    if not _propuesta_lineas_editables(propuesta):
+        raise PermissionDenied(
+            'Los adicionales y cortesias solo pueden eliminarse antes de aceptar la propuesta.'
+        )
+
+    linea = get_object_or_404(PropuestaLinea, propuesta=propuesta, pk=linea_id)
+    nombre = linea.nombre
+    linea.delete()
+    actualizar_totales_propuesta(propuesta, user=request.user)
+    messages.success(request, f'Linea eliminada: {nombre}.')
     return redirect(
         'paquetes_propuesta_editor',
         empresa_slug=empresa.slug,

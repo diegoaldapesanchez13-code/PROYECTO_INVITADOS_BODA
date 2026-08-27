@@ -159,6 +159,20 @@
             </article>
 
             {% if servicio %}
+            <article class="workspace-panel service-collaboration">
+                <header class="workspace-panel__header">
+                    <div>
+                        <span class="workspace-eyebrow">Colaboración</span>
+                        <h3>Conversaciones del servicio</h3>
+                    </div>
+                </header>
+                <p>Abre el workspace existente para conversar con cliente y proveedor, organizar temas y conservar referencias del servicio.</p>
+                <a class="app-button app-button--secondary"
+                   href="{% url 'colaboracion_workspace_servicio' servicio.id %}">
+                    Abrir colaboración →
+                </a>
+            </article>
+
             <article class="workspace-panel service-lifecycle">
                 <header class="workspace-panel__header">
                     <div>
